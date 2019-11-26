@@ -2,7 +2,7 @@ import numpy as np
 import numpy.linalg as lin
 
 
-class Dipole():
+class SymbolicDipole():
     """
     This class constructs the dipole moments in a phase correct way for a
     given slab Hamiltonian.
