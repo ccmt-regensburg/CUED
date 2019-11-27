@@ -6,10 +6,6 @@ class TwoBandSystems():
         """
         Returns the symbolic Hamiltonian and wave function of the system with 
         the given name.
-
-        Parameters
-        ----------
-        name : String with the name of the required Hamiltonian.
         
         """
         
@@ -75,8 +71,8 @@ class TwoBandSystems():
         b3 = 3/2 * self.kx - sqrt(3)/2 * self.ky
 
         ho = 2*t2*cos(phi)*(cos(b1)+cos(b2)+cos(b3))
-        hx = t1*cos(a1)+cos(a2)+cos(a3)
-        hy = t1*sin(a1)+sin(a2)+sin(a3)
+        hx = t1*(cos(a1)+cos(a2)+cos(a3))
+        hy = t1*(sin(a1)+sin(a2)+sin(a3))
         hz = m - 2*t2*sin(phi)*(sin(b1)+sin(b2)+sin(b3))
 
         return self.__eigensystem(ho, hx, hy, hz)
@@ -103,10 +99,29 @@ class TwoBandSystems():
         """
         Graphene model
         """
-        return None
+        t = Symbol("t")
+        
+        a1 = self.kx
+        a2 = -1/2 * self.kx + sqrt(3)/2 * self.ky
+        a3 = -1/2 * self.kx - sqrt(3)/2 * self.ky
 
+        ho = 0
+        hx = t*(cos(a1)+cos(a2)+cos(a3))
+        hy = t*(sin(a1)+sin(a2)+sin(a3))
+        hz = 0
+
+        return self.__eigensystem(ho, hx, hy, hz) 
+
+    
     def qwz(self):
         """
         Qi-Wu-Zhang model of a 2D Chern insulator
         """
-        return None
+        m = Symbol("m")
+
+        ho = 0
+        hx = sin(self.kx)
+        hy = sin(self.ky)
+        hz = m - cos(self.kx) - cos(self.ky)
+        
+        return self.__eigensystem(ho, hx, hy, hz)
