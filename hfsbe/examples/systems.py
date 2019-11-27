@@ -23,7 +23,8 @@ class TwoBandSystems():
     
     def __eigensystem(self, ho, hx, hy, hz):
         """
-        Generic form of energies in a two band Hamiltonian
+        Generic form of Hamiltonian, energies and wave functions in a two band
+        Hamiltonian.
 
         Parameters
         ----------
@@ -32,6 +33,8 @@ class TwoBandSystems():
 
         Returns
         -------
+        h : Symbol
+            Hamiltonian of the system
         e : list of Symbol
             Valence and conduction band energies; in this order
         wf : list of Symbol
@@ -48,9 +51,12 @@ class TwoBandSystems():
         norm = sqrt(2*(esoc + hz)*esoc)
         
         wf = [wfv/norm, wfv_h/norm, wfc/norm, wfc_h/norm]
+
+        h = ho*self.so + hx*self.sx + hy*self.sy + hz*self.sz
         
-        return e, wf
-                           
+        return h, e, wf
+
+    
     def haldane(self):
         """
         Haldane model
@@ -73,18 +79,26 @@ class TwoBandSystems():
         hy = t1*sin(a1)+sin(a2)+sin(a3)
         hz = m - 2*t2*sin(phi)*(sin(b1)+sin(b2)+sin(b3))
 
-        e, wf = self.__eigensystem(ho, hx, hy, hz)
+        return self.__eigensystem(ho, hx, hy, hz)
 
-        h = ho*self.so + hx*self.sx + hy*self.sy + hz*self.sz
-
-        return h, e, wf
-
+    
     def bite(self):
         """
         Bismuth Telluride topological insulator model
         """
-        return None
+        C0 = Symbol("C0")
+        C2 = Symbol("C2")
+        A = Symbol("A")
+        R = Symbol("R")
 
+        ho = C0 + C2*(self.kx**2 + self.ky**2)
+        hx = A*self.ky
+        hy = -A*self.kx
+        hz = 2*R*(self.kx**3 - 3*self.kx*self.ky**2)
+        
+        return self.__eigensystem(ho, hx, hy, hz)
+
+    
     def graphene(self):
         """
         Graphene model
