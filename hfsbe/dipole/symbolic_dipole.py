@@ -11,24 +11,16 @@ class SymbolicDipole():
 
     def __init__(self, h, e, wf):
         """
-        Constructor initalising the Hamiltonian dimensions and the k-grid
-
         Parameters
         ----------
-        hamiltonian : list
-            List of numpy arrays holding the hermitian Hamiltonian.
-            h[0] is onsite; h[1], h[2] hop in x; h[3], h[4] hop in y.
-        kxlist : np.ndarray
-            All kx values the hamiltonian should be diagonalised for.
-        kylist : np.ndarray
-            All ky values the hamiltonian should be diagonalised for.
-        gauge_idx: int
-            Index of wave function entry that should be kept real. This
-            ultimately determines the gauge of the wave function.
-
+        h : Symbol
+            Hamiltonian of the system
+        e : np.ndarray of Symbol
+            Band energies of the system
+        wf : np.ndarray of Symbol
+            Wave functions, columns: bands, rows: wf and complex conjugate
         """
-
-
-    def __test_input(self, h, e, wf):
-        
+        self.h = h
+        self.e = e
+        self.wf = wf
 
