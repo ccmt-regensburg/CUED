@@ -1,13 +1,12 @@
 import sympy as sp
-import numpy as np
 
 
 class TwoBandSystems():
     def __init__(self):
         """
-        Returns the symbolic Hamiltonian and wave function of the system with 
+        Returns the symbolic Hamiltonian and wave function of the system with
         the given name.
-        
+
         """
         self.so = sp.Matrix([[1, 0], [0, 1]])
         self.sx = sp.Matrix([[0, 1], [1, 0]])
@@ -16,7 +15,7 @@ class TwoBandSystems():
 
         self.kx = sp.Symbol('kx')
         self.ky = sp.Symbol('ky')
-    
+
     def __eigensystem(self, ho, hx, hy, hz):
         """
         Generic form of Hamiltonian, energies and wave functions in a two band
@@ -37,21 +36,21 @@ class TwoBandSystems():
             Valence and conduction band wave function; in this order
         """
         esoc = sp.sqrt(hx**2 + hy**2 + hz**2)
-        e = np.array([ho - esoc, ho + esoc])
-                
+        e = [ho - esoc, ho + esoc]
+
         wfv = sp.Matrix([-hx + sp.I*hy, hz + esoc])
         wfc = sp.Matrix([hz + esoc, hx + sp.I*hy])
         wfv_h = sp.Matrix([-hx - sp.I*hy, hz + esoc])
         wfc_h = sp.Matrix([hz + esoc, hx - sp.I*hy])
         norm = sp.sqrt(2*(esoc + hz)*esoc)
-        
-        wf = np.array([[wfv/norm, wfc/norm], [wfv_h/norm, wfc_h/norm]])
+
+        U = (wfv/norm).row_join(wfc/norm)
+        U_h = (wfv_h/norm).T.col_join((wfc_h/norm).T)
 
         h = ho*self.so + hx*self.sx + hy*self.sy + hz*self.sz
-        
-        return h, e, wf
 
-    
+        return h, e, [U, U_h]
+
     def haldane(self):
         """
         Haldane model
@@ -76,7 +75,6 @@ class TwoBandSystems():
 
         return self.__eigensystem(ho, hx, hy, hz)
 
-    
     def bite(self):
         """
         Bismuth Telluride topological insulator model
@@ -90,16 +88,15 @@ class TwoBandSystems():
         hx = A*self.ky
         hy = -A*self.kx
         hz = 2*R*(self.kx**3 - 3*self.kx*self.ky**2)
-        
+
         return self.__eigensystem(ho, hx, hy, hz)
 
-    
     def graphene(self):
         """
         Graphene model
         """
         t = sp.Symbol('t')
-        
+
         a1 = self.kx
         a2 = -1/2 * self.kx + sp.sqrt(3)/2 * self.ky
         a3 = -1/2 * self.kx - sp.sqrt(3)/2 * self.ky
@@ -109,9 +106,8 @@ class TwoBandSystems():
         hy = t*(sp.sin(a1)+sp.sin(a2)+sp.sin(a3))
         hz = 0
 
-        return self.__eigensystem(ho, hx, hy, hz) 
+        return self.__eigensystem(ho, hx, hy, hz)
 
-    
     def qwz(self):
         """
         Qi-Wu-Zhang model of a 2D Chern insulator
@@ -122,5 +118,5 @@ class TwoBandSystems():
         hx = sp.sin(self.kx)
         hy = sp.sin(self.ky)
         hz = m - sp.cos(self.kx) - sp.cos(self.ky)
-        
+
         return self.__eigensystem(ho, hx, hy, hz)
