@@ -1,3 +1,8 @@
+"""
+Functional checks of different properties that the symbolic
+expressions like Hamiltonians, energies, wave functions, dipole
+moments etc. should have
+"""
 import sympy as sp
 
 

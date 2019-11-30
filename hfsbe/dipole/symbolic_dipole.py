@@ -1,6 +1,7 @@
 import sympy as sp
 
 import hfsbe.check.symbolic_checks as sck
+import hfsbe.dipole.interface as itf
 
 
 class SymbolicDipole():
@@ -36,8 +37,17 @@ class SymbolicDipole():
         self.U = wf[0]
         self.U_h = wf[1]
 
-        self.dxU, self.dyU = self.__derivatives()
+        self.Ax, self.Ay = self.__fields()
 
-    def __derivatives(self):
-        diff = sp.derive_by_array(self.U, [self.kx, self.ky])
-        return diff[0], diff[1]
+    def __fields(self):
+        dUx = sp.diff(self.U, self.kx)
+        dUy = sp.diff(self.U, self.ky)
+        return self.U_h * dUx, self.U_h * dUy
+
+    @property
+    def Ax_numeric(self):
+        itf.to_numpy_function(self.Ax)
+
+    @property
+    def Ay_numeric(self):
+        itf.to_numpy_function(self.Ay) 
