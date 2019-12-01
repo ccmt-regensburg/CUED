@@ -44,11 +44,12 @@ class SymbolicDipole():
         dUy = sp.diff(self.U, self.ky)
         return self.U_h * dUx, self.U_h * dUy
 
-    def symbolic_to_numeric(self, b1=None, b2=None, interpolation_ratio=1.0):
+    def evaluate(self, kx, ky, b1=None, b2=None,
+                 interpolation_ratio=1.0, **kwargs):
         """
         Transforms the symbolic expression for the
         berry connection/dipole moment matrix to an expression
-        that can be evaluated by numpy.
+        that is numerically evaluated.
         If the reciprocal lattice vectors are given it creates a
         Brillouin zone around the symbolic Hamiltonian. Values outside
         of that zone are returned as np.nan.
@@ -59,16 +60,22 @@ class SymbolicDipole():
         given at the edge of the small zone given by ipr*b1 + ipr*b2
 
         Parameters:
+        kx, ky : np.ndarray
+            array of all point combinations
         b1, b2 : np.ndarray
             reciprocal lattice vector
         interpolation_ratio : float
             percentile portion of reciprocal lattice vectors
+        kwargs :
+            keyword arguments passed to the symbolic expression
         """
         ipr = interpolation_ratio
+        Axf = to_numpy_function(self.Ax)
+        Ayf = to_numpy_function(self.Ay)
 
         if (b1 is None or b2 is None):
-            return to_numpy_function(self.Ax), \
-                to_numpy_function(self.Ay)
+            return Axf(kx=kx, ky=ky, **kwargs), \
+                Ayf(kx=kx, ky=ky, **kwargs)
         else:
             return self.__add_brillouin_zone(b1, b2, ipr)
 
