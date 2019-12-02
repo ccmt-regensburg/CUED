@@ -45,7 +45,7 @@ class SymbolicDipole():
         return self.U_h * dUx, self.U_h * dUy
 
     def evaluate(self, kx, ky, b1=None, b2=None,
-                 interpolation_ratio=1.0, **kwargs):
+                 interpolation_ratio=1.0, eps=10e-10, **kwargs):
         """
         Transforms the symbolic expression for the
         berry connection/dipole moment matrix to an expression
@@ -68,33 +68,53 @@ class SymbolicDipole():
             percentile portion of reciprocal lattice vectors
         kwargs :
             keyword arguments passed to the symbolic expression
+        eps : float
+            Threshold to identify Brillouin zone boundary points
         """
         ipr = interpolation_ratio
-        Axf = to_numpy_function(self.Ax)
-        Ayf = to_numpy_function(self.Ay)
 
         if (b1 is None or b2 is None):
-            return Axf(kx=kx, ky=ky, **kwargs), \
+            Axf = to_numpy_function(self.Ax)
+            Ayf = to_numpy_function(self.Ay)
+            return kx, ky, Axf(kx=kx, ky=ky, **kwargs), \
                 Ayf(kx=kx, ky=ky, **kwargs)
         else:
-            return self.__add_brillouin_zone(b1, b2, ipr)
+            kmat = np.vstack((kx, ky))
+            return self.__add_brillouin(kmat, b1, b2, ipr, eps, **kwargs)
 
-    def __add_brillouin_zone(self, b1, b2, ip):
+    def __add_brillouin_zone(self, kmat, b1, b2, ipr, eps, **kwargs):
         """
-        Add the brillouin zone to the symbolic dipole moments and
-        return numpy callable function.
+        Evaluate the dipole moments in a given Brillouin zone.
         """
-        Ax_n = to_numpy_function(self.Ax)
-        Ay_n = to_numpy_function(self.Ay)
-        
-        def brillouin_zone_function(**kwargs):
-            kmat = np.vstack(kwargs.pop('kx'), kwargs.pop('ky'))
-            b1.dot(kmat)
-            b2.dot(kmat)
+        Axf = to_numpy_function(self.Ax)
+        Ayf = to_numpy_function(self.Ay)
+        is_inbz = self.__check_zone(kmat, b1, b2, eps)
+        kx = kmat[0, is_inbz]
+        ky = kmat[1, is_inbz]
+        if (ipr == 1.0):
+            return kx, ky, Axf(kx=kx, ky=ky, **kwargs), \
+                Ayf(kx=kx, ky=ky, **kwargs)
+        else:
+            is_inipr = self.__check_zone(kmat, ipr*b1, ipr*b2, eps)
 
-            
-            Ax_n(kwargs)
-            Ay_n(kwargs)
+
+    def __check_zone(self, kmat, b1, b2, eps):
+        """
+        Checks if a collection of k-points is inside a zone determined
+        by the reciprocal lattice vectors b1, b2.
+        """
+        # projections of kpoints on reciprocal lattice vectors
+        a1 = b1.dot(kmat)/(np.linalg.norm(b1)**2)
+        a2 = b2.dot(kmat)/(np.linalg.norm(b2)**2)
+
+        # smaller than half reciprocal lattice vector
+        is_less_a1 = np.abs(a1) <= 0.5 + eps
+        is_less_a2 = np.abs(a2) <= 0.5 + eps
+        is_less_abs = np.abs(a1+a2) <= 0.5 + eps
+
+        is_inzone = np.logical_and(is_less_a1, is_less_a2)
+        is_inzone = np.logical_and(is_inzone, is_less_abs)
+        return is_inzone
 
 
 def to_numpy_function(sf):
