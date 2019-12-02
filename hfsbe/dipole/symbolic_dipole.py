@@ -2,6 +2,7 @@ import sympy as sp
 import numpy as np
 
 import hfsbe.check.symbolic_checks as sck
+import hfsbe.lattice as lat
 
 
 class SymbolicDipole():
@@ -79,33 +80,29 @@ class SymbolicDipole():
             return kx, ky, Axf(kx=kx, ky=ky, **kwargs), \
                 Ayf(kx=kx, ky=ky, **kwargs)
         else:
-            kmat = np.vstack((kx, ky))
-            return self.__add_brillouin(kmat, b1, b2, ipr, eps, **kwargs)
+            return self.__add_brillouin(kx, ky, b1, b2, ipr, eps, **kwargs)
 
-    def __add_brillouin_zone(self, kmat, b1, b2, ipr, eps, **kwargs):
+    def __add_brillouin_zone(self, kx, ky, b1, b2, ipr, eps, **kwargs):
         """
         Evaluate the dipole moments in a given Brillouin zone.
         """
         Axf = to_numpy_function(self.Ax)
         Ayf = to_numpy_function(self.Ay)
-        is_inbz = self.__check_zone(kmat, b1, b2, eps)
-        kx = kmat[0, is_inbz]
-        ky = kmat[1, is_inbz]
+        a1, a2 = lat.to_reciprocal_coordinates(kx, ky, b1, b2)
+        is_inbz = self.__check_zone(a1, a2, eps)
+        kxbz = kx[is_inbz]
+        kybz = ky[is_inbz]
         if (ipr == 1.0):
-            return kx, ky, Axf(kx=kx, ky=ky, **kwargs), \
-                Ayf(kx=kx, ky=ky, **kwargs)
+            return kxbz, kybz, Axf(kx=kxbz, ky=kybz, **kwargs), \
+                Ayf(kx=kxbz, ky=kybz, **kwargs)
         else:
-            is_inipr = self.__check_zone(kmat, ipr*b1, ipr*b2, eps)
+            is_inipr = self.__check_zone(kx, ky, ipr*b1, ipr*b2, eps)
 
-
-    def __check_zone(self, kmat, b1, b2, eps):
+    def __check_zone(self, a1, a2, eps):
         """
         Checks if a collection of k-points is inside a zone determined
         by the reciprocal lattice vectors b1, b2.
         """
-        # projections of kpoints on reciprocal lattice vectors
-        a1 = b1.dot(kmat)/(np.linalg.norm(b1)**2)
-        a2 = b2.dot(kmat)/(np.linalg.norm(b2)**2)
 
         # smaller than half reciprocal lattice vector
         is_less_a1 = np.abs(a1) <= 0.5 + eps
