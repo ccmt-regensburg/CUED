@@ -2,12 +2,17 @@ import sympy as sp
 
 
 class TwoBandSystems():
-    def __init__(self):
+    def __init__(self, e_deriv=False):
         """
         Returns the symbolic Hamiltonian and wave function of the system with
         the given name.
 
+        Parameters
+        ----------
+        e_deriv : bool
+            Wheter to additionally return energy and wave function derivatives
         """
+        self.e_deriv = e_deriv
         self.so = sp.Matrix([[1, 0], [0, 1]])
         self.sx = sp.Matrix([[0, 1], [1, 0]])
         self.sy = sp.Matrix([[0, -sp.I], [sp.I, 0]])
@@ -49,7 +54,21 @@ class TwoBandSystems():
 
         h = ho*self.so + hx*self.sx + hy*self.sy + hz*self.sz
 
-        return h, e, [U, U_h]
+        if self.e_deriv:
+            return h, e, [U, U_h], self.__e_deriv(e)
+        else:
+            return h, e, [U, U_h]
+
+    def __e_deriv(self, energies):
+        """
+        Calculate the derivative of the energy bands. Order is
+        de[0]/dkx, de[0]/dky, de[1]/dkx, de[1]/dky
+        """
+        ed = []
+        for e in energies:
+            ed.append(sp.diff(e, self.kx))
+            ed.append(sp.diff(e, self.ky))
+        return ed
 
     def haldane(self):
         """

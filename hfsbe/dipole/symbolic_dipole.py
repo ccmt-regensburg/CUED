@@ -43,10 +43,10 @@ class SymbolicDipole():
     def __fields(self):
         dUx = sp.diff(self.U, self.kx)
         dUy = sp.diff(self.U, self.ky)
-        return self.U_h * dUx, self.U_h * dUy
+        return sp.I*self.U_h * dUx, sp.I*self.U_h * dUy
 
     def evaluate(self, kx, ky, b1=None, b2=None,
-                 interpolation_ratio=1.0, eps=10e-10, **kwargs):
+                 hamiltonian_radius=None, eps=0, **kwargs):
         """
         Transforms the symbolic expression for the
         berry connection/dipole moment matrix to an expression
@@ -65,40 +65,60 @@ class SymbolicDipole():
             array of all point combinations
         b1, b2 : np.ndarray
             reciprocal lattice vector
-        interpolation_ratio : float
+        hamiltonian_radius : float
             percentile portion of reciprocal lattice vectors
         kwargs :
             keyword arguments passed to the symbolic expression
         eps : float
             Threshold to identify Brillouin zone boundary points
         """
-        ipr = interpolation_ratio
+        hamr = hamiltonian_radius
 
         if (b1 is None or b2 is None):
+            # Evaluate all kpoints without BZ
             Axf = to_numpy_function(self.Ax)
             Ayf = to_numpy_function(self.Ay)
             return kx, ky, Axf(kx=kx, ky=ky, **kwargs), \
                 Ayf(kx=kx, ky=ky, **kwargs)
         else:
-            return self.__add_brillouin(kx, ky, b1, b2, ipr, eps, **kwargs)
+            # Add a BZ and cut off
+            return self.__add_brillouin(kx, ky, b1, b2, hamr, eps, **kwargs)
 
-    def __add_brillouin(self, kx, ky, b1, b2, ipr, eps, **kwargs):
+    def __add_brillouin(self, kx, ky, b1, b2, hamr, eps, **kwargs):
         """
         Evaluate the dipole moments in a given Brillouin zone.
         """
         Axf = to_numpy_function(self.Ax)
         Ayf = to_numpy_function(self.Ay)
         a1, a2 = lat.to_reciprocal_coordinates(kx, ky, b1, b2)
-        is_inbz = self.__check_zone(a1, a2, eps)
-        kxbz = kx[is_inbz]
-        kybz = ky[is_inbz]
-        if (ipr == 1.0):
+        inbz = self.__check_brillouin(a1, a2, eps)
+        kxbz = kx[inbz]
+        kybz = ky[inbz]
+
+        if (hamr is None):
+            # No hamiltonian region given -> defined in entire bz
             return kxbz, kybz, Axf(kx=kxbz, ky=kybz, **kwargs), \
                 Ayf(kx=kxbz, ky=kybz, **kwargs)
-        # else:
-        #     is_inipr = self.__check_zone(kx, ky, ipr*b1, ipr*b2, eps)
+        else:
+            # Regular evaluation in circle
+            Ax = np.empty(self.Ax.shape + (kx.size, ))
+            Ay = np.empty(self.Ay.shape + (ky.size, ))
+            inci = self.__check_circle(kxbz, kybz, hamr, eps)
+            Ax[:, :, [inci]] = Axf(kx=kxbz[inci], ky=kybz[inci],
+                                   **kwargs)
+            Ay[:, :, [inci]] = Ayf(kx=kxbz[inci], ky=kybz[inci],
+                                   **kwargs)
+            
+            # Interpolation out of circle
+            outci = np.logical_not(inci)
+            Axi, Ayi = self.__interpolate(kxbz[outci], kybz[outci],
+                                          hamr, Axf, Ayf, **kwargs)
+            Ax[:, :, [outci]] = Axi
+            Ay[:, :, [outci]] = Ayi
 
-    def __check_zone(self, a1, a2, eps):
+            return kxbz, kybz, Ax, Ay
+
+    def __check_brillouin(self, a1, a2, eps):
         """
         Checks if a collection of k-points is inside a zone determined
         by the reciprocal lattice vectors b1, b2.
@@ -110,7 +130,19 @@ class SymbolicDipole():
         is_inzone = np.logical_and(is_less_a1, is_less_a2)
         return is_inzone
 
+    def __interpolate(self, kx, ky, hamr, Axf, Ayf, **kwargs):
+        """
+        Interpolates everything outside of the Hamiltonian radius with
+        a linear function.
+        """
 
+    def __check_circle(self, kx, ky, hamr, eps):
+        """
+        Checks which k-points are inside the circle defined by hamr
+        """
+        is_incircle = (kx**2 + ky**2 <= (hamr + eps)**2)
+        return is_incircle
+        
 def to_numpy_function(sf):
     """
     Converts a simple sympy function/matrix to a function/matrix
