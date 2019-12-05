@@ -82,7 +82,7 @@ class SymbolicDipole():
         else:
             return self.__add_brillouin(kx, ky, b1, b2, ipr, eps, **kwargs)
 
-    def __add_brillouin_zone(self, kx, ky, b1, b2, ipr, eps, **kwargs):
+    def __add_brillouin(self, kx, ky, b1, b2, ipr, eps, **kwargs):
         """
         Evaluate the dipole moments in a given Brillouin zone.
         """
@@ -95,8 +95,8 @@ class SymbolicDipole():
         if (ipr == 1.0):
             return kxbz, kybz, Axf(kx=kxbz, ky=kybz, **kwargs), \
                 Ayf(kx=kxbz, ky=kybz, **kwargs)
-        else:
-            is_inipr = self.__check_zone(kx, ky, ipr*b1, ipr*b2, eps)
+        # else:
+        #     is_inipr = self.__check_zone(kx, ky, ipr*b1, ipr*b2, eps)
 
     def __check_zone(self, a1, a2, eps):
         """
@@ -107,10 +107,7 @@ class SymbolicDipole():
         # smaller than half reciprocal lattice vector
         is_less_a1 = np.abs(a1) <= 0.5 + eps
         is_less_a2 = np.abs(a2) <= 0.5 + eps
-        is_less_abs = np.abs(a1+a2) <= 0.5 + eps
-
         is_inzone = np.logical_and(is_less_a1, is_less_a2)
-        is_inzone = np.logical_and(is_inzone, is_less_abs)
         return is_inzone
 
 
