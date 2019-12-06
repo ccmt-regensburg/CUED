@@ -40,13 +40,18 @@ class SymbolicDipole():
 
         self.Ax, self.Ay = self.__fields()
 
+        # Numpy function and function arguments
+        self.Axf = to_numpy_function(self.Ax)
+        self.Ayf = to_numpy_function(self.Ay)
+        self.fkwargs = None
+
     def __fields(self):
         dUx = sp.diff(self.U, self.kx)
         dUy = sp.diff(self.U, self.ky)
         return sp.I*self.U_h * dUx, sp.I*self.U_h * dUy
 
     def evaluate(self, kx, ky, b1=None, b2=None,
-                 hamiltonian_radius=None, eps=0, **kwargs):
+                 hamiltonian_radius=None, eps=10e-10, **fkwargs):
         """
         Transforms the symbolic expression for the
         berry connection/dipole moment matrix to an expression
@@ -73,23 +78,20 @@ class SymbolicDipole():
             Threshold to identify Brillouin zone boundary points
         """
         hamr = hamiltonian_radius
+        self.fkwargs = fkwargs
 
         if (b1 is None or b2 is None):
             # Evaluate all kpoints without BZ
-            Axf = to_numpy_function(self.Ax)
-            Ayf = to_numpy_function(self.Ay)
-            return kx, ky, Axf(kx=kx, ky=ky, **kwargs), \
-                Ayf(kx=kx, ky=ky, **kwargs)
+            return kx, ky, self.Axf(kx=kx, ky=ky, **self.fkwargs), \
+                self.Ayf(kx=kx, ky=ky, **self.fkwargs)
         else:
             # Add a BZ and cut off
-            return self.__add_brillouin(kx, ky, b1, b2, hamr, eps, **kwargs)
+            return self.__add_brillouin(kx, ky, b1, b2, hamr, eps)
 
-    def __add_brillouin(self, kx, ky, b1, b2, hamr, eps, **kwargs):
+    def __add_brillouin(self, kx, ky, b1, b2, hamr, eps):
         """
         Evaluate the dipole moments in a given Brillouin zone.
         """
-        Axf = to_numpy_function(self.Ax)
-        Ayf = to_numpy_function(self.Ay)
         a1, a2 = lat.to_reciprocal_coordinates(kx, ky, b1, b2)
         inbz = self.__check_brillouin(a1, a2, eps)
         kxbz = kx[inbz]
@@ -97,24 +99,24 @@ class SymbolicDipole():
 
         if (hamr is None):
             # No hamiltonian region given -> defined in entire bz
-            return kxbz, kybz, Axf(kx=kxbz, ky=kybz, **kwargs), \
-                Ayf(kx=kxbz, ky=kybz, **kwargs)
+            return kxbz, kybz, self.Axf(kx=kxbz, ky=kybz, **self.fkwargs), \
+                self.Ayf(kx=kxbz, ky=kybz, **self.fkwargs)
         else:
             # Regular evaluation in circle
-            Ax = np.empty(self.Ax.shape + (kx.size, ))
-            Ay = np.empty(self.Ay.shape + (ky.size, ))
-            inci = self.__check_circle(kxbz, kybz, hamr, eps)
-            Ax[:, :, [inci]] = Axf(kx=kxbz[inci], ky=kybz[inci],
-                                   **kwargs)
-            Ay[:, :, [inci]] = Ayf(kx=kxbz[inci], ky=kybz[inci],
-                                   **kwargs)
-            
+            Ax = np.empty(self.Ax.shape + (kxbz.size, ), dtype=np.complex)
+            Ay = np.empty(self.Ay.shape + (kybz.size, ), dtype=np.complex)
+            inci = self.__check_circle(kxbz, kybz, hamr)
+            Ax[:, :, inci] = self.Axf(kx=kxbz[inci], ky=kybz[inci],
+                                      **self.fkwargs)
+            Ay[:, :, inci] = self.Ayf(kx=kxbz[inci], ky=kybz[inci],
+                                      **self.fkwargs)
+
             # Interpolation out of circle
             outci = np.logical_not(inci)
             Axi, Ayi = self.__interpolate(kxbz[outci], kybz[outci],
-                                          hamr, Axf, Ayf, **kwargs)
-            Ax[:, :, [outci]] = Axi
-            Ay[:, :, [outci]] = Ayi
+                                          b1, b2, hamr)
+            Ax[:, :, outci] = Axi
+            Ay[:, :, outci] = Ayi
 
             return kxbz, kybz, Ax, Ay
 
@@ -130,19 +132,54 @@ class SymbolicDipole():
         is_inzone = np.logical_and(is_less_a1, is_less_a2)
         return is_inzone
 
-    def __interpolate(self, kx, ky, hamr, Axf, Ayf, **kwargs):
+    def __interpolate(self, kx, ky, b1, b2, hamr):
         """
         Interpolates everything outside of the Hamiltonian radius with
-        a linear function.
+        a linear function, between the two circle ends
         """
+        kmat = np.vstack((kx, ky))
 
-    def __check_circle(self, kx, ky, hamr, eps):
+        a1, a2 = lat.to_reciprocal_coordinates(kx, ky, b1, b2)
+        # Find kpoints at BZ boundary
+        a1_b, a2_b = self.__intersect_brillouin(a1, a2)
+        kx_b, ky_b = lat.to_cartesian_coordinates(a1_b, a2_b, b1, b2)
+        # interpolation length from circle edge over boundary to
+        # circle edge
+        ipl = 2*(np.linalg.norm(np.vstack((kx_b, ky_b)), axis=0) - hamr)
+        knorm = np.linalg.norm(kmat, axis=0)
+
+        # Point at circle, kvector intersection
+        kmat_c = hamr*(kmat/knorm)
+        pos = knorm - hamr
+        # Aci_f circle evaluation forward facing to point
+        # Aci_b circle evaulation on backside facing away from point
+        Aci_f_x = self.Axf(kx=kmat_c[0], ky=kmat_c[1], **self.fkwargs)
+        Aci_f_y = self.Ayf(kx=kmat_c[0], ky=kmat_c[1], **self.fkwargs)
+        Aci_b_x = self.Axf(kx=-kmat_c[0], ky=-kmat_c[1], **self.fkwargs)
+        Aci_b_y = self.Ayf(kx=-kmat_c[0], ky=-kmat_c[1], **self.fkwargs)
+
+        Axi = (1-pos/ipl)*Aci_f_x + (pos/ipl)*Aci_b_x
+        Ayi = (1-pos/ipl)*Aci_f_y + (pos/ipl)*Aci_b_y
+
+        return Axi, Ayi
+
+    def __intersect_brillouin(self, a1, a2):
+        """
+        Find the intersection points of a line through a point P with
+        the brillouin zone boundary (in reciprocal space)
+        """
+        beta = np.array([0.5/a1, 0.5/a2])
+        beta = np.min(np.abs(beta), axis=0)
+        return beta*a1, beta*a2
+
+    def __check_circle(self, kx, ky, hamr):
         """
         Checks which k-points are inside the circle defined by hamr
         """
-        is_incircle = (kx**2 + ky**2 <= (hamr + eps)**2)
+        is_incircle = np.square(kx) + np.square(ky) <= hamr
         return is_incircle
-        
+
+
 def to_numpy_function(sf):
     """
     Converts a simple sympy function/matrix to a function/matrix
