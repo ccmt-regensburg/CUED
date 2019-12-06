@@ -4,9 +4,11 @@ import matplotlib.pyplot as plt
 import hfsbe.example as ex
 import hfsbe.dipole as dip
 
-b1 = 2*np.pi*np.array([1/np.sqrt(3), 1])
-b2 = 2*np.pi*np.array([1/np.sqrt(3), -1])
+# b1 = 2*np.pi*np.array([1/np.sqrt(3), 1])
+# b2 = 2*np.pi*np.array([1/np.sqrt(3), -1])
 
+b1 = 2*np.pi*np.array([1, 0])
+b2 = 2*np.pi*np.array([0, 1])
 kinit = np.linspace(-2*np.pi, 2*np.pi, 51)
     
 # Full kgrid
@@ -16,7 +18,8 @@ ky = kmat[:, 1]
 
 h, ef, wf = ex.TwoBandSystems().graphene()
 dipole = dip.SymbolicDipole(h, ef, wf)
-kxbz, kybz, Ax, Ay = dipole.evaluate(kx, ky, t=1)
+kxbz, kybz, Ax, Ay = dipole.evaluate(kx, ky, t=1, b1=b1, b2=b2,
+                                     hamiltonian_radius=2)
 
 # Plot real and imaginary part of all four fields 00, 01, 10, 11
 fig, ax = plt.subplots(4, 2)
@@ -26,4 +29,5 @@ for i in range(4):
                     angles='xy')
     ax[i, 1].quiver(kxbz, kybz, np.imag(Ax[idx]), np.imag(Ay[idx]),
                     angles='xy')
-    plt.show()
+
+plt.show()
