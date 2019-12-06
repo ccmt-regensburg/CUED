@@ -71,8 +71,8 @@ class SymbolicDipole():
         b1, b2 : np.ndarray
             reciprocal lattice vector
         hamiltonian_radius : float
-            percentile portion of reciprocal lattice vectors
-        kwargs :
+            kspace radius of a disk where the hamiltonian is defined
+        fkwargs :
             keyword arguments passed to the symbolic expression
         eps : float
             Threshold to identify Brillouin zone boundary points
@@ -176,7 +176,7 @@ class SymbolicDipole():
         """
         Checks which k-points are inside the circle defined by hamr
         """
-        is_incircle = np.square(kx) + np.square(ky) <= hamr
+        is_incircle = np.square(kx) + np.square(ky) <= hamr**2
         return is_incircle
 
 
