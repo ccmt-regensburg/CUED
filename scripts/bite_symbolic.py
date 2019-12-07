@@ -22,7 +22,7 @@ R = -3.3765
 h, ef, wf = ex.TwoBandSystems().bite()
 dipole = dip.SymbolicDipole(h, ef, wf)
 kxbz, kybz, Ax, Ay = dipole.evaluate(kx, ky, b1=b1, b2=b2,
-                                     hamiltonian_radius=0.02, A=A, R=R)
+                                     hamiltonian_radius=None, A=A, R=R)
 
 # Plot real and imaginary part of all four fields 00, 01, 10, 11
 fig, ax = plt.subplots(4, 2)

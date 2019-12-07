@@ -92,10 +92,7 @@ class SymbolicDipole():
         """
         Evaluate the dipole moments in a given Brillouin zone.
         """
-        a1, a2 = lat.to_reciprocal_coordinates(kx, ky, b1, b2)
-        inbz = self.__check_brillouin(a1, a2, eps)
-        kxbz = kx[inbz]
-        kybz = ky[inbz]
+        kxbz, kybz = lat.in_brillouin(kx, ky, b1, b2, eps)
 
         if (hamr is None):
             # No hamiltonian region given -> defined in entire bz
@@ -105,7 +102,8 @@ class SymbolicDipole():
             # Regular evaluation in circle
             Ax = np.empty(self.Ax.shape + (kxbz.size, ), dtype=np.complex)
             Ay = np.empty(self.Ay.shape + (kybz.size, ), dtype=np.complex)
-            inci = self.__check_circle(kxbz, kybz, hamr)
+
+            inci = kxbz**2 + kybz**2 <= hamr**2
             Ax[:, :, inci] = self.Axf(kx=kxbz[inci], ky=kybz[inci],
                                       **self.fkwargs)
             Ay[:, :, inci] = self.Ayf(kx=kxbz[inci], ky=kybz[inci],
@@ -120,29 +118,14 @@ class SymbolicDipole():
 
             return kxbz, kybz, Ax, Ay
 
-    def __check_brillouin(self, a1, a2, eps):
-        """
-        Checks if a collection of k-points is inside a zone determined
-        by the reciprocal lattice vectors b1, b2.
-        """
-
-        # smaller than half reciprocal lattice vector
-        is_less_a1 = np.abs(a1) <= 0.5 + eps
-        is_less_a2 = np.abs(a2) <= 0.5 + eps
-        is_inzone = np.logical_and(is_less_a1, is_less_a2)
-        return is_inzone
-
     def __interpolate(self, kx, ky, b1, b2, hamr):
         """
         Interpolates everything outside of the Hamiltonian radius with
         a linear function, between the two circle ends
         """
         kmat = np.vstack((kx, ky))
+        kx_b, ky_b = lat.intersect_brillouin(kx, ky, b1, b2)
 
-        a1, a2 = lat.to_reciprocal_coordinates(kx, ky, b1, b2)
-        # Find kpoints at BZ boundary
-        a1_b, a2_b = self.__intersect_brillouin(a1, a2)
-        kx_b, ky_b = lat.to_cartesian_coordinates(a1_b, a2_b, b1, b2)
         # interpolation length from circle edge over boundary to
         # circle edge
         ipl = 2*(np.linalg.norm(np.vstack((kx_b, ky_b)), axis=0) - hamr)
@@ -162,22 +145,6 @@ class SymbolicDipole():
         Ayi = (1-pos/ipl)*Aci_f_y + (pos/ipl)*Aci_b_y
 
         return Axi, Ayi
-
-    def __intersect_brillouin(self, a1, a2):
-        """
-        Find the intersection points of a line through a point P with
-        the brillouin zone boundary (in reciprocal space)
-        """
-        beta = np.array([0.5/a1, 0.5/a2])
-        beta = np.min(np.abs(beta), axis=0)
-        return beta*a1, beta*a2
-
-    def __check_circle(self, kx, ky, hamr):
-        """
-        Checks which k-points are inside the circle defined by hamr
-        """
-        is_incircle = np.square(kx) + np.square(ky) <= hamr**2
-        return is_incircle
 
 
 def to_numpy_function(sf):
