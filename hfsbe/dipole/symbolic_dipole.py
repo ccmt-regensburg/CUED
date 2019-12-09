@@ -1,8 +1,9 @@
 import sympy as sp
 import numpy as np
 
-import hfsbe.check.symbolic_checks as sck
-import hfsbe.lattice as lat
+import hfsbe.check.symbolic_checks as symbolic_checks
+import hfsbe.lattice as lattice
+import hfsbe.utility as utility
 
 
 class SymbolicDipole():
@@ -28,7 +29,7 @@ class SymbolicDipole():
         """
 
         if (test):
-            sck.eigensystem(h, e, wf)
+            symbolic_checks.eigensystem(h, e, wf)
 
         self.kx = sp.Symbol('kx')
         self.ky = sp.Symbol('ky')
@@ -41,8 +42,8 @@ class SymbolicDipole():
         self.Ax, self.Ay = self.__fields()
 
         # Numpy function and function arguments
-        self.Axf = to_numpy_function(self.Ax)
-        self.Ayf = to_numpy_function(self.Ay)
+        self.Axf = utility.to_numpy_function(self.Ax)
+        self.Ayf = utility.to_numpy_function(self.Ay)
         self.fkwargs = None
 
     def __fields(self):
@@ -92,7 +93,7 @@ class SymbolicDipole():
         """
         Evaluate the dipole moments in a given Brillouin zone.
         """
-        kxbz, kybz = lat.in_brillouin(kx, ky, b1, b2, eps)
+        kxbz, kybz = lattice.in_brillouin(kx, ky, b1, b2, eps)
 
         if (hamr is None):
             # No hamiltonian region given -> defined in entire bz
@@ -124,7 +125,7 @@ class SymbolicDipole():
         a linear function, between the two circle ends
         """
         kmat = np.vstack((kx, ky))
-        kx_b, ky_b = lat.intersect_brillouin(kx, ky, b1, b2)
+        kx_b, ky_b = lattice.intersect_brillouin(kx, ky, b1, b2)
 
         # interpolation length from circle edge over boundary to
         # circle edge
@@ -147,19 +148,3 @@ class SymbolicDipole():
         return Axi, Ayi
 
 
-def to_numpy_function(sf):
-    """
-    Converts a simple sympy function/matrix to a function/matrix
-    callable by numpy
-    """
-
-    return sp.lambdify(sf.free_symbols, sf, "numpy")
-
-
-def list_to_numpy_functions(sf):
-    """
-    Converts a list of sympy functions/matrices to a list of numpy
-    callable functions/matrices
-    """
-
-    return [to_numpy_function(sfn) for sfn in sf]
