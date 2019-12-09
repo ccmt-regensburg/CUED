@@ -139,3 +139,16 @@ class TwoBandSystems():
         hz = m - sp.cos(self.kx) - sp.cos(self.ky)
 
         return self.__eigensystem(ho, hx, hy, hz)
+
+    def dirac(self):
+        """
+        Generic Dirac cone Hamiltonian
+        """
+        m = sp.Symbol('m')
+
+        ho = 0
+        hx = self.kx
+        hy = self.ky
+        hz = m
+
+        return self.__eigensystem(ho, hx, hy, hz)

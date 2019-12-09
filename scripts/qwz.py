@@ -7,22 +7,19 @@ import plot_dipoles as plt
 
 # b1 = 2*np.pi*np.array([1/np.sqrt(3), 1])
 # b2 = 2*np.pi*np.array([1/np.sqrt(3), -1])
-b1 = 2*0.04*np.array([1, 0])
-b2 = 2*0.04*np.array([0, 1])
+b1 = 2*np.pi*np.array([1, 0])
+b2 = 2*np.pi*np.array([0, 1])
 
-kinit = np.linspace(-0.04, 0.04, 20)
+kinit = np.linspace(-2*np.pi, 2*np.pi, 20)
 
 # Full kgrid
 kmat = np.array(np.meshgrid(kinit, kinit)).T.reshape(-1, 2)
 kx = kmat[:, 0]
 ky = kmat[:, 1]
 
-A = 2.8413
-R = -3.3765
-
-h, ef, wf = ex.TwoBandSystems().bite()
+h, ef, wf = ex.TwoBandSystems().qwz()
 dipole = dip.SymbolicDipole(h, ef, wf)
-kxbz, kybz, Ax, Ay = dipole.evaluate(kx, ky, b1=b1, b2=b2,
-                                     hamiltonian_radius=None, A=A, R=R)
 
-plt.plot_dipoles(kxbz, kybz, Ax, Ay, 'BiTe')
+m = 1
+kxbz, kybz, Ax, Ay = dipole.evaluate(kx, ky, m=m, b1=b1, b2=b2)
+plt.plot_dipoles(kxbz, kybz, Ax, Ay, 'Qi-Wu-Zhang; $m=' + str(m) + '$')
