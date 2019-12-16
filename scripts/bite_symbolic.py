@@ -22,7 +22,7 @@ ky = kmat[:, 1]
 A = 2.8413
 R = -3.3765
 
-h, ef, wf, ediff = ex.TwoBandSystems(e_deriv=True).bite()
+h, ef, wf, ediff = ex.TwoBandSystems(e_deriv=True).bite(A=A, R=R)
 
 evdx = utility.to_numpy_function(ediff[0])
 evdy = utility.to_numpy_function(ediff[1])
@@ -30,6 +30,6 @@ evdy = utility.to_numpy_function(ediff[1])
 dipole = dip.SymbolicDipole(h, ef, wf)
 
 kxbz, kybz, Ax, Ay = dipole.evaluate(kx, ky, b1=b1, b2=b2,
-                                     hamiltonian_radius=None, A=A, R=R)
+                                     hamiltonian_radius=None)
 
 plt.plot_dipoles(kxbz, kybz, Ax, Ay, 'BiTe')

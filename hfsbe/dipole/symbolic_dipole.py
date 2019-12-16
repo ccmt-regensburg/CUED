@@ -2,7 +2,7 @@ import sympy as sp
 import numpy as np
 
 import hfsbe.check.symbolic_checks as symbolic_checks
-import hfsbe.lattice as lattice
+from hfsbe.lattice import lattice.evaluate_in_brillouin as bzeval
 import hfsbe.utility as utility
 
 
@@ -14,7 +14,7 @@ class SymbolicDipole():
 
     """
 
-    def __init__(self, h, e, wf, test=False):
+    def __init__(self, h, e, wf, test=False, b1=None, b2=None):
         """
         Parameters
         ----------
@@ -26,10 +26,15 @@ class SymbolicDipole():
             Wave functions, columns: bands, rows: wf and complex conjugate
         test : bool
             Wheter to perform a orthonormality and eigensystem test
+        b1, b2 : np.ndarray
+            reciprocal lattice vector
         """
 
         if (test):
             symbolic_checks.eigensystem(h, e, wf)
+
+        self.b1 = b1
+        self.b2 = b2
 
         self.kx = sp.Symbol('kx')
         self.ky = sp.Symbol('ky')
@@ -44,15 +49,14 @@ class SymbolicDipole():
         # Numpy function and function arguments
         self.Axf = utility.to_numpy_function(self.Ax)
         self.Ayf = utility.to_numpy_function(self.Ay)
-        self.fkwargs = None
 
     def __fields(self):
         dUx = sp.diff(self.U, self.kx)
         dUy = sp.diff(self.U, self.ky)
         return sp.I*self.U_h * dUx, sp.I*self.U_h * dUy
 
-    def evaluate(self, kx, ky, b1=None, b2=None,
-                 hamiltonian_radius=None, eps=10e-10, **fkwargs):
+    def evaluate(self, kx, ky, hamiltonian_radius=None, eps=10e-10,
+                 **fkwargs):
         """
         Transforms the symbolic expression for the
         berry connection/dipole moment matrix to an expression
@@ -60,17 +64,15 @@ class SymbolicDipole():
         If the reciprocal lattice vectors are given it creates a
         Brillouin zone around the symbolic Hamiltonian. Values outside
         of that zone are returned as np.nan.
-        The interpolation ratio (ipr) determines the part of the Brillouin
+        The hamiltonian_radius determines the part of the Brillouin
         zone the symbolic Hamiltonian can be defined on. Outside of
         this region up to the Brillouin zone boundaries the
         dipole moments will be interpolated by constant values
-        given at the edge of the small zone given by ipr*b1 + ipr*b2
+        given at the edge of the small zone given by h_r*b1 + h_r*b2
 
         Parameters:
         kx, ky : np.ndarray
             array of all point combinations
-        b1, b2 : np.ndarray
-            reciprocal lattice vector
         hamiltonian_radius : float
             kspace radius of a disk where the hamiltonian is defined
         fkwargs :
@@ -78,54 +80,31 @@ class SymbolicDipole():
         eps : float
             Threshold to identify Brillouin zone boundary points
         """
+
         hamr = hamiltonian_radius
-        self.fkwargs = fkwargs
 
-        if (b1 is None or b2 is None):
+        if (self.b1 is None or self.b2 is None):
             # Evaluate all kpoints without BZ
-            return kx, ky, self.Axf(kx=kx, ky=ky, **self.fkwargs), \
-                self.Ayf(kx=kx, ky=ky, **self.fkwargs)
+            return self.Axf(kx=kx, ky=ky, **fkwargs), \
+                self.Ayf(kx=kx, ky=ky, **fkwargs)
         else:
-            # Add a BZ and cut off
-            return self.__add_brillouin(kx, ky, b1, b2, hamr, eps)
+            # Add a BZ and throw error if kx, ky is outside
+            Ax_return = bzeval(self.Axf, kx, ky, self.b1, self.b2,
+                               hamiltonian_radius=hamr, eps=eps,
+                               **fkwargs)
+            Ay_return = bzeval(self.Ayf, kx, ky, self.b1, self.b2,
+                               hamiltonian_radius=hamr, eps=eps,
+                               **fkwargs)
 
-    def __add_brillouin(self, kx, ky, b1, b2, hamr, eps):
-        """
-        Evaluate the dipole moments in a given Brillouin zone.
-        """
-        kxbz, kybz = lattice.in_brillouin(kx, ky, b1, b2, eps)
+            return Ax_return, Ay_return
 
-        if (hamr is None):
-            # No hamiltonian region given -> defined in entire bz
-            return kxbz, kybz, self.Axf(kx=kxbz, ky=kybz, **self.fkwargs), \
-                self.Ayf(kx=kxbz, ky=kybz, **self.fkwargs)
-        else:
-            # Regular evaluation in circle
-            Ax = np.empty(self.Ax.shape + (kxbz.size, ), dtype=np.complex)
-            Ay = np.empty(self.Ay.shape + (kybz.size, ), dtype=np.complex)
-
-            inci = kxbz**2 + kybz**2 <= hamr**2
-            Ax[:, :, inci] = self.Axf(kx=kxbz[inci], ky=kybz[inci],
-                                      **self.fkwargs)
-            Ay[:, :, inci] = self.Ayf(kx=kxbz[inci], ky=kybz[inci],
-                                      **self.fkwargs)
-
-            # Interpolation out of circle
-            outci = np.logical_not(inci)
-            Axi, Ayi = self.__interpolate(kxbz[outci], kybz[outci],
-                                          b1, b2, hamr)
-            Ax[:, :, outci] = Axi
-            Ay[:, :, outci] = Ayi
-
-            return kxbz, kybz, Ax, Ay
-
-    def __interpolate(self, kx, ky, b1, b2, hamr):
+    def __interpolate(self, kx, ky, hamr):
         """
         Interpolates everything outside of the Hamiltonian radius with
         a linear function, between the two circle ends
         """
         kmat = np.vstack((kx, ky))
-        kx_b, ky_b = lattice.intersect_brillouin(kx, ky, b1, b2)
+        kx_b, ky_b = lattice.intersect_brillouin(kx, ky, self.b1, self.b2)
 
         # interpolation length from circle edge over boundary to
         # circle edge
@@ -146,5 +125,3 @@ class SymbolicDipole():
         Ayi = (1-pos/ipl)*Aci_f_y + (pos/ipl)*Aci_b_y
 
         return Axi, Ayi
-
-

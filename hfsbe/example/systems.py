@@ -135,7 +135,6 @@ class TwoBandSystems():
         Qi-Wu-Zhang model of a 2D Chern insulator
         """
         n = order+1
-        
         m = sp.Symbol('m')
 
         ho = 0
