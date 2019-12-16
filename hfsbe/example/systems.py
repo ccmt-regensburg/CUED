@@ -2,7 +2,7 @@ import sympy as sp
 
 
 class TwoBandSystems():
-    def __init__(self, e_deriv=False):
+    def __init__(self, e_deriv=False, no_norm=False):
         """
         Returns the symbolic Hamiltonian and wave function of the system with
         the given name.
@@ -11,8 +11,11 @@ class TwoBandSystems():
         ----------
         e_deriv : bool
             Wheter to additionally return energy and wave function derivatives
+        no_norm : bool
+            Wheter to return the wave functions without normalisation
         """
         self.e_deriv = e_deriv
+        self.no_norm = no_norm
         self.so = sp.Matrix([[1, 0], [0, 1]])
         self.sx = sp.Matrix([[0, 1], [1, 0]])
         self.sy = sp.Matrix([[0, -sp.I], [sp.I, 0]])
@@ -47,7 +50,11 @@ class TwoBandSystems():
         wfc = sp.Matrix([hz + esoc, hx + sp.I*hy])
         wfv_h = sp.Matrix([-hx - sp.I*hy, hz + esoc])
         wfc_h = sp.Matrix([hz + esoc, hx - sp.I*hy])
-        norm = sp.sqrt(2*(esoc + hz)*esoc)
+
+        if self.no_norm:
+            norm = 1
+        else:
+            norm = sp.sqrt(2*(esoc + hz)*esoc)
 
         U = (wfv/norm).row_join(wfc/norm)
         U_h = (wfv_h/norm).T.col_join((wfc_h/norm).T)
@@ -94,15 +101,11 @@ class TwoBandSystems():
 
         return self.__eigensystem(ho, hx, hy, hz)
 
-    def bite(self):
+    def bite(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
+             A=sp.Symbol('A'), R=sp.Symbol('R')):
         """
         Bismuth Telluride topological insulator model
         """
-        C0 = sp.Symbol('C0')
-        C2 = sp.Symbol('C2')
-        A = sp.Symbol('A')
-        R = sp.Symbol('R')
-
         ho = C0 + C2*(self.kx**2 + self.ky**2)
         hx = A*self.ky
         hy = -A*self.kx
@@ -127,16 +130,24 @@ class TwoBandSystems():
 
         return self.__eigensystem(ho, hx, hy, hz)
 
-    def qwz(self):
+    def qwz(self, order=sp.oo):
         """
         Qi-Wu-Zhang model of a 2D Chern insulator
         """
+        n = order+1
+        
         m = sp.Symbol('m')
 
         ho = 0
-        hx = sp.sin(self.kx)
-        hy = sp.sin(self.ky)
-        hz = m - sp.cos(self.kx) - sp.cos(self.ky)
+        if order == sp.oo:
+            hx = sp.sin(self.kx)
+            hy = sp.sin(self.ky)
+            hz = m - sp.cos(self.kx) - sp.cos(self.ky)
+        else:
+            hx = sp.sin(self.kx).series(n=n).removeO()
+            hy = sp.sin(self.ky).series(n=n).removeO()
+            hz = m - sp.cos(self.kx).series(n=n).removeO()\
+                - sp.cos(self.ky).series(n=n).removeO()
 
         return self.__eigensystem(ho, hx, hy, hz)
 
