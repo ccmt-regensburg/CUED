@@ -37,6 +37,7 @@ class TwoBandSystem():
             self.__wave_function()
 
         self.ef = list_to_numpy_functions(self.e)
+        self.ederivf = list_to_numpy_functions(self.ederiv)
 
     def __hamiltonian(self):
         return self.ho*self.so + self.hx*self.sx + self.hy*self.sy \
@@ -197,7 +198,7 @@ class Qwz(TwoBandSystem):
             hz = m - sp.cos(self.kx).series(n=n).removeO()\
                 - sp.cos(self.ky).series(n=n).removeO()
 
-            super().__init__(ho, hx, hy, hz)
+        super().__init__(ho, hx, hy, hz)
 
 
 class Dirac(TwoBandSystem):
