@@ -1,72 +1,69 @@
 import sympy as sp
+import numpy as np
+
+from hfsbe.brillouin import evaluate_energy as evalene
+from hfsbe.utility import list_to_numpy_functions
 
 
-class TwoBandSystems():
-    def __init__(self, e_deriv=False, no_norm=False):
+class TwoBandSystem():
+    so = sp.Matrix([[1, 0], [0, 1]])
+    sx = sp.Matrix([[0, 1], [1, 0]])
+    sy = sp.Matrix([[0, -sp.I], [sp.I, 0]])
+    sz = sp.Matrix([[1, 0], [0, -1]])
+
+    kx = sp.Symbol('kx')
+    ky = sp.Symbol('ky')
+
+    def __init__(self, ho, hx, hy, hz):
         """
-        Returns the symbolic Hamiltonian and wave function of the system with
-        the given name.
-
-        Parameters
-        ----------
-        e_deriv : bool
-            Wheter to additionally return energy and wave function derivatives
-        no_norm : bool
-            Wheter to return the wave functions without normalisation
-        """
-        self.e_deriv = e_deriv
-        self.no_norm = no_norm
-        self.so = sp.Matrix([[1, 0], [0, 1]])
-        self.sx = sp.Matrix([[0, 1], [1, 0]])
-        self.sy = sp.Matrix([[0, -sp.I], [sp.I, 0]])
-        self.sz = sp.Matrix([[1, 0], [0, -1]])
-
-        self.kx = sp.Symbol('kx')
-        self.ky = sp.Symbol('ky')
-
-    def __eigensystem(self, ho, hx, hy, hz):
-        """
-        Generic form of Hamiltonian, energies and wave functions in a two band
-        Hamiltonian.
+        Generates the symbolic Hamiltonian, wave functions and
+        energies.
 
         Parameters
         ----------
         ho, hx, hy, hz : Symbol
-            Hamiltonian part proportional to unit, sx, sy, sz Pauli matrix
-
-        Returns
-        -------
-        h : Symbol
-            Hamiltonian of the system
-        e : list of Symbol
-            Valence and conduction band energies; in this order
-        wf : list of Symbol
-            Valence and conduction band wave function; in this order
+            Wheter to additionally return energy and wave function derivatives
         """
-        esoc = sp.sqrt(hx**2 + hy**2 + hz**2)
-        e = [ho - esoc, ho + esoc]
 
-        wfv = sp.Matrix([-hx + sp.I*hy, hz + esoc])
-        wfc = sp.Matrix([hz + esoc, hx + sp.I*hy])
-        wfv_h = sp.Matrix([-hx - sp.I*hy, hz + esoc])
-        wfc_h = sp.Matrix([hz + esoc, hx - sp.I*hy])
+        self.ho = ho
+        self.hx = hx
+        self.hy = hy
+        self.hz = hz
 
-        if self.no_norm:
-            norm = 1
-        else:
-            norm = sp.sqrt(2*(esoc + hz)*esoc)
+        self.e = self.__energies()
+        self.ederiv = self.__ederiv(self.e)
+        self.h = self.__hamiltonian()
+        self.U, self.U_h, self.U_no_norm, self.U_h_no_norm = \
+            self.__wave_function()
+
+        self.ef = list_to_numpy_functions(self.e)
+
+    def __hamiltonian(self):
+        return self.ho*self.so + self.hx*self.sx + self.hy*self.sy \
+            + self.hz*self.sz
+
+    def __wave_function(self):
+        esoc = sp.sqrt(self.hx**2 + self.hy**2 + self.hz**2)
+        wfv = sp.Matrix([-self.hx + sp.I*self.hy, self.hz + esoc])
+        wfc = sp.Matrix([self.hz + esoc, self.hx + sp.I*self.hy])
+        wfv_h = sp.Matrix([-self.hx - sp.I*self.hy, self.hz + esoc])
+        wfc_h = sp.Matrix([self.hz + esoc, self.hx - sp.I*self.hy])
+
+        norm = sp.sqrt(2*(esoc + self.hz)*esoc)
 
         U = (wfv/norm).row_join(wfc/norm)
         U_h = (wfv_h/norm).T.col_join((wfc_h/norm).T)
 
-        h = ho*self.so + hx*self.sx + hy*self.sy + hz*self.sz
+        U_no_norm = (wfv).row_join(wfc)
+        U_h_no_norm = (wfv_h).T.col_join(wfc_h.T)
 
-        if self.e_deriv:
-            return h, e, [U, U_h], self.__e_deriv(e)
-        else:
-            return h, e, [U, U_h]
+        return U, U_h, U_no_norm, U_h_no_norm
 
-    def __e_deriv(self, energies):
+    def __energies(self):
+        esoc = sp.sqrt(self.hx**2 + self.hy**2 + self.hz**2)
+        return self.ho - esoc, self.ho + esoc
+
+    def __ederiv(self, energies):
         """
         Calculate the derivative of the energy bands. Order is
         de[0]/dkx, de[0]/dky, de[1]/dkx, de[1]/dky
@@ -77,10 +74,58 @@ class TwoBandSystems():
             ed.append(sp.diff(e, self.ky))
         return ed
 
-    def haldane(self):
+    def eigensystem(self):
         """
-        Haldane model
+        Generic form of Hamiltonian, energies and wave functions in a two band
+        Hamiltonian.
+
+        Returns
+        -------
+        h : Symbol
+            Hamiltonian of the system
+        e : list of Symbol
+            Valence and conduction band energies; in this order
+        [U, U_h] : list of Symbol
+            Valence and conduction band wave function; in this order
+        ederiv : list of Symbol
+            List of energy derivatives
         """
+
+        return self.h, self.e, [self.U, self.U_h], self.ederiv
+
+    def evaluate(self, kx, ky, b1=None, b2=None,
+                 hamiltonian_radius=None, eps=10e-10, **fkwargs):
+
+        # Evaluate all kpoints without BZ
+        if (b1 is None or b2 is None):
+            return self.ef[0](kx=kx, ky=ky, **fkwargs), \
+                self.ef[1](kx=kx, ky=ky, **fkwargs)
+
+        if (hamiltonian_radius is None):
+            hamr = None
+        else:
+            hamr = hamiltonian_radius
+            # Transform hamr from percentage to length
+            minlen = np.min((np.linalg.norm(b1),
+                             np.linalg.norm(b2)))
+            hamr *= minlen/2
+
+        # Add a BZ and throw error if kx, ky is outside
+        evalence = evalene(self.ef[0], kx, ky, b1, b2,
+                           hamr=hamr, eps=eps,
+                           **fkwargs)
+        econduct = evalene(self.ef[1], kx, ky, b1, b2,
+                           hamr=hamr, eps=eps,
+                           **fkwargs)
+
+        return evalence, econduct
+
+
+class Haldane(TwoBandSystem):
+    """
+    Haldane model
+    """
+    def __init__(self):
         t1 = sp.Symbol('t1')
         t2 = sp.Symbol('t2')
         m = sp.Symbol('m')
@@ -99,26 +144,28 @@ class TwoBandSystems():
         hy = t1*(sp.sin(a1)+sp.sin(a2)+sp.sin(a3))
         hz = m - 2*t2*sp.sin(phi)*(sp.sin(b1)+sp.sin(b2)+sp.sin(b3))
 
-        return self.__eigensystem(ho, hx, hy, hz)
+        super().__init__(ho, hx, hy, hz)
 
-    def bite(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
-             A=sp.Symbol('A'), R=sp.Symbol('R')):
-        """
-        Bismuth Telluride topological insulator model
-        """
+
+class Bite(TwoBandSystem):
+    """
+    Bismuth Telluride topological insulator model
+    """
+    def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
+                 A=sp.Symbol('A'), R=sp.Symbol('R')):
         ho = C0 + C2*(self.kx**2 + self.ky**2)
         hx = A*self.ky
         hy = -A*self.kx
         hz = 2*R*(self.kx**3 - 3*self.kx*self.ky**2)
 
-        return self.__eigensystem(ho, hx, hy, hz)
+        super().__init__(ho, hx, hy, hz)
 
-    def graphene(self):
-        """
-        Graphene model
-        """
-        t = sp.Symbol('t')
 
+class Graphene(TwoBandSystem):
+    """
+    Graphene model
+    """
+    def __init__(self, t=sp.Symbol('t')):
         a1 = self.kx
         a2 = -1/2 * self.kx + sp.sqrt(3)/2 * self.ky
         a3 = -1/2 * self.kx - sp.sqrt(3)/2 * self.ky
@@ -128,12 +175,14 @@ class TwoBandSystems():
         hy = t*(sp.sin(a1)+sp.sin(a2)+sp.sin(a3))
         hz = 0
 
-        return self.__eigensystem(ho, hx, hy, hz)
+        super().__init__(ho, hx, hy, hz)
 
-    def qwz(self, order=sp.oo):
-        """
-        Qi-Wu-Zhang model of a 2D Chern insulator
-        """
+
+class Qwz(TwoBandSystem):
+    """
+    Qi-Wu-Zhang model of a 2D Chern insulator
+    """
+    def __init__(self, order=sp.oo):
         n = order+1
         m = sp.Symbol('m')
 
@@ -148,17 +197,18 @@ class TwoBandSystems():
             hz = m - sp.cos(self.kx).series(n=n).removeO()\
                 - sp.cos(self.ky).series(n=n).removeO()
 
-        return self.__eigensystem(ho, hx, hy, hz)
+            super().__init__(ho, hx, hy, hz)
 
-    def dirac(self):
-        """
-        Generic Dirac cone Hamiltonian
-        """
-        m = sp.Symbol('m')
+
+class Dirac(TwoBandSystem):
+    """
+    Generic Dirac cone Hamiltonian
+    """
+    def __init__(self, m=sp.Symbol('m')):
 
         ho = 0
         hx = self.kx
         hy = self.ky
         hz = m
 
-        return self.__eigensystem(ho, hx, hy, hz)
+        super().__init__(ho, hx, hy, hz)

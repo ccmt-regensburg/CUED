@@ -1,35 +1,34 @@
 import numpy as np
 
-import hfsbe.example as ex
-import hfsbe.dipole as dip
-import hfsbe.utility as utility
+from hfsbe.example import Bite
+from hfsbe.dipole import SymbolicDipole
+from hfsbe.brillouin import in_brillouin
 
 import plot_dipoles as plt
 
 
-# b1 = 2*np.pi*np.array([1/np.sqrt(3), 1])
-# b2 = 2*np.pi*np.array([1/np.sqrt(3), -1])
-b1 = 2*0.04*np.array([1, 0])
-b2 = 2*0.04*np.array([0, 1])
+b1 = 2*np.pi*np.array([1/np.sqrt(3), 1])
+b2 = 2*np.pi*np.array([1/np.sqrt(3), -1])
 
-kinit = np.linspace(-0.04, 0.04, 20)
+kinit = np.linspace(-2*np.pi, 2*np.pi, 50)
 
 # Full kgrid
 kmat = np.array(np.meshgrid(kinit, kinit)).T.reshape(-1, 2)
 kx = kmat[:, 0]
 ky = kmat[:, 1]
 
+inbz = in_brillouin(kx, ky, b1, b2)
+kx = kx[inbz]
+ky = ky[inbz]
+
 A = 2.8413
 R = -3.3765
 
-h, ef, wf, ediff = ex.TwoBandSystems(e_deriv=True).bite(A=A, R=R)
+bite = Bite()
+h, ef, wf, ediff = bite.eigensystem()
 
-evdx = utility.to_numpy_function(ediff[0])
-evdy = utility.to_numpy_function(ediff[1])
+dip = SymbolicDipole(h, ef, wf)
 
-dipole = dip.SymbolicDipole(h, ef, wf)
+Ax, Ay = dip.evaluate(kx, ky, b1=b1, b2=b2, A=A, R=R)#, hamiltonian_radius=1.0)
 
-kxbz, kybz, Ax, Ay = dipole.evaluate(kx, ky, b1=b1, b2=b2,
-                                     hamiltonian_radius=None)
-
-plt.plot_dipoles(kxbz, kybz, Ax, Ay, 'BiTe')
+plt.plot_dipoles(kx, ky, Ax, Ay, 'BiTe')
