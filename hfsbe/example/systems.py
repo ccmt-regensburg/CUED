@@ -1,7 +1,7 @@
 import sympy as sp
 import numpy as np
 
-from hfsbe.brillouin import evaluate_energy as evalene
+from hfsbe.brillouin import evaluate_scalar_field
 from hfsbe.utility import list_to_numpy_functions
 
 
@@ -14,7 +14,7 @@ class TwoBandSystem():
     kx = sp.Symbol('kx')
     ky = sp.Symbol('ky')
 
-    def __init__(self, ho, hx, hy, hz):
+    def __init__(self, ho, hx, hy, hz, b1=None, b2=None):
         """
         Generates the symbolic Hamiltonian, wave functions and
         energies.
@@ -24,6 +24,8 @@ class TwoBandSystem():
         ho, hx, hy, hz : Symbol
             Wheter to additionally return energy and wave function derivatives
         """
+        self.b1 = b1
+        self.b2 = b2
 
         self.ho = ho
         self.hx = hx
@@ -62,7 +64,7 @@ class TwoBandSystem():
 
     def __energies(self):
         esoc = sp.sqrt(self.hx**2 + self.hy**2 + self.hz**2)
-        return self.ho - esoc, self.ho + esoc
+        return [self.ho - esoc, self.ho + esoc]
 
     def __ederiv(self, energies):
         """
@@ -94,39 +96,64 @@ class TwoBandSystem():
 
         return self.h, self.e, [self.U, self.U_h], self.ederiv
 
-    def evaluate(self, kx, ky, b1=None, b2=None,
-                 hamiltonian_radius=None, eps=10e-10, **fkwargs):
-
+    def evaluate_energy(self, kx, ky, hamiltonian_radius=None,
+                        eps=10e-10, **fkwargs):
+        energies = []
         # Evaluate all kpoints without BZ
-        if (b1 is None or b2 is None):
-            return self.ef[0](kx=kx, ky=ky, **fkwargs), \
-                self.ef[1](kx=kx, ky=ky, **fkwargs)
+        if (self.b1 is None or self.b2 is None):
+            for ef in self.ef:
+                energies.append(ef(kx=kx, ky=ky, **fkwargs))
+            return energies
 
         if (hamiltonian_radius is None):
             hamr = None
         else:
             hamr = hamiltonian_radius
             # Transform hamr from percentage to length
-            minlen = np.min((np.linalg.norm(b1),
-                             np.linalg.norm(b2)))
+            minlen = np.min((np.linalg.norm(self.b1),
+                             np.linalg.norm(self.b2)))
             hamr *= minlen/2
 
         # Add a BZ and throw error if kx, ky is outside
-        evalence = evalene(self.ef[0], kx, ky, b1, b2,
-                           hamr=hamr, eps=eps,
-                           **fkwargs)
-        econduct = evalene(self.ef[1], kx, ky, b1, b2,
-                           hamr=hamr, eps=eps,
-                           **fkwargs)
+        for ef in self.ef:
+            buff = evaluate_scalar_field(ef, kx, ky, self.b1, self.b2,
+                                         hamr=hamr, eps=eps,
+                                         **fkwargs)
+            energies.append(buff)
 
-        return evalence, econduct
+        return energies
+
+    def evaluate_ederivative(self, kx, ky, hamiltonian_radius=None,
+                             eps=10e-10, **fkwargs):
+        ederivat = []
+        # Evaluate all kpoints without BZ
+        if (self.b1 is None or self.b2 is None):
+            for ederivf in self.ederivf:
+                ederivat.append(ederivf(kx=kx, ky=ky, **fkwargs))
+            return ederivat
+
+        if (hamiltonian_radius is None):
+            hamr = None
+        else:
+            hamr = hamiltonian_radius
+            # Transform hamr from percentage to length
+            minlen = np.min((np.linalg.norm(self.b1),
+                             np.linalg.norm(self.b2)))
+            hamr *= minlen/2
+
+        for ederivf in self.ederivf:
+            buff = evaluate_scalar_field(ederivf, kx, ky, self.b1, self.b2,
+                                         hamr, eps=eps, **fkwargs)
+            ederivat.append(buff)
+
+        return ederivat
 
 
 class Haldane(TwoBandSystem):
     """
     Haldane model
     """
-    def __init__(self):
+    def __init__(self, b1=None, b2=None):
         t1 = sp.Symbol('t1')
         t2 = sp.Symbol('t2')
         m = sp.Symbol('m')
@@ -145,28 +172,42 @@ class Haldane(TwoBandSystem):
         hy = t1*(sp.sin(a1)+sp.sin(a2)+sp.sin(a3))
         hz = m - 2*t2*sp.sin(phi)*(sp.sin(b1)+sp.sin(b2)+sp.sin(b3))
 
-        super().__init__(ho, hx, hy, hz)
+        super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
 
 
-class Bite(TwoBandSystem):
+class BiTe(TwoBandSystem):
     """
     Bismuth Telluride topological insulator model
     """
     def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
-                 A=sp.Symbol('A'), R=sp.Symbol('R')):
+                 A=sp.Symbol('A'), R=sp.Symbol('R'),
+                 b1=None, b2=None, default_params=False):
+        if (default_params):
+            A, R, C0, C2 = self.__set_default_params()
+
         ho = C0 + C2*(self.kx**2 + self.ky**2)
         hx = A*self.ky
         hy = -A*self.kx
         hz = 2*R*(self.kx**3 - 3*self.kx*self.ky**2)
 
-        super().__init__(ho, hx, hy, hz)
+        super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
+
+    def __set_default_params(self):
+        """
+        Default BiTe system parameters in atomic units
+        """
+        A = 0.1974
+        R = 11.06
+        C0 = -0.008269
+        C2 = 6.5242
+        return A, R, C0, C2
 
 
 class Graphene(TwoBandSystem):
     """
     Graphene model
     """
-    def __init__(self, t=sp.Symbol('t')):
+    def __init__(self, t=sp.Symbol('t'), b1=None, b2=None):
         a1 = self.kx
         a2 = -1/2 * self.kx + sp.sqrt(3)/2 * self.ky
         a3 = -1/2 * self.kx - sp.sqrt(3)/2 * self.ky
@@ -176,14 +217,14 @@ class Graphene(TwoBandSystem):
         hy = t*(sp.sin(a1)+sp.sin(a2)+sp.sin(a3))
         hz = 0
 
-        super().__init__(ho, hx, hy, hz)
+        super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
 
 
-class Qwz(TwoBandSystem):
+class QWZ(TwoBandSystem):
     """
     Qi-Wu-Zhang model of a 2D Chern insulator
     """
-    def __init__(self, order=sp.oo):
+    def __init__(self, order=sp.oo, b1=None, b2=None):
         n = order+1
         m = sp.Symbol('m')
 
@@ -198,18 +239,18 @@ class Qwz(TwoBandSystem):
             hz = m - sp.cos(self.kx).series(n=n).removeO()\
                 - sp.cos(self.ky).series(n=n).removeO()
 
-        super().__init__(ho, hx, hy, hz)
+        super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
 
 
 class Dirac(TwoBandSystem):
     """
     Generic Dirac cone Hamiltonian
     """
-    def __init__(self, m=sp.Symbol('m')):
+    def __init__(self, m=sp.Symbol('m'), b1=None, b2=None):
 
         ho = 0
         hx = self.kx
         hy = self.ky
         hz = m
 
-        super().__init__(ho, hx, hy, hz)
+        super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)

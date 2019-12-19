@@ -2,7 +2,7 @@ import sympy as sp
 import numpy as np
 
 import hfsbe.check.symbolic_checks as symbolic_checks
-from hfsbe.brillouin import evaluate_dipole as evaldip
+from hfsbe.brillouin import evaluate_matrix_field as evaldip
 from hfsbe.utility import to_numpy_function
 
 
@@ -14,7 +14,7 @@ class SymbolicDipole():
 
     """
 
-    def __init__(self, h, e, wf, test=False):
+    def __init__(self, h, e, wf, test=False, b1=None, b2=None):
         """
         Parameters
         ----------
@@ -29,6 +29,8 @@ class SymbolicDipole():
         b1, b2 : np.ndarray
             reciprocal lattice vector
         """
+        self.b1 = b1
+        self.b2 = b2
 
         if (test):
             symbolic_checks.eigensystem(h, e, wf)
@@ -52,8 +54,8 @@ class SymbolicDipole():
         dUy = sp.diff(self.U, self.ky)
         return sp.I*self.U_h * dUx, sp.I*self.U_h * dUy
 
-    def evaluate(self, kx, ky, b1=None, b2=None,
-                 hamiltonian_radius=None, eps=10e-10, **fkwargs):
+    def evaluate(self, kx, ky, hamiltonian_radius=None, eps=10e-10,
+                 **fkwargs):
         """
         Transforms the symbolic expression for the
         berry connection/dipole moment matrix to an expression
@@ -78,7 +80,7 @@ class SymbolicDipole():
             Threshold to identify Brillouin zone boundary points
         """
         # Evaluate all kpoints without BZ
-        if (b1 is None or b2 is None):
+        if (self.b1 is None or self.b2 is None):
             return self.Axf(kx=kx, ky=ky, **fkwargs), \
                 self.Ayf(kx=kx, ky=ky, **fkwargs)
 
@@ -87,15 +89,15 @@ class SymbolicDipole():
         else:
             hamr = hamiltonian_radius
             # Transform hamr from percentage to length
-            minlen = np.min((np.linalg.norm(b1),
-                             np.linalg.norm(b2)))
+            minlen = np.min((np.linalg.norm(self.b1),
+                             np.linalg.norm(self.b2)))
             hamr *= minlen/2
 
         # Add a BZ and throw error if kx, ky is outside
-        Ax_return = evaldip(self.Axf, kx, ky, b1, b2,
+        Ax_return = evaldip(self.Axf, kx, ky, self.b1, self.b2,
                             hamr=hamr, eps=eps,
                             **fkwargs)
-        Ay_return = evaldip(self.Ayf, kx, ky, b1, b2,
+        Ay_return = evaldip(self.Ayf, kx, ky, self.b1, self.b2,
                             hamr=hamr, eps=eps,
                             **fkwargs)
 

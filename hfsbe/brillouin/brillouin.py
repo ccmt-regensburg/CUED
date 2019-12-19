@@ -49,18 +49,16 @@ def intersect_brillouin(kx, ky, b1, b2):
     with the brillouin zone boundary
     """
     a1, a2 = to_reciprocal_coordinates(kx, ky, b1, b2)
-    try:
-        beta = np.array([0.5/a1, 0.5/a2])
-    except RuntimeWarning:
-        pass
+
+    beta = np.array([0.5/a1, 0.5/a2])
 
     beta = np.min(np.abs(beta), axis=0)
     a1_b, a2_b = beta*a1, beta*a2
     return to_cartesian_coordinates(a1_b, a2_b, b1, b2)
 
 
-def evaluate_dipole(dipole, kx, ky, b1, b2, hamr=None,
-                    eps=10e-10, **fkwargs):
+def evaluate_matrix_field(dipole, kx, ky, b1, b2, hamr=None,
+                          eps=10e-10, **fkwargs):
     """
     Evaluates a function on a given kgrid defined by kx and ky.
     If hamiltonian_radius is given it will interpolate the function
@@ -93,8 +91,8 @@ def evaluate_dipole(dipole, kx, ky, b1, b2, hamr=None,
         return result
 
 
-def evaluate_energy(energy, kx, ky, b1, b2, hamr=None,
-                    eps=10e-10, **fkwargs):
+def evaluate_scalar_field(energy, kx, ky, b1, b2, hamr=None,
+                          eps=10e-10, **fkwargs):
     """
     Evaluates a function on a given kgrid defined by kx and ky.
     If hamiltonian_radius is given it will interpolate the function
@@ -112,7 +110,7 @@ def evaluate_energy(energy, kx, ky, b1, b2, hamr=None,
         # Regular evaluation in circle
         # # Find output shape of the function
 
-        result = np.empty((kx.size, ), dtype=np.complex)
+        result = np.empty((kx.size, ), dtype=np.float)
 
         inci = kx**2 + ky**2 <= hamr**2
         result[inci] = energy(kx=kx[inci], ky=ky[inci], **fkwargs)
@@ -128,7 +126,8 @@ def evaluate_energy(energy, kx, ky, b1, b2, hamr=None,
 def __interpolate(function, kx, ky, b1, b2, hamr, **fkwargs):
     """
     Interpolates everything outside of the Hamiltonian radius with
-    a linear function, between the two circle ends
+    a linear function, between the two circle ends and the brillouin
+    zone boundary as periodicity.
     """
     # Find intersection points with inner hamiltonian circle
     kmat = np.vstack((kx, ky))
