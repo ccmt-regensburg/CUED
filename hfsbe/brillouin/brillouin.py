@@ -19,8 +19,7 @@ def to_cartesian_coordinates(a1, a2, b1, b2):
 
 def in_brillouin(kx, ky, b1, b2, eps=10e-10):
     """
-    Return a collection of k-points inside a BZ determined
-    by the reciprocal lattice vectors b1, b2
+    Return a boolean array showing which points are inside the BZ
 
     Parameters:
     kx, ky : np.ndarray
@@ -31,8 +30,8 @@ def in_brillouin(kx, ky, b1, b2, eps=10e-10):
         Threshold to include/exclude boundary points
 
     Returns:
-    kx, ky : np.ndarray
-        array of all kpoints inside Brillouin zone
+    is_inzone : np.ndarray
+        Boolean array. True is inside, False is outside
     """
     a1, a2 = to_reciprocal_coordinates(kx, ky, b1, b2)
 
@@ -57,6 +56,31 @@ def intersect_brillouin(kx, ky, b1, b2):
     return to_cartesian_coordinates(a1_b, a2_b, b1, b2)
 
 
+def map_into_brillouin(kx, ky, b1, b2, eps=10e-10):
+    """
+    Check if k-points are inside the BZ. If not translate them into
+    the BZ by using periodicity
+
+    kx, ky : np.ndarray
+        array of all point combinations
+    b1, b2 : np.ndarray
+        reciprocal lattice vector
+    eps : float
+        Threshold to include/exclude boundary points
+
+    Returns:
+    kx, ky : np.ndarray
+        Array of all kpoints inside the BZ
+    """
+    a1, a2 = to_reciprocal_coordinates(kx, ky, b1, b2)
+    a1[np.greater_equal(a1, 0.5-eps)] -= 1
+    a2[np.greater_equal(a2, 0.5-eps)] -= 1
+    a1[np.less_equal(a1, -0.5+eps)] += 1
+    a2[np.less_equal(a2, -0.5+eps)] += 1
+
+    return to_cartesian_coordinates(a1, a2, b1, b2)
+
+
 def evaluate_matrix_field(dipole, kx, ky, b1, b2, hamr=None,
                           eps=10e-10, **fkwargs):
     """
@@ -65,9 +89,10 @@ def evaluate_matrix_field(dipole, kx, ky, b1, b2, hamr=None,
     linearly from the given radius to the edge of the Brillouin zone
     to the other end of the circle.
     """
-    if (not np.all(in_brillouin(kx, ky, b1, b2, eps))):
-        raise RuntimeError("Error: Not all the given k-points are inside "
-                           "the Brillouin zone.")
+    kx, ky = map_into_brillouin(kx, ky, b1, b2, eps)
+    # if (not np.all(in_brillouin(kx, ky, b1, b2, eps))):
+    #     raise RuntimeError("Error: Not all the given k-points are inside "
+    #                        "the Brillouin zone.")
 
     if (hamr is None):
         # No hamiltonian region given -> defined in entire bz
@@ -99,9 +124,10 @@ def evaluate_scalar_field(energy, kx, ky, b1, b2, hamr=None,
     linearly from the given radius to the edge of the Brillouin zone
     to the other end of the circle.
     """
-    if (not np.all(in_brillouin(kx, ky, b1, b2, eps))):
-        raise RuntimeError("Error: Not all the given k-points are inside "
-                           "the Brillouin zone.")
+    kx, ky = map_into_brillouin(kx, ky, b1, b2, eps)
+    # if (not np.all(in_brillouin(kx, ky, b1, b2, eps))):
+    #     raise RuntimeError("Error: Not all the given k-points are inside "
+    #                        "the Brillouin zone.")
 
     if (hamr is None):
         # No hamiltonian region given -> defined in entire bz
