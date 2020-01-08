@@ -32,30 +32,47 @@ class TwoBandSystem():
         self.hy = hy
         self.hz = hz
 
-        self.e = self.__energies()
-        self.ederiv = self.__ederiv(self.e)
-        self.h = self.__hamiltonian()
-        self.U, self.U_h, self.U_no_norm, self.U_h_no_norm = \
-            self.__wave_function()
 
-        self.ef = list_to_numpy_functions(self.e)
-        self.ederivf = list_to_numpy_functions(self.ederiv)
 
     def __hamiltonian(self):
         return self.ho*self.so + self.hx*self.sx + self.hy*self.sy \
             + self.hz*self.sz
 
-    def __wave_function(self):
+    def __wave_function(self, gidx=None):
         esoc = sp.sqrt(self.hx**2 + self.hy**2 + self.hz**2)
-        wfv = sp.Matrix([-self.hx + sp.I*self.hy, self.hz + esoc])
-        wfc = sp.Matrix([self.hz + esoc, self.hx + sp.I*self.hy])
-        wfv_h = sp.Matrix([-self.hx - sp.I*self.hy, self.hz + esoc])
-        wfc_h = sp.Matrix([self.hz + esoc, self.hx - sp.I*self.hy])
 
-        norm = sp.sqrt(2*(esoc + self.hz)*esoc)
+        if (gidx is None):
+            wfv = sp.Matrix([-self.hx + sp.I*self.hy, self.hz + esoc])
+            wfc = sp.Matrix([self.hz + esoc, self.hx + sp.I*self.hy])
+            wfv_h = sp.Matrix([-self.hx - sp.I*self.hy, self.hz + esoc])
+            wfc_h = sp.Matrix([self.hz + esoc, self.hx - sp.I*self.hy])
+            normv = sp.sqrt(2*(esoc + self.hz)*esoc)
+            normc = sp.sqrt(2*(esoc + self.hz)*esoc)
+        elif (gidx == 0):
+            wfv = sp.Matrix([1,
+                             (self.hx+sp.I*self.hy)/(self.hz-esoc)])
+            wfc = sp.Matrix([1,
+                             (self.hx+sp.I*self.hy)/(self.hz+esoc)])
+            wfv_h = sp.Matrix([1,
+                               (self.hx-sp.I*self.hy)/(self.hz-esoc)])
+            wfc_h = sp.Matrix([1,
+                               (self.hx-sp.I*self.hy)/(self.hz-esoc)])
+            normv = sp.sqrt(wfv_h.dot(wfv))
+            normc = sp.sqrt(wfc_h.dot(wfc))
+        elif (gidx == 1):
+            wfv = sp.Matrix([-(self.hx-sp.I*self.hy)/(self.hz+esoc),
+                             1])
+            wfc = sp.Matrix([-(self.hx-sp.I*self.hy)/(self.hz-esoc),
+                             1])
+            wfv_h = sp.Matrix([-(self.hx+sp.I*self.hy)/(self.hz+esoc),
+                               1])
+            wfc_h = sp.Matrix([-(self.hx+sp.I*self.hy)/(self.hz-esoc),
+                               1])
+            normv = sp.sqrt(wfv_h.dot(wfv))
+            normc = sp.sqrt(wfc_h.dot(wfc))
 
-        U = (wfv/norm).row_join(wfc/norm)
-        U_h = (wfv_h/norm).T.col_join((wfc_h/norm).T)
+        U = (wfv/normv).row_join(wfc/normc)
+        U_h = (wfv_h/normv).T.col_join((wfc_h/normc).T)
 
         U_no_norm = (wfv).row_join(wfc)
         U_h_no_norm = (wfv_h).T.col_join(wfc_h.T)
@@ -77,7 +94,7 @@ class TwoBandSystem():
             ed.append(sp.diff(e, self.ky))
         return ed
 
-    def eigensystem(self):
+    def eigensystem(self, gidx=None):
         """
         Generic form of Hamiltonian, energies and wave functions in a two band
         Hamiltonian.
@@ -92,8 +109,19 @@ class TwoBandSystem():
             Valence and conduction band wave function; in this order
         ederiv : list of Symbol
             List of energy derivatives
+        gidx : integer
+            gauge index, index of the wave function entry where it is
+            kept at 1. Can either be 0, 1 or None for the default
         """
+        self.e = self.__energies()
+        self.ederiv = self.__ederiv(self.e)
+        self.h = self.__hamiltonian()
+        self.U, self.U_h, self.U_no_norm, self.U_h_no_norm = \
+            self.__wave_function(gidx=gidx)
 
+        self.ef = list_to_numpy_functions(self.e)
+        self.ederivf = list_to_numpy_functions(self.ederiv)
+        
         return self.h, self.e, [self.U, self.U_h], self.ederiv
 
     def evaluate_energy(self, kx, ky, hamiltonian_radius=None,

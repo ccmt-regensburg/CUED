@@ -51,6 +51,6 @@ def plot_dipoles(kxbz, kybz, Ax, Ay, title):
     ax[1, 1].set_title(r"$\Im(\vec{A}_{" + '+' + '-' + "})$")
     ax[1, 1].axis('equal')
     plt.colorbar(dipimag, ax=ax[1, 1])
-    
+
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.show()
