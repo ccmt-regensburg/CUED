@@ -198,7 +198,6 @@ class BiTe(TwoBandSystem):
         hz = 2*R*(self.kx**3 - 3*self.kx*self.ky**2)
 
         if (kcut is not None):
-            kcut = circle_radius_in_brillouin(kcut, b1, b2)
             ratio = (self.kx**2 + self.ky**2)/kcut**2
             cutfactor = 1/(1+(ratio))
             hz *= cutfactor
