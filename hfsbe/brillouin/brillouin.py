@@ -81,6 +81,14 @@ def map_into_brillouin(kx, ky, b1, b2, eps=10e-10):
     return to_cartesian_coordinates(a1, a2, b1, b2)
 
 
+def circle_radius_in_brillouin(hamr, b1, b2):
+    # Transform hamr from percentage to length
+    minlen = np.min((np.linalg.norm(b1),
+                     np.linalg.norm(b2)))
+    hamr *= minlen/2
+    return hamr
+
+
 def evaluate_matrix_field(dipole, kx, ky, b1, b2, hamr=None,
                           eps=10e-10, **fkwargs):
     """
@@ -98,6 +106,7 @@ def evaluate_matrix_field(dipole, kx, ky, b1, b2, hamr=None,
         # No hamiltonian region given -> defined in entire bz
         return dipole(kx=kx, ky=ky, **fkwargs)
     else:
+        hamr = circle_radius_in_brillouin(hamr, b1, b2)
         # Regular evaluation in circle
         # # Find output shape of the function
         testval = dipole(kx=kx[0], ky=ky[0], **fkwargs)
@@ -133,9 +142,9 @@ def evaluate_scalar_field(energy, kx, ky, b1, b2, hamr=None,
         # No hamiltonian region given -> defined in entire bz
         return energy(kx=kx, ky=ky, **fkwargs)
     else:
+        hamr = circle_radius_in_brillouin(hamr, b1, b2)
         # Regular evaluation in circle
         # # Find output shape of the function
-
         result = np.empty((kx.size, ), dtype=np.float)
 
         inci = kx**2 + ky**2 <= hamr**2

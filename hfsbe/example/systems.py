@@ -1,7 +1,6 @@
 import sympy as sp
-import numpy as np
 
-from hfsbe.brillouin import evaluate_scalar_field
+from hfsbe.brillouin import evaluate_scalar_field, circle_radius_in_brillouin
 from hfsbe.utility import list_to_numpy_functions
 
 
@@ -31,8 +30,6 @@ class TwoBandSystem():
         self.hx = hx
         self.hy = hy
         self.hz = hz
-
-
 
     def __hamiltonian(self):
         return self.ho*self.so + self.hx*self.sx + self.hy*self.sy \
@@ -121,10 +118,10 @@ class TwoBandSystem():
 
         self.ef = list_to_numpy_functions(self.e)
         self.ederivf = list_to_numpy_functions(self.ederiv)
-        
+
         return self.h, self.e, [self.U, self.U_h], self.ederiv
 
-    def evaluate_energy(self, kx, ky, hamiltonian_radius=None,
+    def evaluate_energy(self, kx, ky, hamr=None,
                         eps=10e-10, **fkwargs):
         energies = []
         # Evaluate all kpoints without BZ
@@ -132,15 +129,6 @@ class TwoBandSystem():
             for ef in self.ef:
                 energies.append(ef(kx=kx, ky=ky, **fkwargs))
             return energies
-
-        if (hamiltonian_radius is None):
-            hamr = None
-        else:
-            hamr = hamiltonian_radius
-            # Transform hamr from percentage to length
-            minlen = np.min((np.linalg.norm(self.b1),
-                             np.linalg.norm(self.b2)))
-            hamr *= minlen/2
 
         # Add a BZ and throw error if kx, ky is outside
         for ef in self.ef:
@@ -151,7 +139,7 @@ class TwoBandSystem():
 
         return energies
 
-    def evaluate_ederivative(self, kx, ky, hamiltonian_radius=None,
+    def evaluate_ederivative(self, kx, ky, hamr=None,
                              eps=10e-10, **fkwargs):
         ederivat = []
         # Evaluate all kpoints without BZ
@@ -159,15 +147,6 @@ class TwoBandSystem():
             for ederivf in self.ederivf:
                 ederivat.append(ederivf(kx=kx, ky=ky, **fkwargs))
             return ederivat
-
-        if (hamiltonian_radius is None):
-            hamr = None
-        else:
-            hamr = hamiltonian_radius
-            # Transform hamr from percentage to length
-            minlen = np.min((np.linalg.norm(self.b1),
-                             np.linalg.norm(self.b2)))
-            hamr *= minlen/2
 
         for ederivf in self.ederivf:
             buff = evaluate_scalar_field(ederivf, kx, ky, self.b1, self.b2,
@@ -209,7 +188,7 @@ class BiTe(TwoBandSystem):
     """
     def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
                  A=sp.Symbol('A'), R=sp.Symbol('R'),
-                 b1=None, b2=None, default_params=False):
+                 kcut=None, b1=None, b2=None, default_params=False):
         if (default_params):
             A, R, C0, C2 = self.__set_default_params()
 
@@ -217,6 +196,12 @@ class BiTe(TwoBandSystem):
         hx = A*self.ky
         hy = -A*self.kx
         hz = 2*R*(self.kx**3 - 3*self.kx*self.ky**2)
+
+        if (kcut is not None):
+            kcut = circle_radius_in_brillouin(kcut, b1, b2)
+            ratio = (self.kx**2 + self.ky**2)/kcut**2
+            cutfactor = 1/(1+(ratio))
+            hz *= cutfactor
 
         super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
 

@@ -54,7 +54,7 @@ class SymbolicDipole():
         dUy = sp.diff(self.U, self.ky)
         return sp.I*self.U_h * dUx, sp.I*self.U_h * dUy
 
-    def evaluate(self, kx, ky, hamiltonian_radius=None, eps=10e-10,
+    def evaluate(self, kx, ky, hamr=None, eps=10e-10,
                  **fkwargs):
         """
         Transforms the symbolic expression for the
@@ -72,8 +72,9 @@ class SymbolicDipole():
         Parameters:
         kx, ky : np.ndarray
             array of all point combinations
-        hamiltonian_radius : float
-            kspace radius of a disk where the hamiltonian is defined
+        hamr : float
+            percentace of reciprocal lattice vectors where
+            hamiltonian is defined
         fkwargs :
             keyword arguments passed to the symbolic expression
         eps : float
@@ -83,15 +84,6 @@ class SymbolicDipole():
         if (self.b1 is None or self.b2 is None):
             return self.Axf(kx=kx, ky=ky, **fkwargs), \
                 self.Ayf(kx=kx, ky=ky, **fkwargs)
-
-        if (hamiltonian_radius is None):
-            hamr = None
-        else:
-            hamr = hamiltonian_radius
-            # Transform hamr from percentage to length
-            minlen = np.min((np.linalg.norm(self.b1),
-                             np.linalg.norm(self.b2)))
-            hamr *= minlen/2
 
         # Add a BZ and throw error if kx, ky is outside
         Ax_return = evaldip(self.Axf, kx, ky, self.b1, self.b2,
