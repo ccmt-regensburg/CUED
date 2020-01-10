@@ -1,6 +1,6 @@
 import sympy as sp
 
-from hfsbe.brillouin import evaluate_scalar_field, circle_radius_in_brillouin
+from hfsbe.brillouin import evaluate_scalar_field
 from hfsbe.utility import list_to_numpy_functions
 
 
@@ -187,7 +187,7 @@ class BiTe(TwoBandSystem):
     Bismuth Telluride topological insulator model
     """
     def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
-                 A=sp.Symbol('A'), R=sp.Symbol('R'),
+                 A=sp.Symbol('A'), R=sp.Symbol('R'), vf=None,
                  kcut=None, b1=None, b2=None, default_params=False):
         if (default_params):
             A, R, C0, C2 = self.__set_default_params()
@@ -201,6 +201,9 @@ class BiTe(TwoBandSystem):
             ratio = (self.kx**2 + self.ky**2)/kcut**2
             cutfactor = 1/(1+(ratio))
             hz *= cutfactor
+
+        if (vf is not None):
+            hz += vf*sp.sqrt(self.kx**2 + self.ky**2)
 
         super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
 

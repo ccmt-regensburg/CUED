@@ -1,9 +1,12 @@
 import sympy as sp
 import numpy as np
+import matplotlib.pyplot as plt
 
 import hfsbe.check.symbolic_checks as symbolic_checks
 from hfsbe.brillouin import evaluate_matrix_field as evaldip
 from hfsbe.utility import to_numpy_function
+
+plt.rcParams['figure.figsize'] = [12, 15]
 
 
 class SymbolicDipole():
@@ -49,6 +52,10 @@ class SymbolicDipole():
         self.Axf = to_numpy_function(self.Ax)
         self.Ayf = to_numpy_function(self.Ay)
 
+        # Evaluated fields
+        self.Ax_eval = None
+        self.Ay_eval = None
+
     def __fields(self):
         dUx = sp.diff(self.U, self.kx)
         dUy = sp.diff(self.U, self.ky)
@@ -86,11 +93,80 @@ class SymbolicDipole():
                 self.Ayf(kx=kx, ky=ky, **fkwargs)
 
         # Add a BZ and throw error if kx, ky is outside
-        Ax_return = evaldip(self.Axf, kx, ky, self.b1, self.b2,
-                            hamr=hamr, eps=eps,
-                            **fkwargs)
-        Ay_return = evaldip(self.Ayf, kx, ky, self.b1, self.b2,
-                            hamr=hamr, eps=eps,
-                            **fkwargs)
+        self.Ax_eval = evaldip(self.Axf, kx, ky, self.b1, self.b2,
+                               hamr=hamr, eps=eps,
+                               **fkwargs)
+        self.Ay_eval = evaldip(self.Ayf, kx, ky, self.b1, self.b2,
+                               hamr=hamr, eps=eps,
+                               **fkwargs)
 
-        return Ax_return, Ay_return
+        return self.Ax_eval, self.Ay_eval
+
+    def plot_dipoles(self, kx, ky, vidx=0, cidx=1,
+                     title="Dipole fields"):
+        """
+        Plot two dipole fields corresponding to the indices vidx and
+        cidx
+
+        Parameters:
+        kx, ky : np.ndarray
+            array of all point combinations (same as evaluate)
+        vidx, cidx : int
+            Index of the first and second band to evaluate
+        title: string
+            Title of the plot
+        """
+
+        Axe, Aye = self.Ax_eval, self.Ay_eval
+
+        if (Axe is None or Aye is None):
+            raise RuntimeError("Error: The dipole fields first need to"
+                               "be evaluated on a kgrid to plot them. "
+                               " Call evaluate before plotting.")
+
+        Axe_r, Axe_i = np.real(Axe), np.imag(Axe)
+        Aye_r, Aye_i = np.real(Aye), np.imag(Aye)
+
+        norm_r = np.sqrt(Axe_r**2 + Aye_r**2)
+        norm_i = np.sqrt(Axe_i**2 + Aye_i**2)
+
+        Axe_rn, Axe_in = Axe_r/norm_r, Axe_i/norm_i
+        Aye_rn, Aye_in = Aye_r/norm_r, Aye_i/norm_i
+
+        fig, ax = plt.subplots(2, 2)
+        fig.suptitle(title, fontsize=16)
+
+        valence = ax[0, 0].quiver(kx, ky,
+                                  Axe_rn[vidx, vidx], Aye_rn[vidx, vidx],
+                                  np.log(norm_r[vidx, vidx]),
+                                  angles='xy', cmap='cool')
+        ax[0, 0].set_title(r"$\Re(\vec{A}_{" + '-' + '-' + "})$")
+        ax[0, 0].axis('equal')
+        plt.colorbar(valence, ax=ax[0, 0])
+
+        conduct = ax[0, 1].quiver(kx, ky,
+                                  Axe_rn[cidx, cidx], Aye_rn[cidx, cidx],
+                                  np.log(norm_r[cidx, cidx]),
+                                  angles='xy', cmap='cool')
+        ax[0, 1].set_title(r"$\Re(\vec{A}_{" + '+' + '+' + "})$")
+        ax[0, 1].axis('equal')
+        plt.colorbar(conduct, ax=ax[0, 1])
+
+        dipreal = ax[1, 0].quiver(kx, ky,
+                                  Axe_rn[cidx, vidx], Aye_rn[cidx, vidx],
+                                  np.log(norm_r[cidx, vidx]),
+                                  angles='xy', cmap='cool')
+        ax[1, 0].set_title(r"$\Re(\vec{A}_{" + '+' + '-' + "})$")
+        ax[1, 0].axis('equal')
+        plt.colorbar(dipreal, ax=ax[1, 0])
+
+        dipimag = ax[1, 1].quiver(kx, ky,
+                                  Axe_in[cidx, vidx], Aye_in[cidx, vidx],
+                                  np.log(norm_i[cidx, vidx]),
+                                  angles='xy', cmap='cool')
+        ax[1, 1].set_title(r"$\Im(\vec{A}_{" + '+' + '-' + "})$")
+        ax[1, 1].axis('equal')
+        plt.colorbar(dipimag, ax=ax[1, 1])
+
+        fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plt.show()

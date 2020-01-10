@@ -26,12 +26,13 @@ R = 11.06
 C0 = -0.008269
 C2 = 6.5242
 
-bite = BiTe(default_params=True, kcut=None)
+bite = BiTe(default_params=True, kcut=0.11)
 h, ef, wf, ediff = bite.eigensystem()
 bite.evaluate_energy(kx, ky)
 bite.evaluate_ederivative(kx, ky)
 dip = SymbolicDipole(h, ef, wf, b1=b1, b2=b2)
 
 Ax, Ay = dip.evaluate(kx, ky, hamr=0.5)
+dip.plot_dipoles(kx, ky)
 
 plt.plot_dipoles(kx, ky, Ax, Ay, 'BiTe')
