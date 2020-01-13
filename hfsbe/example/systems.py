@@ -1,4 +1,6 @@
 import sympy as sp
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  # NOQA
 
 from hfsbe.brillouin import evaluate_scalar_field
 from hfsbe.utility import list_to_numpy_functions
@@ -30,6 +32,21 @@ class TwoBandSystem():
         self.hx = hx
         self.hy = hy
         self.hz = hz
+
+        # Get set when eigensystem is called
+        self.e = None             # Symbolic energies
+        self.ederiv = None        # Symbolic energy derivatives
+        self.h = None             # Full symbolic Hamiltonian
+        self.U = None             # Normalised eigenstates
+        self.U_h = None           # Hermitian conjugate
+        self.U_no_norm = None     # Unnormalised eigenstates
+        self.U_h_no_norm = None   # Hermitian conjugate
+
+        self.ef = None          # Energies as callable functions
+        self.ederivf = None     # Energy derivatives as callable func.
+
+        # Get set when evaluate_energy is called
+        self.e_eval = None
 
     def __hamiltonian(self):
         return self.ho*self.so + self.hx*self.sx + self.hy*self.sy \
@@ -123,21 +140,21 @@ class TwoBandSystem():
 
     def evaluate_energy(self, kx, ky, hamr=None,
                         eps=10e-10, **fkwargs):
-        energies = []
         # Evaluate all kpoints without BZ
+        self.e_eval = []
         if (self.b1 is None or self.b2 is None):
             for ef in self.ef:
-                energies.append(ef(kx=kx, ky=ky, **fkwargs))
-            return energies
+                self.e_eval.append(ef(kx=kx, ky=ky, **fkwargs))
+            return self.e_eval
 
         # Add a BZ and throw error if kx, ky is outside
         for ef in self.ef:
             buff = evaluate_scalar_field(ef, kx, ky, self.b1, self.b2,
                                          hamr=hamr, eps=eps,
                                          **fkwargs)
-            energies.append(buff)
+            self.e_eval.append(buff)
 
-        return energies
+        return self.e_eval
 
     def evaluate_ederivative(self, kx, ky, hamr=None,
                              eps=10e-10, **fkwargs):
@@ -154,6 +171,13 @@ class TwoBandSystem():
             ederivat.append(buff)
 
         return ederivat
+
+    def plot_energies_3d(self, kx, ky, title="Energies"):
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+        ax.plot_surface(kx, ky, self.e_eval[0])
+
+        plt.show()
 
 
 class Haldane(TwoBandSystem):
@@ -187,7 +211,7 @@ class BiTe(TwoBandSystem):
     Bismuth Telluride topological insulator model
     """
     def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
-                 A=sp.Symbol('A'), R=sp.Symbol('R'), vf=None,
+                 A=sp.Symbol('A'), R=sp.Symbol('R'), vf=sp.Symbol('vf'),
                  kcut=None, b1=None, b2=None, default_params=False):
         if (default_params):
             A, R, C0, C2 = self.__set_default_params()
@@ -202,8 +226,7 @@ class BiTe(TwoBandSystem):
             cutfactor = 1/(1+(ratio))
             hz *= cutfactor
 
-        if (vf is not None):
-            hz += vf*sp.sqrt(self.kx**2 + self.ky**2)
+        hz += vf*sp.sqrt(self.kx**2 + self.ky**2)
 
         super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
 

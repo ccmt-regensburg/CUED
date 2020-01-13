@@ -3,8 +3,6 @@ import numpy as np
 from hfsbe.example import BiTe
 from hfsbe.dipole import SymbolicDipole
 
-import plot_dipoles as plt
-
 
 b1 = 2*np.pi*np.array([1/np.sqrt(3), 1])
 b2 = 2*np.pi*np.array([1/np.sqrt(3), -1])
@@ -21,18 +19,22 @@ ky = kmat[:, 1]
 # kx = kx[inbz]
 # ky = ky[inbz]
 
-A = 0.1974
-R = 11.06
-C0 = -0.008269
-C2 = 6.5242
+# A = 0.1974
+# R = 11.06
+# C0 = -0.008269
+# C2 = 6.5242
+A = 0
+R = 0
+C0 = 0
+C2 = 0
 
-bite = BiTe(default_params=True, kcut=0.11)
+bite = BiTe(C0=C0, C2=C2, A=A, R=R, vf=0.5)
 h, ef, wf, ediff = bite.eigensystem()
 bite.evaluate_energy(kx, ky)
 bite.evaluate_ederivative(kx, ky)
+# bite.plot_energies_3d(kx, ky)
 dip = SymbolicDipole(h, ef, wf, b1=b1, b2=b2)
+Ax, Ay = dip.evaluate(kx, ky)
+# dip.plot_dipoles(kx, ky)
 
-Ax, Ay = dip.evaluate(kx, ky, hamr=0.5)
-dip.plot_dipoles(kx, ky)
-
-plt.plot_dipoles(kx, ky, Ax, Ay, 'BiTe')
+# plt.plot_dipoles(kx, ky, Ax, Ay, 'BiTe')
