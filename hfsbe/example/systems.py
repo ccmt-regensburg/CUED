@@ -1,3 +1,4 @@
+import numpy as np
 import sympy as sp
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # NOQA
@@ -173,9 +174,19 @@ class TwoBandSystem():
         return ederivat
 
     def plot_energies_3d(self, kx, ky, title="Energies"):
+        kx = kx[:, np.newaxis]
+        ky = ky[:, np.newaxis]
         fig = plt.figure()
         ax = fig.gca(projection='3d')
-        ax.plot_surface(kx, ky, self.e_eval[0])
+        ax.plot_surface(kx, ky.T, self.e_eval[0][:, np.newaxis])
+        ax.plot_surface(kx, ky.T, self.e_eval[1][:, np.newaxis])
+        # ax.contour(
+
+        plt.title(title)
+        plt.show()
+
+    def plot_energies_contour(self, kx, ky, title="Energies"):
+        fig = plt.figure()
 
         plt.show()
 
