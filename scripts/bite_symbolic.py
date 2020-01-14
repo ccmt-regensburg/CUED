@@ -33,6 +33,7 @@ h, ef, wf, ediff = bite.eigensystem(gidx=1)
 # bite.plot_energies_contour(kx, ky)
 dip = SymbolicDipole(h, ef, wf)
 Ax, Ay = dip.evaluate(kx, ky)
+print(np.shape(Ax))
 # dip.plot_dipoles(kx, ky)
 
 # plt.plot_dipoles(kx, ky, Ax, Ay, 'BiTe')
