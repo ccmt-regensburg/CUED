@@ -5,6 +5,8 @@ from mpl_toolkits.mplot3d import Axes3D  # NOQA
 from hfsbe.brillouin import evaluate_scalar_field
 from hfsbe.utility import list_to_numpy_functions
 
+plt.rcParams['figure.figsize'] = [12, 15]
+
 
 class TwoBandSystem():
     so = sp.Matrix([[1, 0], [0, 1]])
@@ -47,6 +49,7 @@ class TwoBandSystem():
 
         # Get set when evaluate_energy is called
         self.e_eval = None
+        self.ederiv_eval = None
 
     def __hamiltonian(self):
         return self.ho*self.so + self.hx*self.sx + self.hy*self.sy \
@@ -158,21 +161,21 @@ class TwoBandSystem():
 
     def evaluate_ederivative(self, kx, ky, hamr=None,
                              eps=10e-10, **fkwargs):
-        ederivat = []
+        self.ederiv_eval = []
         # Evaluate all kpoints without BZ
         if (self.b1 is None or self.b2 is None):
             for ederivf in self.ederivf:
-                ederivat.append(ederivf(kx=kx, ky=ky, **fkwargs))
-            return ederivat
+                self.ederiv_eval.append(ederivf(kx=kx, ky=ky, **fkwargs))
+            return self.ederiv_eval
 
         for ederivf in self.ederivf:
             buff = evaluate_scalar_field(ederivf, kx, ky, self.b1, self.b2,
                                          hamr, eps=eps, **fkwargs)
-            ederivat.append(buff)
+            self.ederiv_eval.append(buff)
 
-        return ederivat
+        return self.ederiv_eval
 
-    def plot_energies_3d(self, kx, ky, title="Energies"):
+    def plot_bands_3d(self, kx, ky, title="Energies"):
         fig = plt.figure()
         ax = fig.gca(projection='3d')
         ax.plot_trisurf(kx, ky.T, self.e_eval[0])
@@ -181,10 +184,37 @@ class TwoBandSystem():
         plt.title(title)
         plt.show()
 
-    def plot_energies_contour(self, kx, ky, title="Energies"):
+    def plot_bands_contour(self, kx, ky, title="Energies"):
 
         plt.scatter(kx, ky, s=2, c=self.e_eval[0], cmap="cool")
 
+        plt.show()
+
+    def plot_bands_derivative(self, kx, ky, title="Energy derivatives",
+                              vname=None, cname=None):
+        if (vname is None):
+            vname = 0
+        if (cname is None):
+            cname = 1
+
+        devx = self.ederiv_eval[0]
+        devy = self.ederiv_eval[1]
+        decx = self.ederiv_eval[2]
+        decy = self.ederiv_eval[3]
+
+        fig, ax = plt.subplots(1, 2)
+        fig.suptitle(title, fontsize=16)
+        ax[0].quiver(kx, ky, devx, devy, angles='xy')
+        ax[0].set_title(r"$\mathbf{\nabla}_k \epsilon_" +
+                        str(vname) + "$")
+        ax[0].axis('equal')
+
+        ax[1].quiver(kx, ky, decx, decy, angles='xy')
+        ax[1].set_title(r"$\mathbf{\nabla}_k \epsilon_" +
+                        str(cname) + "$")
+        ax[1].axis('equal')
+
+        fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         plt.show()
 
 

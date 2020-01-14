@@ -10,7 +10,7 @@ b1 = 2*np.pi*np.array([1/np.sqrt(3), 1])
 b2 = 2*np.pi*np.array([1/np.sqrt(3), -1])
 
 # kinit = np.linspace(-2*np.pi, 2*np.pi, 50)
-N = 500
+N = 20
 kinit = np.linspace(-0.10, 0.10, N)
 
 # Full kgrid
@@ -22,27 +22,17 @@ ky = kmat[:, 1]
 # kx = kx[inbz]
 # ky = ky[inbz]
 
-A = 0
-R = 1
-C0 = 0
-C2 = 0
-vf = 1
-
-bite_one = BiTe(A=0, R=1, C0=0, C2=0, vf=1)
+bite_one = BiTe(A=0, R=11.06, C0=0, C2=0, vf=0.1974)
 h_one, ef_one, wf_one, ediff_one = bite_one.eigensystem(gidx=1)
 
-bite_two = BiTe(A=1, R=1, C0=0, C2=0, vf=0)
+bite_two = BiTe(A=0.1974, R=11.06, C0=0, C2=0, vf=0)
 h_two, ef_two, wf_two, ediff_two = bite_two.eigensystem(gidx=1)
 
-sp.pprint(ediff_one[0])
-sp.pprint(ediff_two[0])
+one_eval = bite_one.evaluate_ederivative(kx, ky)
+two_eval = bite_two.evaluate_ederivative(kx, ky)
 
-
-ediff_one_eval = bite_one.evaluate_ederivative(kinit, np.zeros(N))
-ediff_two_eval = bite_two.evaluate_ederivative(kinit, np.zeros(N))
-plt.plot(kinit, ediff_one_eval[0])
-plt.plot(kinit, ediff_two_eval[0])
-plt.show()
+bite_one.plot_bands_derivative(kx, ky)
+bite_two.plot_bands_derivative(kx, ky)
 # bite.evaluate_energy(kx, ky)
 # bite.evaluate_ederivative(kx, ky)
 # bite.plot_energies_3d(kx, ky)
