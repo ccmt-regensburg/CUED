@@ -1,3 +1,4 @@
+import numpy as np
 import sympy as sp
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # NOQA
@@ -204,15 +205,22 @@ class TwoBandSystem():
 
         fig, ax = plt.subplots(1, 2)
         fig.suptitle(title, fontsize=16)
-        ax[0].quiver(kx, ky, devx, devy, angles='xy')
+
+        norm_valence = np.sqrt(devx**2 + devy**2)
+        valence = ax[0].quiver(kx, ky, devx, devy, norm_valence,
+                               angles='xy', cmap='cool')
         ax[0].set_title(r"$\mathbf{\nabla}_k \epsilon_" +
                         str(vname) + "$")
         ax[0].axis('equal')
+        plt.colorbar(valence, ax=ax[0])
 
-        ax[1].quiver(kx, ky, decx, decy, angles='xy')
+        norm_conduct = np.sqrt(decx**2 + decy**2)
+        conduct = ax[1].quiver(kx, ky, decx, decy, norm_conduct,
+                               angles='xy', cmap='cool')
         ax[1].set_title(r"$\mathbf{\nabla}_k \epsilon_" +
                         str(cname) + "$")
         ax[1].axis('equal')
+        plt.colorbar(conduct, ax=ax[1])
 
         fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         plt.show()
