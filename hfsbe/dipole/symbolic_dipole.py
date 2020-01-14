@@ -25,7 +25,7 @@ class SymbolicDipole():
             Hamiltonian of the system
         e : np.ndarray of Symbol
             Band energies of the system
-        wf : np.ndarray of Symbol
+n        wf : np.ndarray of Symbol
             Wave functions, columns: bands, rows: wf and complex conjugate
         test : bool
             Wheter to perform a orthonormality and eigensystem test
@@ -103,7 +103,7 @@ class SymbolicDipole():
         return self.Ax_eval, self.Ay_eval
 
     def plot_dipoles(self, kx, ky, vidx=0, cidx=1,
-                     title="Dipole fields"):
+                     title="Dipole fields", vname=None, cname=None):
         """
         Plot two dipole fields corresponding to the indices vidx and
         cidx
@@ -115,7 +115,13 @@ class SymbolicDipole():
             Index of the first and second band to evaluate
         title: string
             Title of the plot
+        vname, cname:
+            Index names of the valence and conduction band
         """
+        if (vname is None):
+            vname = vidx
+        if (cname is None):
+            cname = cidx
 
         Axe, Aye = self.Ax_eval, self.Ay_eval
 
@@ -140,7 +146,7 @@ class SymbolicDipole():
                                   Axe_rn[vidx, vidx], Aye_rn[vidx, vidx],
                                   np.log(norm_r[vidx, vidx]),
                                   angles='xy', cmap='cool')
-        ax[0, 0].set_title(r"$\Re(\vec{A}_{" + str(vidx) + str(vidx) + "})$")
+        ax[0, 0].set_title(r"$\Re(\vec{A}_{" + str(vname) + str(vname) + "})$")
         ax[0, 0].axis('equal')
         plt.colorbar(valence, ax=ax[0, 0])
 
@@ -148,7 +154,7 @@ class SymbolicDipole():
                                   Axe_rn[cidx, cidx], Aye_rn[cidx, cidx],
                                   np.log(norm_r[cidx, cidx]),
                                   angles='xy', cmap='cool')
-        ax[0, 1].set_title(r"$\Re(\vec{A}_{" + str(cidx) + str(cidx) + "})$")
+        ax[0, 1].set_title(r"$\Re(\vec{A}_{" + str(cname) + str(cname) + "})$")
         ax[0, 1].axis('equal')
         plt.colorbar(conduct, ax=ax[0, 1])
 
@@ -156,7 +162,7 @@ class SymbolicDipole():
                                   Axe_rn[cidx, vidx], Aye_rn[cidx, vidx],
                                   np.log(norm_r[cidx, vidx]),
                                   angles='xy', cmap='cool')
-        ax[1, 0].set_title(r"$\Re(\vec{A}_{" + str(cidx) + str(vidx) + "})$")
+        ax[1, 0].set_title(r"$\Re(\vec{A}_{" + str(cname) + str(vname) + "})$")
         ax[1, 0].axis('equal')
         plt.colorbar(dipreal, ax=ax[1, 0])
 
@@ -164,7 +170,7 @@ class SymbolicDipole():
                                   Axe_in[cidx, vidx], Aye_in[cidx, vidx],
                                   np.log(norm_i[cidx, vidx]),
                                   angles='xy', cmap='cool')
-        ax[1, 1].set_title(r"$\Im(\vec{A}_{" + str(cidx) + str(vidx) + "})$")
+        ax[1, 1].set_title(r"$\Im(\vec{A}_{" + str(cname) + str(vname) + "})$")
         ax[1, 1].axis('equal')
         plt.colorbar(dipimag, ax=ax[1, 1])
 

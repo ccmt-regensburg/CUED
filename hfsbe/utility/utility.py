@@ -9,7 +9,14 @@ def to_numpy_function(sf):
     Converts a simple sympy function/matrix to a function/matrix
     callable by numpy
     """
-    return sp.lambdify(sf.free_symbols, sf, "numpy")
+    symbols = sf.free_symbols
+
+    # This is to readd kx and ky if they got removed in the
+    # simplification process. The variable will just return 0's
+    # if used.
+
+    symbols.update([sp.Symbol('kx'), sp.Symbol('ky')])
+    return sp.lambdify(symbols, sf, "numpy")
 
 
 def list_to_numpy_functions(sf):
