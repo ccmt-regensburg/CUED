@@ -10,8 +10,8 @@ def to_numpy_function(sf):
     Converts a simple sympy function/matrix to a function/matrix
     callable by numpy
     """
-    kx = sp.Symbol('kx')
-    ky = sp.Symbol('ky')
+    kx = sp.Symbol('kx', real=True)
+    ky = sp.Symbol('ky', real=True)
     symbols = sf.free_symbols
 
     # This is to readd kx and ky if they got removed in the

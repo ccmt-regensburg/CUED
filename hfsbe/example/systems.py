@@ -15,8 +15,8 @@ class TwoBandSystem():
     sy = sp.Matrix([[0, -sp.I], [sp.I, 0]])
     sz = sp.Matrix([[1, 0], [0, -1]])
 
-    kx = sp.Symbol('kx')
-    ky = sp.Symbol('ky')
+    kx = sp.Symbol('kx', real=True)
+    ky = sp.Symbol('ky', real=True)
 
     def __init__(self, ho, hx, hy, hz, b1=None, b2=None):
         """
@@ -257,15 +257,48 @@ class BiTe(TwoBandSystem):
     Bismuth Telluride topological insulator model
     """
     def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
-                 A=sp.Symbol('A'), R=sp.Symbol('R'), vf=sp.Symbol('vf'),
+                 A=sp.Symbol('A'), R=sp.Symbol('R'),
                  kcut=None, b1=None, b2=None, default_params=False):
         if (default_params):
-            A, R, C0, C2, vf = self.__set_default_params()
+            A, R, C0, C2 = self.__set_default_params()
 
         ho = C0 + C2*(self.kx**2 + self.ky**2)
         hx = A*self.ky
         hy = -A*self.kx
         hz = 2*R*(self.kx**3 - 3*self.kx*self.ky**2)
+
+        if (kcut is not None):
+            ratio = (self.kx**2 + self.ky**2)/kcut**2
+            cutfactor = 1/(1+(ratio))
+            hz *= cutfactor
+
+        super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
+
+    def __set_default_params(self):
+        """
+        Default BiTe system parameters in atomic units
+        """
+        A = 0.1974
+        R = 11.06
+        C0 = -0.008269
+        C2 = 6.5242
+        return A, R, C0, C2
+
+
+class BiTeTrivial(TwoBandSystem):
+    """
+    Bismuth Telluride topological insulator model
+    """
+    def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
+                 R=sp.Symbol('R'), vf=sp.Symbol('vf'),
+                 kcut=None, b1=None, b2=None, default_params=False):
+        if (default_params):
+            A, R, C0, C2, vf = self.__set_default_params()
+
+        ho = C0 + C2*(self.kx**2 + self.ky**2)
+        hx = 0
+        hy = 0
+        hz = 2*R*sp.Abs(self.kx**3 - 3*self.kx*self.ky**2)
 
         if (kcut is not None):
             ratio = (self.kx**2 + self.ky**2)/kcut**2
@@ -280,12 +313,11 @@ class BiTe(TwoBandSystem):
         """
         Default BiTe system parameters in atomic units
         """
-        A = 0.1974
         R = 11.06
         C0 = -0.008269
         C2 = 6.5242
-        vf = 0
-        return A, R, C0, C2, vf
+        vf = 0.1974
+        return R, C0, C2, vf
 
 
 class Graphene(TwoBandSystem):

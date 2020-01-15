@@ -4,6 +4,7 @@ import sympy as sp
 import matplotlib.pyplot as plt
 
 from hfsbe.example import BiTe
+from hfsbe.example import BiTeTrivial
 # from hfsbe.dipole import SymbolicDipole
 
 b1 = 2*np.pi*np.array([1/np.sqrt(3), 1])
@@ -22,10 +23,10 @@ ky = kmat[:, 1]
 # kx = kx[inbz]
 # ky = ky[inbz]
 
-bite_one = BiTe(A=0, R=11.06, C0=0, C2=0, vf=0.1974)
+bite_one = BiTe(A=0.1974, R=11.06, C0=0, C2=0)
 h_one, ef_one, wf_one, ediff_one = bite_one.eigensystem(gidx=1)
 
-bite_two = BiTe(A=0.1974, R=11.06, C0=0, C2=0, vf=0)
+bite_two = BiTeTrivial(R=11.06, C0=0, C2=0, vf=0.1974)
 h_two, ef_two, wf_two, ediff_two = bite_two.eigensystem(gidx=1)
 
 one_eval = bite_one.evaluate_ederivative(kx, ky)
