@@ -38,8 +38,8 @@ n        wf : np.ndarray of Symbol
         if (test):
             symbolic_checks.eigensystem(h, e, wf)
 
-        self.kx = sp.Symbol('kx')
-        self.ky = sp.Symbol('ky')
+        self.kx = sp.Symbol('kx', real=True)
+        self.ky = sp.Symbol('ky', real=True)
 
         self.h = h
         self.e = e
@@ -89,8 +89,9 @@ n        wf : np.ndarray of Symbol
         """
         # Evaluate all kpoints without BZ
         if (self.b1 is None or self.b2 is None):
-            return self.Axf(kx=kx, ky=ky, **fkwargs), \
-                self.Ayf(kx=kx, ky=ky, **fkwargs)
+            self.Ax_eval = self.Axf(kx=kx, ky=ky, **fkwargs)
+            self.Ay_eval = self.Ayf(kx=kx, ky=ky, **fkwargs)
+            return self.Ax_eval, self.Ay_eval
 
         # Add a BZ and throw error if kx, ky is outside
         self.Ax_eval = evaldip(self.Axf, kx, ky, self.b1, self.b2,
