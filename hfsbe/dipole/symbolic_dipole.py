@@ -128,7 +128,7 @@ n        wf : np.ndarray of Symbol
 
         if (Axe is None or Aye is None):
             raise RuntimeError("Error: The dipole fields first need to"
-                               "be evaluated on a kgrid to plot them. "
+                               " be evaluated on a kgrid to plot them. "
                                " Call evaluate before plotting.")
 
         Axe_r, Axe_i = np.real(Axe), np.imag(Axe)
