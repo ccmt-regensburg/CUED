@@ -7,6 +7,7 @@ from hfsbe.brillouin import evaluate_scalar_field
 from hfsbe.utility import list_to_numpy_functions
 
 plt.rcParams['figure.figsize'] = [12, 15]
+plt.rcParams['text.usetex'] = True
 
 
 class TwoBandSystem():
@@ -185,18 +186,79 @@ class TwoBandSystem():
         plt.title(title)
         plt.show()
 
-    def plot_bands_contour(self, kx, ky, title="Energies"):
+    def plot_bands_contour(self, kx, ky, vidx=0, cidx=1,
+                           title=None, vname=None, cname=None,
+                           xlabel=None, ylabel=None, clabel=None):
+        """
+        Plot the specified Bands.
 
-        plt.scatter(kx, ky, s=2, c=self.e_eval[0], cmap="cool")
+        Parameters:
+        kx, ky : np.ndarray
+            array of all point combinations (same as evaluate)
+        vidx, cidx : int
+            Index of the first and second band to evaluate
+        title : string
+            Title of the plot
+        vname, cname : string or int
+            Index of names of the valence and conduction band
+        xlabel, ylabel, clabel: string
+            Label of x, y- axis and colorbar
+        """
+        if (title is None):
+            title = "Band structure"
+        if (vname is None):
+            vname = vidx
+        if (cname is None):
+            cname = cidx
+        if (xlabel is None):
+            xlabel = r'$k_x [\mathrm{a.u.}]$'
+        if (ylabel is None):
+            ylabel = r'$k_y [\mathrm{a.u.}]$'
+        if (clabel is None):
+            clabel = r'Energy $[\mathrm{a.u.}]$'
 
+        E = self.e_eval
+
+        if (E is None):
+            raise RuntimeError("Error: The curvature fields first need to"
+                               " be evaluated on a kgrid to plot them. "
+                               " Call evaluate before plotting.")
+
+        fig, ax = plt.subplots(1, 2)
+        fig.suptitle(title, fontsize=16)
+
+        valence = ax[0].scatter(kx, ky, s=2, c=E[vidx], cmap="cool")
+        ax[0].set_title(r"$E_{" + str(vname) + "}$")
+        ax[0].axis('equal')
+        ax[0].set_xlabel(xlabel)
+        ax[0].set_ylabel(ylabel)
+        plt.colorbar(valence, ax=ax[0], label=clabel)
+
+        conduct = ax[1].scatter(kx, ky, s=2, c=E[cidx], cmap="cool")
+        ax[1].set_title(r"$E_{" + str(cname) + "}$")
+        ax[1].axis('equal')
+        ax[1].set_xlabel(xlabel)
+        ax[1].set_ylabel(ylabel)
+        plt.colorbar(conduct, ax=ax[1], label=clabel)
+
+        fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         plt.show()
 
-    def plot_bands_derivative(self, kx, ky, title="Energy derivatives",
-                              vname=None, cname=None):
+    def plot_bands_derivative(self, kx, ky, vidx=0, cidx=1,
+                              title=None, vname=None, cname=None,
+                              xlabel=None, ylabel=None, clabel=None):
+        if (title is None):
+            title = "Energy derivatives"
         if (vname is None):
-            vname = 0
+            vname = vidx
         if (cname is None):
-            cname = 1
+            cname = cidx
+        if (xlabel is None):
+            xlabel = r'$k_x [\mathrm{a.u.}]$'
+        if (ylabel is None):
+            ylabel = r'$k_y [\mathrm{a.u.}]$'
+        if (clabel is None):
+            clabel = r'$[\mathrm{a.u.}]$'
 
         devx = self.ederiv_eval[0]
         devy = self.ederiv_eval[1]
@@ -207,20 +269,31 @@ class TwoBandSystem():
         fig.suptitle(title, fontsize=16)
 
         norm_valence = np.sqrt(devx**2 + devy**2)
+        devx /= norm_valence
+        devy /= norm_valence
+
         valence = ax[0].quiver(kx, ky, devx, devy, norm_valence,
                                angles='xy', cmap='cool')
-        ax[0].set_title(r"$\mathbf{\nabla}_k \epsilon_" +
-                        str(vname) + "$")
+        current_name = r"$\mathbf{\nabla}_k \epsilon_" + str(vname) + "$"
+        current_abs_name = r'$|$' + current_name + r'$|$'
+        ax[0].set_title(current_name)
         ax[0].axis('equal')
-        plt.colorbar(valence, ax=ax[0])
+        ax[0].set_xlabel(xlabel)
+        ax[0].set_ylabel(ylabel)
+        plt.colorbar(valence, ax=ax[0], label=current_abs_name + clabel)
 
         norm_conduct = np.sqrt(decx**2 + decy**2)
+        decx /= norm_conduct
+        decy /= norm_conduct
         conduct = ax[1].quiver(kx, ky, decx, decy, norm_conduct,
                                angles='xy', cmap='cool')
-        ax[1].set_title(r"$\mathbf{\nabla}_k \epsilon_" +
-                        str(cname) + "$")
+        current_name = r"$\mathbf{\nabla}_k \epsilon_" + str(cname) + "$"
+        current_abs_name = r'$|$' + current_name + r'$|$'
+        ax[1].set_title(current_name)
         ax[1].axis('equal')
-        plt.colorbar(conduct, ax=ax[1])
+        ax[1].set_xlabel(xlabel)
+        ax[1].set_ylabel(ylabel)
+        plt.colorbar(conduct, ax=ax[1], label=current_abs_name + clabel)
 
         fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         plt.show()

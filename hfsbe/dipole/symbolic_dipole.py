@@ -7,6 +7,7 @@ from hfsbe.brillouin import evaluate_matrix_field as evaldip
 from hfsbe.utility import to_numpy_function
 
 plt.rcParams['figure.figsize'] = [12, 15]
+plt.rcParams['text.usetex'] = True
 
 
 class SymbolicDipole():
@@ -104,7 +105,8 @@ n        wf : np.ndarray of Symbol
         return self.Ax_eval, self.Ay_eval
 
     def plot_dipoles(self, kx, ky, vidx=0, cidx=1,
-                     title="Dipole fields", vname=None, cname=None):
+                     title=None, vname=None, cname=None,
+                     xlabel=None, ylabel=None, clabel=None):
         """
         Plot two dipole fields corresponding to the indices vidx and
         cidx
@@ -118,11 +120,21 @@ n        wf : np.ndarray of Symbol
             Title of the plot
         vname, cname:
             Index names of the valence and conduction band
+        xlabel, ylabel, clabel : string
+            Label of x, y- axis and colorbar
         """
+        if (title is None):
+            title = "Dipole fields"
         if (vname is None):
             vname = vidx
         if (cname is None):
             cname = cidx
+        if (xlabel is None):
+            xlabel = r'$k_x [\mathrm{a.u.}]$'
+        if (ylabel is None):
+            ylabel = r'$k_y [\mathrm{a.u.}]$'
+        if (clabel is None):
+            clabel = r'$[\mathrm{a.u.}]$ in $\log_{10}$ scale'
 
         Axe, Aye = self.Ax_eval, self.Ay_eval
 
@@ -145,35 +157,51 @@ n        wf : np.ndarray of Symbol
 
         valence = ax[0, 0].quiver(kx, ky,
                                   Axe_rn[vidx, vidx], Aye_rn[vidx, vidx],
-                                  np.log(norm_r[vidx, vidx]),
+                                  np.log10(norm_r[vidx, vidx]),
                                   angles='xy', cmap='cool')
-        ax[0, 0].set_title(r"$\Re(\vec{A}_{" + str(vname) + str(vname) + "})$")
+        current_name = r"$\Re(\vec{A}_{" + str(vname) + str(vname) + "})$"
+        current_abs_name = r'$|$' + current_name + r'$|$'
+        ax[0, 0].set_title(current_name)
         ax[0, 0].axis('equal')
-        plt.colorbar(valence, ax=ax[0, 0])
+        ax[0, 0].set_xlabel(xlabel)
+        ax[0, 0].set_ylabel(ylabel)
+        plt.colorbar(valence, ax=ax[0, 0], label=current_abs_name + clabel)
 
         conduct = ax[0, 1].quiver(kx, ky,
                                   Axe_rn[cidx, cidx], Aye_rn[cidx, cidx],
-                                  np.log(norm_r[cidx, cidx]),
+                                  np.log10(norm_r[cidx, cidx]),
                                   angles='xy', cmap='cool')
-        ax[0, 1].set_title(r"$\Re(\vec{A}_{" + str(cname) + str(cname) + "})$")
+        current_name = r"$\Re(\vec{A}_{" + str(cname) + str(cname) + "})$"
+        current_abs_name = r'$|$' + current_name + r'$|$'
+        ax[0, 1].set_title(current_name)
         ax[0, 1].axis('equal')
-        plt.colorbar(conduct, ax=ax[0, 1])
+        ax[0, 1].set_xlabel(xlabel)
+        ax[0, 1].set_ylabel(ylabel)
+        plt.colorbar(conduct, ax=ax[0, 1], label=current_abs_name + clabel)
 
         dipreal = ax[1, 0].quiver(kx, ky,
                                   Axe_rn[cidx, vidx], Aye_rn[cidx, vidx],
-                                  np.log(norm_r[cidx, vidx]),
+                                  np.log10(norm_r[cidx, vidx]),
                                   angles='xy', cmap='cool')
-        ax[1, 0].set_title(r"$\Re(\vec{A}_{" + str(cname) + str(vname) + "})$")
+        current_name = r"$\Re(\vec{A}_{" + str(cname) + str(vname) + "})$"
+        current_abs_name = r'$|$' + current_name + r'$|$'
+        ax[1, 0].set_title(current_name)
         ax[1, 0].axis('equal')
-        plt.colorbar(dipreal, ax=ax[1, 0])
+        ax[1, 0].set_xlabel(xlabel)
+        ax[1, 0].set_ylabel(ylabel)
+        plt.colorbar(dipreal, ax=ax[1, 0], label=current_abs_name + clabel)
 
         dipimag = ax[1, 1].quiver(kx, ky,
                                   Axe_in[cidx, vidx], Aye_in[cidx, vidx],
-                                  np.log(norm_i[cidx, vidx]),
+                                  np.log10(norm_i[cidx, vidx]),
                                   angles='xy', cmap='cool')
-        ax[1, 1].set_title(r"$\Im(\vec{A}_{" + str(cname) + str(vname) + "})$")
+        current_name = r"$\Im(\vec{A}_{" + str(cname) + str(vname) + "})$"
+        current_abs_name = r'$|$' + current_name + r'$|$'
+        ax[1, 1].set_title(current_name)
         ax[1, 1].axis('equal')
-        plt.colorbar(dipimag, ax=ax[1, 1])
+        ax[1, 1].set_xlabel(xlabel)
+        ax[1, 1].set_ylabel(ylabel)
+        plt.colorbar(dipimag, ax=ax[1, 1], label=current_abs_name + clabel)
 
         fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         plt.show()

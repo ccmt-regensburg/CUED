@@ -1,7 +1,5 @@
 import numpy as np
 
-import matplotlib.pyplot as plt
-
 from hfsbe.example import BiTe
 from hfsbe.example import BiTeTrivial
 from hfsbe.dipole import SymbolicDipole, SymbolicCurvature
@@ -63,5 +61,5 @@ if __name__ == "__main__":
     N = 200
     kinit = np.linspace(-0.10, 0.10, N)
     kx, ky = kmat(kinit)
-    topological(kx, ky, dipole=True)
+    topological(kx, ky, energy=True)
     # trivial(kx, ky, energy=True, ediff=True, dipole=True)
