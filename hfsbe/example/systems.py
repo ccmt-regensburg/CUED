@@ -358,6 +358,40 @@ class BiTe(TwoBandSystem):
         return A, R, C0, C2
 
 
+class BiTePeriodic(TwoBandSystem):
+    """
+    Bismuth Telluride topological insulator model
+    """
+    def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
+                 A=sp.Symbol('A'), R=sp.Symbol('R'), a=sp.Symbol('a'),
+                 b1=None, b2=None, default_params=False):
+        if (default_params):
+            A, R, C0, C2 = self.__set_default_params()
+
+        kx = self.kx*a
+        ky = self.ky*a
+        A /= a
+        C2 /= a**2
+        R /= a**3
+
+        ho = C0 + C2*(2-sp.cos(kx)-sp.cos(ky))
+        hx = A*sp.sin(ky)
+        hy = -A*sp.sin(kx)
+        hz = 2*R*sp.sin(kx)*(sp.cos(kx)-3*sp.cos(ky)-2)
+
+        super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
+
+    def __set_default_params(self):
+        """
+        Default BiTe system parameters in atomic units
+        """
+        A = 0.1974
+        R = 11.06
+        C0 = -0.008269
+        C2 = 6.5242
+        return A, R, C0, C2
+
+
 class BiTeTrivial(TwoBandSystem):
     """
     Bismuth Telluride topological insulator model

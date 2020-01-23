@@ -1,7 +1,6 @@
 import numpy as np
 
-from hfsbe.example import BiTe
-from hfsbe.example import BiTeTrivial
+from hfsbe.example import BiTePeriodic
 from hfsbe.dipole import SymbolicDipole, SymbolicCurvature
 
 
@@ -13,7 +12,7 @@ def kmat(kinit):
 
 
 def topological(kx, ky, eflag=False, edflag=False, dipflag=False):
-    bite = BiTe(A=0.1974, R=11.06, C0=0, C2=0, kcut=0.05)
+    bite = BiTePeriodic(A=0.1974, R=11.06, C0=0, C2=0, a=20)
     h, ef, wf, ediff = bite.eigensystem()
 
     if (eflag):
@@ -25,26 +24,17 @@ def topological(kx, ky, eflag=False, edflag=False, dipflag=False):
         bite.evaluate_ederivative(kx, ky)
         bite.plot_bands_derivative(kx, ky)
 
-
-def trivial(kx, ky, eflag=False, edflag=False, dipflag=False):
-    bite = BiTeTrivial(R=11.06, C0=0, C2=0, vf=0.1974)
-    h, ef, wf, ediff = bite.eigensystem(gidx=1)
-
-    if (eflag):
-        bite.evaluate_energy(kx, ky)
-        bite.plot_bands_3d(kx, ky)
-        bite.plot_bands_contour(kx, ky)
-
-    if (edflag):
-        bite.evaluate_ederivative(kx, ky)
-        bite.plot_bands_derivative(kx, ky)
-
     if (dipflag):
         dip = SymbolicDipole(h, ef, wf)
-        Ax, Ay = dip.evaluate(kx, ky)
-        dip.plot_dipoles(kx, ky)
-        curv = SymbolicCurvature(Ax, Ay)
-        curv.plot_curvature_contour(kx, ky)
+        curv = SymbolicCurvature(dip.Ax, dip.Ay)
+        for i in range(2000):
+            print("Round: ", i)
+            kx = np.random.random_sample(size=400)
+            ky = np.random.random_sample(size=400)
+            ed = bite.evaluate_ederivative(kx, ky)
+            b = curv.evaluate(kx, ky)
+            b[0]
+            ed[0]
 
 
 if __name__ == "__main__":
