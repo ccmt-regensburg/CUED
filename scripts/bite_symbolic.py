@@ -13,7 +13,7 @@ def kmat(kinit):
 
 
 def topological(kx, ky, eflag=False, edflag=False, dipflag=False):
-    bite = BiTe(A=0.1974, R=11.06, C0=0, C2=0, kcut=0.05)
+    bite = BiTe(A=0.0, R=11.06, C0=0, C2=0)
     h, ef, wf, ediff = bite.eigensystem()
 
     if (eflag):
@@ -49,7 +49,7 @@ def trivial(kx, ky, eflag=False, edflag=False, dipflag=False):
 
 if __name__ == "__main__":
     N = 201
-    kinit = np.linspace(-0.05, 0.05, N)
+    kinit = np.linspace(-0.2, 0.2, N)
     kx, ky = kmat(kinit)
     topological(kx, ky, eflag=True)
     # trivial(kx, ky, energy=True, ediff=True, dipole=True)
