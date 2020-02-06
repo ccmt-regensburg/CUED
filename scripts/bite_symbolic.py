@@ -2,7 +2,7 @@ import numpy as np
 
 from hfsbe.example import BiTe
 from hfsbe.example import BiTeTrivial
-from hfsbe.dipole import SymbolicDipole, SymbolicCurvature
+from hfsbe.dipole import SymbolicDipole
 
 
 def kmat(kinit):
@@ -13,17 +13,22 @@ def kmat(kinit):
 
 
 def topological(kx, ky, eflag=False, edflag=False, dipflag=False):
-    bite = BiTe(A=0.0, R=11.06, C0=0, C2=0)
-    h, ef, wf, ediff = bite.eigensystem()
+    # bite = BiTe(A=0.1974, R=11.06, C0=0, C2=0)
+    bite = BiTe(A=10, R=0, C0=0, C2=0)
+    h, ef, wf, ediff = bite.eigensystem(gidx=0)
 
     if (eflag):
         bite.evaluate_energy(kx, ky)
-        # bite.plot_bands_3d(kx, ky)
+        bite.plot_bands_3d(kx, ky)
         bite.plot_bands_contour(kx, ky)
-
     if (edflag):
         bite.evaluate_ederivative(kx, ky)
         bite.plot_bands_derivative(kx, ky)
+    if (dipflag):
+        dip = SymbolicDipole(h, ef, wf)
+        Ax, Ay = dip.evaluate(kx, ky)
+        print(Ax)
+        dip.plot_dipoles(kx, ky)
 
 
 def trivial(kx, ky, eflag=False, edflag=False, dipflag=False):
@@ -34,22 +39,21 @@ def trivial(kx, ky, eflag=False, edflag=False, dipflag=False):
         bite.evaluate_energy(kx, ky)
         bite.plot_bands_3d(kx, ky)
         bite.plot_bands_contour(kx, ky)
-
     if (edflag):
         bite.evaluate_ederivative(kx, ky)
         bite.plot_bands_derivative(kx, ky)
-
     if (dipflag):
         dip = SymbolicDipole(h, ef, wf)
         Ax, Ay = dip.evaluate(kx, ky)
         dip.plot_dipoles(kx, ky)
-        curv = SymbolicCurvature(Ax, Ay)
-        curv.plot_curvature_contour(kx, ky)
+        # curv = SymbolicCurvature(Ax, Ay)
+        # curv.evaluate(kx, ky)
+        # curv.plot_curvature_contour(kx, ky)
 
 
 if __name__ == "__main__":
-    N = 201
-    kinit = np.linspace(-0.2, 0.2, N)
+    N = 20
+    kinit = np.linspace(-0.02, 0.02, N)
     kx, ky = kmat(kinit)
-    topological(kx, ky, eflag=True)
+    topological(kx, ky, eflag=True, dipflag=True)
     # trivial(kx, ky, energy=True, ediff=True, dipole=True)

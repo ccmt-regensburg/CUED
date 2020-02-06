@@ -29,6 +29,7 @@ class TwoBandSystem():
         ho, hx, hy, hz : Symbol
             Wheter to additionally return energy and wave function derivatives
         """
+
         self.b1 = b1
         self.b2 = b2
 
@@ -75,7 +76,7 @@ class TwoBandSystem():
             wfv_h = sp.Matrix([1,
                                (self.hx-sp.I*self.hy)/(self.hz-esoc)])
             wfc_h = sp.Matrix([1,
-                               (self.hx-sp.I*self.hy)/(self.hz-esoc)])
+                               (self.hx-sp.I*self.hy)/(self.hz+esoc)])
             normv = sp.sqrt(wfv_h.dot(wfv))
             normc = sp.sqrt(wfc_h.dot(wfc))
         elif (gidx == 1):
@@ -303,6 +304,7 @@ class Haldane(TwoBandSystem):
     """
     Haldane model
     """
+
     def __init__(self, b1=None, b2=None):
         t1 = sp.Symbol('t1')
         t2 = sp.Symbol('t2')
@@ -329,6 +331,7 @@ class BiTe(TwoBandSystem):
     """
     Bismuth Telluride topological insulator model
     """
+
     def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
                  A=sp.Symbol('A'), R=sp.Symbol('R'),
                  kcut=None, b1=None, b2=None, default_params=False):
@@ -362,6 +365,7 @@ class BiTePeriodic(TwoBandSystem):
     """
     Bismuth Telluride topological insulator model
     """
+
     def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
                  A=sp.Symbol('A'), R=sp.Symbol('R'), a=sp.Symbol('a'),
                  b1=None, b2=None, default_params=False):
@@ -396,6 +400,7 @@ class BiTeTrivial(TwoBandSystem):
     """
     Bismuth Telluride topological insulator model
     """
+
     def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
                  R=sp.Symbol('R'), vf=sp.Symbol('vf'),
                  kcut=None, b1=None, b2=None, default_params=False):
@@ -431,6 +436,7 @@ class Graphene(TwoBandSystem):
     """
     Graphene model
     """
+
     def __init__(self, t=sp.Symbol('t'), b1=None, b2=None):
         a1 = self.kx
         a2 = -1/2 * self.kx + sp.sqrt(3)/2 * self.ky
@@ -448,6 +454,7 @@ class QWZ(TwoBandSystem):
     """
     Qi-Wu-Zhang model of a 2D Chern insulator
     """
+
     def __init__(self, order=sp.oo, b1=None, b2=None):
         n = order+1
         m = sp.Symbol('m')
@@ -470,6 +477,7 @@ class Dirac(TwoBandSystem):
     """
     Generic Dirac cone Hamiltonian
     """
+
     def __init__(self, m=sp.Symbol('m'), b1=None, b2=None):
 
         ho = 0
