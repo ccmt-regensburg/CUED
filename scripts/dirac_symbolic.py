@@ -5,7 +5,6 @@ from hfsbe.dipole import SymbolicDipole
 
 
 def kmat(kinit):
-    kinit = np.linspace(-2*np.pi, 2*np.pi, 20)
     kmat = np.array(np.meshgrid(kinit, kinit)).T.reshape(-1, 2)
     kx = kmat[:, 0]
     ky = kmat[:, 1]
@@ -13,7 +12,7 @@ def kmat(kinit):
 
 
 def topological(kx, ky, eflag=False, edflag=False, dipflag=False):
-    dirac = Dirac(m=0)
+    dirac = Dirac(m=1)
     h, ef, wf, ediff = dirac.eigensystem(gidx=1)
 
     if (eflag):
@@ -31,6 +30,6 @@ def topological(kx, ky, eflag=False, edflag=False, dipflag=False):
 
 if __name__ == "__main__":
     N = 20
-    kinit = np.linspace(-0.2, 0.2, N)
+    kinit = np.linspace(-1.0, 1.0, N)
     kx, ky = kmat(kinit)
     topological(kx, ky, eflag=True, dipflag=True)

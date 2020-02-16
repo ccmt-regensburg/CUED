@@ -69,25 +69,25 @@ class TwoBandSystem():
             normv = sp.sqrt(2*(esoc + self.hz)*esoc)
             normc = sp.sqrt(2*(esoc + self.hz)*esoc)
         elif (gidx == 0):
-            wfv = sp.Matrix([1,
-                             (self.hx+sp.I*self.hy)/(self.hz-esoc)])
-            wfc = sp.Matrix([1,
-                             (self.hx+sp.I*self.hy)/(self.hz+esoc)])
-            wfv_h = sp.Matrix([1,
-                               (self.hx-sp.I*self.hy)/(self.hz-esoc)])
-            wfc_h = sp.Matrix([1,
-                               (self.hx-sp.I*self.hy)/(self.hz+esoc)])
+            wfv = sp.Matrix([self.hz-esoc,
+                             (self.hx+sp.I*self.hy)])
+            wfc = sp.Matrix([self.hz+esoc,
+                             (self.hx+sp.I*self.hy)])
+            wfv_h = sp.Matrix([self.hz-esoc,
+                               (self.hx-sp.I*self.hy)])
+            wfc_h = sp.Matrix([self.hz+esoc,
+                               (self.hx-sp.I*self.hy)])
             normv = sp.sqrt(wfv_h.dot(wfv))
             normc = sp.sqrt(wfc_h.dot(wfc))
         elif (gidx == 1):
-            wfv = sp.Matrix([-(self.hx-sp.I*self.hy)/(self.hz+esoc),
-                             1])
-            wfc = sp.Matrix([-(self.hx-sp.I*self.hy)/(self.hz-esoc),
-                             1])
-            wfv_h = sp.Matrix([-(self.hx+sp.I*self.hy)/(self.hz+esoc),
-                               1])
-            wfc_h = sp.Matrix([-(self.hx+sp.I*self.hy)/(self.hz-esoc),
-                               1])
+            wfv = sp.Matrix([-self.hx+sp.I*self.hy,
+                             self.hz+esoc])
+            wfc = sp.Matrix([-self.hx+sp.I*self.hy,
+                             self.hz-esoc])
+            wfv_h = sp.Matrix([-self.hx-sp.I*self.hy,
+                               self.hz+esoc])
+            wfc_h = sp.Matrix([-self.hx-sp.I*self.hy,
+                               self.hz-esoc])
             normv = sp.sqrt(wfv_h.dot(wfv))
             normc = sp.sqrt(wfc_h.dot(wfc))
 
