@@ -305,12 +305,9 @@ class Haldane(TwoBandSystem):
     Haldane model
     """
 
-    def __init__(self, b1=None, b2=None):
-        t1 = sp.Symbol('t1')
-        t2 = sp.Symbol('t2')
-        m = sp.Symbol('m')
-        phi = sp.Symbol('phi')
-
+    def __init__(self, t1=sp.Symbol('t1'), t2=sp.Symbol('t2'),
+                 m=sp.Symbol('m'), phi=sp.Symbol('phi'),
+                 b1=None, b2=None):
         a1 = self.kx
         a2 = -1/2 * self.kx + sp.sqrt(3)/2 * self.ky
         a3 = -1/2 * self.kx - sp.sqrt(3)/2 * self.ky
