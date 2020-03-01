@@ -364,21 +364,23 @@ class BiTePeriodic(TwoBandSystem):
     """
 
     def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
-                 A=sp.Symbol('A'), R=sp.Symbol('R'), a=sp.Symbol('a'),
+                 A=sp.Symbol('A'), R=sp.Symbol('R'),
                  b1=None, b2=None, default_params=False):
         if (default_params):
             A, R, C0, C2 = self.__set_default_params()
 
-        kx = self.kx*a
-        ky = self.ky*a
-        A /= a
-        C2 /= a**2
-        R /= a**3
+        kx = self.kx
+        ky = self.ky
 
-        ho = C0 + C2*(2-sp.cos(kx)-sp.cos(ky))
-        hx = A*sp.sin(ky)
-        hy = -A*sp.sin(kx)
-        hz = 2*R*sp.sin(kx)*(sp.cos(kx)-3*sp.cos(ky)-2)
+        sqr = sp.sqrt(3)
+        K1 = sqr/2*(kx + sqr*ky)
+        K2 = -sqr*kx
+        K3 = sqr/2*(kx - sqr*ky)
+
+        ho = 0
+        hx = (1/3)*A*(sp.sin(K1) - sp.sin(K3))
+        hy = (1/(3*sqr))*A*(2*sp.sin(K2) - sp.sin(K1) - sp.sin(K3))
+        hz = (16*R)/(3*sqr) * (sp.sin(K1) + sp.sin(K2) + sp.sin(K3))
 
         super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
 

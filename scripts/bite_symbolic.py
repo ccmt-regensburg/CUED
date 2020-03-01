@@ -27,7 +27,7 @@ def topological(kx, ky, eflag=False, edflag=False, dipflag=False):
     if (dipflag):
         dip = SymbolicDipole(h, ef, wf)
         Ax, Ay = dip.evaluate(kx, ky)
-        print(Ax)
+        print(np.real(Ax))
         dip.plot_dipoles(kx, ky)
 
 
@@ -52,7 +52,7 @@ def trivial(kx, ky, eflag=False, edflag=False, dipflag=False):
 
 
 if __name__ == "__main__":
-    N = 40
+    N = 10
     # kinit = np.linspace(-0.02, 0.02, N)
     kinit = np.linspace(-0.1, 0.1, N)
     kx, ky = kmat(kinit)
