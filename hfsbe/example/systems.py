@@ -363,9 +363,8 @@ class BiTePeriodic(TwoBandSystem):
     Bismuth Telluride topological insulator model
     """
 
-    def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
-                 A=sp.Symbol('A'), R=sp.Symbol('R'),
-                 b1=None, b2=None, default_params=False):
+    def __init__(self, A=sp.Symbol('A'), R=sp.Symbol('R'), a=sp.Symbol('a'),
+                 b1=None, b2=None, m=1, order=4, default_params=False):
         if (default_params):
             A, R, C0, C2 = self.__set_default_params()
 
@@ -377,10 +376,14 @@ class BiTePeriodic(TwoBandSystem):
         K2 = -sqr*kx
         K3 = sqr/2*(kx - sqr*ky)
 
+        A /= a
+        R /= a**3
+
         ho = 0
         hx = (1/3)*A*(sp.sin(K1) - sp.sin(K3))
         hy = (1/(3*sqr))*A*(2*sp.sin(K2) - sp.sin(K1) - sp.sin(K3))
         hz = (16*R)/(3*sqr) * (sp.sin(K1) + sp.sin(K2) + sp.sin(K3))
+        hz += m*8*R*(1/(4**order))*(-sp.cos(K1)-sp.cos(K2)-sp.cos(K3) + 3)**order
 
         super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
 
