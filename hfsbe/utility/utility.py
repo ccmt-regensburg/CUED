@@ -33,7 +33,7 @@ def to_numpy_function(sf):
 
         def __func(kx=kx, ky=ky, **fkwargs):
             dim = kx.size
-            out = func(kx=kx, ky=ky, **fkwargs)
+            out = njit(func(kx=kx, ky=ky, **fkwargs))
             return np.zeros(np.shape(out) + (dim,))
 
         return njit(__func)
