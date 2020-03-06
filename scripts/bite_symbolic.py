@@ -1,4 +1,5 @@
 import numpy as np
+from numba import njit
 
 from hfsbe.example import BiTe
 from hfsbe.example import BiTeTrivial
@@ -56,5 +57,5 @@ if __name__ == "__main__":
     # kinit = np.linspace(-0.02, 0.02, N)
     kinit = np.linspace(-0.1, 0.1, N)
     kx, ky = kmat(kinit)
-    topological(kx, ky, eflag=False, edflag=False, dipflag=True)
+    topological(kx, ky, eflag=True, edflag=False, dipflag=False)
     # trivial(kx, ky, energy=True, ediff=True, dipole=True)

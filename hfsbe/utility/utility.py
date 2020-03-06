@@ -1,6 +1,7 @@
 """
 Utility functions needed by functions/methods in the package
 """
+from numba import njit
 import numpy as np
 import sympy as sp
 
@@ -18,24 +19,24 @@ def to_numpy_function(sf):
     # simplification process. The variable will just return 0's
     # if used.
     if (kx in symbols and ky in symbols):
-        return sp.lambdify(symbols, sf, "numpy")
+        return njit(sp.lambdify(symbols, sf, "numpy"))
     else:
         if (kx not in symbols and ky in symbols):
             symbols.add(kx)
-            return sp.lambdify(symbols, sf, "numpy")
+            return njit(sp.lambdify(symbols, sf, "numpy"))
         if (kx in symbols and ky not in symbols):
             symbols.add(ky)
-            return sp.lambdify(symbols, sf, "numpy")
+            return njit(sp.lambdify(symbols, sf, "numpy"))
 
         symbols.update([kx, ky])
-        func = sp.lambdify(symbols, sf, "numpy")
+        func = njit(sp.lambdify(symbols, sf, "numpy"))
 
         def __func(kx=kx, ky=ky, **fkwargs):
             dim = kx.size
             out = func(kx=kx, ky=ky, **fkwargs)
             return np.zeros(np.shape(out) + (dim,))
 
-        return __func
+        return njit(__func)
 
 
 def list_to_numpy_functions(sf):
