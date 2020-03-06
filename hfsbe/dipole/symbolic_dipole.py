@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 import hfsbe.check.symbolic_checks as symbolic_checks
 from hfsbe.brillouin import evaluate_matrix_field as evaldip
-from hfsbe.utility import to_numpy_function
+from hfsbe.utility import to_njit_function, to_numpy_function
 
 plt.rcParams['figure.figsize'] = [12, 15]
 plt.rcParams['text.usetex'] = True
@@ -52,14 +52,14 @@ n        wf : np.ndarray of Symbol
         yshp = self.Ay.shape
 
         # Numpy function and function arguments
-        self.Axf = [[to_numpy_function(self.Ax[i, j]) for i in range(xshp[0])]
-                    for j in range(xshp[1])]
+        self.Axfjit = [[to_njit_function(self.Ax[i, j]) for i in range(xshp[0])]
+                       for j in range(xshp[1])]
 
-        self.Ayf = [[to_numpy_function(self.Ay[i, j]) for i in range(yshp[0])]
-                    for j in range(yshp[1])]
+        self.Ayfjit = [[to_njit_function(self.Ay[i, j]) for i in range(yshp[0])]
+                       for j in range(yshp[1])]
 
-        # self.Axf = to_numpy_function(self.Ax)
-        # self.Ayf = to_numpy_function(self.Ay)
+        self.Axf = to_numpy_function(self.Ax)
+        self.Ayf = to_numpy_function(self.Ay)
 
         # Evaluated fields
         self.Ax_eval = None

@@ -27,6 +27,7 @@ def topological(kx, ky, eflag=False, edflag=False, dipflag=False):
         bite.plot_bands_derivative(kx, ky)
     if (dipflag):
         dip = SymbolicDipole(h, ef, wf)
+#        print(dip.Axf[0][0](kx=kx, ky=ky))
         Ax, Ay = dip.evaluate(kx, ky)
         print(np.real(Ax))
         dip.plot_dipoles(kx, ky)
@@ -55,7 +56,7 @@ def trivial(kx, ky, eflag=False, edflag=False, dipflag=False):
 if __name__ == "__main__":
     N = 10
     # kinit = np.linspace(-0.02, 0.02, N)
-    kinit = np.linspace(-0.1, 0.1, N)
+    kinit = np.linspace(-0.1, 0.1, N, dtype=np.float)
     kx, ky = kmat(kinit)
-    topological(kx, ky, eflag=True, edflag=False, dipflag=False)
+    topological(kx, ky, eflag=True, edflag=False, dipflag=True)
     # trivial(kx, ky, energy=True, ediff=True, dipole=True)

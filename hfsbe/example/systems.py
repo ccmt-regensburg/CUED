@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # NOQA
 
 from hfsbe.brillouin import evaluate_scalar_field
-from hfsbe.utility import list_to_numpy_functions
+from hfsbe.utility import list_to_numpy_functions, list_to_njit_functions
 
 plt.rcParams['figure.figsize'] = [12, 15]
 plt.rcParams['text.usetex'] = True
@@ -141,6 +141,9 @@ class TwoBandSystem():
 
         self.ef = list_to_numpy_functions(self.e)
         self.ederivf = list_to_numpy_functions(self.ederiv)
+
+        self.efjit = list_to_njit_functions(self.e)
+        self.ederivjit = list_to_njit_functions(self.ederiv)
 
         return self.h, self.e, [self.U, self.U_h], self.ederiv
 
