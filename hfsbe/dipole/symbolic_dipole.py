@@ -48,10 +48,18 @@ n        wf : np.ndarray of Symbol
         self.U_h = wf[1]
 
         self.Ax, self.Ay = self.__fields()
+        xshp = self.Ax.shape
+        yshp = self.Ay.shape
 
         # Numpy function and function arguments
-        self.Axf = to_numpy_function(self.Ax)
-        self.Ayf = to_numpy_function(self.Ay)
+        self.Axf = [[to_numpy_function(self.Ax[i, j]) for i in range(xshp[0])]
+                    for j in range(xshp[1])]
+
+        self.Ayf = [[to_numpy_function(self.Ay[i, j]) for i in range(yshp[0])]
+                    for j in range(yshp[1])]
+
+        # self.Axf = to_numpy_function(self.Ax)
+        # self.Ayf = to_numpy_function(self.Ay)
 
         # Evaluated fields
         self.Ax_eval = None

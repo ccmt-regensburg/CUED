@@ -28,13 +28,9 @@ def to_numpy_function(sf):
             symbols.add(ky)
             return njit(sp.lambdify(symbols, sf, "numpy"))
 
-        symbols.update([kx, ky])
-        func = njit(sp.lambdify(symbols, sf, "numpy"))
-
         def __func(kx=kx, ky=ky, **fkwargs):
             dim = kx.size
-            out = njit(func(kx=kx, ky=ky, **fkwargs))
-            return np.zeros(np.shape(out) + (dim,))
+            return np.zeros(dim)
 
         return njit(__func)
 
