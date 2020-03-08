@@ -52,10 +52,10 @@ n        wf : np.ndarray of Symbol
         yshp = self.Ay.shape
 
         # Numpy function and function arguments
-        self.Axfjit = [[to_njit_function(self.Ax[i, j]) for i in range(xshp[0])]
+        self.Axfjit = [[to_njit_function(self.Ax[j, i]) for i in range(xshp[0])]
                        for j in range(xshp[1])]
 
-        self.Ayfjit = [[to_njit_function(self.Ay[i, j]) for i in range(yshp[0])]
+        self.Ayfjit = [[to_njit_function(self.Ay[j, i]) for i in range(yshp[0])]
                        for j in range(yshp[1])]
 
         self.Axf = to_numpy_function(self.Ax)
