@@ -379,6 +379,9 @@ class BiTePeriodic(TwoBandSystem):
         K2 = -sqr*kx
         K3 = sqr/2*(kx - sqr*ky)
 
+        # Transform lattice spacing to atomic distance
+        a /= sqr
+
         A /= a
         R /= a**3
 
