@@ -386,7 +386,8 @@ class BiTePeriodic(TwoBandSystem):
         hx = (1/3)*A*(sp.sin(K1) - sp.sin(K3))
         hy = (1/(3*sqr))*A*(2*sp.sin(K2) - sp.sin(K1) - sp.sin(K3))
         hz = (16*R)/(3*sqr) * (sp.sin(K1) + sp.sin(K2) + sp.sin(K3))
-        hz += m*8*R*(1/(4**order))*(-sp.cos(K1)-sp.cos(K2)-sp.cos(K3) + 3)**order
+        hz += m*8*R*(1/(4**order)) \
+            * (-sp.cos(K1)-sp.cos(K2)-sp.cos(K3) + 3)**order
 
         super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
 
