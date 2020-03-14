@@ -440,21 +440,17 @@ class BiTePeriodic(TwoBandSystem):
         ky = self.ky
 
         sqr = sp.sqrt(3)
-        K1 = sqr/2*(kx + sqr*ky)
-        K2 = -sqr*kx
-        K3 = sqr/2*(kx - sqr*ky)
+        pre = sp.Rational(1, 2)*a
 
-        # Transform lattice spacing to atomic distance
-        a /= sqr
-
-        A /= a
-        R /= a**3
+        K1 = pre*(kx + sqr*ky)
+        K2 = -pre*2*kx
+        K3 = pre*(kx - sqr*ky)
 
         ho = 0
-        hx = (1/3)*A*(sp.sin(K1) - sp.sin(K3))
-        hy = (1/(3*sqr))*A*(2*sp.sin(K2) - sp.sin(K1) - sp.sin(K3))
-        hz = (16*R)/(3*sqr) * (sp.sin(K1) + sp.sin(K2) + sp.sin(K3))
-        hz += m*8*R*(1/(4**order)) \
+        hx = (1/sqr)*(A/a)*(sp.sin(K1) - sp.sin(K3))
+        hy = (1/3)*(A/a)*(2*sp.sin(K2) - sp.sin(K1) - sp.sin(K3))
+        hz = 16*(R/a**3)*(sp.sin(K1) + sp.sin(K2) + sp.sin(K3))
+        hz += m*8*(R/a**3)*3*sqr*4**(-order) \
             * (-sp.cos(K1)-sp.cos(K2)-sp.cos(K3) + 3)**order
 
         super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)

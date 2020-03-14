@@ -8,6 +8,10 @@ eV_conv = 0.03674932176
 au_conv = (1/eV_conv)
 
 
+a = 8.308
+A = 0.1974
+R = 11.06
+
 def kmat(kinit):
     kmat = np.array(np.meshgrid(kinit, kinit)).T.reshape(-1, 2)
     kx = kmat[:, 0]
@@ -16,7 +20,7 @@ def kmat(kinit):
 
 
 def topological(kx, ky, eflag=False, edflag=False, dipflag=False):
-    bite = BiTePeriodic(m=0.0, a=8.308, A=0.1974, R=11.06, order=4)
+    bite = BiTePeriodic(m=0.0, a=a, A=A, R=R, order=4)
     h_sym, ef_sym, wf_sym, ediff_sym = bite.eigensystem()
 
     if (eflag):
