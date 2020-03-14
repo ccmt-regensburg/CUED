@@ -190,7 +190,7 @@ class TwoBandSystem():
         plt.title(title)
         plt.show()
 
-    def plot_bands_contour(self, kx, ky, vidx=0, cidx=1,
+    def plot_bands_scatter(self, kx, ky, vidx=0, cidx=1,
                            title=None, vname=None, cname=None,
                            xlabel=None, ylabel=None, clabel=None):
         """
@@ -244,6 +244,71 @@ class TwoBandSystem():
         ax[1].set_xlabel(xlabel)
         ax[1].set_ylabel(ylabel)
         plt.colorbar(conduct, ax=ax[1], label=clabel)
+
+        fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plt.show()
+
+    def plot_bands_contour(self, kx, ky, levels=10, vidx=0, cidx=1,
+                           title=None, vname=None, cname=None,
+                           xlabel=None, ylabel=None, clabel=None):
+        """
+        Plot the specified Bands.
+
+        Parameters:
+        kx, ky : np.ndarray
+            array of all point combinations (same as evaluate)
+        vidx, cidx : int
+            Index of the first and second band to evaluate
+        title : string
+            Title of the plot
+        vname, cname : string or int
+            Index of names of the valence and conduction band
+        xlabel, ylabel, clabel: string
+            Label of x, y- axis and colorbar
+        """
+        if (title is None):
+            title = "Band structure"
+        if (vname is None):
+            vname = vidx
+        if (cname is None):
+            cname = cidx
+        if (xlabel is None):
+            xlabel = r'$k_x [\mathrm{a.u.}]$'
+        if (ylabel is None):
+            ylabel = r'$k_y [\mathrm{a.u.}]$'
+        if (clabel is None):
+            clabel = r'Energy $[\mathrm{a.u.}]$'
+
+        E = self.e_eval
+
+        if (E is None):
+            raise RuntimeError("Error: The curvature fields first need to"
+                               " be evaluated on a kgrid to plot them. "
+                               " Call evaluate before plotting.")
+
+        # Countour plot needs data in matrix form
+        dim = int(np.sqrt(kx.size))
+        kx = kx.reshape(dim, dim)
+        ky = ky.reshape(dim, dim)
+        ev = E[vidx].reshape(dim, dim)
+        ec = E[cidx].reshape(dim, dim)
+
+        fig, ax = plt.subplots(1, 2)
+        fig.suptitle(title, fontsize=16)
+
+        cv = ax[0].contour(kx, ky, ev, levels=levels)
+        plt.clabel(cv, inline=False, fontsize=10)
+        ax[0].set_title(r"$E_{" + str(vname) + "}$")
+        ax[0].axis('equal')
+        ax[0].set_xlabel(xlabel)
+        ax[0].set_ylabel(ylabel)
+
+        cc = ax[1].contour(kx, ky, ec, levels=levels)
+        plt.clabel(cc, inline=False, fontsize=10)
+        ax[1].set_title(r"$E_{" + str(cname) + "}$")
+        ax[1].axis('equal')
+        ax[1].set_xlabel(xlabel)
+        ax[1].set_ylabel(ylabel)
 
         fig.tight_layout(rect=[0, 0.03, 1, 0.95])
         plt.show()
