@@ -9,8 +9,10 @@ au_conv = (1/eV_conv)
 
 
 a = 8.308
+C2 = 6.5242
 A = 0.1974
 R = 11.06
+
 
 def kmat(kinit):
     kmat = np.array(np.meshgrid(kinit, kinit)).T.reshape(-1, 2)
@@ -20,19 +22,29 @@ def kmat(kinit):
 
 
 def topological(kx, ky, eflag=False, edflag=False, dipflag=False):
-    bite = BiTePeriodic(m=0.0, a=a, A=A, R=R, order=4)
-    h_sym, ef_sym, wf_sym, ediff_sym = bite.eigensystem()
+    bite = BiTePeriodic(m=0.0, a=a, A=A, C2=C2, R=R, order=4)
+    h_sym, ef_sym, wf_sym, ediff_sym = bite.eigensystem(gidx=1)
+    kxlist = np.zeros(3)
+    kylist = np.linspace(1, 2*np.pi, 3)
+    # print(bite.hf(kx=kxlist, ky=kylist)[:, :, 1])
+    # print(bite.hderivf[0](kx=kxlist, ky=kylist)[:, :, 1])
+    # print(bite.hderivf[1](kx=kxlist, ky=kylist))
+    wf = bite.Uf(kx=kxlist, ky=kylist)[:, :, 2]
+    wf_h = bite.Uf_h(kx=kxlist, ky=kylist)[:, :, 2]
+    print(np.dot(wf_h, wf))
 
     if (eflag):
-        bite.evaluate_energy(kx, ky)
-        bite.plot_bands_contour(kx, ky)
+        ev, ec = bite.evaluate_energy(kx, ky)
 
-    if (edflag):
-        bite.evaluate_ederivative(kx, ky)
-        bite.plot_bands_derivative(kx, ky)
+        # bite.plot_bands_contour(kx, ky)
+        # bite.plot_bands_3d(kx, ky)
 
-    if (dipflag):
-        dip = SymbolicDipole(h_sym, ef_sym, wf_sym)
+    # if (edflag):
+        # bite.evaluate_ederivative(kx, ky)
+        # bite.plot_bands_derivative(kx, ky)
+
+    # if (dipflag):
+        # dip = SymbolicDipole(h_sym, ef_sym, wf_sym)
         # curv = SymbolicCurvature(dip.Ax, dip.Ay)
         # for i in range(2000):
         #     print("Round: ", i)
@@ -41,8 +53,8 @@ def topological(kx, ky, eflag=False, edflag=False, dipflag=False):
 
 
 if __name__ == "__main__":
-    N = 2001
-    kinit = np.linspace(-np.pi, np.pi, N)
+    N = 201
+    kinit = np.linspace(-np.pi/a, np.pi/a, N)
     kx, ky = kmat(kinit)
     topological(kx, ky, eflag=True, edflag=False, dipflag=False)
     # trivial(kx, ky, energy=True, ediff=True, dipole=True)

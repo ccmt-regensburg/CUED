@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # NOQA
 
 from hfsbe.brillouin import evaluate_scalar_field
-from hfsbe.utility import list_to_numpy_functions, list_to_njit_functions
+from hfsbe.utility import to_numpy_function, list_to_numpy_functions, \
+    list_to_njit_functions
 
 plt.rcParams['figure.figsize'] = [12, 15]
 plt.rcParams['text.usetex'] = True
@@ -47,8 +48,11 @@ class TwoBandSystem():
         self.U_no_norm = None     # Unnormalised eigenstates
         self.U_h_no_norm = None   # Hermitian conjugate
 
-        self.ef = None          # Energies as callable functions
-        self.ederivf = None     # Energy derivatives as callable func.
+        self.ef = None            # Energies as callable functions
+        self.ederivf = None       # Energy derivatives as callable func.
+
+        self.efjit = None         # Energies as callable jit functions
+        self.ederivjit = None     # Energy derivatives as callable jit func
 
         # Get set when evaluate_energy is called
         self.e_eval = None
@@ -57,6 +61,9 @@ class TwoBandSystem():
     def __hamiltonian(self):
         return self.ho*self.so + self.hx*self.sx + self.hy*self.sy \
             + self.hz*self.sz
+
+    def __hamiltonian_deriv(self):
+        return [sp.diff(self.h, self.kx), sp.diff(self.h, self.ky)]
 
     def __wave_function(self, gidx=None):
         esoc = sp.sqrt(self.hx**2 + self.hy**2 + self.hz**2)
@@ -136,8 +143,17 @@ class TwoBandSystem():
         self.e = self.__energies()
         self.ederiv = self.__ederiv(self.e)
         self.h = self.__hamiltonian()
+        self.hderiv = self.__hamiltonian_deriv()
         self.U, self.U_h, self.U_no_norm, self.U_h_no_norm = \
             self.__wave_function(gidx=gidx)
+
+        # Populate callable Hamiltonian, Hamiltonian derivative functions
+        self.hf = to_numpy_function(self.h)
+        self.hderivf = list_to_numpy_functions(self.hderiv)
+
+        # Populate callable wave function functions
+        self.Uf = to_numpy_function(self.U)
+        self.Uf_h = to_numpy_function(self.U_h)
 
         self.ef = list_to_numpy_functions(self.e)
         self.ederivf = list_to_numpy_functions(self.ederiv)
@@ -431,7 +447,9 @@ class BiTePeriodic(TwoBandSystem):
     Bismuth Telluride topological insulator model
     """
 
-    def __init__(self, A=sp.Symbol('A'), R=sp.Symbol('R'), a=sp.Symbol('a'),
+    def __init__(self, A=sp.Symbol('A', real=True),
+                 C2=sp.Symbol('C2', real=True), R=sp.Symbol('R', real=True),
+                 a=sp.Symbol('a', real=True),
                  b1=None, b2=None, m=1, order=4, default_params=False):
         if (default_params):
             A, R, C0, C2 = self.__set_default_params()
@@ -446,7 +464,7 @@ class BiTePeriodic(TwoBandSystem):
         K2 = -pre*2*kx
         K3 = pre*(kx - sqr*ky)
 
-        ho = 0
+        ho = (4/3)*(C2/a**2)*(-sp.cos(K1) - sp.cos(K2) - sp.cos(K3) + 3)
         hx = (1/sqr)*(A/a)*(sp.sin(K1) - sp.sin(K3))
         hy = (1/3)*(A/a)*(2*sp.sin(K2) - sp.sin(K1) - sp.sin(K3))
         hz = 16*(R/a**3)*(sp.sin(K1) + sp.sin(K2) + sp.sin(K3))
