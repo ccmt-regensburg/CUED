@@ -6,6 +6,16 @@ import numpy as np
 import sympy as sp
 
 
+def matrix_to_njit_functions(sf):
+    """
+    Converts a sympy matrix into a matrix of functions
+    """
+    shp = sf.shape
+    jitmat = [[to_njit_function(sf[j, i]) for i in range(shp[0])]
+              for j in range(shp[1])]
+    return jitmat
+
+
 def list_to_njit_functions(sf):
     """
     Converts a list of sympy functions/matrices to a list of numpy
@@ -16,8 +26,7 @@ def list_to_njit_functions(sf):
 
 def to_njit_function(sf):
     """
-    Converts a simple sympy function/matrix to a function/matrix
-    callable by numpy
+    Converts a simple sympy function to a function callable by numpy
     """
     kx = sp.Symbol('kx', real=True)
     ky = sp.Symbol('ky', real=True)
@@ -36,11 +45,24 @@ def to_njit_function(sf):
             symbols.add(ky)
             return njit(sp.lambdify(symbols, sf, "numpy"))
 
-        def __func(kx=kx, ky=ky, **fkwargs):
+        prefac = complex(sf)
+
+        def __func(kx=np.empty(1), ky=np.empty(1), **fkwargs):
             dim = kx.size
-            return np.zeros(dim)
+            return np.repeat(prefac, dim)
 
         return njit(__func)
+
+
+def evaluate_njit_matrix(mjit, kx=np.empty(1), ky=np.empty(1)):
+    shp = np.shape(mjit)
+    numpy_matrix = np.empty(shp + (kx.size,), dtype=np.complex)
+
+    for r in range(shp[0]):
+        for c in range(shp[1]):
+            numpy_matrix[r, c] = mjit[r][c](kx=kx, ky=ky)
+
+    return numpy_matrix
 
 
 def list_to_numpy_functions(sf):
