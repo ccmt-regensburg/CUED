@@ -441,10 +441,10 @@ class BiTe(TwoBandSystem):
         """
         Default BiTe system parameters in atomic units
         """
-        A = 0.1974
-        R = 11.06
+        A = 0.19732
+        R = 5.52658
         C0 = -0.008269
-        C2 = 6.5242
+        C2 = 5.39018
         return A, R, C0, C2
 
 
@@ -483,10 +483,10 @@ class BiTePeriodic(TwoBandSystem):
         """
         Default BiTe system parameters in atomic units
         """
-        A = 0.1974
-        R = 11.06
+        A = 0.19732
+        R = 5.52658
         C0 = -0.008269
-        C2 = 6.5242
+        C2 = 5.39018
         return A, R, C0, C2
 
 
@@ -497,9 +497,7 @@ class BiTeTrivial(TwoBandSystem):
 
     def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
                  R=sp.Symbol('R'), vf=sp.Symbol('vf'),
-                 kcut=None, b1=None, b2=None, default_params=False):
-        if (default_params):
-            A, R, C0, C2, vf = self.__set_default_params()
+                 kcut=None, b1=None, b2=None):
 
         ho = C0 + C2*(self.kx**2 + self.ky**2)
         hx = 0
@@ -514,16 +512,6 @@ class BiTeTrivial(TwoBandSystem):
         hz += vf*sp.sqrt(self.kx**2 + self.ky**2)
 
         super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
-
-    def __set_default_params(self):
-        """
-        Default BiTe system parameters in atomic units
-        """
-        R = 11.06
-        C0 = -0.008269
-        C2 = 6.5242
-        vf = 0.1974
-        return R, C0, C2, vf
 
 
 class Graphene(TwoBandSystem):
