@@ -8,10 +8,10 @@ eV_conv = 0.03674932176
 au_conv = (1/eV_conv)
 
 
-a = 8.308
-C2 = 6.5242
-A = 0.1974
-R = 11.06
+a = 8.3053
+C2 = 5.39018
+A = 0.19732
+R = 5.52658
 
 
 def kmat(kinit):
@@ -23,15 +23,19 @@ def kmat(kinit):
 
 def topological(kx, ky, eflag=False, edflag=False, dipflag=False):
     bite = BiTePeriodic(m=1.0, a=a, A=A, C2=C2, R=R, order=4)
-    h_sym, ef_sym, wf_sym, ediff_sym = bite.eigensystem(gidx=1)
-    kxlist = np.zeros(4)
-    kylist = np.linspace(1, 2*np.pi, 4)
-    # print(bite.hf(kx=kxlist, ky=kylist)[:, :, 1])
-    print(bite.hderivf[0](kx=kxlist, ky=kylist).shape)
-    # print(bite.hderivf[1](kx=kxlist, ky=kylist))
-    wf = bite.Uf(kx=kxlist, ky=kylist)[:, :, 2]
-    wf_h = bite.Uf_h(kx=kxlist, ky=kylist)[:, :, 2]
-    print(np.dot(wf_h, wf))
+    h_sym, e_sym, wf_sym, ediff_sym = bite.eigensystem(gidx=1)
+
+    dip = SymbolicDipole(h_sym, e_sym, wf_sym)
+
+    evdx = bite.ederivfjit[0](kx=0.1, ky=0)
+    evdy = bite.ederivfjit[1](kx=0.1, ky=0)
+    ecdx = bite.ederivfjit[2](kx=0.1, ky=0)
+    ecdy = bite.ederivfjit[3](kx=0.1, ky=0)
+
+    di_01x = dip.Axfjit[0][1](kx=0.1, ky=0)
+    di_01y = dip.Ayfjit[0][1](kx=0.1, ky=0)
+
+    breakpoint()
 
     # if (eflag):
     #     ev, ec = bite.evaluate_energy(kx, ky)

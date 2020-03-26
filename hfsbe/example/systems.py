@@ -165,7 +165,7 @@ class TwoBandSystem():
         self.Ujit_h = matrix_to_njit_functions(self.U_h)
 
         self.efjit = list_to_njit_functions(self.e)
-        self.ederivjit = list_to_njit_functions(self.ederiv)
+        self.ederivfjit = list_to_njit_functions(self.ederiv)
 
         return self.h, self.e, [self.U, self.U_h], self.ederiv
 
