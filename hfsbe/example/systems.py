@@ -455,8 +455,8 @@ class BiTePeriodic(TwoBandSystem):
 
     def __init__(self, A=sp.Symbol('A', real=True),
                  C2=sp.Symbol('C2', real=True), R=sp.Symbol('R', real=True),
-                 a=sp.Symbol('a', real=True),
-                 b1=None, b2=None, m=1, order=4, default_params=False):
+                 a=sp.Symbol('a', real=True), mw=1, mb=0, order=4,
+                 b1=None, b2=None, default_params=False):
         if (default_params):
             A, R, C0, C2 = self.__set_default_params()
 
@@ -474,8 +474,11 @@ class BiTePeriodic(TwoBandSystem):
         hx = (1/sqr)*(A/a)*(sp.sin(K1) - sp.sin(K3))
         hy = (1/3)*(A/a)*(2*sp.sin(K2) - sp.sin(K1) - sp.sin(K3))
         hz = 16*(R/a**3)*(sp.sin(K1) + sp.sin(K2) + sp.sin(K3))
-        hz += m*8*(R/a**3)*3*sqr*4**(-order) \
+        # Wilson mass term
+        hz += mw*8*(R/a**3)*3*sqr*4**(-order) \
             * (-sp.cos(K1)-sp.cos(K2)-sp.cos(K3) + 3)**order
+        # Constant band splitting
+        hz += mb
 
         super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
 
