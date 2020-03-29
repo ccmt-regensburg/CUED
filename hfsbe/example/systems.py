@@ -420,7 +420,7 @@ class BiTe(TwoBandSystem):
     """
 
     def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
-                 A=sp.Symbol('A'), R=sp.Symbol('R'),
+                 A=sp.Symbol('A'), R=sp.Symbol('R'), mb=0,
                  kcut=None, b1=None, b2=None, default_params=False):
         if (default_params):
             A, R, C0, C2 = self.__set_default_params()
@@ -429,6 +429,7 @@ class BiTe(TwoBandSystem):
         hx = A*self.ky
         hy = -A*self.kx
         hz = 2*R*(self.kx**3 - 3*self.kx*self.ky**2)
+        hz += mb
 
         if (kcut is not None):
             ratio = (self.kx**2 + self.ky**2)/kcut**2
