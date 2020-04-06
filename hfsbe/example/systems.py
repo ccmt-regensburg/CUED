@@ -494,26 +494,22 @@ class BiTePeriodic(TwoBandSystem):
         return A, R, C0, C2
 
 
-class BiTeTrivial(TwoBandSystem):
+class BiTeResummed(TwoBandSystem):
     """
     Bismuth Telluride topological insulator model
     """
 
-    def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
-                 R=sp.Symbol('R'), vf=sp.Symbol('vf'),
-                 kcut=None, b1=None, b2=None):
+    def __init__(self, C0=sp.Symbol('C0'), c2=sp.Symbol('c2'),
+                 A=sp.Symbol('A'), r=sp.Symbol('r'), ksym=sp.Symbol('ksym'),
+                 kasym=sp.Symbol('kasym'), b1=None, b2=None):
 
+        k = sp.sqrt(self.kx**2 + self.ky**2)
+        C2 = (c2/ksym**2)/(1+(k/ksym)**2)
+        R = (r/kasym**2)/(1+(k/kasym)**4)
         ho = C0 + C2*(self.kx**2 + self.ky**2)
-        hx = 0
-        hy = 0
-        hz = 2*R*sp.Abs(self.kx**3 - 3*self.kx*self.ky**2)
-
-        if (kcut is not None):
-            ratio = (self.kx**2 + self.ky**2)/kcut**2
-            cutfactor = 1/(1+(ratio))
-            hz *= cutfactor
-
-        hz += vf*sp.sqrt(self.kx**2 + self.ky**2)
+        hx = A*self.ky
+        hy = -A*self.kx
+        hz = 2*R*self.kx*(self.kx**2 - 3*self.ky**2)
 
         super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
 
