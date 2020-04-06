@@ -30,12 +30,12 @@ def bite_resummed(kx, ky, eflag=False, edflag=False, dipflag=False):
     bite = BiTeResummed(C0=C0, c2=c2, A=A, r=r, ksym=ksym, kasym=kasym)
     h_sym, e_sym, wf_sym, ediff_sym = bite.eigensystem(gidx=1)
 
-    dip = SymbolicDipole(h_sym, e_sym, wf_sym)
+    # dip = SymbolicDipole(h_sym, e_sym, wf_sym)
 
-    # if (eflag):
-    #     ev, ec = bite.evaluate_energy(kx, ky)
+    if (eflag):
+        ev, ec = bite.evaluate_energy(kx, ky)
 
-        # bite.plot_bands_contour(kx, ky)
+        bite.plot_bands_contour(kx, ky)
         # bite.plot_bands_3d(kx, ky)
 
     # if (edflag):

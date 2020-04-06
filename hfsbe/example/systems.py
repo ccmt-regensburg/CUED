@@ -501,7 +501,7 @@ class BiTeResummed(TwoBandSystem):
 
     def __init__(self, C0=sp.Symbol('C0'), c2=sp.Symbol('c2'),
                  A=sp.Symbol('A'), r=sp.Symbol('r'), ksym=sp.Symbol('ksym'),
-                 kasym=sp.Symbol('kasym'), b1=None, b2=None):
+                 kasym=sp.Symbol('kasym'), mb=0, b1=None, b2=None):
 
         k = sp.sqrt(self.kx**2 + self.ky**2)
         C2 = (c2/ksym**2)/(1+(k/ksym)**2)
@@ -510,6 +510,7 @@ class BiTeResummed(TwoBandSystem):
         hx = A*self.ky
         hy = -A*self.kx
         hz = 2*R*self.kx*(self.kx**2 - 3*self.ky**2)
+        hz += mb
 
         super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
 
