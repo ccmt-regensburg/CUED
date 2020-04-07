@@ -42,9 +42,11 @@ def bite_resummed(kx, ky, eflag=False, edflag=False, dipflag=False):
         # bite.evaluate_ederivative(kx, ky)
         # bite.plot_bands_derivative(kx, ky)
 
-    # if (dipflag):
-        # dip = SymbolicDipole(h_sym, ef_sym, wf_sym)
-        # curv = SymbolicCurvature(dip.Ax, dip.Ay)
+    if (dipflag):
+        dip = SymbolicDipole(h_sym, e_sym, wf_sym)
+        curv = SymbolicCurvature(dip.Ax, dip.Ay)
+        breakpoint()
+#        curv.Bfjit[0][1](kx=kx, ky=ky)
         # for i in range(2000):
         #     print("Round: ", i)
         #     kx = np.random.random_sample(size=400)
@@ -52,8 +54,8 @@ def bite_resummed(kx, ky, eflag=False, edflag=False, dipflag=False):
 
 
 if __name__ == "__main__":
-    N = 201
+    N = 200
     kinit = np.linspace(-np.pi/a, np.pi/a, N)
     kx, ky = kmat(kinit)
-    bite_resummed(kx, ky, eflag=True, edflag=False, dipflag=False)
+    bite_resummed(kx, ky, eflag=True, edflag=False, dipflag=True)
     # trivial(kx, ky, energy=True, ediff=True, dipole=True)

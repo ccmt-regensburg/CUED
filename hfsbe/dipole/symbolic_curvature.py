@@ -3,7 +3,7 @@ import sympy as sp
 import matplotlib.pyplot as plt
 
 from hfsbe.brillouin import evaluate_matrix_field as evmatrix
-from hfsbe.utility import to_numpy_function
+from hfsbe.utility import matrix_to_njit_functions, to_numpy_function
 
 plt.rcParams['figure.figsize'] = [12, 15]
 plt.rcParams['text.usetex'] = True
@@ -34,6 +34,9 @@ class SymbolicCurvature():
         self.Ay = Ay
 
         self.B = self.__field()
+
+        self.Bfjit = matrix_to_njit_functions(self.B)
+
         self.Bf = to_numpy_function(self.B)
 
         self.B_eval = None
