@@ -3,7 +3,6 @@ import sympy as sp
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # NOQA
 
-from hfsbe.brillouin import evaluate_scalar_field
 from hfsbe.utility import to_numpy_function, list_to_numpy_functions, \
     list_to_njit_functions, matrix_to_njit_functions
 
@@ -20,7 +19,7 @@ class TwoBandSystem():
     kx = sp.Symbol('kx', real=True)
     ky = sp.Symbol('ky', real=True)
 
-    def __init__(self, ho, hx, hy, hz, b1=None, b2=None):
+    def __init__(self, ho, hx, hy, hz):
         """
         Generates the symbolic Hamiltonian, wave functions and
         energies.
@@ -30,9 +29,6 @@ class TwoBandSystem():
         ho, hx, hy, hz : Symbol
             Wheter to additionally return energy and wave function derivatives
         """
-
-        self.b1 = b1
-        self.b2 = b2
 
         self.ho = ho
         self.hx = hx
@@ -52,7 +48,7 @@ class TwoBandSystem():
         self.ederivf = None       # Energy derivatives as callable func.
 
         self.efjit = None         # Energies as callable jit functions
-        self.ederivjit = None     # Energy derivatives as callable jit func
+        self.ederivfjit = None     # Energy derivatives as callable jit func
 
         # Get set when evaluate_energy is called
         self.e_eval = None
@@ -147,6 +143,7 @@ class TwoBandSystem():
         self.U, self.U_h, self.U_no_norm, self.U_h_no_norm = \
             self.__wave_function(gidx=gidx)
 
+        hsymbols = self.h.free_symbols
         # Populate callable Hamiltonian, Hamiltonian derivative functions
         self.hf = to_numpy_function(self.h)
         self.hderivf = list_to_numpy_functions(self.hderiv)
@@ -159,49 +156,32 @@ class TwoBandSystem():
         self.ederivf = list_to_numpy_functions(self.ederiv)
 
         # All jitted functions
-        self.hfjit = matrix_to_njit_functions(self.h)
-        self.hderivfjit = [matrix_to_njit_functions(hd) for hd in self.hderiv]
-        self.Ujit = matrix_to_njit_functions(self.U)
-        self.Ujit_h = matrix_to_njit_functions(self.U_h)
+        self.hfjit = matrix_to_njit_functions(self.h, hsymbols)
+        self.hderivfjit = [matrix_to_njit_functions(hd, hsymbols)
+                           for hd in self.hderiv]
+        self.Ujit = matrix_to_njit_functions(self.U, hsymbols)
+        self.Ujit_h = matrix_to_njit_functions(self.U_h, hsymbols)
 
-        self.efjit = list_to_njit_functions(self.e)
-        self.ederivfjit = list_to_njit_functions(self.ederiv)
+        self.efjit = list_to_njit_functions(self.e, hsymbols)
+        self.ederivfjit = list_to_njit_functions(self.ederiv, hsymbols)
 
         return self.h, self.e, [self.U, self.U_h], self.ederiv
 
-    def evaluate_energy(self, kx, ky, hamr=None,
-                        eps=10e-10, **fkwargs):
+    def evaluate_energy(self, kx, ky, **fkwargs):
         # Evaluate all kpoints without BZ
         self.e_eval = []
-        if (self.b1 is None or self.b2 is None):
-            for ef in self.ef:
-                self.e_eval.append(ef(kx=kx, ky=ky, **fkwargs))
-            return self.e_eval
 
-        # Add a BZ and throw error if kx, ky is outside
         for ef in self.ef:
-            buff = evaluate_scalar_field(ef, kx, ky, self.b1, self.b2,
-                                         hamr=hamr, eps=eps,
-                                         **fkwargs)
-            self.e_eval.append(buff)
-
+            self.e_eval.append(ef(kx=kx, ky=ky, **fkwargs))
         return self.e_eval
 
-    def evaluate_ederivative(self, kx, ky, hamr=None,
-                             eps=10e-10, **fkwargs):
+    def evaluate_ederivative(self, kx, ky, **fkwargs):
         self.ederiv_eval = []
         # Evaluate all kpoints without BZ
         if (self.b1 is None or self.b2 is None):
             for ederivf in self.ederivf:
                 self.ederiv_eval.append(ederivf(kx=kx, ky=ky, **fkwargs))
             return self.ederiv_eval
-
-        for ederivf in self.ederivf:
-            buff = evaluate_scalar_field(ederivf, kx, ky, self.b1, self.b2,
-                                         hamr, eps=eps, **fkwargs)
-            self.ederiv_eval.append(buff)
-
-        return self.ederiv_eval
 
     def plot_bands_3d(self, kx, ky, title="Energies"):
         fig = plt.figure()
@@ -396,8 +376,8 @@ class Haldane(TwoBandSystem):
     """
 
     def __init__(self, t1=sp.Symbol('t1'), t2=sp.Symbol('t2'),
-                 m=sp.Symbol('m'), phi=sp.Symbol('phi'),
-                 b1=None, b2=None):
+                 m=sp.Symbol('m'), phi=sp.Symbol('phi')):
+                 
         a1 = self.kx
         a2 = -1/2 * self.kx + sp.sqrt(3)/2 * self.ky
         a3 = -1/2 * self.kx - sp.sqrt(3)/2 * self.ky
@@ -411,7 +391,7 @@ class Haldane(TwoBandSystem):
         hy = t1*(sp.sin(a1)+sp.sin(a2)+sp.sin(a3))
         hz = m - 2*t2*sp.sin(phi)*(sp.sin(b1)+sp.sin(b2)+sp.sin(b3))
 
-        super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
+        super().__init__(ho, hx, hy, hz)
 
 
 class BiTe(TwoBandSystem):
@@ -421,7 +401,7 @@ class BiTe(TwoBandSystem):
 
     def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
                  A=sp.Symbol('A'), R=sp.Symbol('R'), mb=0,
-                 kcut=None, b1=None, b2=None, default_params=False):
+                 kcut=None, default_params=False):
         if (default_params):
             A, R, C0, C2 = self.__set_default_params()
 
@@ -436,7 +416,7 @@ class BiTe(TwoBandSystem):
             cutfactor = 1/(1+(ratio))
             hz *= cutfactor
 
-        super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
+        super().__init__(ho, hx, hy, hz)
 
     def __set_default_params(self):
         """
@@ -457,7 +437,7 @@ class BiTePeriodic(TwoBandSystem):
     def __init__(self, A=sp.Symbol('A', real=True),
                  C2=sp.Symbol('C2', real=True), R=sp.Symbol('R', real=True),
                  a=sp.Symbol('a', real=True), mw=1, mb=0, order=4,
-                 b1=None, b2=None, default_params=False):
+                 default_params=False):
         if (default_params):
             A, R, C0, C2 = self.__set_default_params()
 
@@ -481,7 +461,7 @@ class BiTePeriodic(TwoBandSystem):
         # Constant band splitting
         hz += mb
 
-        super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
+        super().__init__(ho, hx, hy, hz)
 
     def __set_default_params(self):
         """
@@ -501,8 +481,7 @@ class BiTeResummed(TwoBandSystem):
 
     def __init__(self, C0=sp.Symbol('C0'), c2=sp.Symbol('c2'),
                  A=sp.Symbol('A'), r=sp.Symbol('r'), ksym=sp.Symbol('ksym'),
-                 kasym=sp.Symbol('kasym'), mb=sp.Symbol('mb'),
-                 b1=None, b2=None):
+                 kasym=sp.Symbol('kasym'), mb=sp.Symbol('mb')):
 
         k = sp.sqrt(self.kx**2 + self.ky**2)
         C2 = (c2/ksym**2)/(1+(k/ksym)**2)
@@ -513,7 +492,7 @@ class BiTeResummed(TwoBandSystem):
         hz = 2*R*self.kx*(self.kx**2 - 3*self.ky**2)
         hz += mb
 
-        super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
+        super().__init__(ho, hx, hy, hz)
 
 
 class Graphene(TwoBandSystem):
@@ -521,7 +500,7 @@ class Graphene(TwoBandSystem):
     Graphene model
     """
 
-    def __init__(self, t=sp.Symbol('t'), b1=None, b2=None):
+    def __init__(self, t=sp.Symbol('t')):
         a1 = self.kx
         a2 = -1/2 * self.kx + sp.sqrt(3)/2 * self.ky
         a3 = -1/2 * self.kx - sp.sqrt(3)/2 * self.ky
@@ -531,7 +510,7 @@ class Graphene(TwoBandSystem):
         hy = t*(sp.sin(a1)+sp.sin(a2)+sp.sin(a3))
         hz = 0
 
-        super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
+        super().__init__(ho, hx, hy, hz)
 
 
 class QWZ(TwoBandSystem):
@@ -539,7 +518,7 @@ class QWZ(TwoBandSystem):
     Qi-Wu-Zhang model of a 2D Chern insulator
     """
 
-    def __init__(self, order=sp.oo, b1=None, b2=None):
+    def __init__(self, order=sp.oo):
         n = order+1
         m = sp.Symbol('m')
 
@@ -554,7 +533,7 @@ class QWZ(TwoBandSystem):
             hz = m - sp.cos(self.kx).series(n=n).removeO()\
                 - sp.cos(self.ky).series(n=n).removeO()
 
-        super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
+        super().__init__(ho, hx, hy, hz)
 
 
 class Dirac(TwoBandSystem):
@@ -562,11 +541,12 @@ class Dirac(TwoBandSystem):
     Generic Dirac cone Hamiltonian
     """
 
-    def __init__(self, m=sp.Symbol('m'), b1=None, b2=None):
+    def __init__(self, vx=sp.Symbol('vx'), vy=sp.Symbol('vy'),
+                 m=sp.Symbol('m')):
 
         ho = 0
-        hx = self.kx
-        hy = self.ky
+        hx = vx*self.kx
+        hy = vy*self.ky
         hz = m
 
-        super().__init__(ho, hx, hy, hz, b1=b1, b2=b2)
+        super().__init__(ho, hx, hy, hz)

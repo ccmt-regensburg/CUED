@@ -2,7 +2,6 @@ import numpy as np
 import sympy as sp
 import matplotlib.pyplot as plt
 
-from hfsbe.brillouin import evaluate_matrix_field as evmatrix
 from hfsbe.utility import matrix_to_njit_functions, to_numpy_function
 
 plt.rcParams['figure.figsize'] = [12, 15]
@@ -15,27 +14,25 @@ class SymbolicCurvature():
     Berry connection calculated by SymbolicDipole.
     """
 
-    def __init__(self, Ax, Ay, b1=None, b2=None):
+    def __init__(self, Ax, Ay):
         """
         Parameters
         ----------
         Ax, Ay : Matrix of Symbol
             x, y components of all dipole fields
-        b1, b2 : np.ndarray
-            reciprocal lattice vector
         """
-        self.b1 = b1
-        self.b2 = b2
 
         self.kx = sp.Symbol('kx', real=True)
         self.ky = sp.Symbol('ky', real=True)
+        kset = {self.kx, self.ky}
 
         self.Ax = Ax
         self.Ay = Ay
 
         self.B = self.__field()
 
-        self.Bfjit = matrix_to_njit_functions(self.B)
+        hsymbols = kset.union(self.Ax.free_symbols).union(self.Ay.free_symbols)
+        self.Bfjit = matrix_to_njit_functions(self.B, hsymbols)
 
         self.Bf = to_numpy_function(self.B)
 
@@ -44,14 +41,10 @@ class SymbolicCurvature():
     def __field(self):
         return sp.diff(self.Ax, self.ky) - sp.diff(self.Ay, self.kx)
 
-    def evaluate(self, kx, ky, hamr=None, eps=10e-10, **fkwargs):
+    def evaluate(self, kx, ky, **fkwargs):
         # Evaluate all kpoints without BZ
-        if (self.b1 is None or self.b2 is None):
-            self.B_eval = self.Bf(kx=kx, ky=ky, **fkwargs)
-        else:
-            # Add a BZ
-            self.B_eval = evmatrix(self.Bf, kx, ky, self.b1, self.b2,
-                                   hamr=hamr, eps=eps, **fkwargs)
+
+        self.B_eval = self.Bf(kx=kx, ky=ky, **fkwargs)
 
         return self.B_eval
 

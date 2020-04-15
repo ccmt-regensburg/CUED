@@ -3,9 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import hfsbe.check.symbolic_checks as symbolic_checks
-from hfsbe.brillouin import evaluate_matrix_field as evaldip
-from hfsbe.utility import matrix_to_njit_functions, \
-    to_njit_function, to_numpy_function
+from hfsbe.utility import matrix_to_njit_functions, to_numpy_function
 
 plt.rcParams['figure.figsize'] = [12, 15]
 plt.rcParams['text.usetex'] = True
@@ -19,23 +17,24 @@ class SymbolicDipole():
 
     """
 
-    def __init__(self, h, e, wf, test=False, b1=None, b2=None):
+    def __init__(self, h, e, wf, offdiagonal_k=False, test=False):
         """
+        Diagonal and off-diagonal (band index) elements <n k| d/dk |m k>
+        i.e. Berry connection and Dipoles.
+
         Parameters
         ----------
         h : Symbol
             Hamiltonian of the system
         e : np.ndarray of Symbol
             Band energies of the system
-n        wf : np.ndarray of Symbol
+        wf : np.ndarray of Symbol
             Wave functions, columns: bands, rows: wf and complex conjugate
+        offdiagonal_k: bool
+            Additional k-offdiagonal dipoles populated
         test : bool
             Wheter to perform a orthonormality and eigensystem test
-        b1, b2 : np.ndarray
-            reciprocal lattice vector
         """
-        self.b1 = b1
-        self.b2 = b2
 
         if (test):
             symbolic_checks.eigensystem(h, e, wf)
@@ -43,16 +42,19 @@ n        wf : np.ndarray of Symbol
         self.kx = sp.Symbol('kx', real=True)
         self.ky = sp.Symbol('ky', real=True)
 
+        # # Not yet used, could be used for alternative scheme to
+        # # symbolically calcuate dipole moments
         self.h = h
-        self.e = e
-        self.U = wf[0]
-        self.U_h = wf[1]
+        # We want to use all the free symbols inside the Hamiltonian, even if
+        # some drop out during derivatives
+        self.hsymbols = h.free_symbols
+        # self.e = e
 
-        self.Ax, self.Ay = self.__fields()
+        self.Ax, self.Ay = self.__fields(wf[0], wf[1])
 
         # Numpy function and function arguments
-        self.Axfjit = matrix_to_njit_functions(self.Ax)
-        self.Ayfjit = matrix_to_njit_functions(self.Ay)
+        self.Axfjit = matrix_to_njit_functions(self.Ax, self.hsymbols)
+        self.Ayfjit = matrix_to_njit_functions(self.Ay, self.hsymbols)
 
         self.Axf = to_numpy_function(self.Ax)
         self.Ayf = to_numpy_function(self.Ay)
@@ -61,52 +63,50 @@ n        wf : np.ndarray of Symbol
         self.Ax_eval = None
         self.Ay_eval = None
 
-    def __fields(self):
-        dUx = sp.diff(self.U, self.kx)
-        dUy = sp.diff(self.U, self.ky)
-        return sp.I*self.U_h * dUx, sp.I*self.U_h * dUy
+        # Offdiagonal k elements
+        self.Ax_offk = None
+        self.Ay_offk = None
 
-    def evaluate(self, kx, ky, hamr=None, eps=10e-10,
-                 **fkwargs):
+        self.Axfjit_offk = None
+        self.Ayfjit_offk = None
+
+        if (offdiagonal_k):
+            self.offdiagonal_k(wf)
+
+    def __fields(self, U, U_h):
+        dUx = sp.diff(U, self.kx)
+        dUy = sp.diff(U, self.ky)
+        return sp.I*U_h * dUx, sp.I*U_h * dUy
+
+    def evaluate(self, kx, ky, **fkwargs):
         """
         Transforms the symbolic expression for the
         berry connection/dipole moment matrix to an expression
         that is numerically evaluated.
-        If the reciprocal lattice vectors are given it creates a
-        Brillouin zone around the symbolic Hamiltonian. Values outside
-        of that zone are returned as np.nan.
-        The hamiltonian_radius determines the part of the Brillouin
-        zone the symbolic Hamiltonian can be defined on. Outside of
-        this region up to the Brillouin zone boundaries the
-        dipole moments will be interpolated by constant values
-        given at the edge of the small zone given by h_r*b1 + h_r*b2
 
-        Parameters:
+        Parameters
+        ----------
         kx, ky : np.ndarray
             array of all point combinations
-        hamr : float
-            percentace of reciprocal lattice vectors where
-            hamiltonian is defined
         fkwargs :
             keyword arguments passed to the symbolic expression
-        eps : float
-            Threshold to identify Brillouin zone boundary points
         """
         # Evaluate all kpoints without BZ
-        if (self.b1 is None or self.b2 is None):
-            self.Ax_eval = self.Axf(kx=kx, ky=ky, **fkwargs)
-            self.Ay_eval = self.Ayf(kx=kx, ky=ky, **fkwargs)
-            return self.Ax_eval, self.Ay_eval
-
-        # Add a BZ and throw error if kx, ky is outside
-        self.Ax_eval = evaldip(self.Axf, kx, ky, self.b1, self.b2,
-                               hamr=hamr, eps=eps,
-                               **fkwargs)
-        self.Ay_eval = evaldip(self.Ayf, kx, ky, self.b1, self.b2,
-                               hamr=hamr, eps=eps,
-                               **fkwargs)
-
+        self.Ax_eval = self.Axf(kx=kx, ky=ky, **fkwargs)
+        self.Ay_eval = self.Ayf(kx=kx, ky=ky, **fkwargs)
         return self.Ax_eval, self.Ay_eval
+
+    def offdiagonal_k(self, wf):
+        kxp = sp.Symbol('kxp', real=True)
+        kyp = sp.Symbol('kyp', real=True)
+
+        Ukp_h = wf[1].subs(self.kx, kxp).subs(self.ky, kyp)
+        self.Ax_offk, self.Ay_offk = self.__fields(wf[0], Ukp_h)
+
+        self.Axfjit_offk = matrix_to_njit_functions(self.Ax_offk,
+                                                    self.hsymbols, kpflag=True)
+        self.Ayfjit_offk = matrix_to_njit_functions(self.Ay_offk,
+                                                    self.hsymbols, kpflag=True)
 
     def plot_dipoles(self, kx, ky, vidx=0, cidx=1,
                      title=None, vname=None, cname=None,
@@ -115,7 +115,8 @@ n        wf : np.ndarray of Symbol
         Plot two dipole fields corresponding to the indices vidx and
         cidx
 
-        Parameters:
+        Parameters
+        ----------
         kx, ky : np.ndarray
             array of all point combinations (same as evaluate)
         vidx, cidx : int
