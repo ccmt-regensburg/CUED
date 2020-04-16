@@ -12,34 +12,30 @@ class SymbolicCurvature():
     """
     This class constructs the Berry curvature from a given symbolic
     Berry connection calculated by SymbolicDipole.
+    Also the Hamiltonian is needed to recover the original set of symbols
     """
 
-    def __init__(self, Ax, Ay):
+    def __init__(self, h, Ax, Ay):
         """
         Parameters
         ----------
+        h : Matrix of Symbol
+            Original system Hamiltonian
         Ax, Ay : Matrix of Symbol
             x, y components of all dipole fields
         """
 
         self.kx = sp.Symbol('kx', real=True)
         self.ky = sp.Symbol('ky', real=True)
-        kset = {self.kx, self.ky}
 
-        self.Ax = Ax
-        self.Ay = Ay
+        self.B = sp.diff(Ax, self.ky) - sp.diff(Ay, self.kx)
 
-        self.B = self.__field()
-
-        hsymbols = kset.union(self.Ax.free_symbols).union(self.Ay.free_symbols)
+        hsymbols = h.free_symbols
         self.Bfjit = matrix_to_njit_functions(self.B, hsymbols)
 
         self.Bf = to_numpy_function(self.B)
 
         self.B_eval = None
-
-    def __field(self):
-        return sp.diff(self.Ax, self.ky) - sp.diff(self.Ay, self.kx)
 
     def evaluate(self, kx, ky, **fkwargs):
         # Evaluate all kpoints without BZ

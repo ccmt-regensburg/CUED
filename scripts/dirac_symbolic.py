@@ -21,7 +21,12 @@ def dirac(kx, ky):
 
     # evdkx = dirac.ederivfjit[0](kx=kx, ky=ky, vx=2, vy=1, m=0)
     # ecdkx = dirac.ederivfjit[2](kx=kx, ky=ky, vx=2, vy=1, m=0)
-    print(dirac.hderivfjit[0][0][1](kx=kx, ky=ky, vx=1, vy=1, m=0))
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                print(dirac.hderivfjit[k][i][j](kx=kx, ky=ky, vx=2, vy=3, m=0))
+
+    # breakpoint()
 
     # dip = SymbolicDipole(h, ef, wf)
 
