@@ -4,6 +4,7 @@ Utility functions needed by functions/methods in the package
 from numba import njit
 import numpy as np
 import sympy as sp
+from sympy.utilities.lambdify import lambdify
 
 
 def matrix_to_njit_functions(sf, hsymbols, kpflag=False):
@@ -31,75 +32,39 @@ def to_njit_function(sf, hsymbols, kpflag=False):
 
     # Standard k variables
     kx, ky = sp.symbols('kx ky', real=True)
-    kset = {kx, ky}
 
     # Decide wheter we need to use the kp version of the program
     if (kpflag):
         kxp, kyp = sp.symbols('kxp kyp', real=True)
-        kpset = {kxp, kyp}
-        return __to_njit_function_kp(sf, hsymbols, kset, kpset)
+        return __to_njit_function_kp(sf, hsymbols, kx, ky, kxp, kyp)
     else:
-        return __to_njit_function_k(sf, hsymbols, kset)
+        return __to_njit_function_k(sf, hsymbols, kx, ky)
 
 
-def __to_njit_function_k(sf, hsymbols, kset):
+def __to_njit_function_k(sf, hsymbols, kx, ky):
+    kset = {kx, ky}
     # Check wheter k is contained in the free symbols
     contains_k = bool(sf.free_symbols.intersection(kset))
     if (contains_k):
         # All free Hamiltonian symbols get function parameters
-        return njit(sp.lambdify(hsymbols, sf, "numpy"))
-    if (bool(sf.free_symbols)):
-        # Here we have non k variables in sf. That's why we will lambdify
-        # those and make a k-dependent wrapper for repeating
-        sfunc = njit(sp.lambdify(hsymbols.difference(kset), sf, "numpy"))
-
-        def __func(kx=np.empty(1), ky=np.empty(1), **fkwargs):
-            dim = kx.size
-            return np.repeat(sfunc(**fkwargs), dim)
-
-        return njit(__func)
+        return njit(lambdify(hsymbols, sf, "numpy"))
     else:
-        # If we are here sf.free_symbols does not contain any variable
-        # Prepare dummy function only repeating the constant
-        prefac = complex(sf)
-
-        def __func(kx=np.empty(1), ky=np.empty(1), **fkwargs):
-            dim = kx.size
-            return np.repeat(prefac, dim)
-
-        return njit(__func)
+        # Here we have non k variables in sf. Expand sf by 0*kx*ky
+        sf = sf + kx*ky*sp.UnevaluatedExpr(0)
+        return njit(lambdify(hsymbols, sf, "numpy"))
 
 
-def __to_njit_function_kp(sf, hsymbols, kset, kpset):
-    kset = kset.union(kpset)
-    hsymbols = hsymbols.union(kpset)
+def __to_njit_function_kp(sf, hsymbols, kx, ky, kxp, kyp):
+    kset = {kx, ky, kxp, kyp}
+    hsymbols = hsymbols.union({kxp, kyp})
     # Check wheter k is contained in the free symbols
     contains_k = bool(sf.free_symbols.intersection(kset))
     if (contains_k):
         # All free Hamiltonian symbols get function parameters
-        return njit(sp.lambdify(hsymbols, sf, "numpy"))
-    if (bool(sf.free_symbols)):
-        # Here we have non k variables in sf. That's why we will lambdify
-        # those and make a k-dependent wrapper for repeating
-        sfunc = njit(sp.lambdify(hsymbols.difference(kset), sf, "numpy"))
-
-        def __func(kx=np.empty(1), ky=np.empty(1),
-                   kxp=np.empty(1), kyp=np.empty(1), **fkwargs):
-            dim = kxp.size
-            return np.repeat(sfunc(**fkwargs), dim)
-
-        return njit(__func)
+        return njit(lambdify(hsymbols, sf, "numpy"))
     else:
-        # If we are here sf.free_symbols does not contain any variable
-        # Prepare dummy function only repeating the constant
-        prefac = complex(sf)
-
-        def __func(kx=np.empty(1), ky=np.empty(1),
-                   kxp=np.empty(1), kyp=np.empty(1), **fkwargs):
-            dim = kxp.size
-            return np.repeat(prefac, dim)
-
-        return njit(__func)
+        sf = sf + kx*ky*kxp*kyp*sp.UnevaluatedExpr(0)
+        return njit(lambdify(hsymbols, sf, "numpy"))
 
 
 def evaluate_njit_matrix(mjit, kx=np.empty(1), ky=np.empty(1),
@@ -135,17 +100,17 @@ def to_numpy_function(sf):
     # simplification process. The variable will just return 0's
     # if used.
     if (kx in symbols and ky in symbols):
-        return sp.lambdify(symbols, sf, "numpy")
+        return lambdify(symbols, sf, "numpy")
     else:
         if (kx not in symbols and ky in symbols):
             symbols.add(kx)
-            return sp.lambdify(symbols, sf, "numpy")
+            return lambdify(symbols, sf, "numpy")
         if (kx in symbols and ky not in symbols):
             symbols.add(ky)
-            return sp.lambdify(symbols, sf, "numpy")
+            return lambdify(symbols, sf, "numpy")
 
         symbols.update([kx, ky])
-        func = sp.lambdify(symbols, sf, "numpy")
+        func = lambdify(symbols, sf, "numpy")
 
         def __func(kx=kx, ky=ky, **fkwargs):
             dim = kx.size
