@@ -29,10 +29,12 @@ def kmat(kinit):
 
 
 def bite_resummed(kx, ky, eflag=False, edflag=False, dipflag=False):
+    mb = 0.0003
     bite = BiTeResummed(C0=C0, c2=c2, A=A, r=r, ksym=ksym, kasym=kasym)
     h_sym, e_sym, wf_sym, ediff_sym = bite.eigensystem(gidx=1)
+    # test = sp.lambdify(ediff_sym[1].free_symbols, ediff_sym[1], "numpy")
+    # print(test(kx=kx, ky=ky, mb=mb))
 
-    mb = 0.0003
     print("Hamiltonian")
     print(evmat(bite.hfjit, kx=kx, ky=ky, mb=mb))
     print("Hamiltonian d/dkx")
@@ -64,6 +66,7 @@ def bite_resummed(kx, ky, eflag=False, edflag=False, dipflag=False):
     print(evmat(dip.Axfjit_offk, kx=kx, ky=ky, kxp=kx, kyp=ky, mb=mb))
     print("Dipole Matrix y-Component (k neq kp)")
     print(evmat(dip.Ayfjit_offk, kx=kx, ky=ky, kxp=kx, kyp=ky, mb=mb))
+    breakpoint()
 
     cur = SymbolicCurvature(h_sym, dip.Ax, dip.Ay)
     print("Berry curvature")
