@@ -9,6 +9,47 @@ plt.rcParams['figure.figsize'] = [12, 15]
 plt.rcParams['text.usetex'] = True
 
 
+class SymbolicParameterDipole():
+    """
+    This class constructs dipole like symbolic expressions using a given
+    parameter. This could for example be a magnetic field.
+    """
+
+    def __init__(self, h, wf, p):
+        """
+        Diagonal and off-diagonal (band index) elements
+        I * <n (p)| d/dp |m (p)>
+        Can also calculate off-diagonal k entries i.e.
+
+
+        Parameters
+        ----------
+        h : Symbol
+            Hamiltonian of the system
+        e : np.ndarray of Symbol
+            Band energies of the system
+        wf : np.ndarray of Symbol
+            Wave functions, columns: bands, rows: wf and complex conjugate
+        p : Symbol
+            Parameter to perform the derivative with
+       """
+
+        self.p = p
+
+        self.h = h
+        # We want to use all the free symbols inside the Hamiltonian, even if
+        # some drop out during derivatives
+        self.hsymbols = h.free_symbols
+
+        self.Ap = self.__field(wf[0], wf[1])
+
+        self.Apfjit = matrix_to_njit_functions(self.Ap, self.hsymbols)
+
+        def __field(self, U, U_h):
+            dUp = sp.diff(U, self.p)
+            return sp.I*U_h * dUp
+
+
 class SymbolicDipole():
     """
     This class constructs the dipole moment functions from a given symbolic
@@ -21,6 +62,8 @@ class SymbolicDipole():
         """
         Diagonal and off-diagonal (band index) elements <n k| d/dk |m k>
         i.e. Berry connection and Dipoles.
+        Can also calculate off-diagonal k entries i.e.
+        I * <n kp | d/dk | m k>
 
         Parameters
         ----------
@@ -42,7 +85,7 @@ class SymbolicDipole():
         self.kx = sp.Symbol('kx', real=True)
         self.ky = sp.Symbol('ky', real=True)
 
-        # # Not yet used, could be used for alternative scheme to
+        # # Could also be used for alternative scheme to
         # # symbolically calcuate dipole moments
         self.h = h
         # We want to use all the free symbols inside the Hamiltonian, even if
