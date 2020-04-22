@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import sympy as sp
 
 from hfsbe.example import BiTeResummed
-from hfsbe.dipole import SymbolicDipole, SymbolicCurvature
+from hfsbe.dipole import SymbolicDipole, SymbolicParameterDipole, \
+                         SymbolicCurvature
 from hfsbe.utility import evaluate_njit_matrix as evmat
 
 np.set_printoptions(linewidth=200)
@@ -28,7 +29,7 @@ def kmat(kinit):
     return kx, ky
 
 
-def bite_resummed(kx, ky, eflag=False, edflag=False, dipflag=False):
+def bite_resummed_num(kx, ky, eflag=False, edflag=False, dipflag=False):
     mb = 0.0003
     bite = BiTeResummed(C0=C0, c2=c2, A=A, r=r, ksym=ksym, kasym=kasym)
     h_sym, e_sym, wf_sym, ediff_sym = bite.eigensystem(gidx=1)
@@ -56,6 +57,9 @@ def bite_resummed(kx, ky, eflag=False, edflag=False, dipflag=False):
     print("Conduction band d/dky")
     print(bite.ederivfjit[3](kx=kx, ky=ky, mb=mb))
 
+    print("Valence & Conduction band wave function")
+    print(evmat(bite.Ujit, kx=kx, ky=ky, mb=mb))
+
     dip = SymbolicDipole(h_sym, e_sym, wf_sym, offdiagonal_k=True)
     print("Dipole Matrix x-Component")
     print(evmat(dip.Axfjit, kx=kx, ky=ky, mb=mb))
@@ -66,7 +70,11 @@ def bite_resummed(kx, ky, eflag=False, edflag=False, dipflag=False):
     print(evmat(dip.Axfjit_offk, kx=kx, ky=ky, kxp=kx, kyp=ky, mb=mb))
     print("Dipole Matrix y-Component (k neq kp)")
     print(evmat(dip.Ayfjit_offk, kx=kx, ky=ky, kxp=kx, kyp=ky, mb=mb))
-    breakpoint()
+
+    mb_sym = sp.Symbol('mb', real=True)
+    dip_mb = SymbolicParameterDipole(h_sym, wf_sym, mb_sym)
+    print("Dipole Matrix mb-Component")
+    print(evmat(dip_mb.Apfjit, kx=kx, ky=ky, mb=mb))
 
     cur = SymbolicCurvature(h_sym, dip.Ax, dip.Ay)
     print("Berry curvature")
@@ -79,5 +87,5 @@ if __name__ == "__main__":
     kx, ky = kmat(kinit)
     kx = kinit
     ky = np.zeros(N)
-    bite_resummed(kx, ky)
+    bite_resummed_num(kx, ky)
     # trivial(kx, ky, energy=True, ediff=True, dipole=True)

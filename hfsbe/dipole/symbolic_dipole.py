@@ -45,9 +45,9 @@ class SymbolicParameterDipole():
 
         self.Apfjit = matrix_to_njit_functions(self.Ap, self.hsymbols)
 
-        def __field(self, U, U_h):
-            dUp = sp.diff(U, self.p)
-            return sp.I*U_h * dUp
+    def __field(self, U, U_h):
+        dUp = sp.diff(U, self.p)
+        return sp.I*U_h * dUp
 
 
 class SymbolicDipole():

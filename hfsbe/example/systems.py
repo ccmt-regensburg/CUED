@@ -435,8 +435,10 @@ class BiTePeriodic(TwoBandSystem):
     """
 
     def __init__(self, A=sp.Symbol('A', real=True),
-                 C2=sp.Symbol('C2', real=True), R=sp.Symbol('R', real=True),
-                 a=sp.Symbol('a', real=True), mw=1, mb=0, order=4,
+                 C2=sp.Symbol('C2', real=True),
+                 R=sp.Symbol('R', real=True),
+                 a=sp.Symbol('a', real=True),
+                 mw=1, mb=0, order=4,
                  default_params=False):
         if (default_params):
             A, R, C0, C2 = self.__set_default_params()
@@ -479,9 +481,13 @@ class BiTeResummed(TwoBandSystem):
     Bismuth Telluride topological insulator model
     """
 
-    def __init__(self, C0=sp.Symbol('C0'), c2=sp.Symbol('c2'),
-                 A=sp.Symbol('A'), r=sp.Symbol('r'), ksym=sp.Symbol('ksym'),
-                 kasym=sp.Symbol('kasym'), mb=sp.Symbol('mb')):
+    def __init__(self, C0=sp.Symbol('C0', real=True),
+                 c2=sp.Symbol('c2', real=True),
+                 A=sp.Symbol('A', real=True),
+                 r=sp.Symbol('r', real=True),
+                 ksym=sp.Symbol('ksym', real=True),
+                 kasym=sp.Symbol('kasym', real=True),
+                 mb=sp.Symbol('mb', real=True)):
 
         k = sp.sqrt(self.kx**2 + self.ky**2)
         C2 = (c2/ksym**2)/(1+(k/ksym)**2)
