@@ -399,8 +399,11 @@ class BiTe(TwoBandSystem):
     Bismuth Telluride topological insulator model
     """
 
-    def __init__(self, C0=sp.Symbol('C0'), C2=sp.Symbol('C2'),
-                 A=sp.Symbol('A'), R=sp.Symbol('R'), mb=0,
+    def __init__(self, C0=sp.Symbol('C0', real=True),
+                 C2=sp.Symbol('C2', real=True),
+                 A=sp.Symbol('A', real=True),
+                 R=sp.Symbol('R', real=True),
+                 mb=sp.Symbol('mb', real=True),
                  kcut=None, default_params=False):
         if (default_params):
             A, R, C0, C2 = self.__set_default_params()
