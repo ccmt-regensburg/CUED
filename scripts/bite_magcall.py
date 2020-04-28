@@ -22,14 +22,7 @@ ksym = 0.0635012
 kasym = 0.113773
 
 
-def kmat(kinit):
-    kmat = np.array(np.meshgrid(kinit, kinit)).T.reshape(-1, 2)
-    kx = kmat[:, 0]
-    ky = kmat[:, 1]
-    return kx, ky
-
-
-def bite_resummed_num(kx, ky, eflag=False, edflag=False, dipflag=False):
+def bite_resummed_num(kx, ky):
     mb = 0.0003
     bite = BiTeResummed(C0=C0, c2=c2, A=A, r=r, ksym=ksym, kasym=kasym)
     h_sym, e_sym, wf_sym, ediff_sym = bite.eigensystem(gidx=1)
@@ -84,8 +77,6 @@ def bite_resummed_num(kx, ky, eflag=False, edflag=False, dipflag=False):
 if __name__ == "__main__":
     N = 10
     kinit = np.linspace(-np.pi/a, np.pi/a, N)
-    kx, ky = kmat(kinit)
     kx = kinit
     ky = np.zeros(N)
     bite_resummed_num(kx, ky)
-    # trivial(kx, ky, energy=True, ediff=True, dipole=True)

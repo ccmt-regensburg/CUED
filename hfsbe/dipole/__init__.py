@@ -1,3 +1,3 @@
-from .symbolic_dipole import SymbolicParameterDipole
-from .symbolic_dipole import SymbolicDipole
+from .symbolic_dipole import SymbolicDipole, SymbolicParameterDipole,\
+                             SymbolicZeemanDipole
 from .symbolic_curvature import SymbolicCurvature

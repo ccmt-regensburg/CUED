@@ -19,6 +19,10 @@ class TwoBandSystem():
     kx = sp.Symbol('kx', real=True)
     ky = sp.Symbol('ky', real=True)
 
+    m_zee_x = sp.Symbol('m_zee_x', real=True)
+    m_zee_y = sp.Symbol('m_zee_y', real=True)
+    m_zee_z = sp.Symbol('m_zee_z', real=True)
+
     def __init__(self, ho, hx, hy, hz):
         """
         Generates the symbolic Hamiltonian, wave functions and
@@ -404,9 +408,7 @@ class BiTe(TwoBandSystem):
                  A=sp.Symbol('A', real=True),
                  R=sp.Symbol('R', real=True),
                  mb=sp.Symbol('mb', real=True),
-                 kcut=None, default_params=False):
-        if (default_params):
-            A, R, C0, C2 = self.__set_default_params()
+                 kcut=None, zeeman=False):
 
         ho = C0 + C2*(self.kx**2 + self.ky**2)
         hx = A*self.ky
@@ -419,17 +421,12 @@ class BiTe(TwoBandSystem):
             cutfactor = 1/(1+(ratio))
             hz *= cutfactor
 
-        super().__init__(ho, hx, hy, hz)
+        if (zeeman):
+            hx -= self.m_zee_x
+            hy -= self.m_zee_y
+            hz -= self.m_zee_z
 
-    def __set_default_params(self):
-        """
-        Default BiTe system parameters in atomic units
-        """
-        A = 0.19732
-        R = 5.52658
-        C0 = -0.008269
-        C2 = 5.39018
-        return A, R, C0, C2
+        super().__init__(ho, hx, hy, hz)
 
 
 class BiTePeriodic(TwoBandSystem):
@@ -441,10 +438,8 @@ class BiTePeriodic(TwoBandSystem):
                  C2=sp.Symbol('C2', real=True),
                  R=sp.Symbol('R', real=True),
                  a=sp.Symbol('a', real=True),
-                 mw=1, mb=0, order=4,
-                 default_params=False):
-        if (default_params):
-            A, R, C0, C2 = self.__set_default_params()
+                 mw=1, order=4,
+                 zeeman=False):
 
         kx = self.kx
         ky = self.ky
@@ -464,19 +459,12 @@ class BiTePeriodic(TwoBandSystem):
         hz += mw*8*(R/a**3)*3*sqr*4**(-order) \
             * (-sp.cos(K1)-sp.cos(K2)-sp.cos(K3) + 3)**order
         # Constant band splitting
-        hz += mb
+        if (zeeman):
+            hx -= self.m_zee_x
+            hy -= self.m_zee_y
+            hz -= self.m_zee_z
 
         super().__init__(ho, hx, hy, hz)
-
-    def __set_default_params(self):
-        """
-        Default BiTe system parameters in atomic units
-        """
-        A = 0.19732
-        R = 5.52658
-        C0 = -0.008269
-        C2 = 5.39018
-        return A, R, C0, C2
 
 
 class BiTeResummed(TwoBandSystem):
@@ -490,7 +478,8 @@ class BiTeResummed(TwoBandSystem):
                  r=sp.Symbol('r', real=True),
                  ksym=sp.Symbol('ksym', real=True),
                  kasym=sp.Symbol('kasym', real=True),
-                 mb=sp.Symbol('mb', real=True)):
+                 zeeman=False
+                 ):
 
         k = sp.sqrt(self.kx**2 + self.ky**2)
         C2 = (c2/ksym**2)/(1+(k/ksym)**2)
@@ -499,7 +488,11 @@ class BiTeResummed(TwoBandSystem):
         hx = A*self.ky
         hy = -A*self.kx
         hz = 2*R*self.kx*(self.kx**2 - 3*self.ky**2)
-        hz += mb
+
+        if (zeeman):
+            hx -= self.m_zee_x
+            hy -= self.m_zee_y
+            hz -= self.m_zee_z 
 
         super().__init__(ho, hx, hy, hz)
 

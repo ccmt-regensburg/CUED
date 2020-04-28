@@ -50,6 +50,48 @@ class SymbolicParameterDipole():
         return sp.I*U_h * dUp
 
 
+class SymbolicZeemanDipole():
+
+    def __init__(self, h, wf):
+        """
+        Diagonal and off-diagonal (band index) elements
+        <n m_zee| d/dm_zee |m m_zee>
+
+
+        Parameters
+        ----------
+        h : Symbol
+            Hamiltonian of the system
+        e : np.ndarray of Symbol
+            Band energies of the system
+        wf : np.ndarray of Symbol
+            Wave functions, columns: bands, rows: wf and complex conjugate
+        """
+
+        self.m_zee_x = sp.Symbol("m_zee_x", real=True)
+        self.m_zee_y = sp.Symbol("m_zee_y", real=True)
+        self.m_zee_z = sp.Symbol("m_zee_z", real=True)
+
+        self.h = h
+        # We want to use all the free symbols inside the Hamiltonian, even if
+        # some drop out during derivatives
+        self.hsymbols = h.free_symbols
+        # self.e = e
+
+        self.Mx, self.My, self.Mz = self.__fields(wf[0], wf[1])
+
+        # Numpy function and function arguments
+        self.Mxfjit = matrix_to_njit_functions(self.Mx, self.hsymbols)
+        self.Myfjit = matrix_to_njit_functions(self.My, self.hsymbols)
+        self.Mzfjit = matrix_to_njit_functions(self.Mz, self.hsymbols)
+
+    def __fields(self, U, U_h):
+        dUmx = sp.diff(U, self.m_zee_x)
+        dUmy = sp.diff(U, self.m_zee_y)
+        dUmz = sp.diff(U, self.m_zee_z)
+        return sp.I*U_h * dUmx, sp.I*U_h * dUmy, sp.I*U_h * dUmz
+
+
 class SymbolicDipole():
     """
     This class constructs the dipole moment functions from a given symbolic
