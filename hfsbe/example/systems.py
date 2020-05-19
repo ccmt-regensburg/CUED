@@ -407,14 +407,14 @@ class BiTe(TwoBandSystem):
                  C2=sp.Symbol('C2', real=True),
                  A=sp.Symbol('A', real=True),
                  R=sp.Symbol('R', real=True),
-                 kcut=None, zeeman=False):
+                 kcut=0, mz=0, zeeman=False):
 
         ho = C0 + C2*(self.kx**2 + self.ky**2)
         hx = A*self.ky
         hy = -A*self.kx
-        hz = 2*R*(self.kx**3 - 3*self.kx*self.ky**2)
+        hz = 2*R*(self.kx**3 - 3*self.kx*self.ky**2) + mz
 
-        if (kcut is not None):
+        if (not np.isclose(kcut, 0)):
             ratio = (self.kx**2 + self.ky**2)/kcut**2
             cutfactor = 1/(1+(ratio))
             hz *= cutfactor
