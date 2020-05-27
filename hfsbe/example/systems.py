@@ -550,3 +550,21 @@ class Dirac(TwoBandSystem):
         hz = m
 
         super().__init__(ho, hx, hy, hz)
+
+
+class Parabolic(TwoBandSystem):
+    def __init__(self, A=sp.Symbol('A', real=True),
+                 mz=0, zeeman=False):
+
+        ho = 0
+        hx = 0
+        hy = 0
+        hz = A*(self.kx**2 + self.ky**2) + mz
+
+        if (zeeman):
+            hx -= self.m_zee_x
+            hy -= self.m_zee_y
+            hz -= self.m_zee_z
+
+        super().__init__(ho, hx, hy, hz)
+
