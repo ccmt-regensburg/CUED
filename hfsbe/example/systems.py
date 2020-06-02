@@ -574,10 +574,11 @@ class Semiconductor(TwoBandSystem):
     Generic Semiconductor Hamiltonian
     """
 
-    def __init__(self, A=sp.Symbol('A'), mx=sp.Symbol('mx')):
+    def __init__(self, A=sp.Symbol('A'), mx=sp.Symbol('mx'),
+                 a=sp.Symbol('a')):
         ho = 0
         hx = mx
         hy = 0
-        hz = A*(2 - sp.cos(self.kx) - sp.cos(self.ky))
+        hz = A*(2 - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
 
         super().__init__(ho, hx, hy, hz)
