@@ -568,3 +568,16 @@ class Parabolic(TwoBandSystem):
 
         super().__init__(ho, hx, hy, hz)
 
+
+class Semiconductor(TwoBandSystem):
+    """
+    Generic Semiconductor Hamiltonian
+    """
+
+    def __init__(self, A=sp.Symbol('A'), mx=sp.Symbol('mx')):
+        ho = 0
+        hx = mx
+        hy = 0
+        hz = A*(2 - sp.cos(self.kx) - sp.cos(self.ky))
+
+        super().__init__(ho, hx, hy, hz)
