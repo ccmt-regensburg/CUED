@@ -579,6 +579,6 @@ class Semiconductor(TwoBandSystem):
         ho = 0
         hx = mx
         hy = 0
-        hz = A*(2 - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
+        hz = (A/4)*(2 - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
 
         super().__init__(ho, hx, hy, hz)
