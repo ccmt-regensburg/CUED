@@ -575,10 +575,16 @@ class Semiconductor(TwoBandSystem):
     """
 
     def __init__(self, A=sp.Symbol('A'), mx=sp.Symbol('mx'),
-                 a=sp.Symbol('a')):
+                 a=sp.Symbol('a'), align=False):
         ho = 0
         hx = mx
         hy = 0
-        hz = (A/4)*(2 - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
+
+        if (align):
+            hz = (3*np.pi*A/(a*4))*(2 - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
+        else:
+            hz = (A/4)*(2 - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
+
+
 
         super().__init__(ho, hx, hy, hz)
