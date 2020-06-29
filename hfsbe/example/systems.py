@@ -518,9 +518,8 @@ class QWZ(TwoBandSystem):
     Qi-Wu-Zhang model of a 2D Chern insulator
     """
 
-    def __init__(self, order=sp.oo):
+    def __init__(self, t=sp.Symbol('t'), m=sp.Symbol('m'), order=sp.oo):
         n = order+1
-        m = sp.Symbol('m')
 
         ho = 0
         if order == sp.oo:
@@ -533,7 +532,7 @@ class QWZ(TwoBandSystem):
             hz = m - sp.cos(self.kx).series(n=n).removeO()\
                 - sp.cos(self.ky).series(n=n).removeO()
 
-        super().__init__(ho, hx, hy, hz)
+        super().__init__(t*ho, t*hx, t*hy, t*hz)
 
 
 class Dirac(TwoBandSystem):
@@ -552,14 +551,32 @@ class Dirac(TwoBandSystem):
         super().__init__(ho, hx, hy, hz)
 
 
+class Test(TwoBandSystem):
+    def __init__(self, A=sp.Symbol('A', real=True),
+                 a=sp.Symbol('a', real=True),
+                 mz=0, zeeman=False):
+
+        ho = 0
+        hx = A*sp.cos((2*a/3)*self.ky)
+        hy = A*sp.cos((2*a/3)*self.kx)
+        hz = mz
+
+        if (zeeman):
+            hx -= self.m_zee_x
+            hy -= self.m_zee_y
+            hz -= self.m_zee_z
+
+        super().__init__(ho, hx, hy, hz)
+
+
 class Parabolic(TwoBandSystem):
     def __init__(self, A=sp.Symbol('A', real=True),
                  mz=0, zeeman=False):
 
         ho = 0
-        hx = 0
-        hy = 0
-        hz = A*(self.kx**2 + self.ky**2) + mz
+        hx = A*(self.ky**2)
+        hy = A*(self.kx**2)
+        hz = mz
 
         if (zeeman):
             hx -= self.m_zee_x
@@ -575,16 +592,14 @@ class Semiconductor(TwoBandSystem):
     """
 
     def __init__(self, A=sp.Symbol('A'), mx=sp.Symbol('mx'),
-                 a=sp.Symbol('a'), align=False):
+                 mz=sp.Symbol('mz'), a=sp.Symbol('a'), align=False):
         ho = 0
         hx = mx
         hy = 0
 
         if (align):
-            hz = (3*np.pi*A/(a*4))*(2 - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
+            hz = (3*np.pi*A/(a*4))*(2 + mz - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
         else:
             hz = (A/4)*(2 - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
-
-
 
         super().__init__(ho, hx, hy, hz)
