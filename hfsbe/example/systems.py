@@ -476,8 +476,7 @@ class BiTeResummed(TwoBandSystem):
                  r=sp.Symbol('r', real=True),
                  ksym=sp.Symbol('ksym', real=True),
                  kasym=sp.Symbol('kasym', real=True),
-                 zeeman=False
-                 ):
+                 zeeman=False):
 
         k = sp.sqrt(self.kx**2 + self.ky**2)
         C2 = (c2/ksym**2)/(1+(k/ksym)**2)
@@ -554,12 +553,12 @@ class Dirac(TwoBandSystem):
 class Test(TwoBandSystem):
     def __init__(self, A=sp.Symbol('A', real=True),
                  a=sp.Symbol('a', real=True),
-                 mz=0, zeeman=False):
+                 mx=0, mz=0, zeeman=False):
 
         ho = 0
-        hx = A*sp.cos((2*a/3)*self.ky)
-        hy = A*sp.cos((2*a/3)*self.kx)
-        hz = mz
+        hx = mx 
+        hy = 0
+        hz = A*(2 + mz - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
 
         if (zeeman):
             hx -= self.m_zee_x
@@ -598,7 +597,7 @@ class Semiconductor(TwoBandSystem):
         hy = 0
 
         if (align):
-            hz = (3*np.pi*A/(a*4))*(2 + mz - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
+            hz = A*(2 + mz - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
         else:
             hz = (A/4)*(2 - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
 
