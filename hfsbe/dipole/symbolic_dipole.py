@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import hfsbe.check.symbolic_checks as symbolic_checks
 from hfsbe.utility import matrix_to_njit_functions, to_numpy_function
 
-plt.rcParams['figure.figsize'] = [12, 15]
+plt.rcParams['figure.figsize'] = [150, 15]
 plt.rcParams['text.usetex'] = True
 
 
@@ -195,7 +195,8 @@ class SymbolicDipole():
 
     def plot_dipoles(self, kx, ky, vidx=0, cidx=1,
                      title=None, vname=None, cname=None,
-                     xlabel=None, ylabel=None, clabel=None):
+                     xlabel=None, ylabel=None, clabel=None, nolog=False,
+                     savename=None):
         """
         Plot two dipole fields corresponding to the indices vidx and
         cidx
@@ -212,6 +213,8 @@ class SymbolicDipole():
             Index names of the valence and conduction band
         xlabel, ylabel, clabel : string
             Label of x, y- axis and colorbar
+        nolog: bool
+            If the color coding should be logarithmic or linear
         """
         if (title is None):
             title = "Dipole fields"
@@ -224,7 +227,10 @@ class SymbolicDipole():
         if (ylabel is None):
             ylabel = r'$k_y [\mathrm{a.u.}]$'
         if (clabel is None):
-            clabel = r'$[\mathrm{a.u.}]$ in $\log_{10}$ scale'
+            if (nolog):
+                clabel = r'$[\mathrm{a.u.}]$'
+            else:
+                clabel = r'$[\mathrm{a.u.}]$ in $\log_{10}$ scale'
 
         Axe, Aye = self.Ax_eval, self.Ay_eval
 
@@ -245,10 +251,20 @@ class SymbolicDipole():
         fig, ax = plt.subplots(2, 2)
         fig.suptitle(title, fontsize=16)
 
+        if (nolog):
+            valence_c = norm_r[vidx, vidx]
+            conduct_c = norm_r[cidx, cidx]
+            condval_c_r = norm_r[cidx, vidx]
+            condval_c_i = norm_i[cidx, vidx]
+        else:
+            valence_c = np.log10(norm_r[vidx, vidx])
+            conduct_c = np.log10(norm_r[cidx, cidx])
+            condval_c_r = np.log10(norm_r[cidx, vidx])
+            condval_c_i = np.log10(norm_i[cidx, vidx])
+
         valence = ax[0, 0].quiver(kx, ky,
                                   Axe_rn[vidx, vidx], Aye_rn[vidx, vidx],
-                                  np.log10(norm_r[vidx, vidx]),
-                                  angles='xy', cmap='cool')
+                                  valence_c, angles='xy', cmap='cool')
         current_name = r"$\Re(\vec{A}_{" + str(vname) + str(vname) + "})$"
         current_abs_name = r'$|$' + current_name + r'$|$'
         ax[0, 0].set_title(current_name)
@@ -259,8 +275,7 @@ class SymbolicDipole():
 
         conduct = ax[0, 1].quiver(kx, ky,
                                   Axe_rn[cidx, cidx], Aye_rn[cidx, cidx],
-                                  np.log10(norm_r[cidx, cidx]),
-                                  angles='xy', cmap='cool')
+                                  conduct_c, angles='xy', cmap='cool')
         current_name = r"$\Re(\vec{A}_{" + str(cname) + str(cname) + "})$"
         current_abs_name = r'$|$' + current_name + r'$|$'
         ax[0, 1].set_title(current_name)
@@ -271,8 +286,7 @@ class SymbolicDipole():
 
         dipreal = ax[1, 0].quiver(kx, ky,
                                   Axe_rn[cidx, vidx], Aye_rn[cidx, vidx],
-                                  np.log10(norm_r[cidx, vidx]),
-                                  angles='xy', cmap='cool')
+                                  condval_c_r, angles='xy', cmap='cool')
         current_name = r"$\Re(\vec{A}_{" + str(cname) + str(vname) + "})$"
         current_abs_name = r'$|$' + current_name + r'$|$'
         ax[1, 0].set_title(current_name)
@@ -283,8 +297,7 @@ class SymbolicDipole():
 
         dipimag = ax[1, 1].quiver(kx, ky,
                                   Axe_in[cidx, vidx], Aye_in[cidx, vidx],
-                                  np.log10(norm_i[cidx, vidx]),
-                                  angles='xy', cmap='cool')
+                                  condval_c_i, angles='xy', cmap='cool')
         current_name = r"$\Im(\vec{A}_{" + str(cname) + str(vname) + "})$"
         current_abs_name = r'$|$' + current_name + r'$|$'
         ax[1, 1].set_title(current_name)
@@ -294,4 +307,7 @@ class SymbolicDipole():
         plt.colorbar(dipimag, ax=ax[1, 1], label=current_abs_name + clabel)
 
         fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-        plt.show()
+        if (savename is not None):
+            plt.savefig(savename)
+        else:
+            plt.show()
