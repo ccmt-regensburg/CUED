@@ -33,6 +33,20 @@ def read_dataset(path):
     [t, I_E_dir, I_ortho, freq/w, Iw_E_dir, Iw_ortho, Int_E_dir, Int_ortho]
     Solution
     [t, Solution, paths, electric_field, A_field]
+
+    Parameters
+    ----------
+    path : String
+        Path to the dataset
+
+    Returns
+    -------
+    Iexactdata : np.ndarray
+        Exact current and emission data
+    Iapprox : np.ndarray
+        Approx. current and emission data (kira & koch formula)
+    Solution : np.ndarray
+        Full solution density, paths, electric field and vector potential
     """
     filelist = os.listdir(path)
     Soldata = None

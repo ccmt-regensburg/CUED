@@ -126,6 +126,12 @@ class TwoBandSystem():
         Generic form of Hamiltonian, energies and wave functions in a two band
         Hamiltonian.
 
+        Parameters
+        ----------
+        gidx : integer
+            gauge index, index of the wave function entry where it is
+            kept at 1. Can either be 0, 1 or None for the default
+
         Returns
         -------
         h : Symbol
@@ -136,9 +142,7 @@ class TwoBandSystem():
             Valence and conduction band wave function; in this order
         ederiv : list of Symbol
             List of energy derivatives
-        gidx : integer
-            gauge index, index of the wave function entry where it is
-            kept at 1. Can either be 0, 1 or None for the default
+
         """
         self.e = self.__energies()
         self.ederiv = self.__ederiv(self.e)
