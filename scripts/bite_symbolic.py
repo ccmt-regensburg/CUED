@@ -3,7 +3,6 @@ import numpy as np
 from numba import njit
 
 from hfsbe.example import BiTe
-from hfsbe.example import BiTeTrivial
 from hfsbe.dipole import SymbolicDipole
 from hfsbe.utility import evaluate_njit_matrix as ev_mat
 
@@ -34,49 +33,18 @@ def derivtest():
 
 def topological(kx, ky, eflag=False, edflag=False, dipflag=False):
     # bite = BiTe(A=0.1974, R=11.06, C0=0, C2=0)
-    bite = BiTe(A=0.1974, R=11.06, C0=0, C2=0)
-    h, ef, wf, ediff = bite.eigensystem(gidx=0)
-
-    if (eflag):
-        bite.evaluate_energy(kx, ky)
-        bite.plot_bands_3d(kx, ky)
-        bite.plot_bands_contour(kx, ky)
-    if (edflag):
-        bite.evaluate_ederivative(kx, ky)
-        bite.plot_bands_derivative(kx, ky)
-    if (dipflag):
-        dip = SymbolicDipole(h, ef, wf)
-#        print(dip.Axf[0][0](kx=kx, ky=ky))
-        Ax, Ay = dip.evaluate(kx, ky)
-        print(np.real(Ax))
-        dip.plot_dipoles(kx, ky)
-
-
-def trivial(kx, ky, eflag=False, edflag=False, dipflag=False):
-    bite = BiTeTrivial(R=11.06, C0=0, C2=0, vf=0.1974)
+    bite = BiTe(C0=0, C2=0, A=0.19732, R=0, mz=0)
     h, ef, wf, ediff = bite.eigensystem(gidx=1)
 
-    if (eflag):
-        bite.evaluate_energy(kx, ky)
-        bite.plot_bands_3d(kx, ky)
-        bite.plot_bands_contour(kx, ky)
-    if (edflag):
-        bite.evaluate_ederivative(kx, ky)
-        bite.plot_bands_derivative(kx, ky)
-    if (dipflag):
-        dip = SymbolicDipole(h, ef, wf)
-        Ax, Ay = dip.evaluate(kx, ky)
-        dip.plot_dipoles(kx, ky)
-        # curv = SymbolicCurvature(Ax, Ay)
-        # curv.evaluate(kx, ky)
-        # curv.plot_curvature_contour(kx, ky)
-
+    a = bite.Ujit[0][1](kx=kx, ky=ky)
+    b = bite.Uf(kx=kx, ky=ky)[0, 1]
+    breakpoint()
 
 if __name__ == "__main__":
     N = 10
     # kinit = np.linspace(-0.02, 0.02, N)
-    kinit = np.linspace(-0.1, 0.1, N, dtype=np.float)
+    kinit = np.linspace(-0.1, 0.1, N, dtype=np.float64)
     kx, ky = kmat(kinit)
-    # topological(kx, ky, eflag=False, edflag=False, dipflag=False)
+    topological(kx, ky)
     # trivial(kx, ky, energy=True, ediff=True, dipole=True)
     derivtest()
