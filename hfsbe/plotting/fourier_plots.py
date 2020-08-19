@@ -41,17 +41,25 @@ def fourier_dir_ortho(freqw, data_dir, data_ortho, xlim=(0.2, 30),
                       xlabel=r'Frequency $\omega/\omega_0$',
                       ylabel=r'Intensity $\text{ in atomic units}$',
                       paramlegend=None, suptitle=None,
+                      ls_dir=None, ls_ortho=None,
                       savename=None):
     fig, ax = plt.subplots(1)
-    ax.set_xlim(xlim)
-    ax.set_ylim(ylim)
     ax.set_xticks(np.arange(xlim[1]+1))
     ax.grid(True, axis='x', ls='--')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    ax.semilogy(freqw.T, data_dir.T)
+    lines_dir = ax.semilogy(freqw.T, data_dir.T, marker='.')
     plt.gca().set_prop_cycle(None)
-    ax.semilogy(freqw.T, data_ortho.T, linestyle='--')
+    lines_ortho = ax.semilogy(freqw.T, data_ortho.T, linestyle='--')
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+
+    if (ls_dir):
+        for ls, line in zip(ls_dir, lines_dir):
+            line.set_linestyle(ls)
+    if (ls_ortho):
+        for ls, line in zip(ls_ortho, lines_ortho):
+            line.set_linestyle(ls)
 
     if (suptitle is not None):
         fig.suptitle(suptitle)
@@ -69,7 +77,7 @@ def fourier_dir_ortho_split(freqw, data_dir, data_ortho, xlim=(0.2, 30),
                             ylim=(10e-15, 1),
                             xlabel=r'Frequency $\omega/\omega_0$',
                             ylabel=r'Intensity $\text{ in atomic units}$',
-                            paramlegend=None, suptitle=None,
+                            paramlegend=None, suptitle=None, linestyles=None,
                             savename=None):
     fig, ax = plt.subplots(2)
     for a in ax:

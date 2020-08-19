@@ -17,8 +17,6 @@ ksym = 0.0635012
 kasym = 0.113773
 
 
-
-
 def kmat(kinit):
     kmat = np.array(np.meshgrid(kinit, kinit)).T.reshape(-1, 2)
     kx = kmat[:, 0]
@@ -35,7 +33,7 @@ def bite_resummed(kx, ky):
 
 
 if __name__ == "__main__":
-    N = 81
+    N = 1401
     kx = np.linspace(-3*np.pi/(2*a), 3*np.pi/(2*a), N)
     ky = (0.03*2*np.pi/a)*np.ones(N)
     # kx, ky = kmat(kinit)
