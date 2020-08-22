@@ -1,14 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from hfsbe.utility import conversion_factors as co
-
 
 def fourier_total(freqw, data_dir, data_ortho,
                   xlim=(0, 30), ylim=(10e-15, 1),
                   xlabel=r'Frequency $\text{ in } \omega/\omega_0$',
-                  ylabel=r'Intensity $\text{ in atomic units}$',
-                  paramlegend=None, suptitle=None, savename=None):
+                  ylabel=r'I_\mathrm{hh} $\text{ in atomic units}$',
+                  paramlegend=None, suptitle=None, title=None, savename=None):
     """
     Plots parallel and orthogonal data
     """
@@ -24,25 +22,28 @@ def fourier_total(freqw, data_dir, data_ortho,
     for freq, data in zip(freqw, data_total):
         ax.semilogy(freq, data/np.max(data))
 
-    if (suptitle is not None):
-        fig.suptitle(suptitle)
-
     if (paramlegend is not None):
         ax.legend(paramlegend)
 
-    if (savename is None):
-        plt.show()
-    else:
+    if (title is not None):
+        plt.title(title)
+
+    if (suptitle is not None):
+        plt.suptitle(suptitle)
+
+    if (savename is not None):
         plt.savefig(savename)
+    else:
+        plt.show()
 
 
 def fourier_dir_ortho(freqw, data_dir, data_ortho, xlim=(0.2, 30),
                       ylim=(10e-15, 1),
                       xlabel=r'Frequency $\omega/\omega_0$',
-                      ylabel=r'Intensity $\text{ in atomic units}$',
-                      paramlegend=None, suptitle=None,
-                      ls_dir=None, ls_ortho=None,
-                      savename=None):
+                      ylabel=r'I_\mathrm{hh} $\text{ in atomic units}$',
+                      paramlegend=None, ls_dir=None, ls_ortho=None,
+                      suptitle=None, title=None, savename=None):
+
     fig, ax = plt.subplots(1)
     ax.set_xticks(np.arange(xlim[1]+1))
     ax.grid(True, axis='x', ls='--')
@@ -61,11 +62,14 @@ def fourier_dir_ortho(freqw, data_dir, data_ortho, xlim=(0.2, 30),
         for ls, line in zip(ls_ortho, lines_ortho):
             line.set_linestyle(ls)
 
-    if (suptitle is not None):
-        fig.suptitle(suptitle)
-
     if (paramlegend is not None):
         ax.legend(paramlegend)
+
+    if (title is not None):
+        plt.title(title)
+
+    if (suptitle is not None):
+        plt.suptitle(suptitle)
 
     if (savename is None):
         plt.show()
@@ -76,9 +80,9 @@ def fourier_dir_ortho(freqw, data_dir, data_ortho, xlim=(0.2, 30),
 def fourier_dir_ortho_split(freqw, data_dir, data_ortho, xlim=(0.2, 30),
                             ylim=(10e-15, 1),
                             xlabel=r'Frequency $\omega/\omega_0$',
-                            ylabel=r'Intensity $\text{ in atomic units}$',
-                            paramlegend=None, suptitle=None, linestyles=None,
-                            savename=None):
+                            ylabel=r'I_\mathrm{hh} $\text{ in atomic units}$',
+                            paramlegend=None, suptitle=None, savename=None):
+
     fig, ax = plt.subplots(2)
     for a in ax:
         a.set_xlim(xlim)
@@ -93,11 +97,11 @@ def fourier_dir_ortho_split(freqw, data_dir, data_ortho, xlim=(0.2, 30),
         ax[0].semilogy(freq, data_d)
         ax[1].semilogy(freq, data_o)
 
-    if (suptitle is not None):
-        fig.suptitle(suptitle)
-
     if (paramlegend is not None):
         ax[0].legend(paramlegend)
+
+    if (suptitle is not None):
+        plt.suptitle(suptitle)
 
     if (savename is None):
         plt.show()
