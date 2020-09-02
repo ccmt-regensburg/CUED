@@ -92,7 +92,7 @@ def sbe_solver(sys, dipole, params):
         elif align == 'M':
             E_dir = np.array([np.cos(np.radians(-30)),
                              np.sin(np.radians(-30))])
-        # BZ_plot(kpnts, a, b1, b2, paths)
+        BZ_plot(kpnts, a, b1, b2, paths)
     elif BZ_type == '2line':
         E_dir = np.array([np.cos(np.radians(angle_inc_E_field)),
                          np.sin(np.radians(angle_inc_E_field))])
@@ -386,13 +386,13 @@ def hex_mesh(Nk1, Nk2, a, b1, b2, align):
             # Append the a1'th path to the paths array
             paths.append(path_M)
 
-    elif align == 'K':
+    elif align == 'K_jack':
         b_a1 = 8*np.pi/(a*3)*np.array([1, 0])
         b_a2 = 4*np.pi/(a*3)*np.array([1, np.sqrt(3)])
         # Extend over half of the b2 direction and 1.5x the b1 direction
         # (extending into the 2nd BZ to get correct boundary conditions)
-        alpha1 = np.linspace(-0.5 + (1/(2*Nk1)), 1.0 - (1/(2*Nk1)), num=Nk1)
-        alpha2 = np.linspace(0, 0.5 - (1/(2*Nk2)), num=Nk2)
+        alpha1 = np.linspace(-0.5 + (1/(2*Nk1)), 1.0 - (1/(2*Nk1)), Nk1)
+        alpha2 = np.linspace(0, 0.5 - (1/(2*Nk2)), Nk2)
         for a2 in alpha2:
             path_K = []
             for a1 in alpha1:
@@ -402,6 +402,34 @@ def hex_mesh(Nk1, Nk2, a, b1, b2, align):
                     path_K.append(kpoint)
                 else:
                     kpoint -= (2*np.pi/a) * np.array([1, 1/np.sqrt(3)])
+                    mesh.append(kpoint)
+                    path_K.append(kpoint)
+            paths.append(path_K)
+
+    elif align == 'K':
+        if (Nk1%3 != 0 or Nk1%2 != 0):
+            raise RuntimeError("Nk1: " + "{:.d}".format(Nk1) +
+                               "needs to be divisible by 3 and even")
+        elif (Nk2%3 != 0):
+            raise RuntimeError("Nk2: " + "{:.d}".format(Nk2) +
+                               "needs to be divisible by 3")
+        b_a1 = 8*np.pi/(a*3)*np.array([1, 0])
+        b_a2 = 4*np.pi/(a*3)*np.array([0, np.sqrt(3)])
+        # Extend over half of the b2 direction and 1.5x the b1 direction
+        # (extending into the 2nd BZ to get correct boundary conditions)
+        alpha1 = np.linspace(-0.5 + (1.5/(2*Nk1)), 1.0 - (1.5/(2*Nk1)), Nk1)
+        alpha2 = np.linspace(0, 0.5 - (1/(2*Nk2)), Nk2)
+        for a2 in alpha2:
+            path_K = []
+            for a1 in alpha1:
+                kpoint = a1*b_a1 + a2*b_a2
+                if is_in_hex(kpoint, a):
+                    mesh.append(kpoint)
+                    path_K.append(kpoint)
+                else:
+                    while (not is_in_hex(kpoint, a)):
+                        kpoint = reflect_point(kpoint, a, b1, b2)
+                    # kpoint -= (2*np.pi/a) * np.array([1, 1/np.sqrt(3)])
                     mesh.append(kpoint)
                     path_K.append(kpoint)
             paths.append(path_K)
@@ -644,10 +672,11 @@ def BZ_plot(kpnts, a, b1, b2, paths, si_units=True):
     else:
         plt.xlabel(r'$k_x \text{ in } 1/a_0$')
         plt.ylabel(r'$k_y \text{ in } 1/a_0$')
-
     for path in paths:
-        path = np.array(path)
-        plt.plot(path[:, 0], path[:, 1])
+        if (si_units):
+            plt.plot(co.as_to_au*path[:, 0], co.as_to_au*path[:, 1])
+        else:
+            plt.plot(path[:, 0], path[:, 1])
 
     plt.show()
 

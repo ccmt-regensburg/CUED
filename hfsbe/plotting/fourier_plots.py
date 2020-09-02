@@ -40,10 +40,13 @@ def fourier_total(freqw, data_dir, data_ortho,
 def fourier_dir_ortho(freqw, data_dir, data_ortho, xlim=(0.2, 30),
                       ylim=(10e-15, 1),
                       xlabel=r'Frequency $\omega/\omega_0$',
-                      ylabel=r'I_\mathrm{hh} $\text{ in atomic units}$',
+                      ylabel=r'$I_\mathrm{hh} \text{ in atomic units}$',
                       paramlegend=None, ls_dir=None, ls_ortho=None,
                       suptitle=None, title=None, savename=None):
 
+    freqw = freqw.real
+    data_dir = data_dir.real
+    data_ortho = data_ortho.real
     fig, ax = plt.subplots(1)
     ax.set_xticks(np.arange(xlim[1]+1))
     ax.grid(True, axis='x', ls='--')
