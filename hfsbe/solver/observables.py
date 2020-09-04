@@ -155,9 +155,9 @@ def make_emission_exact(sys, paths, solution, E_dir, A_field, gauge):
                 U[:, 1, 1] = U_11(kx=kx_in_path, ky=ky_in_path)
 
                 U_h[:, 0, 0] = U_h_00(kx=kx_in_path, ky=ky_in_path)
-                U_h[:, 0, 1] = U_h_01(kx=kx_in_path, ky=ky_in_path) 
-                U_h[:, 1, 0] = U_h_10(kx=kx_in_path, ky=ky_in_path) 
-                U_h[:, 1, 1] = U_h_11(kx=kx_in_path, ky=ky_in_path) 
+                U_h[:, 0, 1] = U_h_01(kx=kx_in_path, ky=ky_in_path)
+                U_h[:, 1, 0] = U_h_10(kx=kx_in_path, ky=ky_in_path)
+                U_h[:, 1, 1] = U_h_11(kx=kx_in_path, ky=ky_in_path)
 
                 for i_k in range(pathlen):
 

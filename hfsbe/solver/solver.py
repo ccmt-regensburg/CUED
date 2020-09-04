@@ -408,11 +408,11 @@ def hex_mesh(Nk1, Nk2, a, b1, b2, align):
 
     elif align == 'K':
         if (Nk1%3 != 0 or Nk1%2 != 0):
-            raise RuntimeError("Nk1: " + "{:.d}".format(Nk1) +
-                               "needs to be divisible by 3 and even")
+            raise RuntimeError("Nk1: " + "{:d}".format(Nk1) +
+                               " needs to be divisible by 3 and even")
         elif (Nk2%3 != 0):
-            raise RuntimeError("Nk2: " + "{:.d}".format(Nk2) +
-                               "needs to be divisible by 3")
+            raise RuntimeError("Nk2: " + "{:d}".format(Nk2) +
+                           -    " needs to be divisible by 3")
         b_a1 = 8*np.pi/(a*3)*np.array([1, 0])
         b_a2 = 4*np.pi/(a*3)*np.array([0, np.sqrt(3)])
         # Extend over half of the b2 direction and 1.5x the b1 direction
@@ -458,7 +458,7 @@ def gaussian_envelope(t, alpha):
     '''
     # sigma = sqrt(2)*alpha
     # # 1/(2*np.sqrt(np.pi)*alpha)*np.exp(-t**2/(2*alpha)**2)
-    return np.exp(-t**2/(2*alpha)**2) 
+    return np.exp(-t**2/(2*alpha)**2)
 
 
 def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
