@@ -10,7 +10,7 @@ def fourier_total(freqw, data_dir, data_ortho,
     """
     Plots parallel and orthogonal data
     """
-    fig, ax = plt.subplots(1)
+    _fig, ax = plt.subplots(1)
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
@@ -22,16 +22,16 @@ def fourier_total(freqw, data_dir, data_ortho,
     for freq, data in zip(freqw, data_total):
         ax.semilogy(freq, data/np.max(data))
 
-    if (paramlegend is not None):
+    if paramlegend is not None:
         ax.legend(paramlegend)
 
-    if (title is not None):
+    if title is not None:
         plt.title(title)
 
-    if (suptitle is not None):
+    if suptitle is not None:
         plt.suptitle(suptitle)
 
-    if (savename is not None):
+    if savename is not None:
         plt.savefig(savename)
     else:
         plt.show()
@@ -47,7 +47,7 @@ def fourier_dir_ortho(freqw, data_dir, data_ortho, xlim=(0.2, 30),
     freqw = freqw.real
     data_dir = data_dir.real
     data_ortho = data_ortho.real
-    fig, ax = plt.subplots(1)
+    _fig, ax = plt.subplots(1)
     ax.set_xticks(np.arange(xlim[1]+1))
     ax.grid(True, axis='x', ls='--')
     ax.set_xlabel(xlabel)
@@ -58,23 +58,23 @@ def fourier_dir_ortho(freqw, data_dir, data_ortho, xlim=(0.2, 30),
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
 
-    if (ls_dir):
+    if ls_dir:
         for ls, line in zip(ls_dir, lines_dir):
             line.set_linestyle(ls)
-    if (ls_ortho):
+    if ls_ortho:
         for ls, line in zip(ls_ortho, lines_ortho):
             line.set_linestyle(ls)
 
-    if (paramlegend is not None):
+    if paramlegend is not None:
         ax.legend(paramlegend)
 
-    if (title is not None):
+    if title is not None:
         plt.title(title)
 
-    if (suptitle is not None):
+    if suptitle is not None:
         plt.suptitle(suptitle)
 
-    if (savename is None):
+    if savename is None:
         plt.show()
     else:
         plt.savefig(savename)
@@ -86,7 +86,7 @@ def fourier_dir_ortho_split(freqw, data_dir, data_ortho, xlim=(0.2, 30),
                             ylabel=r'I_\mathrm{hh} $\text{ in atomic units}$',
                             paramlegend=None, suptitle=None, savename=None):
 
-    fig, ax = plt.subplots(2)
+    _fig, ax = plt.subplots(2)
     for a in ax:
         a.set_xlim(xlim)
         a.set_ylim(ylim)
@@ -100,13 +100,54 @@ def fourier_dir_ortho_split(freqw, data_dir, data_ortho, xlim=(0.2, 30),
         ax[0].semilogy(freq, data_d)
         ax[1].semilogy(freq, data_o)
 
-    if (paramlegend is not None):
+    if paramlegend is not None:
         ax[0].legend(paramlegend)
 
-    if (suptitle is not None):
+    if suptitle is not None:
         plt.suptitle(suptitle)
 
-    if (savename is None):
+    if savename is None:
+        plt.show()
+    else:
+        plt.savefig(savename)
+
+
+def fourier_dir_ortho_angle(freqw, data_dir, data_ortho, xlim=(0.2, 30),
+                            ylim=(-np.pi, np.pi),
+                            xlabel=r'Frequency $\omega/\omega_0$',
+                            ylabel=r'$\alpha$',
+                            paramlegend=None, suptitle=None, title=None, savename=None):
+
+    _fig, ax = plt.subplots(1)
+    freqw = freqw.real
+    data_dir = data_dir.real
+    data_ortho = data_ortho.real
+    data_angle = np.arctan(data_dir/data_ortho)
+    ax.set_xticks(np.arange(xlim[1]+1))
+    ax.grid(True, axis='x', ls='--')
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    _angle = ax.plot(freqw.T, data_angle.T)
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+
+    # if ls_dir:
+    #     for ls, line in zip(ls_dir, lines_dir):
+    #         line.set_linestyle(ls)
+    # if ls_ortho:
+    #     for ls, line in zip(ls_ortho, lines_ortho):
+    #         line.set_linestyle(ls)
+
+    if paramlegend is not None:
+        ax.legend(paramlegend)
+
+    if title is not None:
+        plt.title(title)
+
+    if suptitle is not None:
+        plt.suptitle(suptitle)
+
+    if savename is None:
         plt.show()
     else:
         plt.savefig(savename)

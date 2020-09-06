@@ -1,7 +1,7 @@
+from math import ceil
 import numpy as np
 from numpy.fft import fft, fftfreq, fftshift
 from numba import njit
-from math import ceil
 import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode

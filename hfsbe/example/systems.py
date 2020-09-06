@@ -385,7 +385,7 @@ class Haldane(TwoBandSystem):
 
     def __init__(self, t1=sp.Symbol('t1'), t2=sp.Symbol('t2'),
                  m=sp.Symbol('m'), phi=sp.Symbol('phi')):
-                 
+
         a1 = self.kx
         a2 = -1/2 * self.kx + sp.sqrt(3)/2 * self.ky
         a3 = -1/2 * self.kx - sp.sqrt(3)/2 * self.ky
@@ -493,7 +493,7 @@ class BiTeResummed(TwoBandSystem):
         if (zeeman):
             hx -= self.m_zee_x
             hy -= self.m_zee_y
-            hz -= self.m_zee_z 
+            hz -= self.m_zee_z
 
         super().__init__(ho, hx, hy, hz)
 
@@ -560,7 +560,7 @@ class Test(TwoBandSystem):
                  mx=0, mz=0, zeeman=False):
 
         ho = 0
-        hx = mx 
+        hx = mx
         hy = 0
         hz = A*(2 + mz - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
 

@@ -140,3 +140,28 @@ def time_grid(time, kpath, electric_field, current, band_structure,
         plt.savefig(savename)
     else:
         plt.show()
+
+
+def time_ortho_dir_angle(time, current_dir, current_ortho, current_legend=None,
+                         savename=None, si_units=True):
+
+    if si_units:
+        time *= co.au_to_fs
+        current_dir *= co.au_to_Amp
+        current_ortho *= co.au_to_Amp
+
+    time = time.real
+    current_dir = current_dir.real
+    current_ortho = current_ortho.real
+
+    _fig, ax = plt.subplots(2)
+    ax[0].plot(time, current_dir.T, marker='.')
+    ax[0].plot(time, current_ortho.T, linestyle='--')
+
+    angle_data = np.arctan(current_ortho/current_dir)
+    ax[1].plot(time, angle_data.T)
+
+    if savename is None:
+        plt.show()
+    else:
+        plt.savefig(savename)
