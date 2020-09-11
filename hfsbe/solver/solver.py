@@ -7,7 +7,7 @@ from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode
 
 from hfsbe.utility import conversion_factors as co
-from hfsbe.solver import polarization, current, make_emission_exact
+from hfsbe.solver import polarization, current, make_emission_exact_path
 from hfsbe.solver import make_electric_field
 
 
@@ -23,22 +23,22 @@ def sbe_solver(sys, dipole, params):
     gauge = params.gauge
 
     # System parameters
-    a = params.a                                # Lattice spacing
+    a = params.a                                   # Lattice spacing
     e_fermi = params.e_fermi*co.eV_to_au           # Fermi energy
     temperature = params.temperature*co.eV_to_au   # Temperature
 
     # Driving field parameters
-    E0 = params.E0*co.MVpcm_to_au               # Driving pulse field amplitude
-    w = params.w*co.THz_to_au                   # Driving pulse frequency
+    E0 = params.E0*co.MVpcm_to_au                  # Driving pulse field amplitude
+    w = params.w*co.THz_to_au                      # Driving pulse frequency
     chirp = params.chirp*co.THz_to_au              # Pulse chirp frequency
     alpha = params.alpha*co.fs_to_au               # Gaussian pulse width
-    phase = params.phase                        # Carrier-envelope phase
+    phase = params.phase                           # Carrier-envelope phase
 
     # Time scales
     T1 = params.T1*co.fs_to_au                     # Occupation damping time
     T2 = params.T2*co.fs_to_au                     # Polarization damping time
-    gamma1 = 1/T1                               # Occupation damping parameter
-    gamma2 = 1/T2                               # Polarization damping param
+    gamma1 = 1/T1                                  # Occupation damping parameter
+    gamma2 = 1/T2                                  # Polarization damping
 
     Nf = int((abs(2*params.t0))/params.dt)
     # Find out integer times Nt fits into total time steps
@@ -52,14 +52,14 @@ def sbe_solver(sys, dipole, params):
     dt = params.dt*co.fs_to_au
 
     # Brillouin zone type
-    BZ_type = params.BZ_type                    # Type of Brillouin zone
+    BZ_type = params.BZ_type                       # Type of Brillouin zone
 
     # Brillouin zone type
     if BZ_type == 'full':
-        Nk1 = params.Nk1                        # kpoints in b1 direction
-        Nk2 = params.Nk2                        # kpoints in b2 direction
-        Nk = Nk1*Nk2                            # Total number of kpoints
-        align = params.align                    # E-field alignment
+        Nk1 = params.Nk1                           # kpoints in b1 direction
+        Nk2 = params.Nk2                           # kpoints in b2 direction
+        Nk = Nk1*Nk2                               # Total number of kpoints
+        align = params.align                       # E-field alignment
         angle_inc_E_field = None
     elif BZ_type == '2line':
         Nk_in_path = params.Nk_in_path
@@ -69,7 +69,7 @@ def sbe_solver(sys, dipole, params):
         Nk1 = Nk_in_path
         Nk2 = 2
 
-    b1 = params.b1                              # Reciprocal lattice vectors
+    b1 = params.b1                                 # Reciprocal lattice vectors
     b2 = params.b2
 
     # USER OUTPUT
@@ -83,7 +83,7 @@ def sbe_solver(sys, dipole, params):
 
     # Form the Brillouin zone in consideration
     if BZ_type == 'full':
-        kpnts, paths = hex_mesh(Nk1, Nk2, a, b1, b2, align)
+        _kpnts, paths = hex_mesh(Nk1, Nk2, a, b1, b2, align)
         dkx = np.abs(paths[0, 0] - paths[0, 1])[0]
         dky = np.abs(paths[0, 0] - paths[1, 0])[1]
         dk = 1/Nk1
@@ -91,12 +91,12 @@ def sbe_solver(sys, dipole, params):
             E_dir = np.array([1, 0])
         elif align == 'M':
             E_dir = np.array([np.cos(np.radians(-30)),
-                             np.sin(np.radians(-30))])
+                              np.sin(np.radians(-30))])
         # BZ_plot(kpnts, a, b1, b2, paths)
     elif BZ_type == '2line':
         E_dir = np.array([np.cos(np.radians(angle_inc_E_field)),
-                         np.sin(np.radians(angle_inc_E_field))])
-        dk, kpnts, paths = mesh(params, E_dir)
+                          np.sin(np.radians(angle_inc_E_field))])
+        dk, _kpnts, paths = rect_mesh(params, E_dir)
         # BZ_plot(kpnts, a, b1, b2, paths)
 
     t_constructed = False
@@ -105,7 +105,13 @@ def sbe_solver(sys, dipole, params):
 
     # The solution array is structred as: first index is Nk1-index,
     # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
-    solution = np.empty((Nk1, Nk2, params.Nt, 4), dtype=complex)
+    if save_full:
+        # Make container for full solution if it is needed
+        solution = np.empty((Nk1, Nk2, params.Nt, 4), dtype=complex)
+    else:
+        # Only one path needed at a time if no full solution is needed
+        solution = np.empty((Nk1, 1, params.Nt, 4), dtype=complex)
+
     A_field = np.empty(params.Nt, dtype=complex)
 
     # Initalise electric_field, create fnumba and initalise ode solver
@@ -115,15 +121,24 @@ def sbe_solver(sys, dipole, params):
     solver = ode(fnumba, jac=None)\
         .set_integrator('zvode', method='bdf', max_step=dt)
 
+    # Exact emission function will be set after end of first run
+    emission_exact_path = None
+    I_exact_E_dir = np.zeros(Nt, dtype=np.float64)
+    I_exact_ortho = np.zeros(Nt, dtype=np.float64)
+
     # SOLVING
     ###########################################################################
     # Iterate through each path in the Brillouin zone
     for Nk2_idx, path in enumerate(paths):
+        if not save_full:
+            # If we don't need the full solution only operate on path idx 0
+            Nk2_idx = 0
+
         # Retrieve the set of k-points for the current path
         kx_in_path = path[:, 0]
         ky_in_path = path[:, 1]
 
-        if (dipole_off):
+        if dipole_off:
             zeros = np.zeros(np.size(kx_in_path), dtype=np.complex)
             dipole_in_path = zeros
             A_in_path = zeros
@@ -138,7 +153,7 @@ def sbe_solver(sys, dipole, params):
 
             # Calculate the dot products E_dir.d_nm(k).
             # To be multiplied by E-field magnitude later.
-            # A[0,1,:] means 0-1 offdiagonal element
+            # A[0, 1, :] means 0-1 offdiagonal element
             dipole_in_path = E_dir[0]*di_01x + E_dir[1]*di_01y
             A_in_path = E_dir[0]*di_00x + E_dir[1]*di_00y \
                 - (E_dir[0]*di_11x + E_dir[1]*di_11y)
@@ -173,7 +188,7 @@ def sbe_solver(sys, dipole, params):
             solver.integrate(solver.t + dt)
 
             # Save solution each output step
-            if (ti % dt_out == 0):
+            if ti % dt_out == 0:
                 # Do not append the last element (A_field)
 
                 solution[:, Nk2_idx, t_idx, :] = solver.y[:-1].reshape(Nk1, 4)
@@ -187,8 +202,15 @@ def sbe_solver(sys, dipole, params):
             # Increment time counter
             ti += 1
 
+        if not t_constructed:
+            # Construct the function after the first full run!
+            emission_exact_path = make_emission_exact_path(sys, Nk1, Nt, E_dir,
+                                                           A_field, gauge)
+        emission_exact_path(path, solution[:, Nk2_idx, :, :], I_exact_E_dir, I_exact_ortho)
         # Flag that time array has been built up
         t_constructed = True
+        # Create emission function
+
 
     # COMPUTE OBSERVABLES
     ###########################################################################
@@ -200,7 +222,7 @@ def sbe_solver(sys, dipole, params):
     # Fourier transforms
     dt_out = t[1] - t[0]
     freq = fftshift(fftfreq(np.size(t), d=dt_out))
-    if (gauge == 'length' and save_approx == True):
+    if gauge == 'length' and save_approx:
         # Only calculate kira & koch emission if we are in length gauge
         # Calculate parallel and orthogonal components of observables
         # Polarization (interband)
@@ -213,10 +235,10 @@ def sbe_solver(sys, dipole, params):
             + J_E_dir*gaussian_envelope(t, alpha)
         I_ortho = diff(t, P_ortho)*gaussian_envelope(t, alpha) \
             + J_ortho*gaussian_envelope(t, alpha)
-        if (BZ_type == '2line'):
+        if BZ_type == '2line':
             I_E_dir *= (dk/(4*np.pi))
             I_ortho *= (dk/(4*np.pi))
-        if (BZ_type == 'full'):
+        if BZ_type == 'full':
             I_E_dir *= (dkx*dky/(2*np.pi)**2)
             I_ortho *= (dkx*dky/(2*np.pi)**2)
 
@@ -234,18 +256,16 @@ def sbe_solver(sys, dipole, params):
 
         I_approx_name = 'Iapprox_' + tail
         np.save(I_approx_name, [t, I_E_dir, I_ortho,
-                freq/w, Iw_E_dir, Iw_ortho, Int_E_dir, Int_ortho])
+                                freq/w, Iw_E_dir, Iw_ortho,
+                                Int_E_dir, Int_ortho])
 
     ##############################################################
     # Always calculate exact emission formula
     ##############################################################
-    emission_exact = make_emission_exact(sys, paths, solution,
-                                         E_dir, A_field, gauge)
-    I_exact_E_dir, I_exact_ortho = emission_exact()
-    if (BZ_type == '2line'):
+    if BZ_type == '2line':
         I_exact_E_dir *= (dk/(4*np.pi))
         I_exact_ortho *= (dk/(4*np.pi))
-    if (BZ_type == 'full'):
+    if BZ_type == 'full':
         I_exact_E_dir *= (dkx*dky/(2*np.pi)**2)
         I_exact_ortho *= (dkx*dky/(2*np.pi)**2)
 
@@ -257,44 +277,31 @@ def sbe_solver(sys, dipole, params):
     Int_exact_ortho = (freq**2)*np.abs(Iw_exact_ortho)**2
 
     # Save observables to file
-    if (save_file):
+    if save_file:
         I_exact_name = 'Iexact_' + tail
-        np.save(I_exact_name, [t, I_exact_E_dir, I_exact_ortho, freq/w,
-                Iw_exact_E_dir, Iw_exact_ortho,
-                Int_exact_E_dir, Int_exact_ortho])
+        np.save(I_exact_name, [t, I_exact_E_dir, I_exact_ortho,
+                               freq/w, Iw_exact_E_dir, Iw_exact_ortho,
+                               Int_exact_E_dir, Int_exact_ortho])
         # Save the parameters of the calculation
         params_name = 'params.txt'
         paramsfile = open(params_name, 'w')
         paramsfile.write(str(params.__dict__))
 
-    if (save_full):
+    if save_full:
         S_name = 'Sol_' + tail
         np.savez(S_name, t=t, solution=solution, paths=paths,
                  electric_field=electric_field(t), A_field=A_field)
 
-    # J_name = 'J_' + tail
-    # np.save(J_name, [t, J_E_dir, J_ortho, freq/w, Jw_E_dir, Jw_ortho])
-    # P_name = 'P_' + tail
-    # np.save(P_name, [t, P_E_dir, P_ortho, freq/w, Pw_E_dir, Pw_ortho])
-    # I_name = 'I_' + tail
-    # np.save(I_name, [t, I_E_dir, I_ortho, freq/w, np.abs(Iw_E_dir),
-    #                  np.abs(Iw_ortho), Int_E_dir, Int_ortho])
-
-    # driving_tail = 'w{:4.2f}_E{:4.2f}_a{:4.2f}_ph{:3.2f}_wc-{:4.3f}'\
-    #     .format(w/THz_conv, E0/E_conv, alpha/fs_conv, phase, chirp/THz_conv)
-
-    # D_name = 'E_' + driving_tail
-    # np.save(D_name, [t, electric_field(t)])
-
-
 ###############################################################################
 # FUNCTIONS
 ###############################################################################
-def mesh(params, E_dir):
-    Nk_in_path = params.Nk_in_path                    # Number of kpoints in each of the two paths
-    rel_dist_to_Gamma = params.rel_dist_to_Gamma      # relative distance (in units of 2pi/a) of both paths to Gamma
-    a = params.a                                      # Lattice spacing
-    length_path_in_BZ = params.length_path_in_BZ      #
+def rect_mesh(params, E_dir):
+    # Number of kpoints in each of the two paths
+    Nk_in_path = params.Nk_in_path
+    # relative distance (in units of 2pi/a) of both paths to Gamma
+    rel_dist_to_Gamma = params.rel_dist_to_Gamma
+    a = params.a
+    length_path_in_BZ = params.length_path_in_BZ
 
     alpha_array = np.linspace(-0.5 + (1/(2*Nk_in_path)),
                               0.5 - (1/(2*Nk_in_path)), num=Nk_in_path)
@@ -341,21 +348,22 @@ def hex_mesh(Nk1, Nk2, a, b1, b2, align):
     def reflect_point(p, a, b1, b2):
         x = p[0]
         y = p[1]
-        if (y > 2*np.pi/(np.sqrt(3)*a)):   # Crosses top
+        if y > 2*np.pi/(np.sqrt(3)*a):
+            # Crosses top
             p -= b2
-        elif (y < -2*np.pi/(np.sqrt(3)*a)):
+        elif y < -2*np.pi/(np.sqrt(3)*a):
             # Crosses bottom
             p += b2
-        elif (np.sqrt(3)*x + y > 4*np.pi/(np.sqrt(3)*a)):
+        elif np.sqrt(3)*x + y > 4*np.pi/(np.sqrt(3)*a):
             # Crosses top-right
             p -= b1 + b2
-        elif (-np.sqrt(3)*x + y < -4*np.pi/(np.sqrt(3)*a)):
+        elif -np.sqrt(3)*x + y < -4*np.pi/(np.sqrt(3)*a):
             # Crosses bot-right
             p -= b1
-        elif (np.sqrt(3)*x + y < -4*np.pi/(np.sqrt(3)*a)):
+        elif np.sqrt(3)*x + y < -4*np.pi/(np.sqrt(3)*a):
             # Crosses bot-left
             p += b1 + b2
-        elif (-np.sqrt(3)*x + y > 4*np.pi/(np.sqrt(3)*a)):
+        elif -np.sqrt(3)*x + y > 4*np.pi/(np.sqrt(3)*a):
             # Crosses top-left
             p += b1
         return p
@@ -373,13 +381,13 @@ def hex_mesh(Nk1, Nk2, a, b1, b2, align):
                 # Create a k-point
                 kpoint = a1*b1 + a2*b2
                 # If current point is in BZ, append it to the mesh and path_M
-                if (is_in_hex(kpoint, a)):
+                if is_in_hex(kpoint, a):
                     mesh.append(kpoint)
                     path_M.append(kpoint)
                 # If current point is NOT in BZ, reflect it along
                 # the appropriate axis to get it in the BZ, then append.
                 else:
-                    while (not is_in_hex(kpoint, a)):
+                    while not is_in_hex(kpoint, a):
                         kpoint = reflect_point(kpoint, a, b1, b2)
                     mesh.append(kpoint)
                     path_M.append(kpoint)
@@ -407,12 +415,12 @@ def hex_mesh(Nk1, Nk2, a, b1, b2, align):
             paths.append(path_K)
 
     elif align == 'K':
-        if (Nk1%3 != 0 or Nk1%2 != 0):
+        if Nk1%3 != 0 or Nk1%2 != 0:
             raise RuntimeError("Nk1: " + "{:d}".format(Nk1) +
                                " needs to be divisible by 3 and even")
-        elif (Nk2%3 != 0):
+        if Nk2%3 != 0:
             raise RuntimeError("Nk2: " + "{:d}".format(Nk2) +
-                           -    " needs to be divisible by 3")
+                               " needs to be divisible by 3")
         b_a1 = 8*np.pi/(a*3)*np.array([1, 0])
         b_a2 = 4*np.pi/(a*3)*np.array([0, np.sqrt(3)])
         # Extend over half of the b2 direction and 1.5x the b1 direction
@@ -427,7 +435,7 @@ def hex_mesh(Nk1, Nk2, a, b1, b2, align):
                     mesh.append(kpoint)
                     path_K.append(kpoint)
                 else:
-                    while (not is_in_hex(kpoint, a)):
+                    while not is_in_hex(kpoint, a):
                         kpoint = reflect_point(kpoint, a, b1, b2)
                     # kpoint -= (2*np.pi/a) * np.array([1, 1/np.sqrt(3)])
                     mesh.append(kpoint)
@@ -441,14 +449,14 @@ def diff(x, y):
     '''
     Takes the derivative of y w.r.t. x
     '''
-    if (len(x) != len(y)):
+    if len(x) != len(y):
         raise ValueError('Vectors have different lengths')
-    elif len(y) == 1:
+    if len(y) == 1:
         return 0
-    else:
-        dx = np.gradient(x)
-        dy = np.gradient(y)
-        return dy/dx
+
+    dx = np.gradient(x)
+    dy = np.gradient(y)
+    return dy/dx
 
 
 def gaussian_envelope(t, alpha):
@@ -538,7 +546,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
         return x
 
     @njit
-    def fvelocity(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0):
+    def fvelocity(t, y, kpath, _dk, ecv_in_path, dipole_in_path, A_in_path, y0):
         """
         Velocity gauge needs a recalculation of energies and dipoles sind k
         is shifted according to the vector potential A
@@ -552,7 +560,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
         ecv_in_path = ecf(kx=kx, ky=ky) - evf(kx=kx, ky=ky)
 
-        if (dipole_off):
+        if dipole_off:
             zeros = np.zeros(kx.size, dtype=np.complex128)
             dipole_in_path = zeros
             A_in_path = zeros
@@ -606,10 +614,10 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
         return x
 
     freturn = None
-    if (gauge == 'length'):
+    if gauge == 'length':
         print("Using length gauge")
         freturn = flength
-    elif (gauge == 'velocity'):
+    elif gauge == 'velocity':
         print("Using velocity gauge")
         freturn = fvelocity
     else:
@@ -626,18 +634,18 @@ def initial_condition(e_fermi, temperature, e_c):
     ones = np.ones(knum, dtype=np.float64)
     zeros = np.zeros(knum, dtype=np.float64)
     distrib = np.zeros(knum, dtype=np.float64)
-    if (temperature > 1e-5):
+    if temperature > 1e-5:
         distrib += 1/(np.exp((e_c-e_fermi)/temperature) + 1)
         return np.array([ones, zeros, zeros, distrib]).flatten('F')
-    else:
-        smaller_e_fermi = (e_fermi - e_c) > 0
-        distrib[smaller_e_fermi] += 1
-        return np.array([ones, zeros, zeros, distrib]).flatten('F')
+
+    smaller_e_fermi = (e_fermi - e_c) > 0
+    distrib[smaller_e_fermi] += 1
+    return np.array([ones, zeros, zeros, distrib]).flatten('F')
 
 
 def BZ_plot(kpnts, a, b1, b2, paths, si_units=True):
 
-    if (si_units):
+    if si_units:
         a *= co.au_to_as
         kpnts *= co.as_to_au
         b1 *= co.as_to_au
@@ -666,14 +674,14 @@ def BZ_plot(kpnts, a, b1, b2, paths, si_units=True):
     plt.xlim(-7.0/a, 7.0/a)
     plt.ylim(-7.0/a, 7.0/a)
 
-    if (si_units):
+    if si_units:
         plt.xlabel(r'$k_x \text{ in } 1/\si{\angstrom}$')
         plt.ylabel(r'$k_y \text{ in } 1/\si{\angstrom}$')
     else:
         plt.xlabel(r'$k_x \text{ in } 1/a_0$')
         plt.ylabel(r'$k_y \text{ in } 1/a_0$')
     for path in paths:
-        if (si_units):
+        if si_units:
             plt.plot(co.as_to_au*path[:, 0], co.as_to_au*path[:, 1])
         else:
             plt.plot(path[:, 0], path[:, 1])

@@ -123,11 +123,11 @@ def make_emission_exact(sys, paths, solution, E_dir, A_field, gauge):
 
         # I_E_dir is of size (number of time steps)
         for i_time in range(n_time_steps):
-            if (gauge == 'length'):
+            if gauge == 'length':
                 kx_shift = 0
                 ky_shift = 0
                 fv_subs = 0
-            if (gauge == 'velocity'):
+            if gauge == 'velocity':
                 kx_shift = A_field[i_time]*E_dir[0]
                 ky_shift = A_field[i_time]*E_dir[1]
                 fv_subs = 1
@@ -182,5 +182,110 @@ def make_emission_exact(sys, paths, solution, E_dir, A_field, gauge):
                                                  * solution[i_k, i_path, i_time, 2])
 
         return I_E_dir, I_ortho
+
+    return emission_exact
+
+
+def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge):
+    hderivx = sys.hderivfjit[0]
+    hdx_00 = hderivx[0][0]
+    hdx_01 = hderivx[0][1]
+    hdx_10 = hderivx[1][0]
+    hdx_11 = hderivx[1][1]
+
+    hderivy = sys.hderivfjit[1]
+    hdy_00 = hderivy[0][0]
+    hdy_01 = hderivy[0][1]
+    hdy_10 = hderivy[1][0]
+    hdy_11 = hderivy[1][1]
+
+    Ujit = sys.Ujit
+    U_00 = Ujit[0][0]
+    U_01 = Ujit[0][1]
+    U_10 = Ujit[1][0]
+    U_11 = Ujit[1][1]
+
+    Ujit_h = sys.Ujit_h
+    U_h_00 = Ujit_h[0][0]
+    U_h_01 = Ujit_h[0][1]
+    U_h_10 = Ujit_h[1][0]
+    U_h_11 = Ujit_h[1][1]
+
+    E_ort = np.array([E_dir[1], -E_dir[0]])
+
+    @njit
+    def emission_exact(path, solution, I_E_dir, I_ortho):
+        ##########################################################
+        # H derivative container
+        ##########################################################
+        h_deriv_x = np.zeros((pathlen, 2, 2), dtype=np.complex128)
+        h_deriv_y = np.zeros((pathlen, 2, 2), dtype=np.complex128)
+        h_deriv_E_dir = np.zeros((pathlen, 2, 2), dtype=np.complex128)
+        h_deriv_ortho = np.zeros((pathlen, 2, 2), dtype=np.complex128)
+
+        ##########################################################
+        # Wave function container
+        ##########################################################
+        U = np.zeros((pathlen, 2, 2), dtype=np.complex128)
+        U_h = np.zeros((pathlen, 2, 2), dtype=np.complex128)
+
+        # I_E_dir is of size (number of time steps)
+        for i_time in range(n_time_steps):
+            if gauge == 'length':
+                kx_shift = 0
+                ky_shift = 0
+                fv_subs = 0
+            if gauge == 'velocity':
+                kx_shift = A_field[i_time]*E_dir[0]
+                ky_shift = A_field[i_time]*E_dir[1]
+                fv_subs = 1
+
+                kx_in_path = path[:, 0] + kx_shift
+                ky_in_path = path[:, 1] + ky_shift
+
+                h_deriv_x[:, 0, 0] = hdx_00(kx=kx_in_path, ky=ky_in_path)
+                h_deriv_x[:, 0, 1] = hdx_01(kx=kx_in_path, ky=ky_in_path)
+                h_deriv_x[:, 1, 0] = hdx_10(kx=kx_in_path, ky=ky_in_path)
+                h_deriv_x[:, 1, 1] = hdx_11(kx=kx_in_path, ky=ky_in_path)
+
+                h_deriv_y[:, 0, 0] = hdy_00(kx=kx_in_path, ky=ky_in_path)
+                h_deriv_y[:, 0, 1] = hdy_01(kx=kx_in_path, ky=ky_in_path)
+                h_deriv_y[:, 1, 0] = hdy_10(kx=kx_in_path, ky=ky_in_path)
+                h_deriv_y[:, 1, 1] = hdy_11(kx=kx_in_path, ky=ky_in_path)
+
+                h_deriv_E_dir[:, :, :] = h_deriv_x*E_dir[0] + h_deriv_y*E_dir[1]
+                h_deriv_ortho[:, :, :] = h_deriv_x*E_ort[0] + h_deriv_y*E_ort[1]
+
+                U[:, 0, 0] = U_00(kx=kx_in_path, ky=ky_in_path)
+                U[:, 0, 1] = U_01(kx=kx_in_path, ky=ky_in_path)
+                U[:, 1, 0] = U_10(kx=kx_in_path, ky=ky_in_path)
+                U[:, 1, 1] = U_11(kx=kx_in_path, ky=ky_in_path)
+
+                U_h[:, 0, 0] = U_h_00(kx=kx_in_path, ky=ky_in_path)
+                U_h[:, 0, 1] = U_h_01(kx=kx_in_path, ky=ky_in_path)
+                U_h[:, 1, 0] = U_h_10(kx=kx_in_path, ky=ky_in_path)
+                U_h[:, 1, 1] = U_h_11(kx=kx_in_path, ky=ky_in_path)
+
+                for i_k in range(pathlen):
+
+                    dH_U_E_dir = h_deriv_E_dir[i_k] @ U[i_k]
+                    U_h_H_U_E_dir = U_h[i_k] @ dH_U_E_dir
+
+                    dH_U_ortho = h_deriv_ortho[i_k] @ U[i_k]
+                    U_h_H_U_ortho = U_h[i_k] @ dH_U_ortho
+
+                    I_E_dir[i_time] += U_h_H_U_E_dir[0, 0].real\
+                        * (solution[i_k, i_time, 0].real - fv_subs)
+                    I_E_dir[i_time] += U_h_H_U_E_dir[1, 1].real\
+                        * solution[i_k, i_time, 3].real
+                    I_E_dir[i_time] += 2*np.real(U_h_H_U_E_dir[0, 1]
+                                                 * solution[i_k, i_time, 2])
+
+                    I_ortho[i_time] += U_h_H_U_ortho[0, 0].real\
+                        * (solution[i_k, i_time, 0].real - fv_subs)
+                    I_ortho[i_time] += U_h_H_U_ortho[1, 1].real\
+                        * solution[i_k, i_time, 3].real
+                    I_ortho[i_time] += 2*np.real(U_h_H_U_ortho[0, 1]
+                                                 * solution[i_k, i_time, 2])
 
     return emission_exact
