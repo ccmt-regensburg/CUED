@@ -123,8 +123,8 @@ def sbe_solver(sys, dipole, params):
 
     # Exact emission function will be set after end of first run
     emission_exact_path = None
-    I_exact_E_dir = np.zeros(Nt, dtype=np.float64)
-    I_exact_ortho = np.zeros(Nt, dtype=np.float64)
+    I_exact_E_dir = np.zeros(params.Nt, dtype=np.float64)
+    I_exact_ortho = np.zeros(params.Nt, dtype=np.float64)
 
     # SOLVING
     ###########################################################################
