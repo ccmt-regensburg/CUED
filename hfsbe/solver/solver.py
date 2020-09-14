@@ -7,7 +7,8 @@ from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode
 
 from hfsbe.utility import conversion_factors as co
-from hfsbe.solver import polarization, current, make_emission_exact_path
+from hfsbe.solver import polarization, current
+from hfsbe.solver import make_current_path, make_emission_exact_path
 from hfsbe.solver import make_electric_field
 
 
@@ -126,6 +127,22 @@ def sbe_solver(sys, dipole, params):
     I_exact_E_dir = np.zeros(params.Nt, dtype=np.float64)
     I_exact_ortho = np.zeros(params.Nt, dtype=np.float64)
 
+    # Approximate emission containers
+    if save_approx:
+        current_path = None
+        J_E_dir = np.zeros(params.Nt, dtype=np.float64)
+        J_ortho = np.zeros(params.Nt, dtype=np.float64)
+        polarization_path = None
+        P_E_dir = np.zeros(params.Nt, dtype=np.float64)
+        P_ortho = np.zeros(params.Nt, dtype=np.float64)
+    else:
+        current_path = None
+        J_E_dir = None
+        J_ortho = None
+        polarization_path = None
+        P_E_dir = None
+        P_ortho = None
+
     # SOLVING
     ###########################################################################
     # Iterate through each path in the Brillouin zone
@@ -204,16 +221,25 @@ def sbe_solver(sys, dipole, params):
 
         if not t_constructed:
             # Construct the function after the first full run!
-            emission_exact_path = make_emission_exact_path(sys, Nk1, Nt, E_dir,
+            emission_exact_path = make_emission_exact_path(sys, Nk1, params.Nt, E_dir,
                                                            A_field, gauge)
+            if save_approx:
+                current_path = make_current_path(sys, Nk1, params.Nt, E_dir, A_field, gauge)
+                # polarization_path = make_polarization_path()
+
+        # Compute per path observables
         emission_exact_path(path, solution[:, Nk2_idx, :, :], I_exact_E_dir, I_exact_ortho)
+
+        if save_approx:
+            fv = solution[:, Nk2_idx, :, 0]
+            fc = solution[:, Nk2_idx, :, 3]
+            current_path(path, fv, fc, J_E_dir, J_ortho)
+
         # Flag that time array has been built up
         t_constructed = True
         # Create emission function
 
 
-    # COMPUTE OBSERVABLES
-    ###########################################################################
     # Filename tail
     tail = 'Nk1-{}_Nk2-{}_w{:4.2f}_E{:4.2f}_a{:4.2f}_ph{:3.2f}_T2-{:05.2f}'\
         .format(Nk1, Nk2, w*co.au_to_THz, E0*co.au_to_MVpcm, alpha*co.au_to_fs,
@@ -227,9 +253,6 @@ def sbe_solver(sys, dipole, params):
         # Calculate parallel and orthogonal components of observables
         # Polarization (interband)
         P_E_dir, P_ortho = polarization(dipole, paths, solution[:, :, :, 1], E_dir)
-        # Current (intraband)
-        J_E_dir, J_ortho = current(sys, paths, solution[:, :, :, 0],
-                                   solution[:, :, :, 3], t, alpha, E_dir)
         # Approximate emission in time
         I_E_dir = diff(t, P_E_dir)*gaussian_envelope(t, alpha) \
             + J_E_dir*gaussian_envelope(t, alpha)
