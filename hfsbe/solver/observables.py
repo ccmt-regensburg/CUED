@@ -36,8 +36,8 @@ def make_polarization_path(dipole, pathlen, n_time_steps, E_dir, A_field, gauge)
             d_E_dir[:] = d_01x * E_dir[0] + d_01y * E_dir[1]
             d_ortho[:] = d_01x * E_ort[0] + d_01y * E_ort[1]
 
-            P_E_dir[i_time] = 2*np.real(np.sum(d_E_dir * pcv))
-            P_ortho[i_time] = 2*np.real(np.sum(d_ortho * pcv))
+            P_E_dir[i_time] += 2*np.real(np.sum(d_E_dir * pcv[:, i_time]))
+            P_ortho[i_time] += 2*np.real(np.sum(d_ortho * pcv[:, i_time]))
 
     return polarization_path
 
@@ -92,10 +92,10 @@ def make_current_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge):
             e_deriv_E_dir_c[:] = edx_c * E_dir[0] + edy_c * E_dir[1]
             e_deriv_ortho_c[:] = edx_c * E_ort[0] + edy_c * E_ort[1]
 
-            J_E_dir[i_time] += np.sum(e_deriv_E_dir_v * (fv.real - fv_subs)) + \
-                np.sum(e_deriv_E_dir_c * fc.real)
-            J_ortho[i_time] += np.sum(e_deriv_ortho_v * (fv.real - fv_subs)) + \
-                np.sum(e_deriv_ortho_c * fc.real)
+            J_E_dir[i_time] += np.sum(e_deriv_E_dir_v * (fv[:, i_time].real - fv_subs)) + \
+                np.sum(e_deriv_E_dir_c * fc[:, i_time].real)
+            J_ortho[i_time] += np.sum(e_deriv_ortho_v * (fv.real[:, i_time] - fv_subs)) + \
+                np.sum(e_deriv_ortho_c * fc[:, i_time].real)
 
     return current_path
 
@@ -156,52 +156,52 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge):
                 ky_shift = A_field[i_time]*E_dir[1]
                 fv_subs = 1
 
-                kx_in_path = path[:, 0] + kx_shift
-                ky_in_path = path[:, 1] + ky_shift
+            kx_in_path = path[:, 0] + kx_shift
+            ky_in_path = path[:, 1] + ky_shift
 
-                h_deriv_x[:, 0, 0] = hdx_00(kx=kx_in_path, ky=ky_in_path)
-                h_deriv_x[:, 0, 1] = hdx_01(kx=kx_in_path, ky=ky_in_path)
-                h_deriv_x[:, 1, 0] = hdx_10(kx=kx_in_path, ky=ky_in_path)
-                h_deriv_x[:, 1, 1] = hdx_11(kx=kx_in_path, ky=ky_in_path)
+            h_deriv_x[:, 0, 0] = hdx_00(kx=kx_in_path, ky=ky_in_path)
+            h_deriv_x[:, 0, 1] = hdx_01(kx=kx_in_path, ky=ky_in_path)
+            h_deriv_x[:, 1, 0] = hdx_10(kx=kx_in_path, ky=ky_in_path)
+            h_deriv_x[:, 1, 1] = hdx_11(kx=kx_in_path, ky=ky_in_path)
 
-                h_deriv_y[:, 0, 0] = hdy_00(kx=kx_in_path, ky=ky_in_path)
-                h_deriv_y[:, 0, 1] = hdy_01(kx=kx_in_path, ky=ky_in_path)
-                h_deriv_y[:, 1, 0] = hdy_10(kx=kx_in_path, ky=ky_in_path)
-                h_deriv_y[:, 1, 1] = hdy_11(kx=kx_in_path, ky=ky_in_path)
+            h_deriv_y[:, 0, 0] = hdy_00(kx=kx_in_path, ky=ky_in_path)
+            h_deriv_y[:, 0, 1] = hdy_01(kx=kx_in_path, ky=ky_in_path)
+            h_deriv_y[:, 1, 0] = hdy_10(kx=kx_in_path, ky=ky_in_path)
+            h_deriv_y[:, 1, 1] = hdy_11(kx=kx_in_path, ky=ky_in_path)
 
-                h_deriv_E_dir[:, :, :] = h_deriv_x*E_dir[0] + h_deriv_y*E_dir[1]
-                h_deriv_ortho[:, :, :] = h_deriv_x*E_ort[0] + h_deriv_y*E_ort[1]
+            h_deriv_E_dir[:, :, :] = h_deriv_x*E_dir[0] + h_deriv_y*E_dir[1]
+            h_deriv_ortho[:, :, :] = h_deriv_x*E_ort[0] + h_deriv_y*E_ort[1]
 
-                U[:, 0, 0] = U_00(kx=kx_in_path, ky=ky_in_path)
-                U[:, 0, 1] = U_01(kx=kx_in_path, ky=ky_in_path)
-                U[:, 1, 0] = U_10(kx=kx_in_path, ky=ky_in_path)
-                U[:, 1, 1] = U_11(kx=kx_in_path, ky=ky_in_path)
+            U[:, 0, 0] = U_00(kx=kx_in_path, ky=ky_in_path)
+            U[:, 0, 1] = U_01(kx=kx_in_path, ky=ky_in_path)
+            U[:, 1, 0] = U_10(kx=kx_in_path, ky=ky_in_path)
+            U[:, 1, 1] = U_11(kx=kx_in_path, ky=ky_in_path)
 
-                U_h[:, 0, 0] = U_h_00(kx=kx_in_path, ky=ky_in_path)
-                U_h[:, 0, 1] = U_h_01(kx=kx_in_path, ky=ky_in_path)
-                U_h[:, 1, 0] = U_h_10(kx=kx_in_path, ky=ky_in_path)
-                U_h[:, 1, 1] = U_h_11(kx=kx_in_path, ky=ky_in_path)
+            U_h[:, 0, 0] = U_h_00(kx=kx_in_path, ky=ky_in_path)
+            U_h[:, 0, 1] = U_h_01(kx=kx_in_path, ky=ky_in_path)
+            U_h[:, 1, 0] = U_h_10(kx=kx_in_path, ky=ky_in_path)
+            U_h[:, 1, 1] = U_h_11(kx=kx_in_path, ky=ky_in_path)
 
-                for i_k in range(pathlen):
+            for i_k in range(pathlen):
 
-                    dH_U_E_dir = h_deriv_E_dir[i_k] @ U[i_k]
-                    U_h_H_U_E_dir = U_h[i_k] @ dH_U_E_dir
+                dH_U_E_dir = h_deriv_E_dir[i_k] @ U[i_k]
+                U_h_H_U_E_dir = U_h[i_k] @ dH_U_E_dir
 
-                    dH_U_ortho = h_deriv_ortho[i_k] @ U[i_k]
-                    U_h_H_U_ortho = U_h[i_k] @ dH_U_ortho
+                dH_U_ortho = h_deriv_ortho[i_k] @ U[i_k]
+                U_h_H_U_ortho = U_h[i_k] @ dH_U_ortho
 
-                    I_E_dir[i_time] += U_h_H_U_E_dir[0, 0].real\
-                        * (solution[i_k, i_time, 0].real - fv_subs)
-                    I_E_dir[i_time] += U_h_H_U_E_dir[1, 1].real\
-                        * solution[i_k, i_time, 3].real
-                    I_E_dir[i_time] += 2*np.real(U_h_H_U_E_dir[0, 1]
-                                                 * solution[i_k, i_time, 2])
+                I_E_dir[i_time] += U_h_H_U_E_dir[0, 0].real\
+                    * (solution[i_k, i_time, 0].real - fv_subs)
+                I_E_dir[i_time] += U_h_H_U_E_dir[1, 1].real\
+                    * solution[i_k, i_time, 3].real
+                I_E_dir[i_time] += 2*np.real(U_h_H_U_E_dir[0, 1]
+                                             * solution[i_k, i_time, 2])
 
-                    I_ortho[i_time] += U_h_H_U_ortho[0, 0].real\
-                        * (solution[i_k, i_time, 0].real - fv_subs)
-                    I_ortho[i_time] += U_h_H_U_ortho[1, 1].real\
-                        * solution[i_k, i_time, 3].real
-                    I_ortho[i_time] += 2*np.real(U_h_H_U_ortho[0, 1]
-                                                 * solution[i_k, i_time, 2])
+                I_ortho[i_time] += U_h_H_U_ortho[0, 0].real\
+                    * (solution[i_k, i_time, 0].real - fv_subs)
+                I_ortho[i_time] += U_h_H_U_ortho[1, 1].real\
+                    * solution[i_k, i_time, 3].real
+                I_ortho[i_time] += 2*np.real(U_h_H_U_ortho[0, 1]
+                                             * solution[i_k, i_time, 2])
 
     return emission_exact_path

@@ -7,8 +7,7 @@ from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode
 
 from hfsbe.utility import conversion_factors as co
-from hfsbe.solver import polarization, current
-from hfsbe.solver import make_current_path, make_emission_exact_path
+from hfsbe.solver import make_current_path, make_polarization_path, make_emission_exact_path
 from hfsbe.solver import make_electric_field
 
 
@@ -17,7 +16,6 @@ def sbe_solver(sys, dipole, params):
     ###########################################################################
     # Flag evaluation
     user_out = params.user_out
-    save_file = params.save_file
     save_full = params.save_full
     save_approx = params.save_approx
     dipole_off = params.dipole_off
@@ -127,7 +125,7 @@ def sbe_solver(sys, dipole, params):
     I_exact_E_dir = np.zeros(params.Nt, dtype=np.float64)
     I_exact_ortho = np.zeros(params.Nt, dtype=np.float64)
 
-    # Approximate emission containers
+    # Approximate (kira & koch) containers
     if save_approx:
         current_path = None
         J_E_dir = np.zeros(params.Nt, dtype=np.float64)
@@ -143,6 +141,7 @@ def sbe_solver(sys, dipole, params):
         P_E_dir = None
         P_ortho = None
 
+    ###########################################################################
     # SOLVING
     ###########################################################################
     # Iterate through each path in the Brillouin zone
@@ -207,7 +206,8 @@ def sbe_solver(sys, dipole, params):
             # Save solution each output step
             if ti % dt_out == 0:
                 # Do not append the last element (A_field)
-
+                # If save_full is False Nk2_idx is 0 as only the current path
+                # is saved
                 solution[:, Nk2_idx, t_idx, :] = solver.y[:-1].reshape(Nk1, 4)
                 # Construct time array only once
                 if not t_constructed:
@@ -221,19 +221,24 @@ def sbe_solver(sys, dipole, params):
 
         if not t_constructed:
             # Construct the function after the first full run!
-            emission_exact_path = make_emission_exact_path(sys, Nk1, params.Nt, E_dir,
-                                                           A_field, gauge)
+            emission_exact_path = make_emission_exact_path(sys, Nk1, params.Nt, E_dir, A_field,
+                                                           gauge)
             if save_approx:
+                # Only need kira & koch formulas if save_approx is set
                 current_path = make_current_path(sys, Nk1, params.Nt, E_dir, A_field, gauge)
-                # polarization_path = make_polarization_path()
+                polarization_path = make_polarization_path(dipole, Nk1, params.Nt, E_dir, A_field,
+                                                           gauge)
 
         # Compute per path observables
         emission_exact_path(path, solution[:, Nk2_idx, :, :], I_exact_E_dir, I_exact_ortho)
 
         if save_approx:
+            # Only calculate kira & koch formula if save_approx is set
             fv = solution[:, Nk2_idx, :, 0]
             fc = solution[:, Nk2_idx, :, 3]
+            pcv = solution[:, Nk2_idx, :, 1]
             current_path(path, fv, fc, J_E_dir, J_ortho)
+            polarization_path(path, pcv, P_E_dir, P_ortho)
 
         # Flag that time array has been built up
         t_constructed = True
@@ -241,18 +246,14 @@ def sbe_solver(sys, dipole, params):
 
 
     # Filename tail
-    tail = 'Nk1-{}_Nk2-{}_w{:4.2f}_E{:4.2f}_a{:4.2f}_ph{:3.2f}_T2-{:05.2f}'\
-        .format(Nk1, Nk2, w*co.au_to_THz, E0*co.au_to_MVpcm, alpha*co.au_to_fs,
-                phase, T2*co.au_to_fs)
+    tail = 'E_{:.2f}_w_{:.2f}_a_{:.2f}_{}_t0_{:.2f}_NK1-{}_NK2-{}_T1_{:.2f}_T2_{:.2f}_chirp_{:.3f}_ph_{:.2f}'\
+        .format(E0*co.au_to_MVpcm, w*co.au_to_THz, alpha*co.au_to_fs, gauge, params.t0, Nk1, Nk2, T1*co.au_to_fs, T2*co.au_to_fs, chirp*co.au_to_THz, phase)
 
     # Fourier transforms
     dt_out = t[1] - t[0]
     freq = fftshift(fftfreq(np.size(t), d=dt_out))
-    if gauge == 'length' and save_approx:
-        # Only calculate kira & koch emission if we are in length gauge
-        # Calculate parallel and orthogonal components of observables
-        # Polarization (interband)
-        P_E_dir, P_ortho = polarization(dipole, paths, solution[:, :, :, 1], E_dir)
+    if save_approx:
+        # Only do kira & koch emission fourier transforms if save_approx is set
         # Approximate emission in time
         I_E_dir = diff(t, P_E_dir)*gaussian_envelope(t, alpha) \
             + J_E_dir*gaussian_envelope(t, alpha)
@@ -268,10 +269,6 @@ def sbe_solver(sys, dipole, params):
 
         Iw_E_dir = fftshift(fft(I_E_dir, norm='ortho'))
         Iw_ortho = fftshift(fft(I_ortho, norm='ortho'))
-        # Pw_E_dir = fftshift(fft(diff(t, P_E_dir), norm='ortho'))
-        # Pw_ortho = fftshift(fft(diff(t, P_ortho), norm='ortho'))
-        # # Jw_E_dir = fftshift(fft(J_E_dir*gaussian_envelope(t, alpha), norm='ortho'))
-        # Jw_ortho = fftshift(fft(J_ortho*gaussian_envelope(t, alpha), norm='ortho'))
 
         # Approximate Emission intensity
         Int_E_dir = (freq**2)*np.abs(Iw_E_dir)**2
@@ -299,16 +296,14 @@ def sbe_solver(sys, dipole, params):
     Int_exact_E_dir = (freq**2)*np.abs(Iw_exact_E_dir)**2
     Int_exact_ortho = (freq**2)*np.abs(Iw_exact_ortho)**2
 
-    # Save observables to file
-    if save_file:
-        I_exact_name = 'Iexact_' + tail
-        np.save(I_exact_name, [t, I_exact_E_dir, I_exact_ortho,
-                               freq/w, Iw_exact_E_dir, Iw_exact_ortho,
-                               Int_exact_E_dir, Int_exact_ortho])
-        # Save the parameters of the calculation
-        params_name = 'params.txt'
-        paramsfile = open(params_name, 'w')
-        paramsfile.write(str(params.__dict__))
+    I_exact_name = 'Iexact_' + tail
+    np.save(I_exact_name, [t, I_exact_E_dir, I_exact_ortho,
+                           freq/w, Iw_exact_E_dir, Iw_exact_ortho,
+                           Int_exact_E_dir, Int_exact_ortho])
+    # Save the parameters of the calculation
+    params_name = 'params_' + tail + '.txt'
+    paramsfile = open(params_name, 'w')
+    paramsfile.write(str(params.__dict__))
 
     if save_full:
         S_name = 'Sol_' + tail
@@ -316,9 +311,12 @@ def sbe_solver(sys, dipole, params):
                  electric_field=electric_field(t), A_field=A_field)
 
 ###############################################################################
-# FUNCTIONS
+# K-Point meshes
 ###############################################################################
 def rect_mesh(params, E_dir):
+    '''
+    Create a rectangular mesh
+    '''
     # Number of kpoints in each of the two paths
     Nk_in_path = params.Nk_in_path
     # relative distance (in units of 2pi/a) of both paths to Gamma
@@ -356,6 +354,9 @@ def rect_mesh(params, E_dir):
 
 
 def hex_mesh(Nk1, Nk2, a, b1, b2, align):
+    '''
+    Create a hexagonal mesh
+    '''
     alpha1 = np.linspace(-0.5 + (1/(2*Nk1)), 0.5 - (1/(2*Nk1)), num=Nk1)
     alpha2 = np.linspace(-0.5 + (1/(2*Nk2)), 0.5 - (1/(2*Nk2)), num=Nk2)
 
@@ -571,7 +572,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
     @njit
     def fvelocity(t, y, kpath, _dk, ecv_in_path, dipole_in_path, A_in_path, y0):
         """
-        Velocity gauge needs a recalculation of energies and dipoles sind k
+        Velocity gauge needs a recalculation of energies and dipoles as k
         is shifted according to the vector potential A
         """
 
@@ -646,6 +647,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
     else:
         raise AttributeError("You have to either assign velocity or length gauge")
 
+    # The python solver does not directly accept jitted functions so we wrap it
     def f(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0):
         return freturn(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
 
@@ -653,6 +655,9 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
 
 def initial_condition(e_fermi, temperature, e_c):
+    '''
+    Occupy conduction band according to inital Fermi energy and temperature
+    '''
     knum = e_c.size
     ones = np.ones(knum, dtype=np.float64)
     zeros = np.zeros(knum, dtype=np.float64)
