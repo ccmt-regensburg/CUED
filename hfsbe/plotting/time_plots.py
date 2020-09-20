@@ -142,7 +142,7 @@ def time_grid(time, kpath, electric_field, current, band_structure,
         plt.show()
 
 
-def time_ortho_dir_angle(time, current_dir, current_ortho, current_legend=None,
+def time_dir_ortho_angle(time, current_dir, current_ortho, current_legend=None,
                          savename=None, si_units=True):
 
     if si_units:
@@ -165,3 +165,37 @@ def time_ortho_dir_angle(time, current_dir, current_ortho, current_legend=None,
         plt.show()
     else:
         plt.savefig(savename)
+
+
+def time_dir_ortho(time, current_dir, current_ortho, xlim=None, ylim=None,
+                   xlabel=r'Time in atomic units', ylabel=r'Current in atomic units',
+                   paramlegend=None, suptitle=None, title=None, savename=None):
+
+    _fig, ax = plt.subplots(1)
+    lines_dir = ax.plot(time.T, current_dir.T, marker='.')
+    plt.gca().set_prop_cycle(None)
+    lines_ortho = ax.plot(time.T, current_ortho.T, linestyle='--')
+
+    ax.grid(True, axis='x', ls='--')
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+
+    if xlim is not None:
+        ax.set_xlim(xlim)
+
+    if ylim is not None:
+        ax.set_ylim(ylim)
+
+    if paramlegend is not None:
+        ax.legend(paramlegend)
+
+    if suptitle is not None:
+        plt.suptitle(suptitle)
+
+    if title is not None:
+        ax.set_title(title)
+
+    if savename is not None:
+        plt.savefig(savename)
+    else:
+        plt.show()
