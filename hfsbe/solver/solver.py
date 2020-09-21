@@ -85,6 +85,7 @@ def sbe_solver(sys, dipole, params):
         _kpnts, paths = hex_mesh(Nk1, Nk2, a, b1, b2, align)
         dkx = np.abs(paths[0, 0] - paths[0, 1])[0]
         dky = np.abs(paths[0, 0] - paths[1, 0])[1]
+        breakpoint()
         dk = 1/Nk1
         if align == 'K':
             E_dir = np.array([1, 0])
