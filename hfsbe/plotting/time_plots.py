@@ -172,7 +172,7 @@ def time_dir_ortho(time, current_dir, current_ortho, xlim=None, ylim=None,
                    paramlegend=None, suptitle=None, title=None, savename=None):
 
     _fig, ax = plt.subplots(1)
-    lines_dir = ax.plot(time.T, current_dir.T, marker='.')
+    lines_dir = ax.plot(time.T, current_dir.T)
     plt.gca().set_prop_cycle(None)
     lines_ortho = ax.plot(time.T, current_ortho.T, linestyle='--')
 

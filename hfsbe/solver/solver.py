@@ -450,7 +450,7 @@ def hex_mesh(Nk1, Nk2, a, b1, b2, align):
         # Extend over half of the b2 direction and 1.5x the b1 direction
         # (extending into the 2nd BZ to get correct boundary conditions)
         alpha1 = np.linspace(-0.5 + (1.5/(2*Nk1)), 1.0 - (1.5/(2*Nk1)), Nk1)
-        alpha2 = np.linspace(0, 0.5 - (1/(2*Nk2)), Nk2)
+        alpha2 = np.linspace(0 + (0.5/(2*Nk2)), 0.5 - (0.5/(2*Nk2)), Nk2)
         for a2 in alpha2:
             path_K = []
             for a1 in alpha1:
