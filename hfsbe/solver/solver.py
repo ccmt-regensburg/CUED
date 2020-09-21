@@ -82,10 +82,8 @@ def sbe_solver(sys, dipole, params):
 
     # Form the Brillouin zone in consideration
     if BZ_type == 'full':
-        _kpnts, paths = hex_mesh(Nk1, Nk2, a, b1, b2, align)
-        dkx = np.abs(paths[0, 0] - paths[0, 1])[0]
-        dky = np.abs(paths[0, 0] - paths[1, 0])[1]
-        breakpoint()
+        _kpnts, paths, area = hex_mesh(Nk1, Nk2, a, b1, b2, align)
+        kweight = area/Nk
         dk = 1/Nk1
         if align == 'K':
             E_dir = np.array([1, 0])
@@ -264,8 +262,8 @@ def sbe_solver(sys, dipole, params):
             I_E_dir *= (dk/(4*np.pi))
             I_ortho *= (dk/(4*np.pi))
         if BZ_type == 'full':
-            I_E_dir *= (dkx*dky/(2*np.pi)**2)
-            I_ortho *= (dkx*dky/(2*np.pi)**2)
+            I_E_dir *= kweight
+            I_ortho *= kweight
 
 
         Iw_E_dir = fftshift(fft(I_E_dir, norm='ortho'))
@@ -287,8 +285,8 @@ def sbe_solver(sys, dipole, params):
         I_exact_E_dir *= (dk/(4*np.pi))
         I_exact_ortho *= (dk/(4*np.pi))
     if BZ_type == 'full':
-        I_exact_E_dir *= (dkx*dky/(2*np.pi)**2)
-        I_exact_ortho *= (dkx*dky/(2*np.pi)**2)
+        I_exact_E_dir *= kweight
+        I_exact_ortho *= kweight
 
     Iw_exact_E_dir = fftshift(fft(I_exact_E_dir*gaussian_envelope(t, alpha),
                                   norm='ortho'))
@@ -467,7 +465,7 @@ def hex_mesh(Nk1, Nk2, a, b1, b2, align):
                     path_K.append(kpoint)
             paths.append(path_K)
 
-    return np.array(mesh), np.array(paths)
+    return np.array(mesh), np.array(paths), (3*np.sqrt(3)/2)*(4*np.pi/(a*3))**2
 
 
 def diff(x, y):
