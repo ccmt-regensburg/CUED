@@ -96,7 +96,6 @@ def time_grid(time, kpath, electric_field, current, band_structure,
         ax4.set_xlabel(r'$t \text{ in } \si{fs}$')
     else:
         ax4.set_xlabel(r'$t \text{ in atomic units}$')
-
     ax4.set_title(r'Density Center of Mass')
     ax4.grid(which='major', axis='x', linestyle='--')
     ax4.axhline(y=kpath_min, linestyle='--', color='grey')
@@ -172,9 +171,9 @@ def time_dir_ortho(time, current_dir, current_ortho, xlim=None, ylim=None,
                    paramlegend=None, suptitle=None, title=None, savename=None):
 
     _fig, ax = plt.subplots(1)
-    lines_dir = ax.plot(time.T, current_dir.T)
+    lines_dir = ax.plot(time.T, current_dir.T, marker='.')
     plt.gca().set_prop_cycle(None)
-    lines_ortho = ax.plot(time.T, current_ortho.T, linestyle='--')
+    lines_ortho = ax.plot(time.T, current_ortho.T, linestyle='--', marker='.')
 
     ax.grid(True, axis='x', ls='--')
     ax.set_xlabel(xlabel)
