@@ -96,7 +96,6 @@ def time_grid(time, kpath, electric_field, current, band_structure,
         ax4.set_xlabel(r'$t \text{ in } \si{fs}$')
     else:
         ax4.set_xlabel(r'$t \text{ in atomic units}$')
-
     ax4.set_title(r'Density Center of Mass')
     ax4.grid(which='major', axis='x', linestyle='--')
     ax4.axhline(y=kpath_min, linestyle='--', color='grey')
@@ -169,12 +168,24 @@ def time_dir_ortho_angle(time, current_dir, current_ortho, current_legend=None,
 
 def time_dir_ortho(time, current_dir, current_ortho, xlim=None, ylim=None,
                    xlabel=r'Time in atomic units', ylabel=r'Current in atomic units',
-                   paramlegend=None, suptitle=None, title=None, savename=None):
+                   marker=None, paramlegend=None, suptitle=None, title=None, savename=None,
+                   si_units=True):
+
+    time = time.real
+    current_dir = current_dir.real
+    current_ortho = current_ortho.real
+
+    if si_units:
+        time *= co.au_to_fs
+        current_dir *= co.au_to_Amp*1e5
+        current_ortho *= co.au_to_Amp*1e5
+        xlabel = r'Time in $\si{fs}$'
+        ylabel = r'Current in $\si{\mu A}$'
 
     _fig, ax = plt.subplots(1)
-    lines_dir = ax.plot(time.T, current_dir.T)
+    _lines_dir = ax.plot(time.T, current_dir.T, marker=marker)
     plt.gca().set_prop_cycle(None)
-    lines_ortho = ax.plot(time.T, current_ortho.T, linestyle='--')
+    _lines_ortho = ax.plot(time.T, current_ortho.T, linestyle='--', marker=marker)
 
     ax.grid(True, axis='x', ls='--')
     ax.set_xlabel(xlabel)
