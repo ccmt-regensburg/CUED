@@ -92,11 +92,10 @@ def sbe_solver(sys, dipole, params):
                               np.sin(np.radians(-30))])
         # BZ_plot(_kpnts, a, b1, b2, paths)
     elif BZ_type == '2line':
-        breakpoint()
         E_dir = np.array([np.cos(np.radians(angle_inc_E_field)),
                           np.sin(np.radians(angle_inc_E_field))])
         dk, _kpnts, paths = rect_mesh(params, E_dir)
-        BZ_plot(_kpnts, a, b1, b2, paths)
+        # BZ_plot(_kpnts, a, b1, b2, paths)
 
     t_constructed = False
     # Solution containers
@@ -111,7 +110,7 @@ def sbe_solver(sys, dipole, params):
         # Only one path needed at a time if no full solution is needed
         solution = np.empty((Nk1, 1, params.Nt, 4), dtype=complex)
 
-    A_field = np.empty(params.Nt, dtype=complex)
+    A_field = np.empty(params.Nt, dtype=np.float64)
 
     # Initalise electric_field, create fnumba and initalise ode solver
     electric_field = make_electric_field(E0, w, alpha, chirp, phase)
@@ -213,7 +212,7 @@ def sbe_solver(sys, dipole, params):
                 if not t_constructed:
                     # Construct time and A_field only in first round
                     t[t_idx] = solver.t
-                    A_field[t_idx] = solver.y[-1]
+                    A_field[t_idx] = solver.y[-1].real
 
                 t_idx += 1
             # Increment time counter
