@@ -90,12 +90,13 @@ def sbe_solver(sys, dipole, params):
         elif align == 'M':
             E_dir = np.array([np.cos(np.radians(-30)),
                               np.sin(np.radians(-30))])
-        BZ_plot(_kpnts, a, b1, b2, paths)
+        # BZ_plot(_kpnts, a, b1, b2, paths)
     elif BZ_type == '2line':
+        breakpoint()
         E_dir = np.array([np.cos(np.radians(angle_inc_E_field)),
                           np.sin(np.radians(angle_inc_E_field))])
         dk, _kpnts, paths = rect_mesh(params, E_dir)
-        # BZ_plot(kpnts, a, b1, b2, paths)
+        BZ_plot(_kpnts, a, b1, b2, paths)
 
     t_constructed = False
     # Solution containers
@@ -322,6 +323,7 @@ def rect_mesh(params, E_dir):
     rel_dist_to_Gamma = params.rel_dist_to_Gamma
     a = params.a
     length_path_in_BZ = params.length_path_in_BZ
+    num_paths = params.num_paths
 
     alpha_array = np.linspace(-0.5 + (1/(2*Nk_in_path)),
                               0.5 - (1/(2*Nk_in_path)), num=Nk_in_path)
@@ -334,7 +336,7 @@ def rect_mesh(params, E_dir):
     paths = []
 
     # Create the kpoint mesh and the paths
-    for path_index in [-1, 1]:
+    for path_index in np.linspace(-num_paths + 1, num_paths - 1, num = num_paths):
         # Container for a single path
         path = []
         for alpha in alpha_array:
