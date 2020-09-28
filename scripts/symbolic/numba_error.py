@@ -1,8 +1,8 @@
 from numba import njit
 import numpy as np
 
-from hfsbe.example import BiTe
-from hfsbe.dipole import SymbolicDipole
+from sbe.example import BiTe
+from sbe.dipole import SymbolicDipole
 # from hfsbe.utility import evaluate_njit_matrix as evmat
 
 np.set_printoptions(linewidth=200)

@@ -1,5 +1,5 @@
 import os
-from hfsbe.solver import sbe_solver
+from sbe.solver import sbe_solver
 
 
 def mkdir(dirname):

@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib import ticker, colors
 import numpy as np
 
-from hfsbe.plotting.colormap import whitedarkjet
+from sbe.plotting.colormap import whitedarkjet
 
 plt.rcParams['text.usetex'] = True
 
@@ -70,5 +70,3 @@ def cep_plot(freqw, phaselist, intensity,
         plt.savefig(savename)
     else:
         plt.show()
-
-

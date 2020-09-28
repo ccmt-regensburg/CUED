@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from hfsbe.example import Parabolic
-from hfsbe.dipole import SymbolicDipole
+from sbe.example import Parabolic
+from sbe.dipole import SymbolicDipole
 
 
 def kmat(kinit):

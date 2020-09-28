@@ -2,8 +2,8 @@ import sympy as sp
 import numpy as np
 import matplotlib.pyplot as plt
 
-import hfsbe.check.symbolic_checks as symbolic_checks
-from hfsbe.utility import matrix_to_njit_functions, to_numpy_function
+import sbe.check.symbolic_checks as symbolic_checks
+from sbe.utility import matrix_to_njit_functions, to_numpy_function
 
 plt.rcParams['figure.figsize'] = [150, 15]
 plt.rcParams['text.usetex'] = True

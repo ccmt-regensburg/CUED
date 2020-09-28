@@ -3,7 +3,7 @@ import sympy as sp
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # NOQA
 
-from hfsbe.utility import to_numpy_function, list_to_numpy_functions, \
+from sbe.utility import to_numpy_function, list_to_numpy_functions, \
     list_to_njit_functions, matrix_to_njit_functions
 
 plt.rcParams['figure.figsize'] = [12, 15]

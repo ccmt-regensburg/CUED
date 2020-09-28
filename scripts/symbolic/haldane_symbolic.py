@@ -1,8 +1,8 @@
 import numpy as np
 
-from hfsbe.example import Haldane
-from hfsbe.brillouin import in_brillouin
-import hfsbe.dipole as dip
+from sbe.example import Haldane
+from sbe.brillouin import in_brillouin
+import sbe.dipole as dip
 
 import plot_dipoles as plt
 

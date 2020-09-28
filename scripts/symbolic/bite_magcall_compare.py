@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sp
 
-from hfsbe.example import BiTeResummed
-from hfsbe.dipole import SymbolicDipole, SymbolicCurvature
-from hfsbe.utility import evaluate_njit_matrix as evmat
+from sbe.example import BiTeResummed
+from sbe.dipole import SymbolicDipole, SymbolicCurvature
+from sbe.utility import evaluate_njit_matrix as evmat
 
 np.set_printoptions(linewidth=200)
 

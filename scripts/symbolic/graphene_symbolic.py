@@ -1,7 +1,7 @@
 import numpy as np
 
-from hfsbe.example import Graphene
-from hfsbe.dipole import SymbolicDipole
+from sbe.example import Graphene
+from sbe.dipole import SymbolicDipole
 
 
 b1 = 2*np.pi*np.array([1/np.sqrt(3), 1])

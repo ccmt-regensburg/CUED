@@ -1,9 +1,9 @@
 import numpy as np
 from numba import njit
 
-from hfsbe.example import BiTe
-from hfsbe.example import BiTeTrivial
-from hfsbe.dipole import SymbolicDipole
+from sbe.example import BiTe
+from sbe.example import BiTeTrivial
+from sbe.dipole import SymbolicDipole
 
 
 def kmat(kinit):

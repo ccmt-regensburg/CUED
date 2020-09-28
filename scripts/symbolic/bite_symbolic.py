@@ -2,9 +2,9 @@ import sympy as sp
 import numpy as np
 from numba import njit
 
-from hfsbe.example import BiTe
-from hfsbe.dipole import SymbolicDipole
-from hfsbe.utility import evaluate_njit_matrix as ev_mat
+from sbe.example import BiTe
+from sbe.dipole import SymbolicDipole
+from sbe.utility import evaluate_njit_matrix as ev_mat
 
 
 def kmat(kinit):

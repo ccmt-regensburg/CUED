@@ -2,7 +2,7 @@ import numpy as np
 import sympy as sp
 import matplotlib.pyplot as plt
 
-from hfsbe.utility import matrix_to_njit_functions, to_numpy_function
+from sbe.utility import matrix_to_njit_functions, to_numpy_function
 
 plt.rcParams['figure.figsize'] = [12, 15]
 plt.rcParams['text.usetex'] = True

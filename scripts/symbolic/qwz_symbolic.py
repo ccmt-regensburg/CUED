@@ -1,7 +1,7 @@
 import numpy as np
 
-from hfsbe.example import Qwz
-import hfsbe.dipole as dip
+from sbe.example import Qwz
+import sbe.dipole as dip
 
 import plot_dipoles as plt
 

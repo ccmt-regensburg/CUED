@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sp
 
-from hfsbe.example import BiTe
-from hfsbe.dipole import SymbolicDipole, SymbolicParameterDipole, \
+from sbe.example import BiTe
+from sbe.dipole import SymbolicDipole, SymbolicParameterDipole, \
                          SymbolicCurvature
 
 

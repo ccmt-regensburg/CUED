@@ -1,7 +1,7 @@
 import numpy as np
 
-from hfsbe.example import Semiconductor
-from hfsbe.dipole import SymbolicDipole
+from sbe.example import Semiconductor
+from sbe.dipole import SymbolicDipole
 
 
 A = 0.19732

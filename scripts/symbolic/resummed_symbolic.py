@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from hfsbe.example import BiTeResummed
-from hfsbe.dipole import SymbolicDipole, SymbolicCurvature
+from sbe.example import BiTeResummed
+from sbe.dipole import SymbolicDipole, SymbolicCurvature
 
 eV_conv = 0.03674932176
 au_conv = (1/eV_conv)
@@ -38,4 +38,3 @@ if __name__ == "__main__":
     ky = (0.03*2*np.pi/a)*np.ones(N)
     # kx, ky = kmat(kinit)
     bite_resummed(kx, ky)
-

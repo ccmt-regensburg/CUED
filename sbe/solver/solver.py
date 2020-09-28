@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode
 
-from hfsbe.utility import conversion_factors as co
-from hfsbe.solver import make_current_path, make_polarization_path, make_emission_exact_path
-from hfsbe.solver import make_electric_field
+from sbe.utility import conversion_factors as co
+from sbe.solver import make_current_path, make_polarization_path, make_emission_exact_path
+from sbe.solver import make_electric_field
 
 
 def sbe_solver(sys, dipole, params):

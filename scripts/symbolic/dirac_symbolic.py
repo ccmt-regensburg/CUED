@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from hfsbe.example import Dirac
-from hfsbe.dipole import SymbolicDipole
+from sbe.example import Dirac
+from sbe.dipole import SymbolicDipole
 
 
 def kmat(kinit):

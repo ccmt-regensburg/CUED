@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from hfsbe.example import BiTePeriodic
-from hfsbe.dipole import SymbolicDipole, SymbolicCurvature
+from sbe.example import BiTePeriodic
+from sbe.dipole import SymbolicDipole, SymbolicCurvature
 
 eV_conv = 0.03674932176
 au_conv = (1/eV_conv)
