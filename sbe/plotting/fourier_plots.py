@@ -116,6 +116,7 @@ def fourier_dir_ortho_angle(freqw, J_dir, J_ortho, xlim=(0.2, 30),
                             ylim=(-90, 90),
                             xlabel=r'Frequency $\omega/\omega_0$',
                             ylabel=r'$\alpha$',
+                            ls='-', marker='.',
                             paramlegend=None, suptitle=None, title=None, savename=None):
 
     # J_dir = np.abs(J_dir)
@@ -137,7 +138,7 @@ def fourier_dir_ortho_angle(freqw, J_dir, J_ortho, xlim=(0.2, 30),
         maxidx = np.argmax(np.abs(cosarr * jd + sinarr * jo))
         alphaarr[i] = anglearr[maxidx]
 
-    _angle = ax.plot(freqw, np.rad2deg(alphaarr))
+    _angle = ax.plot(freqw, np.rad2deg(alphaarr), ls=ls, marker=marker)
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
 
