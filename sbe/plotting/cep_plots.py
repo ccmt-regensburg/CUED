@@ -8,15 +8,16 @@ plt.rcParams['text.usetex'] = True
 
 
 def cep_plot(freqw, phaselist, intensity,
-             xlim=(0, 30), ylim=None, inorm=None,
+             xlim=(0, 30), inorm=None,
              xlabel=r'Frequency $\text{ in } \omega/\omega_0$',
              ylabel=r'phase $\phi$',
+             yticks=None,
              suptitle=None, title=None, savename=None):
 
     freqw = freqw.real
     intensity = intensity.real
 
-    if (inorm is not None):
+    if inorm is not None:
         intensity /= inorm.real
 
     # Limit data to visible window
@@ -30,11 +31,12 @@ def cep_plot(freqw, phaselist, intensity,
     imax = np.max(intensity)
     imin = np.min(intensity)
     imax_log = np.log10(imax)
+
     imin_log = np.log10(imin)
     F, P = np.meshgrid(freqw[0], phaselist)
 
-    fig, ax = plt.subplots()
-    logspace = np.logspace(imin_log, imax_log, 100)
+    _fig, ax = plt.subplots()
+    logspace = np.logspace(imin_log, imax_log, 1000)
     cont = ax.contourf(F, P, intensity, levels=logspace,
                        locator=ticker.LogLocator(),
                        cmap=whitedarkjet,
@@ -46,27 +48,31 @@ def cep_plot(freqw, phaselist, intensity,
                                num=np.abs(int_imax_log - int_imin_log) + 1)
 
     cb = plt.colorbar(cont, ticks=tickposition)
-    if (inorm is not None):
-        cb.set_label(r'$I_\mathrm{hh}/\bar{I}_{\mathrm{norm}}$')
-        cb.ax.set_title(r'$\bar{I}_{\mathrm{norm}} =' + '{:.2e}'.format(inorm)
+    if inorm is not None:
+        normlabel = r'I_\mathrm{hh}^\mathrm{max}'
+        cb.set_label(r'$I_\mathrm{hh}/' + normlabel + '$')
+        cb.ax.set_title(r'$' + normlabel + ' = {:.2e}'.format(inorm)
                         + r'\si{[a.u.]}$')
     else:
         cb.set_label(r'$I_\mathrm{hh}$')
 
     ax.set_xticks(np.arange(xlim[1] + 1))
-    # ax.set_yticklabels([r'pi', r'0'])
+
+    if yticks is not None:
+        ax.set_yticks(yticks[0])
+        ax.set_yticklabels(yticks[1])
     ax.grid(True, axis='x', ls='--')
     ax.set_xlim(xlim)
-    ax.set_xlabel(r'$\omega/\omega_0$')
-    ax.set_ylabel(r'phase $\phi$')
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
 
-    if(title is not None):
+    if title is not None:
         plt.title(title)
 
-    if(suptitle is not None):
+    if suptitle is not None:
         plt.suptitle(suptitle)
 
-    if (savename is not None):
+    if savename is not None:
         plt.savefig(savename)
     else:
         plt.show()
