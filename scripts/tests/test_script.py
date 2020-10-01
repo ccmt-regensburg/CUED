@@ -21,8 +21,8 @@ def check_test(testdir, filename_reference, args):
           'Output from the script:\n')
 
    # first line in filename_reference is the command to execute the code
-    with open(filename_reference) as f:
-        first_line = f.readline()
+    with open(filename_reference) as file_open:
+        first_line = file_open.readline()
         os.system(first_line)
 
     assert os.path.isfile(filename), "Testfile is not printed from the code"
@@ -106,8 +106,9 @@ def main():
     count = 0
     for filename_reference in os.listdir('./' + testdir):
         if filename_reference.endswith(".reference"):
+            count += 1
             check_test(testdir, filename_reference, args)
-        assert count > 0, 'There are no test files with ending .reference in directory ./' + testdir
+    assert count > 0, 'There are no test files with ending .reference in directory ./' + testdir
 
 if __name__ == "__main__":
     main()
