@@ -25,13 +25,10 @@ def read_datasets(subpaths):
 def read_dataset(path):
     """
     Read the data from a specific folder;
-    Emission exact
-    [t, I_exact_E_dir, I_exact_ortho, freq/w, Iw_exact_E_dir, Iw_exact_ortho,
+    Iexactdata = [t, I_exact_E_dir, I_exact_ortho, freq/w, Iw_exact_E_dir, Iw_exact_ortho,
      Int_exact_E_dir, Int_exact_ortho]
-    Emission approx
-    [t, I_E_dir, I_ortho, freq/w, Iw_E_dir, Iw_ortho, Int_E_dir, Int_ortho]
-    Solution
-    [t, Solution, paths, electric_field, A_field]
+    Iapproxdata = [t, I_E_dir, I_ortho, freq/w, Iw_E_dir, Iw_ortho, Int_E_dir, Int_ortho]
+    Soldat = [t, Solution, paths, electric_field, A_field]
 
     Parameters
     ----------
