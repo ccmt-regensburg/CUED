@@ -40,7 +40,7 @@ def fourier_total(freqw, data_dir, data_ortho,
 def fourier_dir_ortho(freqw, data_dir, data_ortho, xlim=(0.2, 30),
                       ylim=(10e-15, 1),
                       xlabel=r'Frequency $\omega/\omega_0$',
-                      ylabel=r'$I_\mathrm{hh} \text{ in atomic units}$',
+                      ylabel=r'$I_\mathrm{hh} \\text{ in atomic units}$',
                       paramlegend=None, ls_dir=None, ls_ortho=None,
                       suptitle=None, title=None, savename=None):
 
@@ -83,7 +83,7 @@ def fourier_dir_ortho(freqw, data_dir, data_ortho, xlim=(0.2, 30),
 def fourier_dir_ortho_split(freqw, data_dir, data_ortho, xlim=(0.2, 30),
                             ylim=(10e-15, 1),
                             xlabel=r'Frequency $\omega/\omega_0$',
-                            ylabel=r'I_\mathrm{hh} $\text{ in atomic units}$',
+                            ylabel=r'$I_\mathrm{hh} \text{ in atomic units}$',
                             paramlegend=None, suptitle=None, savename=None):
 
     _fig, ax = plt.subplots(2)

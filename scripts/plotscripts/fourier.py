@@ -7,7 +7,7 @@ plt.rcParams['text.usetex'] = True
 plt.rcParams['figure.figsize'] = (16, 9)
 plt.rcParams['font.size'] = 20
 
-fullpath = #INSERT TEST PATH
+fullpath = "/loctmp/wij17778/29_sbe_code/sbe/scripts/runscripts/dist_0.00_Nk_in_path_10_num_paths_2/T1_1000_T2_1/chirp_0.000/phase_0.00/"
 
 # Evaluation parameters for fast scanning
 Iexactdata, Iapprox, Sol = splt.read_dataset(fullpath)
@@ -31,10 +31,5 @@ if Iapprox is not None:
     Int_exact_ortho = np.vstack((Int_exact_ortho, Int_approx_ortho))
 
 
-suptitle = title['H'] + ' ' + title['E'] + ' ' + \
-    title['w'] + ' ' + dist.replace('_', '=')
-title = title['fwhm'] + ' ' + title['chirp'] + ' ' + \
-    title['T1'] + ' ' + title['T2'] + ' ' + title['phase']
 splt.fourier_dir_ortho(freqw, Int_exact_E_dir, Int_exact_ortho, xlim=(0, 21), ylim=(1e-24, 1),
-                       suptitle=suptitle, title=title,
-                       savename=savename + '.png')
+                       savename='output.png')
