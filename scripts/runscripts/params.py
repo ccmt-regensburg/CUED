@@ -52,7 +52,7 @@ class params:
     # Flags for testing and features
     ##########################################################################
     gauge         = 'length'   # Gauge of the system
-    dipole_off    = False      # Turn all dipoles to 0
+    do_semicl     = False      # Turn all dipoles to 0 and use Berry curvature in emission
     user_out      = True       # Set to True to get user plotting and progress output
     save_approx   = True
     save_full     = False

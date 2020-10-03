@@ -18,7 +18,7 @@ def sbe_solver(sys, dipole, params):
     user_out = params.user_out
     save_full = params.save_full
     save_approx = params.save_approx
-    dipole_off = params.dipole_off
+    do_semicl = params.do_semicl
     gauge = params.gauge
 
     # System parameters
@@ -74,7 +74,7 @@ def sbe_solver(sys, dipole, params):
     # USER OUTPUT
     ###########################################################################
     if user_out:
-        print_user_info(BZ_type, Nk, align, angle_inc_E_field, E0, w, alpha,
+        print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alpha,
                         chirp, T2, tf-t0, dt)
     # INITIALIZATIONS
     ###########################################################################
@@ -115,7 +115,7 @@ def sbe_solver(sys, dipole, params):
     # Initalise electric_field, create fnumba and initalise ode solver
     electric_field = make_electric_field(E0, w, alpha, chirp, phase)
     fnumba = make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field,
-                         gauge=gauge, dipole_off=dipole_off)
+                         gauge=gauge, do_semicl=do_semicl)
     solver = ode(fnumba, jac=None)\
         .set_integrator('zvode', method='bdf', max_step=dt)
 
@@ -153,7 +153,7 @@ def sbe_solver(sys, dipole, params):
         kx_in_path = path[:, 0]
         ky_in_path = path[:, 1]
 
-        if dipole_off:
+        if do_semicl:
             zeros = np.zeros(np.size(kx_in_path), dtype=np.complex)
             dipole_in_path = zeros
             A_in_path = zeros
@@ -221,7 +221,7 @@ def sbe_solver(sys, dipole, params):
         if not t_constructed:
             # Construct the function after the first full run!
             emission_exact_path = make_emission_exact_path(sys, Nk1, params.Nt, E_dir, A_field,
-                                                           gauge)
+                                                           gauge, do_semicl)
             if save_approx:
                 # Only need kira & koch formulas if save_approx is set
                 current_path = make_current_path(sys, Nk1, params.Nt, E_dir, A_field, gauge)
@@ -494,7 +494,7 @@ def gaussian_envelope(t, alpha):
 
 
 def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
-                dipole_off):
+                do_semicl):
 
     ########################################
     # Wire the energies
@@ -584,7 +584,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
         ecv_in_path = ecf(kx=kx, ky=ky) - evf(kx=kx, ky=ky)
 
-        if dipole_off:
+        if do_semicl:
             zeros = np.zeros(kx.size, dtype=np.complex128)
             dipole_in_path = zeros
             A_in_path = zeros
@@ -717,11 +717,12 @@ def BZ_plot(kpnts, a, b1, b2, paths, si_units=True):
     plt.show()
 
 
-def print_user_info(BZ_type, Nk, align, angle_inc_E_field, E0, w, alpha, chirp,
+def print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alpha, chirp,
                     T2, tfmt0, dt):
 
-    print("Solving for...")
-    print("Brillouin zone: " + BZ_type)
+    print("Input parameters:")
+    print("Brillouin zone:                 " + BZ_type)
+    print("Do Semiclassics                 " + str(do_semicl))
     print("Number of k-points              = " + str(Nk))
     if BZ_type == 'full':
         print("Driving field alignment         = " + align)

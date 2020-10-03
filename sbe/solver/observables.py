@@ -99,10 +99,13 @@ def make_current_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge):
 
     return current_path
 
-def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge):
+def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, do_semicl):
     """
     Construct a function that calculates the emission for the system solution per path
     """
+
+    print("do_semicl =", do_semicl)
+
     hderivx = sys.hderivfjit[0]
     hdx_00 = hderivx[0][0]
     hdx_01 = hderivx[0][1]
