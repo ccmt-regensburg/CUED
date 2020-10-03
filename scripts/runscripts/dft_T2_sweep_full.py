@@ -2,9 +2,9 @@ import os
 import numpy as np
 from params import params
 
-import hfsbe.dipole
-import hfsbe.example
-from hfsbe.solver.runloops import mkdir_chdir, chirp_phasesweep
+import sbe.dipole
+import sbe.example
+from sbe.solver.runloops import mkdir_chdir, chirp_phasesweep
 
 def dft():
     C0 = -0.00647156                  # C0
@@ -14,9 +14,9 @@ def dft():
     ksym = 0.0635012                  # k^2 coefficent dampening
     kasym = 0.113773                  # k^3 coeffcient dampening
 
-    dft_system = hfsbe.example.BiTeResummed(C0=C0, c2=c2, A=A, r=r, ksym=ksym, kasym=kasym)
+    dft_system = sbe.example.BiTeResummed(C0=C0, c2=c2, A=A, r=r, ksym=ksym, kasym=kasym)
     h_sym, ef_sym, wf_sym, _ediff_sym = dft_system.eigensystem(gidx=1)
-    dft_dipole = hfsbe.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
+    dft_dipole = sbe.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
 
     return dft_system, dft_dipole
 
