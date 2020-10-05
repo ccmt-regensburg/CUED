@@ -11,7 +11,7 @@ from sbe.solver import make_current_path, make_polarization_path, make_emission_
 from sbe.solver import make_electric_field
 
 
-def sbe_solver(sys, dipole, params, curvature=None):
+def sbe_solver(sys, dipole, params, curvature):
     # RETRIEVE PARAMETERS
     ###########################################################################
     # Flag evaluation
@@ -19,10 +19,6 @@ def sbe_solver(sys, dipole, params, curvature=None):
     save_full = params.save_full
     save_approx = params.save_approx
     do_semicl = params.do_semicl
-    if do_semicl:
-        assert curvature is not None, "curvature needs to be set with semiclassical calculation."
-    else:
-        assert curvature is None, "do_semicl = True needs to be set to use curvature"
     gauge = params.gauge
 
     # System parameters
@@ -94,7 +90,7 @@ def sbe_solver(sys, dipole, params, curvature=None):
         elif align == 'M':
             E_dir = np.array([np.cos(np.radians(-30)),
                               np.sin(np.radians(-30))])
-        # BZ_plot(_kpnts, a, b1, b2, paths)
+        BZ_plot(_kpnts, a, b1, b2, paths)
     elif BZ_type == '2line':
         E_dir = np.array([np.cos(np.radians(angle_inc_E_field)),
                           np.sin(np.radians(angle_inc_E_field))])
