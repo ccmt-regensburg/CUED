@@ -44,8 +44,10 @@ class SymbolicCurvature():
 
         return self.B_eval
 
+
     def plot_curvcature_3d(self, kx, ky, title="Curvature field"):
         print("Not Implemented")
+
 
     def plot_curvature_contour(self, kx, ky, vidx=0, cidx=1,
                                title=None, vname=None, cname=None,
