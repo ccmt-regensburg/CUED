@@ -40,6 +40,7 @@ class params:
     w                   = 25.0        # Pulse frequency (THz)
     chirp               = 0.00        # Pulse chirp ratio (chirp = c/w) (THz)
     alpha               = 25.0        # Gaussian pulse width (femtoseconds)
+    phase               = 0.00
 
     # Time scales (all units in femtoseconds)
     ##########################################################################
@@ -52,7 +53,7 @@ class params:
     # Flags for testing and features
     ##########################################################################
     gauge         = 'length'   # Gauge of the system
-    do_semicl     = False      # Turn all dipoles to 0 and use Berry curvature in emission
+    do_semicl     = True       # Turn all dipoles to 0 and use Berry curvature in emission
     user_out      = True       # Set to True to get user plotting and progress output
     save_approx   = True
     save_full     = False

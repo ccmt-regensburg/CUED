@@ -11,7 +11,7 @@ from sbe.solver import make_current_path, make_polarization_path, make_emission_
 from sbe.solver import make_electric_field
 
 
-def sbe_solver(sys, dipole, params):
+def sbe_solver(sys, dipole, params, curvature=None):
     # RETRIEVE PARAMETERS
     ###########################################################################
     # Flag evaluation
@@ -19,6 +19,10 @@ def sbe_solver(sys, dipole, params):
     save_full = params.save_full
     save_approx = params.save_approx
     do_semicl = params.do_semicl
+    if do_semicl:
+        assert curvature is not None, "curvature needs to be set with semiclassical calculation."
+    else:
+        assert curvature is None, "do_semicl = True needs to be set to use curvature"
     gauge = params.gauge
 
     # System parameters
@@ -111,6 +115,7 @@ def sbe_solver(sys, dipole, params):
         solution = np.empty((Nk1, 1, params.Nt, 4), dtype=complex)
 
     A_field = np.empty(params.Nt, dtype=np.float64)
+    E_field = np.empty(params.Nt, dtype=np.float64)
 
     # Initalise electric_field, create fnumba and initalise ode solver
     electric_field = make_electric_field(E0, w, alpha, chirp, phase)
@@ -213,6 +218,7 @@ def sbe_solver(sys, dipole, params):
                     # Construct time and A_field only in first round
                     t[t_idx] = solver.t
                     A_field[t_idx] = solver.y[-1].real
+                    E_field[t_idx] = electric_field(t[t_idx])
 
                 t_idx += 1
             # Increment time counter
@@ -221,7 +227,7 @@ def sbe_solver(sys, dipole, params):
         if not t_constructed:
             # Construct the function after the first full run!
             emission_exact_path = make_emission_exact_path(sys, Nk1, params.Nt, E_dir, A_field,
-                                                           gauge, do_semicl)
+                                                           gauge, do_semicl, curvature, E_field)
             if save_approx:
                 # Only need kira & koch formulas if save_approx is set
                 current_path = make_current_path(sys, Nk1, params.Nt, E_dir, A_field, gauge)

@@ -99,9 +99,30 @@ def make_current_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge):
 
     return current_path
 
-def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, do_semicl):
+def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, do_semicl, curvature, E_field):
     """
     Construct a function that calculates the emission for the system solution per path
+
+    Parameters
+    ----------
+    sys : TwoBandSystem
+        Hamiltonian and related functions
+    pathlen : int
+        Length of one path
+    n_time_steps : int
+        Number of time steps
+    E_dir : list
+        Direction of the electric field
+    A_field : np.ndarray
+        Vector potential integrated from electric field
+    gauge : string
+        System gauge 'length' or 'velocity'
+    do_semicl : bool
+        if semiclassical calculation should be done
+    curvature : SymbolicCurvature
+        Curvature is only needed for semiclassical calculation
+    electric_f : np.ndarray
+        Electric field is only needed for semiclassical calculation
     """
 
     hderivx = sys.hderivfjit[0]
@@ -129,9 +150,8 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
     U_h_11 = Ujit_h[1][1]
 
     if do_semicl:
-#
-#   @Patrick: Please insert here computation of the Berry curvature
-#
+        Bcurv_00 = curvature.Bfjit[0][0]
+        Bcurv_11 = curvature.Bfjit[1][1]
 
     E_ort = np.array([E_dir[1], -E_dir[0]])
 
@@ -155,9 +175,7 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
         # Berry curvature container
         ##########################################################
         if do_semicl:
-#
-#   @Patrick: Please insert here containers for Berry curvature
-#
+            Bcurv = np.empty((pathlen, 2), dtype=np.complex128)
 
         # I_E_dir is of size (number of time steps)
         for i_time in range(n_time_steps):
@@ -197,9 +215,8 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
             U_h[:, 1, 1] = U_h_11(kx=kx_in_path, ky=ky_in_path)
 
             if do_semicl:
-#
-#   @Patrick: Please insert here evaluation of Berry curvature (for valence and conduction band)
-#
+                Bcurv[:, 0] = Bcurv_00(kx=kx_in_path, ky=ky_in_path)
+                Bcurv[:, 1] = Bcurv_11(kx=kx_in_path, ky=ky_in_path)
 
             for i_k in range(pathlen):
 
@@ -222,5 +239,8 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
                     * solution[i_k, i_time, 3].real
                 I_ortho[i_time] += 2*np.real(U_h_H_U_ortho[0, 1]
                                              * solution[i_k, i_time, 2])
+
+                if do_semicl:
+                    I_ortho[i_time] += E_field[i_time] * (Bcurv[i_k, 0].real + Bcurv[i_k, 1].real)
 
     return emission_exact_path
