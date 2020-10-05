@@ -17,10 +17,11 @@ def dft():
     dft_system = sbe.example.BiTeResummed(C0=C0, c2=c2, A=A, r=r, ksym=ksym, kasym=kasym)
     h_sym, ef_sym, wf_sym, _ediff_sym = dft_system.eigensystem(gidx=1)
     dft_dipole = sbe.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
+    dft_curvat = sbe.dipole.SymbolicCurvature(h_sym, dft_dipole.Ax, dft_dipole.Ay)
 
-    return dft_system, dft_dipole
+    return dft_system, dft_dipole, dft_curvat
 
-def run(system, dipole):
+def run(system, dipole, curvat):
 
     params.gauge = 'length'
     params.BZ_type = 'full'
@@ -62,7 +63,7 @@ def run(system, dipole):
             dirname_T = 'T1_' + str(params.T1) + '_T2_' + str(params.T2)
             mkdir_chdir(dirname_T)
 
-            chirp_phasesweep(chirplist, phaselist, system, dipole, params)
+            chirp_phasesweep(chirplist, phaselist, system, dipole, curvat, params)
             return 0
 
 if __name__ == "__main__":

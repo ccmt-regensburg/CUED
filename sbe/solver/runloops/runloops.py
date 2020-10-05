@@ -12,7 +12,7 @@ def mkdir_chdir(dirname):
     os.chdir(dirname)
 
 
-def chirp_phasesweep(chirplist, phaselist, system, dipole, params):
+def chirp_phasesweep(chirplist, phaselist, system, dipole, curvat, params):
 
     for chirp in chirplist:
         params.chirp = chirp
@@ -25,7 +25,7 @@ def chirp_phasesweep(chirplist, phaselist, system, dipole, params):
             print("Current phase: ", params.phase)
             dirname_phase = 'phase_{:1.2f}'.format(params.phase)
             mkdir_chdir(dirname_phase)
-            sbe_solver(system, dipole, params)
+            sbe_solver(system, dipole, params, curvat)
             os.chdir('..')
 
         os.chdir('..')
