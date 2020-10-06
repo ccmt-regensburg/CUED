@@ -18,10 +18,11 @@ def dirac():
     dirac_system = sbe.example.BiTe(C0=0, C2=0, A=A, R=0, mz=0)
     h_sym, ef_sym, wf_sym, _ediff_sym = dirac_system.eigensystem(gidx=1)
     dirac_dipole = sbe.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
+    dirac_curvature = sbe.dipole.SymbolicCurvature(h_sym, dirac_dipole.Ax, dirac_dipole.Ay)
 
-    return dirac_system, dirac_dipole
+    return dirac_system, dirac_dipole, dirac_curvature
 
-def run(system, dipole):
+def run(system, dipole, curvature):
 
     params.gauge = 'length'
     params.BZ_type = '2line'
@@ -55,8 +56,6 @@ def run(system, dipole):
     chirplist = [0.000]
     phaselist = np.linspace(0, np.pi, 20)[:1]
 
-    system, dipole = dirac()
-
     for dist in distlist:
         params.rel_dist_to_Gamma = dist
         dirname_dist = 'dist_{:.2f}_Nk_in_path_{:d}_num_paths_{:d}'.format(dist, params.Nk_in_path, params.num_paths)
@@ -68,7 +67,7 @@ def run(system, dipole):
             dirname_T = 'T1_' + str(params.T1) + '_T2_' + str(params.T2)
             mkdir_chdir(dirname_T)
 
-            chirp_phasesweep(chirplist, phaselist, system, dipole, params)
+            chirp_phasesweep(chirplist, phaselist, system, dipole, curvature, params)
 
             os.chdir('..')
         os.chdir('..')

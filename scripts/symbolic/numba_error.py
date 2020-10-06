@@ -3,8 +3,6 @@ import numpy as np
 
 from sbe.example import BiTe
 from sbe.dipole import SymbolicDipole
-# from hfsbe.utility import evaluate_njit_matrix as evmat
-
 np.set_printoptions(linewidth=200)
 
 eV_conv = 0.03674932176

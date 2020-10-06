@@ -21,7 +21,7 @@ def dft():
 
     return dft_system, dft_dipole, dft_curvat
 
-def run(system, dipole, curvat):
+def run(system, dipole, curvature):
 
     params.gauge = 'length'
     params.BZ_type = 'full'
@@ -63,7 +63,7 @@ def run(system, dipole, curvat):
             dirname_T = 'T1_' + str(params.T1) + '_T2_' + str(params.T2)
             mkdir_chdir(dirname_T)
 
-            chirp_phasesweep(chirplist, phaselist, system, dipole, curvat, params)
+            chirp_phasesweep(chirplist, phaselist, system, dipole, curvature, params)
             return 0
 
 if __name__ == "__main__":

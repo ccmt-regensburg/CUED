@@ -15,10 +15,11 @@ def dirac():
     dirac_system = sbe.example.BiTe(C0=0, C2=0, A=A, R=0, mz=0)
     h_sym, ef_sym, wf_sym, _ediff_sym = dirac_system.eigensystem(gidx=1)
     dirac_dipole = sbe.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
+    dirac_curvature = sbe.dipole.SymbolicCurvature(h_sym, dirac_dipole.Ax, dirac_dipole.Ay)
 
-    return dirac_system, dirac_dipole
+    return dirac_system, dirac_dipole, dirac_curvature
 
-def run(system, dipole):
+def run(system, dipole, curvature):
 
     params.gauge = 'length'
     params.BZ_type = '2line'
@@ -42,8 +43,7 @@ def run(system, dipole):
     params.t0 *= stretch_t0
     params.Nt *= stretch_t0
 
-    sbe_solv
-
+    sbe_solver(system, dipole, params, curvature)
 
 if __name__ == "__main__":
     run(*dirac())
