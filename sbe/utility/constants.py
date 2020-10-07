@@ -16,3 +16,10 @@ class conversion_factors:
 
     as_to_au = 1.8897261254535           # (1Angst.= 1.8897261254535 a.u.)
     au_to_as = 1/as_to_au
+
+    # Magnetic field constants
+    T_to_au = 4.25531e-6                 # (1T = 4.25531e-6 a.u.)
+    au_to_T = 1/T_to_au
+
+    muB_to_au = 0.5                      # (1mu_b = 0.5 a.u.)
+    au_to_muB = 1/muB_to_au
