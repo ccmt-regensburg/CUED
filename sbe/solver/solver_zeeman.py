@@ -118,7 +118,7 @@ def sbe_zeeman_solver(sys, dipole_k, dipole_B, params):
         solution = np.empty((Nk1, 1, params.Nt, 4), dtype=complex)
 
     A_field = np.empty(params.Nt, dtype=np.float64)
-    E_field = np.empty(params.Nt, dtype=np.float64)
+    Zee_field = np.empty((params.Nt, 3), dtype=np.float64)
 
     # Initialize electric_field, create fnumba and initialize ode solver
     electric_field = make_electric_field(E0, w, alpha, chirp, phase)
@@ -181,7 +181,12 @@ def sbe_zeeman_solver(sys, dipole_k, dipole_B, params):
         solver.set_initial_value(y0, t0).set_f_params(path, dk, y0)
 
         # Propagate through time
+
+        # Index of current integration time step
         ti = 0
+        # Index of current output time step
+        t_idx = 0
+
         while solver.successful() and ti < Nt:
             # User output of integration progress
             if (ti % 1000 == 0 and user_out):
@@ -191,54 +196,84 @@ def sbe_zeeman_solver(sys, dipole_k, dipole_B, params):
             solver.integrate(solver.t + dt)
 
             # Save solution each output step
-            if (ti % dt_out == 0):
+            if ti % dt_out == 0:
                 # Do not append the last element (A_field)
-                path_solution.append(solver.y[:-1])
+                # If save_full is False Nk2_idx is 0 as only the current path
+                # is saved
+                solution[:, Nk2_idx, t_idx, :] = solver.y[:-1].reshape(Nk1, 4)
                 # Construct time array only once
                 if not t_constructed:
                     # Construct time and A_field only in first round
-                    t.append(solver.t)
-                    A_field.append(solver.y[-1])
+                    t[t_idx] = solver.t
+                    A_field[t_idx] = solver.y[-1].real
+                    Zee_field[t_idx] = zeeman_field(t[t_idx])
 
+                t_idx += 1
             # Increment time counter
             ti += 1
 
+        if not t_constructed:
+            # Construct the function after the first full run!
+            emission_exact_zeeman_path = make_emission_exact_zeeman_path(sys, Nk1, params.Nt, E_dir,
+                                                                          A_field, gauge, Zee_field)
+            if save_approx:
+                # Only need kira & koch formulas if save_approx is set
+                current_zeeman_path = make_current_zeeman_path(sys, Nk1, params.Nt, E_dir, A_field,
+                                                               gauge, Zee_field)
+                polarization_zeeman_path = make_polarization_zeeman_path(dipole, Nk1, params.Nt, E_dir,
+                                                                         A_field, gauge, Zee_field)
+
+
+        #Compute per path observables
+        emission_exact_zeeman_path(path, solution[:, Nk2_idx, :, :], I_exact_E_dir, I_exact_ortho)
+
         # Flag that time array has been built up
         t_constructed = True
-        path_num += 1
 
-        # Append path solutions to the total solution arrays
-        solution.append(path_solution)
-        print(np.shape(path_solution))
 
-    # Convert solution and time array to numpy arrays
-    t = np.array(t)
-    solution = np.array(solution)
-    A_field = np.array(A_field)
+    # Filename tail
+    tail = 'E_{:.2f}_w_{:.2f}_a_{:.2f}_{}_t0_{:.2f}_NK1-{}_NK2-{}_T1_{:.2f}_T2_{:.2f}_chirp_{:.3f}_ph_{:.2f}'\
+        .format(E0*co.au_to_MVpcm, w*co.au_to_THz, alpha*co.au_to_fs, gauge, params.t0, Nk1, Nk2, T1*co.au_to_fs, T2*co.au_to_fs, chirp*co.au_to_THz, phase)
 
-    # Slice solution along each path for easier observable calculation
-    # Split the last index into 100 subarrays, corresponding to kx
-    # Consquently the new last axis becomes 4.
-    if BZ_type == 'full':
-        solution = np.array_split(solution, Nk1, axis=2)
-    elif BZ_type == '2line':
-        solution = np.array_split(solution, Nk_in_path, axis=2)
-
-    # Convert lists into numpy arrays
-    solution = np.array(solution)
-    # The solution array is structred as: first index is Nk1-index,
-    # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
-    # if gauge == 'velocity':
-    #     solution = shift_solution(solution, A_field, dk)
-
-    # COMPUTE OBSERVABLES
-    ###########################################################################
+    # Fourier transforms
     dt_out = t[1] - t[0]
     freq = fftshift(fftfreq(np.size(t), d=dt_out))
+    if save_approx:
+        # Only do kira & koch emission fourier transforms if save_approx is set
+        # Approximate emission in time
+        I_E_dir = diff(t, P_E_dir)*gaussian_envelope(t, alpha) \
+            + J_E_dir*gaussian_envelope(t, alpha)
+        I_ortho = diff(t, P_ortho)*gaussian_envelope(t, alpha) \
+            + J_ortho*gaussian_envelope(t, alpha)
+        if BZ_type == '2line':
+            I_E_dir *= (dk/(4*np.pi))
+            I_ortho *= (dk/(4*np.pi))
+        if BZ_type == 'full':
+            I_E_dir *= kweight
+            I_ortho *= kweight
 
-    I_exact_E_dir, I_exact_ortho =\
-        emission_exact(sys, paths, t, solution, E_dir, A_field, zeeman_field,
-                       gauge)
+
+        Iw_E_dir = fftshift(fft(I_E_dir, norm='ortho'))
+        Iw_ortho = fftshift(fft(I_ortho, norm='ortho'))
+
+        # Approximate Emission intensity
+        Int_E_dir = (freq**2)*np.abs(Iw_E_dir)**2
+        Int_ortho = (freq**2)*np.abs(Iw_ortho)**2
+
+        I_approx_name = 'Iapprox_' + tail
+        np.save(I_approx_name, [t, I_E_dir, I_ortho,
+                                freq/w, Iw_E_dir, Iw_ortho,
+                                Int_E_dir, Int_ortho])
+
+    ##############################################################
+    # Always calculate exact emission formula
+    ##############################################################
+    if BZ_type == '2line':
+        I_exact_E_dir *= (dk/(4*np.pi))
+        I_exact_ortho *= (dk/(4*np.pi))
+    if BZ_type == 'full':
+        I_exact_E_dir *= kweight
+        I_exact_ortho *= kweight
 
     Iw_exact_E_dir = fftshift(fft(I_exact_E_dir*gaussian_envelope(t, alpha),
                                   norm='ortho'))
@@ -247,213 +282,32 @@ def sbe_zeeman_solver(sys, dipole_k, dipole_B, params):
     Int_exact_E_dir = (freq**2)*np.abs(Iw_exact_E_dir)**2
     Int_exact_ortho = (freq**2)*np.abs(Iw_exact_ortho)**2
 
-    # Save observables to file
-    if (BZ_type == '2line'):
-        Nk1 = Nk_in_path
-        Nk2 = 2
+    I_exact_name = 'Iexact_' + tail
+    np.save(I_exact_name, [t, I_exact_E_dir, I_exact_ortho,
+                           freq/w, Iw_exact_E_dir, Iw_exact_ortho,
+                           Int_exact_E_dir, Int_exact_ortho])
+    # Save the parameters of the calculation
+    params_name = 'params_' + tail + '.txt'
+    paramsfile = open(params_name, 'w')
+    paramsfile.write(str(params.__dict__))
 
-    if (save_file):
-        tail = 'Nk1-{}_Nk2-{}_w{:4.2f}_E{:4.2f}_a{:4.2f}_ph{:3.2f}_T2-{:05.2f}'\
-            .format(Nk1, Nk2, w/THz_conv, E0/E_conv, alpha/fs_conv, phase, T2/fs_conv)
+    if save_full:
+        S_name = 'Sol_' + tail
+        np.savez(S_name, t=t, solution=solution, paths=paths,
+                 electric_field=electric_field(t), A_field=A_field, Zee_field=Zee_field)
 
-        I_exact_name = 'Iexact_' + tail
-        np.save(I_exact_name, [t, I_exact_E_dir, I_exact_ortho, freq/w,
-                Iw_exact_E_dir, Iw_exact_ortho,
-                Int_exact_E_dir, Int_exact_ortho])
+def diff(x, y):
+    '''
+    Takes the derivative of y w.r.t. x
+    '''
+    if len(x) != len(y):
+        raise ValueError('Vectors have different lengths')
+    if len(y) == 1:
+        return 0
 
-        if (save_full):
-            S_name = 'Sol_' + tail
-            np.savez(S_name, t=t, solution=solution, paths=paths,
-                     electric_field=electric_field(E0, w, t, chirp, alpha, phase))
-
-        driving_tail = 'w{:4.2f}_E{:4.2f}_a{:4.2f}_ph{:3.2f}_wc-{:4.3f}'\
-            .format(w/THz_conv, E0/E_conv, alpha/fs_conv, phase, chirp/THz_conv)
-
-        D_name = 'E_' + driving_tail
-        np.save(D_name, [t, electric_field(t)])
-
-
-###############################################################################
-# FUNCTIONS
-###############################################################################
-def mesh(params, E_dir):
-    Nk_in_path = params.Nk_in_path                    # Number of kpoints in each of the two paths
-    rel_dist_to_Gamma = params.rel_dist_to_Gamma      # relative distance (in units of 2pi/a) of both paths to Gamma
-    a = params.a                                      # Lattice spacing
-    length_path_in_BZ = params.length_path_in_BZ      #
-
-    alpha_array = np.linspace(-0.5 + (1/(2*Nk_in_path)),
-                              0.5 - (1/(2*Nk_in_path)), num=Nk_in_path)
-    vec_k_path = E_dir*length_path_in_BZ
-
-    vec_k_ortho = 2.0*np.pi/a*rel_dist_to_Gamma*np.array([E_dir[1], -E_dir[0]])
-
-    # Containers for the mesh, and BZ directional paths
-    mesh = []
-    paths = []
-
-    # Create the kpoint mesh and the paths
-    for path_index in [-1, 1]:
-        # Container for a single path
-        path = []
-        for alpha in alpha_array:
-            # Create a k-point
-            kpoint = path_index*vec_k_ortho + alpha*vec_k_path
-
-            mesh.append(kpoint)
-            path.append(kpoint)
-
-        # Append the a1'th path to the paths array
-        paths.append(path)
-
-    dk = 1.0/Nk_in_path*length_path_in_BZ
-
-    return dk, np.array(mesh), np.array(paths)
-
-
-def hex_mesh(Nk1, Nk2, a, b1, b2, align):
-    alpha1 = np.linspace(-0.5 + (1/(2*Nk1)), 0.5 - (1/(2*Nk1)), num=Nk1)
-    alpha2 = np.linspace(-0.5 + (1/(2*Nk2)), 0.5 - (1/(2*Nk2)), num=Nk2)
-
-    def is_in_hex(p, a):
-        # Returns true if the point is in the hexagonal BZ.
-        # Checks if the absolute values of x and y components of p are within
-        # the first quadrant of the hexagon.
-        x, y = np.abs(p)
-        return ((y <= 2.0*np.pi/(np.sqrt(3)*a)) and
-                (np.sqrt(3.0)*x + y <= 4*np.pi/(np.sqrt(3)*a)))
-
-    def reflect_point(p, a, b1, b2):
-        x = p[0]
-        y = p[1]
-        if (y > 2*np.pi/(np.sqrt(3)*a)):   # Crosses top
-            p -= b2
-        elif (y < -2*np.pi/(np.sqrt(3)*a)):
-            # Crosses bottom
-            p += b2
-        elif (np.sqrt(3)*x + y > 4*np.pi/(np.sqrt(3)*a)):
-            # Crosses top-right
-            p -= b1 + b2
-        elif (-np.sqrt(3)*x + y < -4*np.pi/(np.sqrt(3)*a)):
-            # Crosses bot-right
-            p -= b1
-        elif (np.sqrt(3)*x + y < -4*np.pi/(np.sqrt(3)*a)):
-            # Crosses bot-left
-            p += b1 + b2
-        elif (-np.sqrt(3)*x + y > 4*np.pi/(np.sqrt(3)*a)):
-            # Crosses top-left
-            p += b1
-        return p
-
-    # Containers for the mesh, and BZ directional paths
-    mesh = []
-    paths = []
-
-    # Create the Monkhorst-Pack mesh
-    if align == 'M':
-        for a2 in alpha2:
-            # Container for a single gamma-M path
-            path_M = []
-            for a1 in alpha1:
-                # Create a k-point
-                kpoint = a1*b1 + a2*b2
-                # If current point is in BZ, append it to the mesh and path_M
-                if (is_in_hex(kpoint, a)):
-                    mesh.append(kpoint)
-                    path_M.append(kpoint)
-                # If current point is NOT in BZ, reflect it along
-                # the appropriate axis to get it in the BZ, then append.
-                else:
-                    while (not is_in_hex(kpoint, a)):
-                        kpoint = reflect_point(kpoint, a, b1, b2)
-                    mesh.append(kpoint)
-                    path_M.append(kpoint)
-            # Append the a1'th path to the paths array
-            paths.append(path_M)
-
-    elif align == 'K':
-        b_a1 = 8*np.pi/(a*3)*np.array([1, 0])
-        b_a2 = 4*np.pi/(a*3)*np.array([1, np.sqrt(3)])
-        # Extend over half of the b2 direction and 1.5x the b1 direction
-        # (extending into the 2nd BZ to get correct boundary conditions)
-        alpha1 = np.linspace(-0.5 + (3/(4*Nk1)), 1.0 - (3/(4*Nk1)), num=Nk1)
-        alpha2 = np.linspace(0, 0.5 - (1/(2*Nk2)), num=Nk2)
-        for a2 in alpha2:
-            path_K = []
-            for a1 in alpha1:
-                kpoint = a1*b_a1 + a2*b_a2
-                if is_in_hex(kpoint, a):
-                    mesh.append(kpoint)
-                    path_K.append(kpoint)
-                else:
-                    kpoint -= (2*np.pi/a) * np.array([1, 1/np.sqrt(3)])
-                    mesh.append(kpoint)
-                    path_K.append(kpoint)
-            paths.append(path_K)
-
-    return np.array(mesh), np.array(paths)
-
-
-def make_electric_field(E0, w, alpha, chirp, phase):
-    @njit
-    def electric_field(t):
-        '''
-        Returns the instantaneous driving pulse field
-        '''
-        # Non-pulse
-        # return E0*np.sin(2.0*np.pi*w*t)
-        # Chirped Gaussian pulse
-        return E0*np.exp(-t**2.0/(2.0*alpha)**2) \
-            * np.sin(2.0*np.pi*w*t*(1 + chirp*t) + phase)
-
-    return electric_field
-
-
-def make_zeeman_field(B0, mu, w, alpha, chirp, phase, E_dir, incident_angle):
-    @njit
-    def zeeman_field(t):
-        time_dep = np.exp(-t**2.0/(2.0*alpha)**2) \
-            * np.sin(2.0*np.pi*w*t*(1 + chirp*t) + phase)
-
-        # x, y, z components
-        m_zee = np.empty(3)
-        m_zee[0] = mu[0]*B0*E_dir[1] * np.cos(incident_angle) * time_dep
-        m_zee[1] = mu[1]*B0*E_dir[0] * np.cos(incident_angle) * time_dep
-        m_zee[2] = mu[2]*B0*np.sin(incident_angle) * time_dep
-
-        return m_zee
-
-    return zeeman_field
-
-
-def make_zeeman_field_derivative(B0, mu, w, alpha, chirp, phase, E_dir,
-                                 incident_angle):
-    # WARNING NO CHIRP HERE!
-    @njit
-    def zeeman_field_derivative(t):
-        time_dep = np.exp(-t**2.0/(2.0*alpha)**2) \
-            * (2*np.pi*w*np.cos(2.0*np.pi*w*t + phase)
-               - (2*t)/(2*alpha)**2 * np.sin(2*np.pi*w*t + phase))
-
-        # x, y, z components
-        m_zee_deriv = np.empty(3)
-        m_zee_deriv[0] = mu[0]*B0*E_dir[1] * np.cos(incident_angle) * time_dep
-        m_zee_deriv[1] = mu[1]*B0*E_dir[0] * np.cos(incident_angle) * time_dep
-        m_zee_deriv[2] = mu[2]*B0*np.sin(incident_angle) * time_dep
-
-        return m_zee_deriv
-
-    return zeeman_field_derivative
-
-# @njit
-# def curl_electric_field(mdx, mdy, mdz, w, t, chirp, alpha, phase, E_dir,
-#                         incident_angle):
-#     time_dep = np.exp(-t**2.0/(2.0*alpha)**2) \
-#         * np.cos(2.0*np.pi*w*t*(1 + chirp*t) + phase)
-#     mx = mdx * E_dir[1] * np.cos(incident_angle) * time_dep
-#     my = -mdy * E_dir[0] * np.cos(incident_angle) * time_dep
-#     mz = mdz * np.sin(incident_angle) * time_dep
-#     return mx, my, mz
+    dx = np.gradient(x)
+    dy = np.gradient(y)
+    return dy/dx
 
 
 def gaussian_envelope(t, alpha):

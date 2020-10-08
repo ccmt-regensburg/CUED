@@ -178,8 +178,6 @@ def sbe_solver(sys, dipole, params, curvature):
             A_in_path = E_dir[0]*di_00x + E_dir[1]*di_00y \
                 - (E_dir[0]*di_11x + E_dir[1]*di_11y)
 
-        # in bite.evaluate, there is also an interpolation done if b1, b2 are
-        # provided and a cutoff radius
         ec = sys.efjit[1](kx=kx_in_path, ky=ky_in_path)
         ecv_in_path = ec - sys.efjit[0](kx=kx_in_path, ky=ky_in_path)
         # Initialize the values of of each k point vector
@@ -200,7 +198,6 @@ def sbe_solver(sys, dipole, params, curvature):
 
         while solver.successful() and ti < Nt:
             # User output of integration progress
-            # print(ti)
             if (ti % 1000 == 0 and user_out):
                 print('{:5.2f}%'.format(ti/Nt*100))
 
@@ -247,7 +244,6 @@ def sbe_solver(sys, dipole, params, curvature):
 
         # Flag that time array has been built up
         t_constructed = True
-        # Create emission function
 
 
     # Filename tail
