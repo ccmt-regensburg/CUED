@@ -31,6 +31,20 @@ def chirp_phasesweep(chirplist, phaselist, system, dipole, curvat, params):
         os.chdir('..')
 
 
+def phasesweep_parallel(phaselist, system, dipole, curvat, params):
+    for phase in phaselist:
+        pid = os.fork()
+
+        if pid == 0:
+            params.phase = phase
+            print("Current phase: ", params.phase)
+            dirname_phase = 'phase_{:1.2f}'.format(params.phase)
+            mkdir_chdir(dirname_phase)
+            sbe_solver(system, dipole, params, curvat)
+
+            return 0
+
+
 # def parallel_chirp_phasesweep(chirplist, phaselist, system, dipole, params):
 
 #     for chirp in chirplist:
