@@ -276,22 +276,22 @@ class TwoBandSystem():
         xlabel, ylabel, clabel: string
             Label of x, y- axis and colorbar
         """
-        if (title is None):
+        if title is None:
             title = "Band structure"
-        if (vname is None):
+        if vname is None:
             vname = vidx
-        if (cname is None):
+        if cname is None:
             cname = cidx
-        if (xlabel is None):
+        if xlabel is None:
             xlabel = r'$k_x [\mathrm{a.u.}]$'
-        if (ylabel is None):
+        if ylabel is None:
             ylabel = r'$k_y [\mathrm{a.u.}]$'
-        if (clabel is None):
+        if clabel is None:
             clabel = r'Energy $[\mathrm{a.u.}]$'
 
         E = self.e_eval
 
-        if (E is None):
+        if E is None:
             raise RuntimeError("Error: The curvature fields first need to"
                                " be evaluated on a kgrid to plot them. "
                                " Call evaluate before plotting.")
@@ -326,17 +326,17 @@ class TwoBandSystem():
     def plot_bands_derivative(self, kx, ky, vidx=0, cidx=1,
                               title=None, vname=None, cname=None,
                               xlabel=None, ylabel=None, clabel=None):
-        if (title is None):
+        if title is None:
             title = "Energy derivatives"
-        if (vname is None):
+        if vname is None:
             vname = vidx
-        if (cname is None):
+        if cname is None:
             cname = cidx
-        if (xlabel is None):
+        if xlabel is None:
             xlabel = r'$k_x [\mathrm{a.u.}]$'
-        if (ylabel is None):
+        if ylabel is None:
             ylabel = r'$k_y [\mathrm{a.u.}]$'
-        if (clabel is None):
+        if clabel is None:
             clabel = r'$[\mathrm{a.u.}]$'
 
         devx = self.ederiv_eval[0]
@@ -461,7 +461,7 @@ class BiTePeriodic(TwoBandSystem):
         hz += mw*8*(R/a**3)*3*sqr*4**(-order) \
             * (-sp.cos(K1)-sp.cos(K2)-sp.cos(K3) + 3)**order
         # Constant band splitting
-        if (zeeman):
+        if zeeman:
             hx -= self.m_zee_x
             hy -= self.m_zee_y
             hz -= self.m_zee_z
@@ -490,7 +490,7 @@ class BiTeResummed(TwoBandSystem):
         hy = -A*self.kx
         hz = 2*R*self.kx*(self.kx**2 - 3*self.ky**2)
 
-        if (zeeman):
+        if zeeman:
             hx -= self.m_zee_x
             hy -= self.m_zee_y
             hz -= self.m_zee_z

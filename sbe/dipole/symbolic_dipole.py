@@ -216,25 +216,25 @@ class SymbolicDipole():
         nolog: bool
             If the color coding should be logarithmic or linear
         """
-        if (title is None):
+        if title is None:
             title = "Dipole fields"
-        if (vname is None):
+        if vname is None:
             vname = vidx
-        if (cname is None):
+        if cname is None:
             cname = cidx
-        if (xlabel is None):
+        if xlabel is None:
             xlabel = r'$k_x [\mathrm{a.u.}]$'
-        if (ylabel is None):
+        if ylabel is None:
             ylabel = r'$k_y [\mathrm{a.u.}]$'
-        if (clabel is None):
-            if (nolog):
+        if clabel is None:
+            if nolog:
                 clabel = r'$[\mathrm{a.u.}]$'
             else:
                 clabel = r'$[\mathrm{a.u.}]$ in $\log_{10}$ scale'
 
         Axe, Aye = self.Ax_eval, self.Ay_eval
 
-        if (Axe is None or Aye is None):
+        if Axe is None or Aye is None:
             raise RuntimeError("Error: The dipole fields first need to"
                                " be evaluated on a kgrid to plot them. "
                                " Call evaluate before plotting.")
@@ -251,7 +251,7 @@ class SymbolicDipole():
         fig, ax = plt.subplots(2, 2)
         fig.suptitle(title, fontsize=16)
 
-        if (nolog):
+        if nolog:
             valence_c = norm_r[vidx, vidx]
             conduct_c = norm_r[cidx, cidx]
             condval_c_r = norm_r[cidx, vidx]
@@ -307,7 +307,7 @@ class SymbolicDipole():
         plt.colorbar(dipimag, ax=ax[1, 1], label=current_abs_name + clabel)
 
         fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-        if (savename is not None):
+        if savename is not None:
             plt.savefig(savename)
         else:
             plt.show()

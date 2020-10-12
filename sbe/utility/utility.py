@@ -34,24 +34,24 @@ def to_njit_function(sf, hsymbols, kpflag=False):
     kx, ky = sp.symbols('kx ky', real=True)
 
     # Decide wheter we need to use the kp version of the program
-    if (kpflag):
+    if kpflag:
         kxp, kyp = sp.symbols('kxp kyp', real=True)
         return __to_njit_function_kp(sf, hsymbols, kx, ky, kxp, kyp)
-    else:
-        return __to_njit_function_k(sf, hsymbols, kx, ky)
+
+    return __to_njit_function_k(sf, hsymbols, kx, ky)
 
 
 def __to_njit_function_k(sf, hsymbols, kx, ky):
     kset = {kx, ky}
     # Check wheter k is contained in the free symbols
     contains_k = bool(sf.free_symbols.intersection(kset))
-    if (contains_k):
+    if contains_k:
         # All free Hamiltonian symbols get function parameters
         return njit(lambdify(hsymbols, sf, "numpy"))
-    else:
-        # Here we have non k variables in sf. Expand sf by 0*kx*ky
-        sf = sf + kx*ky*sp.UnevaluatedExpr(0)
-        return njit(lambdify(hsymbols, sf, "numpy"))
+
+    # Here we have non k variables in sf. Expand sf by 0*kx*ky
+    sf = sf + kx*ky*sp.UnevaluatedExpr(0)
+    return njit(lambdify(hsymbols, sf, "numpy"))
 
 
 def __to_njit_function_kp(sf, hsymbols, kx, ky, kxp, kyp):
@@ -59,12 +59,12 @@ def __to_njit_function_kp(sf, hsymbols, kx, ky, kxp, kyp):
     hsymbols = hsymbols.union({kxp, kyp})
     # Check wheter k is contained in the free symbols
     contains_k = bool(sf.free_symbols.intersection(kset))
-    if (contains_k):
+    if contains_k:
         # All free Hamiltonian symbols get function parameters
         return njit(lambdify(hsymbols, sf, "numpy"))
-    else:
-        sf = sf + kx*ky*kxp*kyp*sp.UnevaluatedExpr(0)
-        return njit(lambdify(hsymbols, sf, "numpy"))
+
+    sf = sf + kx*ky*kxp*kyp*sp.UnevaluatedExpr(0)
+    return njit(lambdify(hsymbols, sf, "numpy"))
 
 
 def evaluate_njit_matrix(mjit, kx=np.empty(1), ky=np.empty(1),
@@ -96,25 +96,25 @@ def to_numpy_function(sf):
     ky = sp.Symbol('ky', real=True)
     symbols = sf.free_symbols
 
-    # This is to readd kx and ky if they got removed in the
+    # This is to read kx and ky if they got removed in the
     # simplification process. The variable will just return 0's
     # if used.
-    if (kx in symbols and ky in symbols):
+    if kx in symbols and ky in symbols:
         return lambdify(symbols, sf, "numpy")
-    else:
-        if (kx not in symbols and ky in symbols):
-            symbols.add(kx)
-            return lambdify(symbols, sf, "numpy")
-        if (kx in symbols and ky not in symbols):
-            symbols.add(ky)
-            return lambdify(symbols, sf, "numpy")
 
-        symbols.update([kx, ky])
-        func = lambdify(symbols, sf, "numpy")
+    if (kx not in symbols and ky in symbols):
+        symbols.add(kx)
+        return lambdify(symbols, sf, "numpy")
+    if (kx in symbols and ky not in symbols):
+        symbols.add(ky)
+        return lambdify(symbols, sf, "numpy")
 
-        def __func(kx=kx, ky=ky, **fkwargs):
-            dim = kx.size
-            out = func(kx, ky, **fkwargs)
-            return np.zeros(np.shape(out) + (dim,))
+    symbols.update([kx, ky])
+    func = lambdify(symbols, sf, "numpy")
 
-        return __func
+    def __func(kx=kx, ky=ky, **fkwargs):
+        dim = kx.size
+        out = func(kx, ky, **fkwargs)
+        return np.zeros(np.shape(out) + (dim,))
+
+    return __func
