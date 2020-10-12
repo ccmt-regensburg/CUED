@@ -198,7 +198,7 @@ def sbe_solver(sys, dipole, params, curvature):
 
         while solver.successful() and ti < Nt:
             # User output of integration progress
-            if (ti % 1000 == 0 and user_out):
+            if (10*ti % Nt == 0 and user_out):
                 print('{:5.2f}%'.format(ti/Nt*100))
 
             # Integrate one integration time step

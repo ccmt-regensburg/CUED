@@ -168,7 +168,7 @@ def time_dir_ortho_angle(time, current_dir, current_ortho, current_legend=None,
 
 def time_dir_ortho(time, current_dir, current_ortho, xlim=None, ylim=None,
                    xlabel=r'Time in atomic units', ylabel=r'Current in atomic units',
-                   marker=None, paramlegend=None, suptitle=None, title=None, savename=None,
+                   marker=None, paramlegend=None, subtitle=None, title=None, savename=None,
                    si_units=True):
 
     time = time.real
@@ -179,8 +179,8 @@ def time_dir_ortho(time, current_dir, current_ortho, xlim=None, ylim=None,
         time *= co.au_to_fs
         current_dir *= co.au_to_Amp*1e5
         current_ortho *= co.au_to_Amp*1e5
-        xlabel = r'Time in $\si{fs}$'
-        ylabel = r'Current in $\si{\mu A}$'
+        xlabel = r'Time in fs'
+        ylabel = r'Current in $\mu$A'
 
     _fig, ax = plt.subplots(1)
     _lines_dir = ax.plot(time.T, current_dir.T, marker=marker)
@@ -200,8 +200,8 @@ def time_dir_ortho(time, current_dir, current_ortho, xlim=None, ylim=None,
     if paramlegend is not None:
         ax.legend(paramlegend)
 
-    if suptitle is not None:
-        plt.suptitle(suptitle)
+    if subtitle is not None:
+        plt.subtitle(subtitle)
 
     if title is not None:
         ax.set_title(title)

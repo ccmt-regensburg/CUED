@@ -22,7 +22,7 @@ def plot_dipoles(kxbz, kybz, Ax, Ay, title):
     Ayni = Ayi/inorm
 
     fig, ax = plt.subplots(2, 2)
-    fig.suptitle(title, fontsize=16)
+    fig.subtitle(title, fontsize=16)
 
     valence = ax[0, 0].quiver(kxbz, kybz, Axnr[0, 0], Aynr[0, 0],
                               np.log(rnorm[0, 0]),

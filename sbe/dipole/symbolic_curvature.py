@@ -90,7 +90,7 @@ class SymbolicCurvature():
         Be = np.real(Be)
 
         fig, ax = plt.subplots(1, 2)
-        fig.suptitle(title, fontsize=16)
+        fig.subtitle(title, fontsize=16)
 
         valence = ax[0].scatter(kx, ky, s=2, c=Be[vidx, vidx], cmap="cool")
         ax[0].set_title(r"$B_{" + str(vname) + str(vname) + "}$")

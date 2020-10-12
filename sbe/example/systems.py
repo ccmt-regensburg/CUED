@@ -239,7 +239,7 @@ class TwoBandSystem():
                                " Call evaluate before plotting.")
 
         fig, ax = plt.subplots(1, 2)
-        fig.suptitle(title, fontsize=16)
+        fig.subtitle(title, fontsize=16)
 
         valence = ax[0].scatter(kx, ky, s=2, c=E[vidx], cmap="cool")
         ax[0].set_title(r"$E_{" + str(vname) + "}$")
@@ -304,7 +304,7 @@ class TwoBandSystem():
         ec = E[cidx].reshape(dim, dim)
 
         fig, ax = plt.subplots(1, 2)
-        fig.suptitle(title, fontsize=16)
+        fig.subtitle(title, fontsize=16)
 
         cv = ax[0].contour(kx, ky, ev, levels=levels)
         plt.clabel(cv, inline=False, fontsize=10)
@@ -345,7 +345,7 @@ class TwoBandSystem():
         decy = self.ederiv_eval[3]
 
         fig, ax = plt.subplots(1, 2)
-        fig.suptitle(title, fontsize=16)
+        fig.subtitle(title, fontsize=16)
 
         norm_valence = np.sqrt(devx**2 + devy**2)
         devx /= norm_valence

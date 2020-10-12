@@ -6,7 +6,7 @@ def fourier_total(freqw, data_dir, data_ortho,
                   xlim=(0, 30), ylim=(10e-15, 1),
                   xlabel=r'Frequency $\text{ in } \omega/\omega_0$',
                   ylabel=r'I_\mathrm{hh} $\text{ in atomic units}$',
-                  paramlegend=None, suptitle=None, title=None, savename=None):
+                  paramlegend=None, subtitle=None, title=None, savename=None):
     """
     Plots parallel and orthogonal data
     """
@@ -28,8 +28,8 @@ def fourier_total(freqw, data_dir, data_ortho,
     if title is not None:
         plt.title(title)
 
-    if suptitle is not None:
-        plt.suptitle(suptitle)
+    if subtitle is not None:
+        plt.subtitle(subtitle)
 
     if savename is not None:
         plt.savefig(savename)
@@ -42,7 +42,7 @@ def fourier_dir_ortho(freqw, data_dir, data_ortho, xlim=(0.2, 30),
                       xlabel=r'Frequency $\omega/\omega_0$',
                       ylabel=r'$I_\mathrm{hh}$ in atomic units',
                       paramlegend=None, ls_dir=None, ls_ortho=None,
-                      suptitle=None, title=None, savename=None):
+                      subtitle=None, title=None, savename=None):
 
     freqw = freqw.real
     data_dir = data_dir.real
@@ -52,7 +52,7 @@ def fourier_dir_ortho(freqw, data_dir, data_ortho, xlim=(0.2, 30),
     ax.grid(True, axis='x', ls='--')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    lines_dir = ax.semilogy(freqw.T, data_dir.T, marker='.')
+    lines_dir = ax.semilogy(freqw.T, data_dir.T)
     plt.gca().set_prop_cycle(None)
     lines_ortho = ax.semilogy(freqw.T, data_ortho.T, linestyle='--')
     ax.set_xlim(xlim)
@@ -71,8 +71,8 @@ def fourier_dir_ortho(freqw, data_dir, data_ortho, xlim=(0.2, 30),
     if title is not None:
         plt.title(title)
 
-    if suptitle is not None:
-        plt.suptitle(suptitle)
+    if subtitle is not None:
+        plt.subtitle(subtitle)
 
     if savename is None:
         plt.show()
@@ -84,7 +84,7 @@ def fourier_dir_ortho_split(freqw, data_dir, data_ortho, xlim=(0.2, 30),
                             ylim=(10e-15, 1),
                             xlabel=r'Frequency $\omega/\omega_0$',
                             ylabel=r'$I_\mathrm{hh} \text{ in atomic units}$',
-                            paramlegend=None, suptitle=None, savename=None):
+                            paramlegend=None, subtitle=None, savename=None):
 
     _fig, ax = plt.subplots(2)
     for a in ax:
@@ -103,8 +103,8 @@ def fourier_dir_ortho_split(freqw, data_dir, data_ortho, xlim=(0.2, 30),
     if paramlegend is not None:
         ax[0].legend(paramlegend)
 
-    if suptitle is not None:
-        plt.suptitle(suptitle)
+    if subtitle is not None:
+        plt.subtitle(subtitle)
 
     if savename is None:
         plt.show()
@@ -117,7 +117,7 @@ def fourier_dir_ortho_angle(freqw, J_dir, J_ortho, xlim=(0.2, 30),
                             xlabel=r'Frequency $\omega/\omega_0$',
                             ylabel=r'$\alpha$',
                             ls='-', marker='.',
-                            paramlegend=None, suptitle=None, title=None, savename=None):
+                            paramlegend=None, subtitle=None, title=None, savename=None):
 
     # J_dir = np.abs(J_dir)
     # J_ortho = np.abs(J_ortho)
@@ -148,8 +148,8 @@ def fourier_dir_ortho_angle(freqw, J_dir, J_ortho, xlim=(0.2, 30),
     if title is not None:
         plt.title(title)
 
-    if suptitle is not None:
-        plt.suptitle(suptitle)
+    if subtitle is not None:
+        plt.subtitle(subtitle)
 
     if savename is None:
         plt.show()
@@ -158,7 +158,7 @@ def fourier_dir_ortho_angle(freqw, J_dir, J_ortho, xlim=(0.2, 30),
 
 def fourier_dir_ortho_angle_polar(freqw, J_dir, J_ortho):
     fig = plt.figure()
-    fig.suptitle(r'HH in $\omega/\omega_0$')
+    fig.subtitle(r'HH in $\omega/\omega_0$')
 
     N = 10
     angle_arr = np.linspace(-np.pi/2, np.pi/2, 181)

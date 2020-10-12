@@ -21,8 +21,8 @@ Int_data = Int_exact_E_dir + Int_exact_ortho
 
 Int_data_max = np.max(Int_data).real
 
-suptitle = title['H'] + ' ' + title['E'] + ' ' + title['w']
+subtitle = title['H'] + ' ' + title['E'] + ' ' + title['w']
 title = title['fwhm'] + ' ' + title['chirp'] + ' '+ title['T1'] + ' ' \
     + title['T2']
 splt.cep_plot(freqw, phaselist, Int_data, xlim=(13, 21), inorm=Int_data_max,
-              suptitle=None, title=None, savename=savename + '.png')
+              subtitle=None, title=None, savename=savename + '.png')
