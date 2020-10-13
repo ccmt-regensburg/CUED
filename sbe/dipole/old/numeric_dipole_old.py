@@ -178,7 +178,7 @@ class NumericDipole():
         self.dipole_fields.update({(val_idx, con_idx): A})
 
         return A
-    
+
     def dipole_field_deriv(self, val_idx, con_idx, energy_eps=None):
         """
         Construct the dipole field from the phase correct wave function data.
