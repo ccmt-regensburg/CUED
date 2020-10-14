@@ -571,19 +571,22 @@ def make_fnumba(sys, dipole_k, dipole_B, gamma1, gamma2, E_dir,
 
         # Preparing system parameters, energies, dipoles
 
+        # k_shift caused by minimal coupling (k - A)
+        k_shift = y[-1].real
+        kx = kpath[:, 0] + E_dir[0]*k_shift
+        ky = kpath[:, 1] + E_dir[1]*k_shift
+
+        # needed for change in energies
         m_zee = zeeman_field(t)
         mx = m_zee[0]
         my = m_zee[1]
         mz = m_zee[2]
-        k_shift = y[-1].real
-
-        kx = kpath[:, 0] + E_dir[0]*k_shift
-        ky = kpath[:, 1] + E_dir[1]*k_shift
 
         ev = evf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
         ec = ecf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
         ecv_in_path = ec - ev
 
+        # Electric
         # Electric dipoles
         di_00x = di_00xf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
         di_01x = di_01xf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
@@ -592,6 +595,12 @@ def make_fnumba(sys, dipole_k, dipole_B, gamma1, gamma2, E_dir,
         di_01y = di_01yf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
         di_11y = di_11yf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
 
+        electric_f = electric_field(t)
+        wr_in_path = electric_f*(E_dir[0]*di_01x + E_dir[1]*di_01y)
+        wr_diag_in_path = electric_f*(E_dir[0]*di_00x + E_dir[1]*di_00y \
+                                   - (E_dir[0]*di_11x + E_dir[1]*di_11y))
+
+        # Magnetic
         # Magnetic dipole integral
         di_00mx = di_00mxf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
         di_10mx = di_10mxf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
@@ -605,27 +614,14 @@ def make_fnumba(sys, dipole_k, dipole_B, gamma1, gamma2, E_dir,
         di_10mz = di_10mzf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
         di_11mz = di_11mzf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
 
-        # Electric
-        dipole_in_path = E_dir[0]*di_01x + E_dir[1]*di_01y
-        A_in_path = E_dir[0]*di_00x + E_dir[1]*di_00y \
-            - (E_dir[0]*di_11x + E_dir[1]*di_11y)
+        # Time derivative zeeman field
+        mxd, myd, mzd = zeeman_field_derivative(t)
+        mr_in_path = mxd*di_10mx + myd*di_10my + mzd*di_10mz
+        mr_diag_in_path = mxd*(di_00mx - di_11mx) + myd*(di_00my - di_11my) \
+            + mzd*(di_00mz - di_11mz)
 
         # x != y(t+dt)
         x = np.empty(np.shape(y), dtype=np.dtype('complex'))
-
-        # Electric field strength
-        electric_f = electric_field(t)
-
-        # Time derivative zeeman field
-        m_zee_deriv = zeeman_field_derivative(t)
-        mxd = m_zee_deriv[0]
-        myd = m_zee_deriv[1]
-        mzd = m_zee_deriv[2]
-
-        # Magnetic
-        M_in_path = mxd*di_10mx + myd*di_10my + mzd*di_10mz
-        M_diag_in_path = mxd*(di_00mx - di_11mx) + myd*(di_00my - di_11my) \
-            + mzd*(di_00mz - di_11mz)
 
         # Update the solution vector
         Nk_path = kpath.shape[0]
@@ -635,24 +631,22 @@ def make_fnumba(sys, dipole_k, dipole_B, gamma1, gamma2, E_dir,
             ecv = ecv_in_path[k]
 
             # Rabi frequency: w_R = d_12(k).E(t)
-            # Rabi frequency conjugate
-            wr = dipole_in_path[k]*electric_f
+            wr = wr_in_path[k]
             wr_c = wr.conjugate()
 
             # Rabi frequency: w_R = (d_11(k) - d_22(k))*E(t)
-            # wr_d_diag   = A_in_path[k]*D
-            wr_d_diag = A_in_path[k]*electric_f
+            wr_diag = wr_diag_in_path[k]
 
             # Magnetic frequency: M_21(k).Bdot(t)
-            mr_d_diag = M_diag_in_path[k]
-            mr = M_in_path[k]
+            mr_diag = mr_diag_in_path[k]
+            mr = mr_in_path[k]
             mr_c = mr.conjugate()
 
             # Update each component of the solution vector
             # i = f_v, i+1 = p_vc, i+2 = p_cv, i+3 = f_c
             x[i] = 2*((wr+mr)*y[i+1]).imag - gamma1*(y[i]-y0[i])
 
-            x[i+1] = (1j*ecv - gamma2 + 1j*(wr_d_diag + mr_d_diag))*y[i+1] \
+            x[i+1] = (1j*ecv - gamma2 + 1j*(wr_diag + mr_diag))*y[i+1] \
                 - 1j*(wr_c + mr_c)*(y[i]-y[i+3])
 
             x[i+2] = x[i+1].conjugate()
@@ -663,15 +657,18 @@ def make_fnumba(sys, dipole_k, dipole_B, gamma1, gamma2, E_dir,
         return x
 
     freturn = None
-    if (gauge == 'velocity'):
+    if gauge == 'velocity':
         print("Using velocity gauge")
         freturn = fvelocity
-    if (gauge == 'length'):
+    elif gauge == 'length':
         print("Using length gauge")
         freturn = flength
-    if (gauge == "velocity_extra"):
+    elif gauge == "velocity_extra":
         print("Using velocity extra gauge")
         freturn = fvelocity_extra
+    else:
+        raise AttributeError("You have to either assign length, length_extra, velocity or" +
+                             "velocity_extra gauge")
 
     def f(t, y, kpath, dk, y0):
         return freturn(t, y, kpath, dk, y0)
