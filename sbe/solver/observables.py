@@ -1,6 +1,6 @@
 import numpy as np
 from numba import njit
-
+from sbe.utility import conversion_factors as co
 
 def make_polarization_path(dipole, pathlen, n_time_steps, E_dir, A_field, gauge):
     dijit_01x = dipole.Axfjit[0][1]
@@ -149,6 +149,11 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
     U_h_10 = Ujit_h[1][0]
     U_h_11 = Ujit_h[1][1]
 
+#JW HACK
+    evf = sys.efjit[0]
+    ecf = sys.efjit[1]
+#JW END HACK
+
     if do_semicl:
         Bcurv_00 = curvature.Bfjit[0][0]
         Bcurv_11 = curvature.Bfjit[1][1]
@@ -186,7 +191,9 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
             if gauge == 'velocity':
                 kx_shift = A_field[i_time]*E_dir[0]
                 ky_shift = A_field[i_time]*E_dir[1]
-                fv_subs = 1
+#                fv_subs = 1
+#JW hack for looking at 2 k-points
+                fv_subs = 0
 
             kx_in_path = path[:, 0] + kx_shift
             ky_in_path = path[:, 1] + ky_shift
@@ -214,11 +221,18 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
             U_h[:, 1, 0] = U_h_10(kx=kx_in_path, ky=ky_in_path)
             U_h[:, 1, 1] = U_h_11(kx=kx_in_path, ky=ky_in_path)
 
+#JW HACK
+            ec = ecf(kx=kx_in_path, ky=ky_in_path) 
+            ecv = ec - evf(kx=kx_in_path, ky=ky_in_path)
+#END JW HACK
+
             if do_semicl:
                 Bcurv[:, 0] = Bcurv_00(kx=kx_in_path, ky=ky_in_path)
                 Bcurv[:, 1] = Bcurv_11(kx=kx_in_path, ky=ky_in_path)
 
             for i_k in range(pathlen):
+
+                if i_k == 1: break
 
                 dH_U_E_dir = h_deriv_E_dir[i_k] @ U[i_k]
                 U_h_H_U_E_dir = U_h[i_k] @ dH_U_E_dir
@@ -231,19 +245,44 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
                 I_E_dir[i_time] += U_h_H_U_E_dir[1, 1].real\
                     * solution[i_k, i_time, 3].real
                 I_E_dir[i_time] += 2*np.real(U_h_H_U_E_dir[0, 1]
-                                             * solution[i_k, i_time, 2])
+#                                             * solution[i_k, i_time, 2])
+                                             * solution[i_k, i_time, 1])
+
 
                 I_ortho[i_time] += U_h_H_U_ortho[0, 0].real\
                     * (solution[i_k, i_time, 0].real - fv_subs)
                 I_ortho[i_time] += U_h_H_U_ortho[1, 1].real\
                     * solution[i_k, i_time, 3].real
                 I_ortho[i_time] += 2*np.real(U_h_H_U_ortho[0, 1]
-                                             * solution[i_k, i_time, 2])
+#                                             * solution[i_k, i_time, 2])
+                                             * solution[i_k, i_time, 1])
 
                 if do_semicl:
-                    I_ortho[i_time] += E_field[i_time] * Bcurv[i_k, 0].real\
+                    I_ortho[i_time] -= -E_field[i_time] * Bcurv[i_k, 0].real\
                                          * solution[i_k, i_time, 0].real
-                    I_ortho[i_time] += E_field[i_time] * Bcurv[i_k, 1].real\
+                    I_ortho[i_time] -= -E_field[i_time] * Bcurv[i_k, 1].real\
                                          * solution[i_k, i_time, 1].real
+
+                    if i_time%100000 == 0: 
+
+                        print("i_time, i_k, occ v,c, E, BC, BCcheck, pcv-check, j_a_v, j_a_c =", i_time, i_k, \
+                              solution[i_k, i_time, 0].real, solution[i_k, i_time, 3].real, \
+                              E_field[i_time], Bcurv[i_k, 0].real, \
+                              2*np.imag( U_h_H_U_E_dir[0, 1] * U_h_H_U_ortho[1, 0] / ecv[i_k]**2), \
+                              E_field[i_time]*U_h_H_U_E_dir[1, 0] / ecv[i_k]**2/1j, \
+                              E_field[i_time] * Bcurv[i_k, 0].real * solution[i_k, i_time, 0].real, \
+                              E_field[i_time] * Bcurv[i_k, 1].real * solution[i_k, i_time, 1].real )
+
+                else:
+
+                    if i_time%100000 == 0: 
+
+                        print("i_time, i_k, occ v,c, E, pcv actual, <ck|dh/dk|vk>, j_a =", i_time, i_k, \
+                              solution[i_k, i_time, 0].real, solution[i_k, i_time, 3].real, \
+                              E_field[i_time], solution[i_k, i_time, 1], U_h_H_U_ortho[0, 1] , \
+                              2*np.real(U_h_H_U_ortho[0, 1] * solution[i_k, i_time, 1]) )
+
+
+
 
     return emission_exact_path

@@ -477,6 +477,10 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
         x[-1] = -electric_f
 
+        if t>0 and t<10e4:
+          print("t:", t, "dipole:", dipole_in_path[0], "gap:", ecv_in_path[0], "efield:", electric_f,\
+                "rhovc:", y[1], "rhovc pred:", -electric_f*dipole_in_path[0]/ecv_in_path[0])
+
         return x
 
     freturn = None
