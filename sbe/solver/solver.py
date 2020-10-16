@@ -384,29 +384,41 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
                 m = 4*(k+1)
                 n = 4*(k-1)
 
-            # Energy term eband(i,k) the energy of band i at point k
+            # Energy gap e_2(k) - e_1(k) >= 0 at point k
             ecv = ecv_in_path[k]
 
-            # Rabi frequency: w_R = d_12(k).E(t)
-            # Rabi frequency conjugate
-            wr = dipole_in_path[k]*electric_f
+            # Rabi frequency: w_R = q*d_12(k)*E(t)
+            # Rabi frequency conjugate: w_R_c = q*d_21(k)*E(t)
+            wr = -dipole_in_path[k]*electric_f
             wr_c = wr.conjugate()
 
-            # Rabi frequency: w_R = (d_11(k) - d_22(k))*E(t)
-            wr_d_diag = A_in_path[k]*electric_f
+            # Rabi frequency: w_R = q*(d_11(k) - d_22(k))*E(t)
+            wr_d_diag = -A_in_path[k]*electric_f
 
             # Update each component of the solution vector
             # i = f_v, i+1 = p_vc, i+2 = p_cv, i+3 = f_c
-            x[i] = 2*(wr*y[i+1]).imag + D*(y[m] - y[n]) \
-                - gamma1*(y[i]-y0[i])
+
+#            x[i] = 2*(wr*y[i+1]).imag + D*(y[m] - y[n]) \
+#                - gamma1*(y[i]-y0[i])
+#
+#            x[i+1] = (1j*ecv - gamma2 + 1j*wr_d_diag)*y[i+1] \
+#                - 1j*wr_c*(y[i]-y[i+3]) + D*(y[m+1] - y[n+1])
+#
+#            x[i+2] = x[i+1].conjugate()
+#
+#            x[i+3] = -2*(wr*y[i+1]).imag + D*(y[m+3] - y[n+3]) \
+#                - gamma1*(y[i+3]-y0[i+3])
+
+            x[i] = 2*(y[i+1]*wr_c).imag + D*(y[m] - y[n]) \
+                   - gamma1*(y[i]-y0[i])
 
             x[i+1] = (1j*ecv - gamma2 + 1j*wr_d_diag)*y[i+1] \
-                - 1j*wr_c*(y[i]-y[i+3]) + D*(y[m+1] - y[n+1])
+                - 1j*wr*(y[i]-y[i+3]) + D*(y[m+1] - y[n+1])
 
             x[i+2] = x[i+1].conjugate()
 
-            x[i+3] = -2*(wr*y[i+1]).imag + D*(y[m+3] - y[n+3]) \
-                - gamma1*(y[i+3]-y0[i+3])
+            x[i+3] = -2*(y[i+1]*wr_c).imag + D*(y[m+3] - y[n+3]) \
+                     - gamma1*(y[i+3]-y0[i+3])
 
         x[-1] = -electric_f
         return x

@@ -245,8 +245,8 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
                 I_E_dir[i_time] += U_h_H_U_E_dir[1, 1].real\
                     * solution[i_k, i_time, 3].real
                 I_E_dir[i_time] += 2*np.real(U_h_H_U_E_dir[0, 1]
-#                                             * solution[i_k, i_time, 2])
-                                             * solution[i_k, i_time, 1])
+                                             * solution[i_k, i_time, 2])
+#                                             * solution[i_k, i_time, 1])
 
 
                 I_ortho[i_time] += U_h_H_U_ortho[0, 0].real\
@@ -254,8 +254,8 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
                 I_ortho[i_time] += U_h_H_U_ortho[1, 1].real\
                     * solution[i_k, i_time, 3].real
                 I_ortho[i_time] += 2*np.real(U_h_H_U_ortho[0, 1]
-#                                             * solution[i_k, i_time, 2])
-                                             * solution[i_k, i_time, 1])
+                                             * solution[i_k, i_time, 2])
+#                                             * solution[i_k, i_time, 1])
 
                 if do_semicl:
                     I_ortho[i_time] -= -E_field[i_time] * Bcurv[i_k, 0].real\
