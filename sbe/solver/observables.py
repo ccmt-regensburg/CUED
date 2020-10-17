@@ -191,9 +191,7 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
             if gauge == 'velocity':
                 kx_shift = A_field[i_time]*E_dir[0]
                 ky_shift = A_field[i_time]*E_dir[1]
-#                fv_subs = 1
-#JW hack for looking at 2 k-points
-                fv_subs = 0
+                fv_subs = 1
 
             kx_in_path = path[:, 0] + kx_shift
             ky_in_path = path[:, 1] + ky_shift
