@@ -183,10 +183,10 @@ def sbe_solver(sys, dipole, params, curvature):
         ec = sys.efjit[1](kx=kx_in_path, ky=ky_in_path)
         ecv_in_path = ec - sys.efjit[0](kx=kx_in_path, ky=ky_in_path)
 
-        if not do_semicl:
-            print("\n kpoint =", kx_in_path[0], ky_in_path[0], "E_dir =", E_dir)
-            print("-i*d_01x[k_0]*e_10[k_0] =", -1j*di_01x[0]*ecv_in_path[0],    "-i*d_01y[k_0]*e_01[k_0] =", -1j*di_01y[0]*ecv_in_path[0],    "\n")
-            print("-i*d_10x[k_0]*e_01[k_0] =", -1j*di_10x[0]*(-ecv_in_path[0]), "-i*d_10y[k_0]*e_10[k_0] =", -1j*di_10y[0]*(-ecv_in_path[0]), "\n")
+#        if not do_semicl:
+#            print("\n kpoint =", kx_in_path[0], ky_in_path[0], "E_dir =", E_dir)
+#            print("-i*d_01x[k_0]*e_10[k_0] =", -1j*di_01x[0]*ecv_in_path[0],    "-i*d_01y[k_0]*e_01[k_0] =", -1j*di_01y[0]*ecv_in_path[0],    "\n")
+#            print("-i*d_10x[k_0]*e_01[k_0] =", -1j*di_10x[0]*(-ecv_in_path[0]), "-i*d_10y[k_0]*e_10[k_0] =", -1j*di_10y[0]*(-ecv_in_path[0]), "\n")
 
         # Initialize the values of of each k point vector
         # (rho_nn(k), rho_nm(k), rho_mn(k), rho_mm(k))
@@ -504,9 +504,9 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
         x[-1] = -electric_f
 
-        if t>0 and t<10e4:
-          print("t:", t, "dipole:", dipole_in_path[0], "gap:", ecv_in_path[0], "efield:", electric_f,\
-                "rhovc:", y[1], "rhovc pred:", -electric_f*dipole_in_path[0]/ecv_in_path[0])
+#        if t>0 and t<10e4:
+#          print("t:", t, "dipole:", dipole_in_path[0], "gap:", ecv_in_path[0], "efield:", electric_f,\
+#                "rhovc:", y[1], "rhovc pred:", -electric_f*dipole_in_path[0]/ecv_in_path[0])
 
         return x
 
