@@ -246,7 +246,7 @@ def sbe_solver(sys, dipole, params, curvature):
             # Only calculate kira & koch formula if save_approx is set
             fv = solution[:, Nk2_idx, :, 0]
             fc = solution[:, Nk2_idx, :, 3]
-            pcv = solution[:, Nk2_idx, :, 1]
+            pcv = solution[:, Nk2_idx, :, 2]
             current_path(path, fv, fc, J_E_dir, J_ortho)
             polarization_path(path, pcv, P_E_dir, P_ortho)
 
