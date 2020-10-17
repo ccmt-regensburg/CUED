@@ -166,9 +166,11 @@ def sbe_solver(sys, dipole, params, curvature):
             # Calculate the dipole components along the path
             di_00x = dipole.Axfjit[0][0](kx=kx_in_path, ky=ky_in_path)
             di_01x = dipole.Axfjit[0][1](kx=kx_in_path, ky=ky_in_path)
+            di_10x = dipole.Axfjit[1][0](kx=kx_in_path, ky=ky_in_path)
             di_11x = dipole.Axfjit[1][1](kx=kx_in_path, ky=ky_in_path)
             di_00y = dipole.Ayfjit[0][0](kx=kx_in_path, ky=ky_in_path)
             di_01y = dipole.Ayfjit[0][1](kx=kx_in_path, ky=ky_in_path)
+            di_10y = dipole.Ayfjit[1][0](kx=kx_in_path, ky=ky_in_path)
             di_11y = dipole.Ayfjit[1][1](kx=kx_in_path, ky=ky_in_path)
 
             # Calculate the dot products E_dir.d_nm(k).
@@ -180,6 +182,12 @@ def sbe_solver(sys, dipole, params, curvature):
 
         ec = sys.efjit[1](kx=kx_in_path, ky=ky_in_path)
         ecv_in_path = ec - sys.efjit[0](kx=kx_in_path, ky=ky_in_path)
+
+        if not do_semicl:
+            print("\n kpoint =", kx_in_path[0], ky_in_path[0], "E_dir =", E_dir)
+            print("-i*d_01x[k_0]*e_10[k_0] =", -1j*di_01x[0]*ecv_in_path[0],    "-i*d_01y[k_0]*e_01[k_0] =", -1j*di_01y[0]*ecv_in_path[0],    "\n")
+            print("-i*d_10x[k_0]*e_01[k_0] =", -1j*di_10x[0]*(-ecv_in_path[0]), "-i*d_10y[k_0]*e_10[k_0] =", -1j*di_10y[0]*(-ecv_in_path[0]), "\n")
+
         # Initialize the values of of each k point vector
         # (rho_nn(k), rho_nm(k), rho_mn(k), rho_mm(k))
         y0 = initial_condition(e_fermi, temperature, ec)
@@ -413,12 +421,12 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
                    - gamma1*(y[i]-y0[i])
 
             x[i+1] = (1j*ecv - gamma2 + 1j*wr_d_diag)*y[i+1] \
-                - 1j*wr*(y[i]-y[i+3]) + D*(y[m+1] - y[n+1])
+                     - 1j*wr*(y[i]-y[i+3]) + D*(y[m+1] - y[n+1])
 
             x[i+2] = x[i+1].conjugate()
 
             x[i+3] = -2*(y[i+1]*wr_c).imag + D*(y[m+3] - y[n+3]) \
-                     - gamma1*(y[i+3]-y0[i+3])
+                     - gamma1*(y[i+3]-y0[i+3])                            
 
         x[-1] = -electric_f
         return x
@@ -469,23 +477,30 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
             # Rabi frequency: w_R = d_12(k).E(t)
             # Rabi frequency conjugate
-            wr = dipole_in_path[k]*electric_f
+            wr = -dipole_in_path[k]*electric_f
             wr_c = wr.conjugate()
 
             # Rabi frequency: w_R = (d_11(k) - d_22(k))*E(t)
             # wr_d_diag   = A_in_path[k]*D
-            wr_d_diag = A_in_path[k]*electric_f
+            wr_d_diag = -A_in_path[k]*electric_f
 
             # Update each component of the solution vector
             # i = f_v, i+1 = p_vc, i+2 = p_cv, i+3 = f_c
-            x[i] = 2*(wr*y[i+1]).imag - gamma1*(y[i]-y0[i])
+#            x[i] = 2*(wr*y[i+1]).imag - gamma1*(y[i]-y0[i])
+#
+#            x[i+1] = (1j*ecv - gamma2 + 1j*wr_d_diag)*y[i+1] - 1j*wr_c*(y[i]-y[i+3])
+#
+#            x[i+2] = x[i+1].conjugate()
+#
+#            x[i+3] = -2*(wr*y[i+1]).imag - gamma1*(y[i+3]-y0[i+3])
 
-            x[i+1] = (1j*ecv - gamma2 + 1j*wr_d_diag)*y[i+1] \
-                - 1j*wr_c*(y[i]-y[i+3])
+            x[i] = 2*(y[i+1]*wr_c).imag - gamma1*(y[i]-y0[i])
+
+            x[i+1] = (1j*ecv - gamma2 + 1j*wr_d_diag)*y[i+1] - 1j*wr*(y[i]-y[i+3])
 
             x[i+2] = x[i+1].conjugate()
 
-            x[i+3] = -2*(wr*y[i+1]).imag - gamma1*(y[i+3]-y0[i+3])
+            x[i+3] = -2*(y[i+1]*wr_c).imag - gamma1*(y[i+3]-y0[i+3])                            
 
         x[-1] = -electric_f
 

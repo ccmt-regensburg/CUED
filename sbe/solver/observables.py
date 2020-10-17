@@ -240,14 +240,18 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
                 dH_U_ortho = h_deriv_ortho[i_k] @ U[i_k]
                 U_h_H_U_ortho = U_h[i_k] @ dH_U_ortho
 
+                if i_time == 0:
+                    print("\n kpoint =", kx_in_path[0], ky_in_path[0], "E_dir =", E_dir)
+                    print("h_deriv_x_01[k_0] =", U_h_H_U_E_dir[0, 1], "h_deriv_y_01[k_0] =", U_h_H_U_ortho[0, 1])
+                    print("h_deriv_x_10[k_0] =", U_h_H_U_E_dir[1, 0], "h_deriv_y_10[k_0] =", U_h_H_U_ortho[1, 0])
+                    print("\n")
+
                 I_E_dir[i_time] += U_h_H_U_E_dir[0, 0].real\
                     * (solution[i_k, i_time, 0].real - fv_subs)
                 I_E_dir[i_time] += U_h_H_U_E_dir[1, 1].real\
                     * solution[i_k, i_time, 3].real
                 I_E_dir[i_time] += 2*np.real(U_h_H_U_E_dir[0, 1]
                                              * solution[i_k, i_time, 2])
-#                                             * solution[i_k, i_time, 1])
-
 
                 I_ortho[i_time] += U_h_H_U_ortho[0, 0].real\
                     * (solution[i_k, i_time, 0].real - fv_subs)
@@ -255,34 +259,38 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
                     * solution[i_k, i_time, 3].real
                 I_ortho[i_time] += 2*np.real(U_h_H_U_ortho[0, 1]
                                              * solution[i_k, i_time, 2])
-#                                             * solution[i_k, i_time, 1])
 
                 if do_semicl:
-                    I_ortho[i_time] -= -E_field[i_time] * Bcurv[i_k, 0].real\
+                    # '-' because there is q^2 compared to q only at the SBE current
+                    I_ortho[i_time] += -E_field[i_time] * Bcurv[i_k, 0].real\
                                          * solution[i_k, i_time, 0].real
-                    I_ortho[i_time] -= -E_field[i_time] * Bcurv[i_k, 1].real\
+                    I_ortho[i_time] += -E_field[i_time] * Bcurv[i_k, 1].real\
                                          * solution[i_k, i_time, 1].real
 
                     if i_time%100000 == 0: 
 
-                        print("i_time, i_k, occ v,c, E, BC, BCcheck, pcv-check, j_a_v, j_a_c =", i_time, i_k, \
-                              solution[i_k, i_time, 0].real, solution[i_k, i_time, 3].real, \
-                              E_field[i_time], Bcurv[i_k, 0].real, \
-                              2*np.imag( U_h_H_U_E_dir[0, 1] * U_h_H_U_ortho[1, 0] / ecv[i_k]**2), \
-                              E_field[i_time]*U_h_H_U_E_dir[1, 0] / ecv[i_k]**2/1j, \
-                              E_field[i_time] * Bcurv[i_k, 0].real * solution[i_k, i_time, 0].real, \
-                              E_field[i_time] * Bcurv[i_k, 1].real * solution[i_k, i_time, 1].real )
+                        print("i_time =", i_time, 
+                              "i_k =", i_k, \
+                              "occ v c =", solution[i_k, i_time, 0].real, solution[i_k, i_time, 3].real, \
+                              "E =", E_field[i_time], 
+                              "pvc-check =", E_field[i_time]*U_h_H_U_E_dir[0, 1] / ecv[i_k]**2/1j, \
+                              "BC =", Bcurv[i_k, 0].real, \
+                              "BC_check =", 2*np.imag( U_h_H_U_E_dir[0, 1] * U_h_H_U_ortho[1, 0] / ecv[i_k]**2), \
+                              "j_a_v =", -E_field[i_time] * Bcurv[i_k, 0].real * solution[i_k, i_time, 0].real, \
+                              "j_a_c =", -E_field[i_time] * Bcurv[i_k, 1].real * solution[i_k, i_time, 1].real )
 
                 else:
 
                     if i_time%100000 == 0: 
 
-                        print("i_time, i_k, occ v,c, E, pcv actual, <ck|dh/dk|vk>, j_a =", i_time, i_k, \
-                              solution[i_k, i_time, 0].real, solution[i_k, i_time, 3].real, \
-                              E_field[i_time], solution[i_k, i_time, 1], U_h_H_U_ortho[0, 1] , \
-                              2*np.real(U_h_H_U_ortho[0, 1] * solution[i_k, i_time, 1]) )
-
-
+                        print("i_time =", i_time, 
+                              "i_k =", i_k, \
+                              "occ v c =", solution[i_k, i_time, 0].real, solution[i_k, i_time, 3].real, \
+                              "E =", E_field[i_time], 
+                              "pvc-actua =", solution[i_k, i_time, 2], \
+                              "<vk|dh/dk_ortho|ck> =", U_h_H_U_ortho[0, 1] , \
+                              "<ck|dh/dk_ortho|vk> =", U_h_H_U_ortho[1, 0] , \
+                              "j_a =", 2*np.real(U_h_H_U_ortho[0, 1] * solution[i_k, i_time, 2]) )
 
 
     return emission_exact_path
