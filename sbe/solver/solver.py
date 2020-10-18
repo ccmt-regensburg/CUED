@@ -253,7 +253,7 @@ def sbe_solver(sys, dipole, params, curvature):
         t_constructed = True
 
 
-    print("t_constructed =", t_constructed, "time array =", t)
+#    print("t_constructed =", t_constructed, "time array =", t)
 
     # Filename tail
     tail = 'E_{:.2f}_w_{:.2f}_a_{:.2f}_{}_t0_{:.2f}_NK1-{}_NK2-{}_T1_{:.2f}_T2_{:.2f}_chirp_{:.3f}_ph_{:.2f}'\
@@ -286,7 +286,7 @@ def sbe_solver(sys, dipole, params, curvature):
 
         I_approx_name = 'Iapprox_' + tail
 
-        print("time array before saving =", t)
+#        print("time array before saving =", t)
 
         np.save(I_approx_name, [t, I_E_dir, I_ortho,
                                 freq/w, Iw_E_dir, Iw_ortho,
