@@ -165,11 +165,9 @@ def sbe_solver(sys, dipole, params, curvature):
             # Calculate the dipole components along the path
             di_00x = dipole.Axfjit[0][0](kx=kx_in_path, ky=ky_in_path)
             di_01x = dipole.Axfjit[0][1](kx=kx_in_path, ky=ky_in_path)
-#            di_10x = dipole.Axfjit[1][0](kx=kx_in_path, ky=ky_in_path)
             di_11x = dipole.Axfjit[1][1](kx=kx_in_path, ky=ky_in_path)
             di_00y = dipole.Ayfjit[0][0](kx=kx_in_path, ky=ky_in_path)
             di_01y = dipole.Ayfjit[0][1](kx=kx_in_path, ky=ky_in_path)
-#            di_10y = dipole.Ayfjit[1][0](kx=kx_in_path, ky=ky_in_path)
             di_11y = dipole.Ayfjit[1][1](kx=kx_in_path, ky=ky_in_path)
 
             # Calculate the dot products E_dir.d_nm(k).
@@ -181,11 +179,6 @@ def sbe_solver(sys, dipole, params, curvature):
 
         ec = sys.efjit[1](kx=kx_in_path, ky=ky_in_path)
         ecv_in_path = ec - sys.efjit[0](kx=kx_in_path, ky=ky_in_path)
-
-#        if not do_semicl:
-#            print("\n kpoint =", kx_in_path[0], ky_in_path[0], "E_dir =", E_dir)
-#            print("-i*d_01x[k_0]*e_10[k_0] =", -1j*di_01x[0]*ecv_in_path[0],    "-i*d_01y[k_0]*e_01[k_0] =", -1j*di_01y[0]*ecv_in_path[0],    "\n")
-#            print("-i*d_10x[k_0]*e_01[k_0] =", -1j*di_10x[0]*(-ecv_in_path[0]), "-i*d_10y[k_0]*e_10[k_0] =", -1j*di_10y[0]*(-ecv_in_path[0]), "\n")
 
         # Initialize the values of of each k point vector
         # (rho_nn(k), rho_nm(k), rho_mn(k), rho_mm(k))
@@ -253,8 +246,6 @@ def sbe_solver(sys, dipole, params, curvature):
         t_constructed = True
 
 
-#    print("t_constructed =", t_constructed, "time array =", t)
-
     # Filename tail
     tail = 'E_{:.2f}_w_{:.2f}_a_{:.2f}_{}_t0_{:.2f}_NK1-{}_NK2-{}_T1_{:.2f}_T2_{:.2f}_chirp_{:.3f}_ph_{:.2f}'\
         .format(E0*co.au_to_MVpcm, w*co.au_to_THz, alpha*co.au_to_fs, gauge, params.t0, Nk1, Nk2, T1*co.au_to_fs, T2*co.au_to_fs, chirp*co.au_to_THz, phase)
@@ -285,8 +276,6 @@ def sbe_solver(sys, dipole, params, curvature):
         Int_ortho = (freq**2)*np.abs(Iw_ortho)**2
 
         I_approx_name = 'Iapprox_' + tail
-
-#        print("time array before saving =", t)
 
         np.save(I_approx_name, [t, I_E_dir, I_ortho,
                                 freq/w, Iw_E_dir, Iw_ortho,
@@ -507,10 +496,6 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
             x[i+3] = -2*(y[i+1]*wr_c).imag - gamma1*(y[i+3]-y0[i+3])                            
 
         x[-1] = -electric_f
-
-#        if t>0 and t<10e4:
-#          print("t:", t, "dipole:", dipole_in_path[0], "gap:", ecv_in_path[0], "efield:", electric_f,\
-#                "rhovc:", y[1], "rhovc pred:", -electric_f*dipole_in_path[0]/ecv_in_path[0])
 
         return x
 
