@@ -390,11 +390,11 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
             # Rabi frequency: w_R = q*d_12(k)*E(t)
             # Rabi frequency conjugate: w_R_c = q*d_21(k)*E(t)
-            wr = -dipole_in_path[k]*electric_f
+            wr = dipole_in_path[k]*electric_f
             wr_c = wr.conjugate()
 
             # Rabi frequency: w_R = q*(d_11(k) - d_22(k))*E(t)
-            wr_d_diag = -A_in_path[k]*electric_f
+            wr_d_diag = A_in_path[k]*electric_f
 
             # Update each component of the solution vector
             # i = f_v, i+1 = p_vc, i+2 = p_cv, i+3 = f_c
@@ -470,12 +470,12 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
             # Rabi frequency: w_R = d_12(k).E(t)
             # Rabi frequency conjugate
-            wr = -dipole_in_path[k]*electric_f
+            wr = dipole_in_path[k]*electric_f
             wr_c = wr.conjugate()
 
             # Rabi frequency: w_R = (d_11(k) - d_22(k))*E(t)
             # wr_d_diag   = A_in_path[k]*D
-            wr_d_diag = -A_in_path[k]*electric_f
+            wr_d_diag = A_in_path[k]*electric_f
 
             # Update each component of the solution vector
             # i = f_v, i+1 = p_vc, i+2 = p_cv, i+3 = f_c

@@ -48,8 +48,8 @@ def run(system, dipole, curvature):
     chirplist = [0.000]
     phaselist = np.linspace(0, np.pi, 20)
 
-    params.Nk1 = 90
-    params.Nk2 = 12
+    params.Nk1 = 900
+    params.Nk2 = 120
     dirname_dist = 'Nk1_{:d}_Nk2_{:d}_nog'.format(params.Nk1, params.Nk2)
     mkdir_chdir(dirname_dist)
 
