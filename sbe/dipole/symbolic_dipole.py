@@ -249,7 +249,7 @@ class SymbolicDipole():
         Aye_rn, Aye_in = Aye_r/norm_r, Aye_i/norm_i
 
         fig, ax = plt.subplots(2, 2)
-        fig.subtitle(title, fontsize=16)
+        fig.suptitle(title, fontsize=16)
 
         if nolog:
             valence_c = norm_r[vidx, vidx]

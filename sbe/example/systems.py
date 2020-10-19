@@ -239,7 +239,7 @@ class TwoBandSystem():
                                " Call evaluate before plotting.")
 
         fig, ax = plt.subplots(1, 2)
-        fig.subtitle(title, fontsize=16)
+        fig.suptitle(title, fontsize=16)
 
         valence = ax[0].scatter(kx, ky, s=2, c=E[vidx], cmap="cool")
         ax[0].set_title(r"$E_{" + str(vname) + "}$")
@@ -304,7 +304,7 @@ class TwoBandSystem():
         ec = E[cidx].reshape(dim, dim)
 
         fig, ax = plt.subplots(1, 2)
-        fig.subtitle(title, fontsize=16)
+        fig.suptitle(title, fontsize=16)
 
         cv = ax[0].contour(kx, ky, ev, levels=levels)
         plt.clabel(cv, inline=False, fontsize=10)
@@ -345,7 +345,7 @@ class TwoBandSystem():
         decy = self.ederiv_eval[3]
 
         fig, ax = plt.subplots(1, 2)
-        fig.subtitle(title, fontsize=16)
+        fig.suptitle(title, fontsize=16)
 
         norm_valence = np.sqrt(devx**2 + devy**2)
         devx /= norm_valence
@@ -424,9 +424,9 @@ class BiTe(TwoBandSystem):
             hz *= cutfactor
 
         if (zeeman):
-            hx -= self.m_zee_x
-            hy -= self.m_zee_y
-            hz -= self.m_zee_z
+            hx += self.m_zee_x
+            hy += self.m_zee_y
+            hz += self.m_zee_z
 
         super().__init__(ho, hx, hy, hz)
 
@@ -462,9 +462,9 @@ class BiTePeriodic(TwoBandSystem):
             * (-sp.cos(K1)-sp.cos(K2)-sp.cos(K3) + 3)**order
         # Constant band splitting
         if zeeman:
-            hx -= self.m_zee_x
-            hy -= self.m_zee_y
-            hz -= self.m_zee_z
+            hx += self.m_zee_x
+            hy += self.m_zee_y
+            hz += self.m_zee_z
 
         super().__init__(ho, hx, hy, hz)
 
@@ -491,9 +491,9 @@ class BiTeResummed(TwoBandSystem):
         hz = 2*R*self.kx*(self.kx**2 - 3*self.ky**2)
 
         if zeeman:
-            hx -= self.m_zee_x
-            hy -= self.m_zee_y
-            hz -= self.m_zee_z
+            hx += self.m_zee_x
+            hy += self.m_zee_y
+            hz += self.m_zee_z
 
         super().__init__(ho, hx, hy, hz)
 
@@ -565,9 +565,9 @@ class Test(TwoBandSystem):
         hz = A*(2 + mz - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
 
         if (zeeman):
-            hx -= self.m_zee_x
-            hy -= self.m_zee_y
-            hz -= self.m_zee_z
+            hx += self.m_zee_x
+            hy += self.m_zee_y
+            hz += self.m_zee_z
 
         super().__init__(ho, hx, hy, hz)
 
@@ -582,9 +582,9 @@ class Parabolic(TwoBandSystem):
         hz = mz
 
         if (zeeman):
-            hx -= self.m_zee_x
-            hy -= self.m_zee_y
-            hz -= self.m_zee_z
+            hx += self.m_zee_x
+            hy += self.m_zee_y
+            hz += self.m_zee_z
 
         super().__init__(ho, hx, hy, hz)
 

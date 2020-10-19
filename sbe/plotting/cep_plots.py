@@ -12,7 +12,7 @@ def cep_plot(freqw, phaselist, intensity,
              xlabel=r'Frequency $\text{ in } \omega/\omega_0$',
              ylabel=r'phase $\phi$',
              yticks=None,
-             subtitle=None, title=None, savename=None):
+             supertitle=None, title=None, savename=None):
 
     freqw = freqw.real
     intensity = intensity.real
@@ -69,8 +69,8 @@ def cep_plot(freqw, phaselist, intensity,
     if title is not None:
         plt.title(title)
 
-    if subtitle is not None:
-        plt.subtitle(subtitle)
+    if supertitle is not None:
+        plt.suptitle(supertitle)
 
     if savename is not None:
         plt.savefig(savename)
