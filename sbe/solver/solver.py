@@ -91,7 +91,7 @@ def sbe_solver(sys, dipole, params, curvature):
         elif align == 'M':
             E_dir = np.array([np.cos(np.radians(-30)),
                               np.sin(np.radians(-30))])
-        # BZ_plot(_kpnts, a, b1, b2, paths)
+        BZ_plot(_kpnts, a, b1, b2, paths)
     elif BZ_type == '2line':
         E_dir = np.array([np.cos(np.radians(angle_inc_E_field)),
                           np.sin(np.radians(angle_inc_E_field))])
@@ -419,7 +419,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
             x[i+2] = x[i+1].conjugate()
 
             x[i+3] = -2*(y[i+1]*wr_c).imag + D*(y[m+3] - y[n+3]) \
-                     - gamma1*(y[i+3]-y0[i+3])                            
+                     - gamma1*(y[i+3]-y0[i+3])
 
         x[-1] = -electric_f
         return x
@@ -493,7 +493,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
             x[i+2] = x[i+1].conjugate()
 
-            x[i+3] = -2*(y[i+1]*wr_c).imag - gamma1*(y[i+3]-y0[i+3])                            
+            x[i+3] = -2*(y[i+1]*wr_c).imag - gamma1*(y[i+3]-y0[i+3])
 
         x[-1] = -electric_f
 

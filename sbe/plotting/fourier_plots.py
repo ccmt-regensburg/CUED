@@ -52,7 +52,7 @@ def fourier_dir_ortho(freqw, data_dir, data_ortho, xlim=(0.2, 30),
     ax.grid(True, axis='x', ls='--')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    lines_dir = ax.semilogy(freqw.T, data_dir.T)
+    lines_dir = ax.semilogy(freqw.T, data_dir.T, marker='.')
     plt.gca().set_prop_cycle(None)
     lines_ortho = ax.semilogy(freqw.T, data_ortho.T, linestyle='--')
     ax.set_xlim(xlim)
