@@ -180,7 +180,7 @@ def time_dir_ortho(time, current_dir, current_ortho, xlim=None, ylim=None,
         current_dir *= co.au_to_Amp*1e5
         current_ortho *= co.au_to_Amp*1e5
         xlabel = r'Time in fs'
-        ylabel = r'Current in $\mu$A'
+        ylabel = r'Current in $\si{\mu A}$'
 
     _fig, ax = plt.subplots(1)
     _lines_dir = ax.plot(time.T, current_dir.T, marker=marker)
