@@ -263,8 +263,8 @@ class SymbolicDipole():
 
         valence = ax[0, 0].quiver(kx, ky,
                                   Axe_rn[vidx, vidx], Aye_rn[vidx, vidx],
-                                  valence_c, angles='xy', cmap='cool')
-        current_name = r"$\Re(\mathbf{d}_{" + str(vname) + str(vname) + "})$"
+                                  valence_c, angles='xy', cmap='cool', width=0.007)
+        current_name = r"$\mathrm{Re}(\mathbf{d}_{" + str(vname) + str(vname) + "})$"
         current_abs_name = r'$|$' + current_name + r'$|$'
         ax[0, 0].set_title(current_name)
         ax[0, 0].axis('equal')
@@ -274,8 +274,8 @@ class SymbolicDipole():
 
         conduct = ax[0, 1].quiver(kx, ky,
                                   Axe_rn[cidx, cidx], Aye_rn[cidx, cidx],
-                                  conduct_c, angles='xy', cmap='cool')
-        current_name = r"$\Re(\mathbf{d}_{" + str(cname) + str(cname) + "})$"
+                                  conduct_c, angles='xy', cmap='cool', width=0.007)
+        current_name = r"$\mathrm{Re}(\mathbf{d}_{" + str(cname) + str(cname) + "})$"
         current_abs_name = r'$|$' + current_name + r'$|$'
         ax[0, 1].set_title(current_name)
         ax[0, 1].axis('equal')
@@ -285,8 +285,8 @@ class SymbolicDipole():
 
         dipreal = ax[1, 0].quiver(kx, ky,
                                   Axe_rn[cidx, vidx], Aye_rn[cidx, vidx],
-                                  condval_c_r, angles='xy', cmap='cool')
-        current_name = r"$\Re(\mathbf{d}_{" + str(cname) + str(vname) + "})$"
+                                  condval_c_r, angles='xy', cmap='cool', width=0.007)
+        current_name = r"$\mathrm{Re}(\mathbf{d}_{" + str(cname) + str(vname) + "})$"
         current_abs_name = r'$|$' + current_name + r'$|$'
         ax[1, 0].set_title(current_name)
         ax[1, 0].axis('equal')
@@ -296,8 +296,8 @@ class SymbolicDipole():
 
         dipimag = ax[1, 1].quiver(kx, ky,
                                   Axe_in[cidx, vidx], Aye_in[cidx, vidx],
-                                  condval_c_i, angles='xy', cmap='cool')
-        current_name = r"$\Im(\mathbf{d}_{" + str(cname) + str(vname) + "})$"
+                                  condval_c_i, angles='xy', cmap='cool', width=0.007)
+        current_name = r"$\mathrm{Im}(\mathbf{d}_{" + str(cname) + str(vname) + "})$"
         current_abs_name = r'$|$' + current_name + r'$|$'
         ax[1, 1].set_title(current_name)
         ax[1, 1].axis('equal')
