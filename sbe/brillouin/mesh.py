@@ -38,8 +38,8 @@ def rect_mesh(params, E_dir):
         # Append the a1'th path to the paths array
         paths.append(path)
 
-    dk = length_path_in_BZ/(Nk_in_path - 1)
-    kweight = 2*rel_dist_to_Gamma*dk
+    dk = length_path_in_BZ/Nk_in_path
+    kweight = 2*rel_dist_to_Gamma*length_path_in_BZ/(Nk_in_path - 1)
     return dk, kweight, np.array(mesh), np.array(paths)
 
 
