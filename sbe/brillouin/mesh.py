@@ -7,12 +7,12 @@ def rect_mesh(params, E_dir):
     Create a rectangular mesh
     '''
     # Number of kpoints in each of the two paths
-    Nk_in_path = params.Nk_in_path
+    Nk_in_path = params.Nk1
     # relative distance (in units of 2pi/a) of both paths to Gamma
     rel_dist_to_Gamma = params.rel_dist_to_Gamma
     a = params.a
     length_path_in_BZ = params.length_path_in_BZ
-    num_paths = params.num_paths
+    num_paths = params.Nk2
 
     alpha_array = np.linspace(-0.5 + (1/(2*Nk_in_path)),
                               0.5 - (1/(2*Nk_in_path)), num=Nk_in_path)
@@ -38,9 +38,9 @@ def rect_mesh(params, E_dir):
         # Append the a1'th path to the paths array
         paths.append(path)
 
-    dk = length_path_in_BZ/(Nk_in_path)
-
-    return dk, np.array(mesh), np.array(paths)
+    dk = length_path_in_BZ/(Nk_in_path - 1)
+    kweight = 2*rel_dist_to_Gamma*dk
+    return dk, kweight, np.array(mesh), np.array(paths)
 
 
 def hex_mesh(Nk1, Nk2, a, b1, b2, align):

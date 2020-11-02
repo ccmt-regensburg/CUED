@@ -62,12 +62,11 @@ def sbe_solver(sys, dipole, params, curvature):
         align = params.align                       # E-field alignment
         angle_inc_E_field = None
     elif BZ_type == '2line':
-        Nk_in_path = params.Nk_in_path
-        Nk = 2*Nk_in_path
         align = None
         angle_inc_E_field = params.angle_inc_E_field
-        Nk1 = Nk_in_path
-        Nk2 = 2
+        Nk1 = params.Nk1
+        Nk2 = params.Nk2
+        Nk = Nk1*Nk2
 
     b1 = params.b1                                 # Reciprocal lattice vectors
     b2 = params.b2
@@ -91,11 +90,11 @@ def sbe_solver(sys, dipole, params, curvature):
         elif align == 'M':
             E_dir = np.array([np.cos(np.radians(-30)),
                               np.sin(np.radians(-30))])
-        BZ_plot(_kpnts, a, b1, b2, paths)
+        # BZ_plot(_kpnts, a, b1, b2, paths)
     elif BZ_type == '2line':
         E_dir = np.array([np.cos(np.radians(angle_inc_E_field)),
                           np.sin(np.radians(angle_inc_E_field))])
-        dk, _kpnts, paths = rect_mesh(params, E_dir)
+        dk, kweight, _kpnts, paths = rect_mesh(params, E_dir)
         # BZ_plot(_kpnts, a, b1, b2, paths)
 
     # Time array construction flag
@@ -251,6 +250,8 @@ def sbe_solver(sys, dipole, params, curvature):
         .format(E0*co.au_to_MVpcm, w*co.au_to_THz, alpha*co.au_to_fs, gauge, params.t0, Nk1, Nk2, T1*co.au_to_fs, T2*co.au_to_fs, chirp*co.au_to_THz, phase)
 
     # Fourier transforms
+    # 1/(3c^3) in atomic units
+    prefac_emission = 1/(3*(137.036**3))
     dt_out = t[1] - t[0]
     freq = fftshift(fftfreq(np.size(t), d=dt_out))
     if save_approx:
@@ -260,20 +261,18 @@ def sbe_solver(sys, dipole, params, curvature):
             + J_E_dir*gaussian_envelope(t, alpha)
         I_ortho = diff(t, P_ortho)*gaussian_envelope(t, alpha) \
             + J_ortho*gaussian_envelope(t, alpha)
-        if BZ_type == '2line':
-            I_E_dir *= (dk/(4*np.pi))
-            I_ortho *= (dk/(4*np.pi))
-        if BZ_type == 'full':
-            I_E_dir *= kweight
-            I_ortho *= kweight
+
+        # kweight is different for 2line and full
+        I_E_dir *= kweight
+        I_ortho *= kweight
 
 
         Iw_E_dir = fftshift(fft(I_E_dir, norm='ortho'))
         Iw_ortho = fftshift(fft(I_ortho, norm='ortho'))
 
         # Approximate Emission intensity
-        Int_E_dir = (freq**2)*np.abs(Iw_E_dir)**2
-        Int_ortho = (freq**2)*np.abs(Iw_ortho)**2
+        Int_E_dir = prefac_emission*(freq**2)*np.abs(Iw_E_dir)**2
+        Int_ortho = prefac_emission*(freq**2)*np.abs(Iw_ortho)**2
 
         I_approx_name = 'Iapprox_' + tail
 
@@ -284,19 +283,16 @@ def sbe_solver(sys, dipole, params, curvature):
     ##############################################################
     # Always calculate exact emission formula
     ##############################################################
-    if BZ_type == '2line':
-        I_exact_E_dir *= (dk/(4*np.pi))
-        I_exact_ortho *= (dk/(4*np.pi))
-    if BZ_type == 'full':
-        I_exact_E_dir *= kweight
-        I_exact_ortho *= kweight
+    # kweight is different for 2line and full
+    I_exact_E_dir *= kweight
+    I_exact_ortho *= kweight
 
     Iw_exact_E_dir = fftshift(fft(I_exact_E_dir*gaussian_envelope(t, alpha),
                                   norm='ortho'))
     Iw_exact_ortho = fftshift(fft(I_exact_ortho*gaussian_envelope(t, alpha),
                                   norm='ortho'))
-    Int_exact_E_dir = (freq**2)*np.abs(Iw_exact_E_dir)**2
-    Int_exact_ortho = (freq**2)*np.abs(Iw_exact_ortho)**2
+    Int_exact_E_dir = prefac_emission*(freq**2)*np.abs(Iw_exact_E_dir)**2
+    Int_exact_ortho = prefac_emission*(freq**2)*np.abs(Iw_exact_ortho)**2
 
     I_exact_name = 'Iexact_' + tail
     np.save(I_exact_name, [t, I_exact_E_dir, I_exact_ortho,
