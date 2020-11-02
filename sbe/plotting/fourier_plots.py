@@ -20,7 +20,7 @@ def fourier_total(freqw, data_dir, data_ortho,
     ax.set_xlabel(xlabel)
     data_total = data_dir + data_ortho
     for freq, data in zip(freqw, data_total):
-        ax.semilogy(freq, data/np.max(data))
+        ax.semilogy(freq, data)
 
     if paramlegend is not None:
         ax.legend(paramlegend)
@@ -49,7 +49,7 @@ def fourier_dir_ortho(freqw, data_dir, data_ortho, xlim=(0.2, 30),
     data_ortho = data_ortho.real
     _fig, ax = plt.subplots(1)
     ax.set_xticks(np.arange(xlim[1]+1))
-    ax.grid(True, axis='x', ls='--')
+    ax.grid(True, axis='both', ls='--')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     lines_dir = ax.semilogy(freqw.T, data_dir.T)

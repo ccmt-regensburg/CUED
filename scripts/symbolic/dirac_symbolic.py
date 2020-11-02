@@ -13,22 +13,9 @@ def kmat(kinit):
 
 
 def dirac(kx, ky):
-    dirac = Dirac()
-    h, ef, wf, ediff = dirac.eigensystem(gidx=1)
-    # ev = dirac.efjit[0](kx=kx, ky=ky, vx=1, vy=1, m=0)
-    # ec = dirac.efjit[1](kx=kx, ky=ky, vx=1, vy=1, m=0)
-    # plt.plot(np.vstack((ev, ec)).T)
-
-    # evdkx = dirac.ederivfjit[0](kx=kx, ky=ky, vx=2, vy=1, m=0)
-    # ecdkx = dirac.ederivfjit[2](kx=kx, ky=ky, vx=2, vy=1, m=0)
-    for i in range(2):
-        for j in range(2):
-            for k in range(2):
-                print(dirac.hderivfjit[k][i][j](kx=kx, ky=ky, vx=2, vy=3, m=0))
-
-    # breakpoint()
-
-    # dip = SymbolicDipole(h, ef, wf)
+    dirac = Dirac(vx=1, vy=1)
+    h, ef, wf, ediff = dirac.eigensystem(gidx=0.5)
+    breakpoint()
 
 if __name__ == "__main__":
     N = 10

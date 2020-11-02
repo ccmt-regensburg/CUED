@@ -68,35 +68,40 @@ class TwoBandSystem():
     def __wave_function(self, gidx=None):
         esoc = sp.sqrt(self.hx**2 + self.hy**2 + self.hz**2)
 
-        if (gidx is None):
+        if gidx is None:
             wfv = sp.Matrix([-self.hx + sp.I*self.hy, self.hz + esoc])
             wfc = sp.Matrix([self.hz + esoc, self.hx + sp.I*self.hy])
             wfv_h = sp.Matrix([-self.hx - sp.I*self.hy, self.hz + esoc])
             wfc_h = sp.Matrix([self.hz + esoc, self.hx - sp.I*self.hy])
             normv = sp.sqrt(2*(esoc + self.hz)*esoc)
             normc = sp.sqrt(2*(esoc + self.hz)*esoc)
-        elif (gidx == 0):
-            wfv = sp.Matrix([self.hz-esoc,
-                             (self.hx+sp.I*self.hy)])
-            wfc = sp.Matrix([self.hz+esoc,
-                             (self.hx+sp.I*self.hy)])
-            wfv_h = sp.Matrix([self.hz-esoc,
-                               (self.hx-sp.I*self.hy)])
-            wfc_h = sp.Matrix([self.hz+esoc,
-                               (self.hx-sp.I*self.hy)])
+        elif 0 <= gidx <= 1:
+            wfv_up = sp.Matrix([self.hz-esoc,
+                                (self.hx+sp.I*self.hy)])
+            wfc_up = sp.Matrix([self.hz+esoc,
+                                (self.hx+sp.I*self.hy)])
+            wfv_up_h = sp.Matrix([self.hz-esoc,
+                                  (self.hx-sp.I*self.hy)])
+            wfc_up_h = sp.Matrix([self.hz+esoc,
+                                  (self.hx-sp.I*self.hy)])
+
+            wfv_do = sp.Matrix([-self.hx+sp.I*self.hy,
+                                self.hz+esoc])
+            wfc_do = sp.Matrix([-self.hx+sp.I*self.hy,
+                                self.hz-esoc])
+            wfv_do_h = sp.Matrix([-self.hx-sp.I*self.hy,
+                                  self.hz+esoc])
+            wfc_do_h = sp.Matrix([-self.hx-sp.I*self.hy,
+                                  self.hz-esoc])
+
+            wfv = (1-gidx)*wfv_up + gidx*wfv_do
+            wfc = (1-gidx)*wfc_up + gidx*wfc_do
+            wfv_h = (1-gidx)*wfv_up_h + gidx*wfv_do_h
+            wfc_h = (1-gidx)*wfc_up_h + gidx*wfc_do_h
             normv = sp.sqrt(wfv_h.dot(wfv))
             normc = sp.sqrt(wfc_h.dot(wfc))
-        elif (gidx == 1):
-            wfv = sp.Matrix([-self.hx+sp.I*self.hy,
-                             self.hz+esoc])
-            wfc = sp.Matrix([-self.hx+sp.I*self.hy,
-                             self.hz-esoc])
-            wfv_h = sp.Matrix([-self.hx-sp.I*self.hy,
-                               self.hz+esoc])
-            wfc_h = sp.Matrix([-self.hx-sp.I*self.hy,
-                               self.hz-esoc])
-            normv = sp.sqrt(wfv_h.dot(wfv))
-            normc = sp.sqrt(wfc_h.dot(wfc))
+        else:
+            raise RuntimeError("gidx needs to be between 0 and 1 or None")
 
         U = (wfv/normv).row_join(wfc/normc)
         U_h = (wfv_h/normv).T.col_join((wfc_h/normc).T)

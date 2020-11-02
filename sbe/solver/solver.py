@@ -410,6 +410,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 #            x[i+3] = -2*(wr*y[i+1]).imag + D*(y[m+3] - y[n+3]) \
 #                - gamma1*(y[i+3]-y0[i+3])
 
+            # New solver routine (correct)
             x[i] = 2*(y[i+1]*wr_c).imag + D*(y[m] - y[n]) \
                    - gamma1*(y[i]-y0[i])
 

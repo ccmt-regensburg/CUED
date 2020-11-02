@@ -183,9 +183,11 @@ def time_dir_ortho(time, current_dir, current_ortho, xlim=None, ylim=None,
         ylabel = r'Current in $\si{\mu A}$'
 
     _fig, ax = plt.subplots(1)
-    _lines_dir = ax.plot(time.T, current_dir.T, marker=marker)
+    for t, c_dir, c_ort in zip(time, current_dir, current_ortho):
+        _lines_dir = ax.plot(t, c_dir, marker=marker)
+        # _lines_ortho = ax.plot(t, c_ort, linestyle='--', marker=marker)
     plt.gca().set_prop_cycle(None)
-    _lines_ortho = ax.plot(time.T, current_ortho.T, linestyle='--', marker=marker)
+    # _lines_ortho = ax.plot(time.T, current_ortho.T, linestyle='--', marker=marker)
 
     ax.grid(True, axis='x', ls='--')
     ax.set_xlabel(xlabel)
