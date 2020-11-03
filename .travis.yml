@@ -1,6 +1,11 @@
 language: python
 python:
   - "3.8"
+addons:
+  apt:
+    packages:
+      - libopenmpi-dev
+      - openmpi-bin
 install:
   pip install -r tests/requirements.txt
 script:
