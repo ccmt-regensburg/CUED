@@ -132,7 +132,7 @@ def main():
 
     count = 0
 
-    for subdir, dirs, files in os.walk(dirpath):
+    for subdir, dirs, files in os.walk(dirpath+'/tests'):
         for dir in dirs:
             testdir = os.path.join(subdir, dir)
             count += 1
