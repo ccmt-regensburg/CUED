@@ -49,15 +49,15 @@ def check_test(testdir):
 
     max_relerror = np.amax(np.absolute(Iexact_relerror))
 
-    print("The maximum relative deviation is:", max_relerror, 
-      "\n\nThe threshold is:                 ", threshold_rel_error)
-
+    print("Testing the emission spectrum I(omega) for omega = 0 .. 20 omega_0:", 
+      "\n\nThe maximum relative deviation between the computed and the reference spectrum is:", max_relerror, 
+        "\nThe threshold is:                                                                 ", threshold_rel_error, "\n")
 
     assert np.amax(np.absolute(Iexact_relerror)) < threshold_rel_error, "The emission spectrum is not matching."
 
     shutil.rmtree(testdir+'/__pycache__')
 
-    print('\nTest passed successfully.'
+    print('Test passed successfully.'
           '\n\n=====================================================\n\n')
 
     os.chdir("..")
