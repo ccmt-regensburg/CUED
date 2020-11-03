@@ -39,18 +39,31 @@ def check_test(testdir):
     assert os.path.isfile(filename_Iexact_printed),  "Iexact is not printed from the code"
     assert os.path.isfile(filename_Iapprox_printed), "Iapprox is not printed from the code"
 
-    Iexact_reference = np.array(np.load(filename_Iexact))
-    Iexact_printed   = np.array(np.load(filename_Iexact_printed))
+    Iexact_reference     = np.array(np.load(filename_Iexact))
+    Iexact_printed       = np.array(np.load(filename_Iexact_printed))
 
-    Iexact_relerror  = (Iexact_printed[6].real+1.0E-90) / (Iexact_reference[6].real+1.0E-90) - 1
+    Iapprox_reference    = np.array(np.load(filename_Iapprox))
+    Iapprox_printed      = np.array(np.load(filename_Iapprox_printed))
 
-    max_relerror = np.amax(np.absolute(Iexact_relerror))
+    Iexact_relerror      = (Iexact_printed[6].real+1.0E-90)  / (Iexact_reference[6].real+1.0E-90) - 1
+    Iapprox_relerror     = (Iapprox_printed[6].real+1.0E-90) / (Iapprox_reference[6].real+1.0E-90) - 1
 
-    print("Testing the emission spectrum I(omega) for omega = 0 .. 20 omega_0:", 
-      "\n\nThe maximum relative deviation between the computed and the reference spectrum is:", max_relerror, 
+    Iexact_max_relerror  = np.amax(np.absolute(Iexact_relerror))
+    Iapprox_max_relerror = np.amax(np.absolute(Iapprox_relerror))
+
+    print("Testing the exact emission spectrum I(omega):", 
+      "\n\nThe maximum relative deviation between the computed and the reference spectrum is:", Iexact_max_relerror, 
         "\nThe threshold is:                                                                 ", threshold_rel_error, "\n")
 
-    assert np.amax(np.absolute(Iexact_relerror)) < threshold_rel_error, "The emission spectrum is not matching."
+    assert np.amax(np.absolute(Iexact_relerror)) < threshold_rel_error, "The exact emission spectrum is not matching."
+
+    print("Testing the approx. emission spectrum I(omega):", 
+      "\n\nThe maximum relative deviation between the computed and the reference spectrum is:", Iapprox_max_relerror, 
+        "\nThe threshold is:                                                                 ", threshold_rel_error, "\n")
+
+    assert np.amax(np.absolute(Iapprox_relerror)) < threshold_rel_error, "The approx. emission spectrum is not matching."
+
+
 
     shutil.rmtree(testdir+'/__pycache__')
 
