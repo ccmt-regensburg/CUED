@@ -2,6 +2,6 @@ language: python
 python:
   - "3.8"
 install:
-  pip install -r scripts/tests/requirements.txt
+  pip install -r tests/requirements.txt
 script:
-  - python3.8 scripts/tests/test_script.py
+  - python3.8 tests/test_script.py
