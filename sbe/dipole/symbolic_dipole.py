@@ -161,7 +161,8 @@ class SymbolicDipole():
     def __fields(self, U, U_h):
         dUx = sp.diff(U, self.kx)
         dUy = sp.diff(U, self.ky)
-        return sp.I*U_h * dUx, sp.I*U_h * dUy
+        # Minus sign is the charge
+        return -sp.I*U_h * dUx, -sp.I*U_h * dUy
 
     def evaluate(self, kx, ky, **fkwargs):
         """
