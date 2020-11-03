@@ -28,7 +28,6 @@ def check_test(testdir):
             filename_Iexact         = testdir + '/' + filename 
             filename_Iexact_printed = testdir + '/' + filename[10:]
 
-
     assert os.path.isfile(filename_params),  'params.py is missing.'
     assert os.path.isfile(filename_run),     'runscript.py is missing.'
     assert os.path.isfile(filename_Iexact),  'Iexact is missing.'
