@@ -19,6 +19,9 @@ def check_test(testdir):
     filename_params  = testdir + '/params.py'
     filename_run     = testdir + '/runscript.py' 
 
+    print('\n\nFiles in testdir:     ', os.listdir(testdir))
+    print('\n\nFiles in testdir/../: ', os.listdir(testdir+'/..'))
+
     for filename in os.listdir(testdir):
         if filename.startswith('reference_Iapprox'):
             filename_Iapprox         = testdir + '/' + filename 
