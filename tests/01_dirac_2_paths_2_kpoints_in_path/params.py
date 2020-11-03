@@ -25,6 +25,7 @@ class params:
 #    Nk2                 = 12         # Number of kpoints in b2 direction (number of paths)
 
     # 2line BZ parameters
+    # for Fig. 1b in Paper one has to set Nk1 = 1200 and Nk2 = number of paths
     Nk1                 = 2          # Number of kpoints in each of the paths
     Nk2                 = 2          # Number of paths
 
