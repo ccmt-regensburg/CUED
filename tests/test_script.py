@@ -19,9 +19,6 @@ def check_test(testdir):
     filename_params  = testdir + '/params.py'
     filename_run     = testdir + '/runscript.py' 
 
-    print('\n\nFiles in testdir:     ', os.listdir(testdir))
-    print('\n\nFiles in testdir/../: ', os.listdir(testdir+'/..'))
-
     for filename in os.listdir(testdir):
         if filename.startswith('reference_Iapprox'):
             filename_Iapprox         = testdir + '/' + filename 
@@ -39,6 +36,10 @@ def check_test(testdir):
     os.chdir(testdir)
 
     os.system('python3 runscript.py')
+
+    print('\n\nPythonpath:           ', os.environ['PYTHONPATH'].split(os.pathsep))
+    print('\n\nFiles in testdir:     ', os.listdir(testdir))
+    print('\n\nFiles in testdir/../: ', os.listdir(testdir+'/..'))
 
     assert os.path.isfile(filename_Iexact_printed),  "Iexact is not printed from the code"
     assert os.path.isfile(filename_Iapprox_printed), "Iapprox is not printed from the code"

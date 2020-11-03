@@ -9,5 +9,5 @@ addons:
 install:
   pip install -r tests/requirements.txt
 script:
-  - export PYTHONPATH=$PYTHONPATH:$(pwd)/sbe/solver
+  - export PYTHONPATH=$PYTHONPATH:$(pwd)/sbe
   - python3.8 tests/test_script.py
