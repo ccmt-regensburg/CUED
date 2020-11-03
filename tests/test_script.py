@@ -11,8 +11,7 @@ import sbe.plotting as splt
 def check_test(testdir):
 
     print('\n\n=====================================================\n\nStart with test:'
-          '\n\n' + testdir +
-          '\n\n=====================================================\n\n')
+          '\n\n' + testdir + '\n\n')
 
     threshold_rel_error = 1.0E-6
 
@@ -39,8 +38,6 @@ def check_test(testdir):
 
     assert os.path.isfile(filename_Iexact_printed),  "Iexact is not printed from the code"
     assert os.path.isfile(filename_Iapprox_printed), "Iapprox is not printed from the code"
-
-    print('\n=====================================================\n')
 
     Iexact_reference = np.array(np.load(filename_Iexact))
     Iexact_printed   = np.array(np.load(filename_Iexact_printed))
@@ -133,7 +130,7 @@ def main():
     count = 0
 
     for subdir, dirs, files in os.walk(dirpath+'/tests'):
-        for dir in dirs:
+        for dir in sorted(dirs):
             testdir = os.path.join(subdir, dir)
             count += 1
             check_test(testdir)
