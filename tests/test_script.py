@@ -14,7 +14,7 @@ def check_test(testdir):
           '\n\n' + testdir +
           '\n\n=====================================================\n\n')
 
-    threshold_rel_error = 1.0E-5
+    threshold_rel_error = 1.0E-15
 
     filename_params  = testdir + '/params.py'
     filename_run     = testdir + '/runscript.py' 
@@ -41,23 +41,25 @@ def check_test(testdir):
     assert os.path.isfile(filename_Iexact_printed),  "Iexact is not printed from the code"
     assert os.path.isfile(filename_Iapprox_printed), "Iapprox is not printed from the code"
 
-    print('\n=====================================================\n\n')
+    print('\n=====================================================\n')
 
     Iexact_reference = np.array(np.load(filename_Iexact))
     Iexact_printed   = np.array(np.load(filename_Iexact_printed))
 
-    print(np.shape(Iexact_reference), np.shape(Iexact_printed) )
+    Iexact_relerror  = (Iexact_printed[6].real+1.0E-90) / (Iexact_reference[6].real+1.0E-90) - 1
 
-#    Iexact_diff = Iexact_printed[4] - Iexact_reference[4]
-    Iexact_div  = Iexact_printed[4] / Iexact_reference[4]
+    max_relerror = np.amax(np.absolute(Iexact_relerror))
 
-    assert np.amax(np.absolute(Iexact_div-1)) > threshold_rel_error, "The emission spectrum is not matching."
+    print("The maximum relative deviation is:", max_relerror, 
+      "\n\nThe threshold is:                 ", threshold_rel_error)
+
+
+    assert np.amax(np.absolute(Iexact_relerror)) < threshold_rel_error, "The emission spectrum is not matching."
 
     shutil.rmtree(testdir+'/__pycache__')
 
-    print('\n\nTest passed successfully:'
+    print('\nTest passed successfully.'
           '\n\n=====================================================\n\n')
-
 
     os.chdir("..")
 
