@@ -14,7 +14,7 @@ def check_test(testdir):
           '\n\n' + testdir +
           '\n\n=====================================================\n\n')
 
-    threshold_rel_error = 1.0E-15
+    threshold_rel_error = 1.0E-6
 
     filename_params  = testdir + '/params.py'
     filename_run     = testdir + '/runscript.py' 
@@ -36,10 +36,6 @@ def check_test(testdir):
     os.chdir(testdir)
 
     os.system('python3 runscript.py')
-
-    print('\n\nPythonpath:           ', os.environ['PYTHONPATH'].split(os.pathsep))
-    print('\n\nFiles in testdir:     ', os.listdir(testdir))
-    print('\n\nFiles in testdir/../: ', os.listdir(testdir+'/..'))
 
     assert os.path.isfile(filename_Iexact_printed),  "Iexact is not printed from the code"
     assert os.path.isfile(filename_Iapprox_printed), "Iapprox is not printed from the code"

@@ -9,5 +9,5 @@ addons:
 install:
   pip install -r tests/requirements.txt
 script:
-  - export PYTHONPATH=$PYTHONPATH:$(pwd)
+  - export PYTHONPATH=$(pwd)
   - python3.8 tests/test_script.py
