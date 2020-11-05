@@ -1,4 +1,5 @@
 import os
+import glob
 import argparse
 import numpy as np
 import shutil
@@ -13,7 +14,7 @@ def check_test(testdir):
     print('\n\n=====================================================\n\nStart with test:'
           '\n\n' + testdir + '\n\n')
 
-    threshold_rel_error = 1.0E-6
+    threshold_rel_error = 4.0E-3
 
     filename_params  = testdir + '/params.py'
     filename_run     = testdir + '/runscript.py' 
@@ -65,7 +66,11 @@ def check_test(testdir):
 
 
 
-    shutil.rmtree(testdir+'/__pycache__')
+    shutil.rmtree(testdir + '/__pycache__')
+    os.remove(testdir + '/' + glob.glob("Iexact_*")[0])
+    os.remove(testdir + '/' + glob.glob("Iapprox_*")[0])
+    os.remove(testdir + '/' + glob.glob("params_*")[0])
+
 
     print('Test passed successfully.'
           '\n\n=====================================================\n\n')
