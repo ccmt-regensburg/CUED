@@ -52,7 +52,7 @@ def read_dataset(path):
     for filename in filelist:
         # Emissions I
         # [t, solution, paths, electric_field, A_field]
-        if ('Sol_' in filename):
+        if ('Sol_' in filename and '.npy' in filename):
             print("Reading :", path, filename)
             Soldict = np.load(path + filename)
             Soldata = np.array([Soldict['t'], Soldict['solution'],
@@ -62,12 +62,12 @@ def read_dataset(path):
         # Emissions Iexact
         # [t, I_exact_E_dir, I_exact_ortho, freq/w, Iw_exact_E_dir,
         # Iw_exact_ortho, Int_exact_E_dir, Int_exact_ortho]
-        if ('Iexact_' in filename):
+        if ('Iexact_' in filename and '.npy' in filename):
             print("Reading :", path, filename)
             Iexactdata = np.array(np.load(path + filename))
 
         # Emission approximate
-        if ('Iapprox_' in filename):
+        if ('Iapprox_' in filename and '.npy' in filename):
             print("Reading :", path, filename)
             Iapproxdata = np.array(np.load(path + filename))
 

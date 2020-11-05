@@ -42,6 +42,8 @@ def sbe_solver(sys, dipole, params, curvature):
 
     Nf = int((abs(2*params.t0))/params.dt)
     # Find out integer times Nt fits into total time steps
+    if Nf > params.Nt:
+        params.Nt = Nf
     dt_out = int(ceil(Nf/params.Nt))
 
     # Expand time window to fit Nf output steps
