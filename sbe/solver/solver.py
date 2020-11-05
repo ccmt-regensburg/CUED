@@ -42,7 +42,7 @@ def sbe_solver(sys, dipole, params, curvature):
 
     Nf = int((abs(2*params.t0))/params.dt)
     # Find out integer times Nt fits into total time steps
-    if Nf > params.Nt:
+    if Nf < params.Nt:
         params.Nt = Nf
     dt_out = int(ceil(Nf/params.Nt))
 
@@ -282,6 +282,12 @@ def sbe_solver(sys, dipole, params, curvature):
                                 freq/w, Iw_E_dir, Iw_ortho,
                                 Int_E_dir, Int_ortho])
 
+        if params.save_txt:
+            np.savetxt(I_approx_name + '.txt',
+                       np.column_stack([t, I_E_dir, I_ortho, freq/w, Iw_E_dir, Iw_ortho, Int_E_dir, Int_ortho]),
+                       header="t, I_E_dir, I_ortho, freqw/w, Iw_E_dir, Iw_ortho, Int_E_dir, Int_ortho",
+                       fmt=['%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.16fj', '%+.16f%+.16fj', '%+.16f%+.0fj', '%+.16f%+.0fj'])
+
     ##############################################################
     # Always calculate exact emission formula
     ##############################################################
@@ -300,6 +306,12 @@ def sbe_solver(sys, dipole, params, curvature):
     np.save(I_exact_name, [t, I_exact_E_dir, I_exact_ortho,
                            freq/w, Iw_exact_E_dir, Iw_exact_ortho,
                            Int_exact_E_dir, Int_exact_ortho])
+    if params.save_txt:
+        np.savetxt(I_exact_name + '.txt',
+                   np.column_stack([t, I_exact_E_dir, I_exact_ortho, freq/w, Iw_exact_E_dir, Iw_exact_ortho, Int_exact_E_dir, Int_exact_ortho]),
+                   header="t, I_exact_E_dir, I_exact_ortho, freqw/w, Iw_exact_E_dir, Iw_exact_ortho, Int_exact_E_dir, Int_exact_ortho",
+                   fmt=['%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.16fj', '%+.16f%+.16fj', '%+.16f%+.0fj', '%+.16f%+.0fj'])
+
     # Save the parameters of the calculation
     params_name = 'params_' + tail + '.txt'
     paramsfile = open(params_name, 'w')
