@@ -92,9 +92,9 @@ def make_current_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge):
             e_deriv_E_dir_c[:] = edx_c * E_dir[0] + edy_c * E_dir[1]
             e_deriv_ortho_c[:] = edx_c * E_ort[0] + edy_c * E_ort[1]
 
-            J_E_dir[i_time] += np.sum(e_deriv_E_dir_v * (fv[:, i_time].real - fv_subs)) + \
+            J_E_dir[i_time] += - np.sum(e_deriv_E_dir_v * (fv[:, i_time].real - fv_subs)) + \
                 np.sum(e_deriv_E_dir_c * fc[:, i_time].real)
-            J_ortho[i_time] += np.sum(e_deriv_ortho_v * (fv.real[:, i_time] - fv_subs)) + \
+            J_ortho[i_time] += - np.sum(e_deriv_ortho_v * (fv.real[:, i_time] - fv_subs)) + \
                 np.sum(e_deriv_ortho_c * fc[:, i_time].real)
 
     return current_path
@@ -148,11 +148,6 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
     U_h_01 = Ujit_h[0][1]
     U_h_10 = Ujit_h[1][0]
     U_h_11 = Ujit_h[1][1]
-
-#JW HACK
-    evf = sys.efjit[0]
-    ecf = sys.efjit[1]
-#JW END HACK
 
     if do_semicl:
         Bcurv_00 = curvature.Bfjit[0][0]
@@ -231,25 +226,25 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
                 dH_U_ortho = h_deriv_ortho[i_k] @ U[i_k]
                 U_h_H_U_ortho = U_h[i_k] @ dH_U_ortho
 
-                I_E_dir[i_time] += U_h_H_U_E_dir[0, 0].real\
+                I_E_dir[i_time] += - U_h_H_U_E_dir[0, 0].real\
                     * (solution[i_k, i_time, 0].real - fv_subs)
-                I_E_dir[i_time] += U_h_H_U_E_dir[1, 1].real\
+                I_E_dir[i_time] += - U_h_H_U_E_dir[1, 1].real\
                     * solution[i_k, i_time, 3].real
-                I_E_dir[i_time] += 2*np.real(U_h_H_U_E_dir[0, 1]
+                I_E_dir[i_time] += - 2*np.real(U_h_H_U_E_dir[0, 1]
                                              * solution[i_k, i_time, 2])
 
-                I_ortho[i_time] += U_h_H_U_ortho[0, 0].real\
+                I_ortho[i_time] += - U_h_H_U_ortho[0, 0].real\
                     * (solution[i_k, i_time, 0].real - fv_subs)
-                I_ortho[i_time] += U_h_H_U_ortho[1, 1].real\
+                I_ortho[i_time] += - U_h_H_U_ortho[1, 1].real\
                     * solution[i_k, i_time, 3].real
-                I_ortho[i_time] += 2*np.real(U_h_H_U_ortho[0, 1]
+                I_ortho[i_time] += - 2*np.real(U_h_H_U_ortho[0, 1]
                                              * solution[i_k, i_time, 2])
 
                 if do_semicl:
                     # '-' because there is q^2 compared to q only at the SBE current
-                    I_ortho[i_time] += -E_field[i_time] * Bcurv[i_k, 0].real\
+                    I_ortho[i_time] += E_field[i_time] * Bcurv[i_k, 0].real\
                                          * solution[i_k, i_time, 0].real
-                    I_ortho[i_time] += -E_field[i_time] * Bcurv[i_k, 1].real\
+                    I_ortho[i_time] += E_field[i_time] * Bcurv[i_k, 1].real\
                                          * solution[i_k, i_time, 1].real
 
     return emission_exact_path
