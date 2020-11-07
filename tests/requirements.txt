@@ -1,6 +1,0 @@
-matplotlib
-scipy
-argparse
-numba
-sympy
-mpi4py
