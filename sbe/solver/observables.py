@@ -242,9 +242,9 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
 
                 if do_semicl:
                     # '-' because there is q^2 compared to q only at the SBE current
-                    I_ortho[i_time] += E_field[i_time] * Bcurv[i_k, 0].real\
+                    I_ortho[i_time] += -E_field[i_time] * Bcurv[i_k, 0].real\
                                          * solution[i_k, i_time, 0].real
-                    I_ortho[i_time] += E_field[i_time] * Bcurv[i_k, 1].real\
+                    I_ortho[i_time] += -E_field[i_time] * Bcurv[i_k, 1].real\
                                          * solution[i_k, i_time, 1].real
 
     return emission_exact_path
