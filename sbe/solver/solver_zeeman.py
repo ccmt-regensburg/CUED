@@ -414,22 +414,20 @@ def make_fnumba(sys, dipole_k, dipole_B, gamma1, gamma2, E_dir,
 
     # Mx - Zeeman z parameter
     di_00mxf = dipole_B.Mxfjit[0][0]
-    di_10mxf = dipole_B.Mxfjit[1][0]
+    di_01mxf = dipole_B.Mxfjit[0][1]
     di_11mxf = dipole_B.Mxfjit[1][1]
 
     di_00myf = dipole_B.Myfjit[0][0]
-    di_10myf = dipole_B.Myfjit[1][0]
+    di_01myf = dipole_B.Myfjit[0][1]
     di_11myf = dipole_B.Myfjit[1][1]
 
     di_00mzf = dipole_B.Mzfjit[0][0]
-    di_10mzf = dipole_B.Mzfjit[1][0]
+    di_01mzf = dipole_B.Mzfjit[0][1]
     di_11mzf = dipole_B.Mzfjit[1][1]
 
     @njit
     def flength(t, y, kpath, dk, y0):
 
-        # WARNING! THE LENGTH GAUGE ONLY WORKS WITH
-        # TIME CONSTANT MAGNETIC FIELDS FOR NOW
         # Preparing system parameters, energies, dipoles
         m_zee = zeeman_field(t)
         mx = m_zee[0]
@@ -487,15 +485,15 @@ def make_fnumba(sys, dipole_k, dipole_B, gamma1, gamma2, E_dir,
 
             # Update each component of the solution vector
             # i = f_v, i+1 = p_vc, i+2 = p_cv, i+3 = f_c
-            x[i] = 2*(wr*y[i+1]).imag + D*(y[m] - y[n]) \
+            x[i] = 2*(y[i+1]*wr_c).imag + D*(y[m] - y[n]) \
                 - gamma1*(y[i]-y0[i])
 
             x[i+1] = (1j*ecv - gamma2 + 1j*wr_d_diag)*y[i+1] \
-                - 1j*wr_c*(y[i]-y[i+3]) + D*(y[m+1] - y[n+1])
+                - 1j*wr*(y[i]-y[i+3]) + D*(y[m+1] - y[n+1])
 
             x[i+2] = x[i+1].conjugate()
 
-            x[i+3] = -2*(wr*y[i+1]).imag + D*(y[m+3] - y[n+3]) \
+            x[i+3] = -2*(y[i+1]*wr_c).imag + D*(y[m+3] - y[n+3]) \
                 - gamma1*(y[i+3]-y0[i+3])
 
         x[-1] = -electric_f
@@ -554,14 +552,14 @@ def make_fnumba(sys, dipole_k, dipole_B, gamma1, gamma2, E_dir,
 
             # Update each component of the solution vector
             # i = f_v, i+1 = p_vc, i+2 = p_cv, i+3 = f_c
-            x[i] = 2*(wr*y[i+1]).imag - gamma1*(y[i]-y0[i])
+            x[i] = 2*(y[i+1]*wr_c).imag - gamma1*(y[i]-y0[i])
 
             x[i+1] = (1j*ecv - gamma2 + 1j*wr_d_diag)*y[i+1] \
-                - 1j*wr_c*(y[i]-y[i+3])
+                - 1j*wr*(y[i]-y[i+3])
 
             x[i+2] = x[i+1].conjugate()
 
-            x[i+3] = -2*(wr*y[i+1]).imag - gamma1*(y[i+3]-y0[i+3])
+            x[i+3] = -2*(y[i+1]*wr_c).imag - gamma1*(y[i+3]-y0[i+3])
 
         x[-1] = -electric_f
         return x
@@ -603,20 +601,20 @@ def make_fnumba(sys, dipole_k, dipole_B, gamma1, gamma2, E_dir,
         # Magnetic
         # Magnetic dipole integral
         di_00mx = di_00mxf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
-        di_10mx = di_10mxf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
+        di_01mx = di_01mxf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
         di_11mx = di_11mxf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
 
         di_00my = di_00myf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
-        di_10my = di_10myf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
+        di_01my = di_01myf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
         di_11my = di_11myf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
 
         di_00mz = di_00mzf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
-        di_10mz = di_10mzf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
+        di_01mz = di_01mzf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
         di_11mz = di_11mzf(kx=kx, ky=ky, m_zee_x=mx, m_zee_y=my, m_zee_z=mz)
 
         # Time derivative zeeman field
         mxd, myd, mzd = zeeman_field_derivative(t)
-        mr_in_path = mxd*di_10mx + myd*di_10my + mzd*di_10mz
+        mr_in_path = mxd*di_01mx + myd*di_01my + mzd*di_01mz
         mr_diag_in_path = mxd*(di_00mx - di_11mx) + myd*(di_00my - di_11my) \
             + mzd*(di_00mz - di_11mz)
 
@@ -644,14 +642,14 @@ def make_fnumba(sys, dipole_k, dipole_B, gamma1, gamma2, E_dir,
 
             # Update each component of the solution vector
             # i = f_v, i+1 = p_vc, i+2 = p_cv, i+3 = f_c
-            x[i] = 2*((wr+mr)*y[i+1]).imag - gamma1*(y[i]-y0[i])
+            x[i] = 2*(y[i+1]*(wr_c + mr_c)).imag - gamma1*(y[i]-y0[i])
 
             x[i+1] = (1j*ecv - gamma2 + 1j*(wr_diag + mr_diag))*y[i+1] \
-                - 1j*(wr_c + mr_c)*(y[i]-y[i+3])
+                - 1j*(wr + mr)*(y[i]-y[i+3])
 
             x[i+2] = x[i+1].conjugate()
 
-            x[i+3] = -2*((wr+mr)*y[i+1]).imag - gamma1*(y[i+3]-y0[i+3])
+            x[i+3] = -2*(y[i+1]*(wr_c + mr_c)).imag - gamma1*(y[i+3]-y0[i+3])
 
         x[-1] = -electric_f
         return x
