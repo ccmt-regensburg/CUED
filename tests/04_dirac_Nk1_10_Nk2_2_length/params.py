@@ -26,7 +26,7 @@ class params:
 
     # 2line BZ parameters
     # for Fig. 1b in Paper one has to set Nk1 = 1200 and Nk2 = number of paths
-    Nk1                 = 20         # Number of kpoints in each of the paths
+    Nk1                 = 100        # Number of kpoints in each of the paths
     Nk2                 = 2          # Number of paths
 
     rel_dist_to_Gamma   = 0.008      # relative distance (in units of 2pi/a) of both paths to Gamma
