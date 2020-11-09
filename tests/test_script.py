@@ -14,7 +14,7 @@ def check_test(testdir):
     print('\n\n=====================================================\n\nStart with test:'
           '\n\n' + testdir + '\n\n')
 
-    threshold_rel_error = 4.0E-3
+    threshold_rel_error = 0.1
 
     filename_params  = testdir + '/params.py'
     filename_run     = testdir + '/runscript.py' 
