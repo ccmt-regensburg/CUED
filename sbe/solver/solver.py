@@ -178,12 +178,13 @@ def sbe_solver(sys, dipole, params, curvature):
             A_in_path = E_dir[0]*di_00x + E_dir[1]*di_00y \
                 - (E_dir[0]*di_11x + E_dir[1]*di_11y)
 
+        ev = sys.efjit[0](kx=kx_in_path, ky=ky_in_path)
         ec = sys.efjit[1](kx=kx_in_path, ky=ky_in_path)
-        ecv_in_path = ec - sys.efjit[0](kx=kx_in_path, ky=ky_in_path)
+        ecv_in_path = ec - ev
 
         # Initialize the values of of each k point vector
         # (rho_nn(k), rho_nm(k), rho_mn(k), rho_mm(k))
-        y0 = initial_condition(e_fermi, temperature, ec)
+        y0 = initial_condition(e_fermi, temperature, ev, ec)
         y0 = np.append(y0, [0.0])
 
         # Set the initual values and function parameters for the current kpath
@@ -527,21 +528,25 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
     return f
 
 
-def initial_condition(e_fermi, temperature, e_c):
+def initial_condition(e_fermi, temperature, ev, ec):
     '''
     Occupy conduction band according to inital Fermi energy and temperature
     '''
-    knum = e_c.size
-    ones = np.ones(knum, dtype=np.float64)
+    knum = ec.size
     zeros = np.zeros(knum, dtype=np.float64)
-    distrib = np.zeros(knum, dtype=np.float64)
+    distrib_ec = np.zeros(knum, dtype=np.float64)
+    distrib_ev = np.zeros(knum, dtype=np.float64)
     if temperature > 1e-5:
-        distrib += 1/(np.exp((e_c-e_fermi)/temperature) + 1)
-        return np.array([ones, zeros, zeros, distrib]).flatten('F')
+        distrib_ec += 1/(np.exp((ec-e_fermi)/temperature) + 1)
+        distrib_ev += 1/(np.exp((ev-e_fermi)/temperature) + 1)
+        return np.array([distrib_ev, zeros, zeros, distrib_ec]).flatten('F')
 
-    smaller_e_fermi = (e_fermi - e_c) > 0
-    distrib[smaller_e_fermi] += 1
-    return np.array([ones, zeros, zeros, distrib]).flatten('F')
+    smaller_e_fermi_ev = (e_fermi - ev) > 0
+    smaller_e_fermi_ec = (e_fermi - ec) > 0
+
+    distrib_ev[smaller_e_fermi_ev] += 1
+    distrib_ec[smaller_e_fermi_ec] += 1
+    return np.array([distrib_ev, zeros, zeros, distrib_ec]).flatten('F')
 
 
 def BZ_plot(kpnts, a, b1, b2, paths, si_units=True):
