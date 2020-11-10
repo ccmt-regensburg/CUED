@@ -2,11 +2,12 @@ from math import ceil
 import numpy as np
 from numpy.fft import fft, fftfreq, fftshift
 from numba import njit
+import matplotlib.pyplot as plt
+from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode
 from sbe.brillouin import hex_mesh, rect_mesh
 from sbe.utility import conversion_factors as co
 from sbe.solver import make_current_path, make_polarization_path, make_emission_exact_path
-from sbe.solver import print_user_info, BZ_plot, initial_condition, gaussian_envelope, diff
 from sbe.solver import make_electric_field
 
 
@@ -17,6 +18,7 @@ def sbe_solver(sys, dipole, params, curvature):
     user_out = params.user_out
     save_full = params.save_full
     save_approx = params.save_approx
+    save_txt = params.save_txt
     do_semicl = params.do_semicl
     gauge = params.gauge
 
@@ -100,21 +102,6 @@ def sbe_solver(sys, dipole, params, curvature):
     # Time array construction flag
     t_constructed = False
 
-    # Solution containers
-    t = np.empty(params.Nt)
-
-    # The solution array is structred as: first index is Nk1-index,
-    # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
-    if save_full:
-        # Make container for full solution if it is needed
-        solution = np.empty((Nk1, Nk2, params.Nt, 4), dtype=complex)
-    else:
-        # Only one path needed at a time if no full solution is needed
-        solution = np.empty((Nk1, 1, params.Nt, 4), dtype=complex)
-
-    A_field = np.empty(params.Nt, dtype=np.float64)
-    E_field = np.empty(params.Nt, dtype=np.float64)
-
     # Initialize electric_field, create fnumba and initialize ode solver
     electric_field = make_electric_field(E0, w, alpha, chirp, phase)
     fnumba = make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field,
@@ -122,26 +109,16 @@ def sbe_solver(sys, dipole, params, curvature):
     solver = ode(fnumba, jac=None)\
         .set_integrator('zvode', method='bdf', max_step=dt)
 
-    # Exact emission function will be set after end of first run
-    emission_exact_path = None
-    I_exact_E_dir = np.zeros(params.Nt, dtype=np.float64)
-    I_exact_ortho = np.zeros(params.Nt, dtype=np.float64)
+    t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, P_E_dir, P_ortho =\
+        solution_containers(Nk1, Nk2, params.Nt, save_approx, save_full)
 
-    # Approximate (kira & koch) containers
-    if save_approx:
-        current_path = None
-        J_E_dir = np.zeros(params.Nt, dtype=np.float64)
-        J_ortho = np.zeros(params.Nt, dtype=np.float64)
-        polarization_path = None
-        P_E_dir = np.zeros(params.Nt, dtype=np.float64)
-        P_ortho = np.zeros(params.Nt, dtype=np.float64)
-    else:
-        current_path = None
-        J_E_dir = None
-        J_ortho = None
-        polarization_path = None
-        P_E_dir = None
-        P_ortho = None
+    # Exact emission function
+    # Set after first run
+    emission_exact_path = None
+    # Approximate (kira & koch) emission function
+    # Set after first run if save_approx=True
+    current_path = None
+    polarization_path = None
 
     ###########################################################################
     # SOLVING
@@ -245,71 +222,14 @@ def sbe_solver(sys, dipole, params, curvature):
         # Flag that time array has been built up
         t_constructed = True
 
-
+    # Write solutions
     # Filename tail
     tail = 'E_{:.2f}_w_{:.2f}_a_{:.2f}_{}_t0_{:.2f}_NK1-{}_NK2-{}_T1_{:.2f}_T2_{:.2f}_chirp_{:.3f}_ph_{:.2f}'\
         .format(E0*co.au_to_MVpcm, w*co.au_to_THz, alpha*co.au_to_fs, gauge, params.t0, Nk1, Nk2, T1*co.au_to_fs, T2*co.au_to_fs, chirp*co.au_to_THz, phase)
 
-    # Fourier transforms
-    # 1/(3c^3) in atomic units
-    prefac_emission = 1/(3*(137.036**3))
-    dt_out = t[1] - t[0]
-    freq = fftshift(fftfreq(np.size(t), d=dt_out))
-    if save_approx:
-        # Only do kira & koch emission fourier transforms if save_approx is set
-        # Approximate emission in time
-        I_E_dir = diff(t, P_E_dir)*gaussian_envelope(t, alpha) \
-            + J_E_dir*gaussian_envelope(t, alpha)
-        I_ortho = diff(t, P_ortho)*gaussian_envelope(t, alpha) \
-            + J_ortho*gaussian_envelope(t, alpha)
-
-        # kweight is different for 2line and full
-        I_E_dir *= kweight
-        I_ortho *= kweight
-
-
-        Iw_E_dir = fftshift(fft(I_E_dir, norm='ortho'))
-        Iw_ortho = fftshift(fft(I_ortho, norm='ortho'))
-
-        # Approximate Emission intensity
-        Int_E_dir = prefac_emission*(freq**2)*np.abs(Iw_E_dir)**2
-        Int_ortho = prefac_emission*(freq**2)*np.abs(Iw_ortho)**2
-
-        I_approx_name = 'Iapprox_' + tail
-
-        np.save(I_approx_name, [t, I_E_dir, I_ortho,
-                                freq/w, Iw_E_dir, Iw_ortho,
-                                Int_E_dir, Int_ortho])
-
-        if params.save_txt:
-            np.savetxt(I_approx_name + '.txt',
-                       np.column_stack([t, I_E_dir, I_ortho, freq/w, Iw_E_dir, Iw_ortho, Int_E_dir, Int_ortho]),
-                       header="t, I_E_dir, I_ortho, freqw/w, Iw_E_dir, Iw_ortho, Int_E_dir, Int_ortho",
-                       fmt=['%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.16fj', '%+.16f%+.16fj', '%+.16f%+.0fj', '%+.16f%+.0fj'])
-
-    ##############################################################
-    # Always calculate exact emission formula
-    ##############################################################
-    # kweight is different for 2line and full
-    I_exact_E_dir *= kweight
-    I_exact_ortho *= kweight
-
-    Iw_exact_E_dir = fftshift(fft(I_exact_E_dir*gaussian_envelope(t, alpha),
-                                  norm='ortho'))
-    Iw_exact_ortho = fftshift(fft(I_exact_ortho*gaussian_envelope(t, alpha),
-                                  norm='ortho'))
-    Int_exact_E_dir = prefac_emission*(freq**2)*np.abs(Iw_exact_E_dir)**2
-    Int_exact_ortho = prefac_emission*(freq**2)*np.abs(Iw_exact_ortho)**2
-
-    I_exact_name = 'Iexact_' + tail
-    np.save(I_exact_name, [t, I_exact_E_dir, I_exact_ortho,
-                           freq/w, Iw_exact_E_dir, Iw_exact_ortho,
-                           Int_exact_E_dir, Int_exact_ortho])
-    if params.save_txt:
-        np.savetxt(I_exact_name + '.txt',
-                   np.column_stack([t, I_exact_E_dir, I_exact_ortho, freq/w, Iw_exact_E_dir, Iw_exact_ortho, Int_exact_E_dir, Int_exact_ortho]),
-                   header="t, I_exact_E_dir, I_exact_ortho, freqw/w, Iw_exact_E_dir, Iw_exact_ortho, Int_exact_E_dir, Int_exact_ortho",
-                   fmt=['%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.16fj', '%+.16f%+.16fj', '%+.16f%+.0fj', '%+.16f%+.0fj'])
+    write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
+                           J_E_dir, J_ortho, P_E_dir, P_ortho,
+                           gaussian(t, alpha), save_approx, save_txt)
 
     # Save the parameters of the calculation
     params_name = 'params_' + tail + '.txt'
@@ -501,3 +421,235 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
         return freturn(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
 
     return f
+
+def solution_containers(Nk1, Nk2, Nt, save_approx, save_full, zeeman=False):
+    # Solution containers
+    t = np.empty(Nt)
+
+    # The solution array is structred as: first index is Nk1-index,
+    # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
+    if save_full:
+        # Make container for full solution if it is needed
+        solution = np.empty((Nk1, Nk2, Nt, 4), dtype=complex)
+    else:
+        # Only one path needed at a time if no full solution is needed
+        solution = np.empty((Nk1, 1, Nt, 4), dtype=complex)
+
+    A_field = np.empty(Nt, dtype=np.float64)
+    E_field = np.empty(Nt, dtype=np.float64)
+
+    I_exact_E_dir = np.zeros(Nt, dtype=np.float64)
+    I_exact_ortho = np.zeros(Nt, dtype=np.float64)
+
+    if save_approx:
+        J_E_dir = np.zeros(Nt, dtype=np.float64)
+        J_ortho = np.zeros(Nt, dtype=np.float64)
+        P_E_dir = np.zeros(Nt, dtype=np.float64)
+        P_ortho = np.zeros(Nt, dtype=np.float64)
+    else:
+        J_E_dir = None
+        J_ortho = None
+        P_E_dir = None
+        P_ortho = None
+
+    if zeeman:
+        return 0
+
+    return t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, \
+        P_E_dir, P_ortho
+
+
+def initial_condition(e_fermi, temperature, ev, ec):
+    '''
+    Occupy conduction band according to inital Fermi energy and temperature
+    '''
+    knum = ec.size
+    zeros = np.zeros(knum, dtype=np.float64)
+    distrib_ec = np.zeros(knum, dtype=np.float64)
+    distrib_ev = np.zeros(knum, dtype=np.float64)
+    if temperature > 1e-5:
+        distrib_ec += 1/(np.exp((ec-e_fermi)/temperature) + 1)
+        distrib_ev += 1/(np.exp((ev-e_fermi)/temperature) + 1)
+        return np.array([distrib_ev, zeros, zeros, distrib_ec]).flatten('F')
+
+    smaller_e_fermi_ev = (e_fermi - ev) > 0
+    smaller_e_fermi_ec = (e_fermi - ec) > 0
+
+    distrib_ev[smaller_e_fermi_ev] += 1
+    distrib_ec[smaller_e_fermi_ec] += 1
+    return np.array([distrib_ev, zeros, zeros, distrib_ec]).flatten('F')
+
+
+def diff(x, y):
+    '''
+    Takes the derivative of y w.r.t. x
+    '''
+    if len(x) != len(y):
+        raise ValueError('Vectors have different lengths')
+    if len(y) == 1:
+        return 0
+
+    dx = np.gradient(x)
+    dy = np.gradient(y)
+    return dy/dx
+
+
+def gaussian(t, alpha):
+    '''
+    Function to multiply a Function f(t) before Fourier transform
+    to ensure no step in time between t_final and t_final + delta
+    '''
+    # sigma = sqrt(2)*alpha
+    # # 1/(2*np.sqrt(np.pi)*alpha)*np.exp(-t**2/(2*alpha)**2)
+    return np.exp(-t**2/(2*alpha)**2)
+
+
+def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
+                           J_E_dir, J_ortho, P_E_dir, P_ortho,
+                           gaussian_envelope, save_approx, save_txt):
+    # Fourier transforms
+    # 1/(3c^3) in atomic units
+    prefac_emission = 1/(3*(137.036**3))
+    dt_out = t[1] - t[0]
+    freq = fftshift(fftfreq(np.size(t), d=dt_out))
+    if save_approx:
+        # Only do kira & koch emission fourier transforms if save_approx is set
+        # Approximate emission in time
+        I_E_dir = diff(t, P_E_dir)*gaussian_envelope \
+            + J_E_dir*gaussian_envelope
+        I_ortho = diff(t, P_ortho)*gaussian_envelope \
+            + J_ortho*gaussian_envelope
+
+        # kweight is different for 2line and full
+        I_E_dir *= kweight
+        I_ortho *= kweight
+
+
+        Iw_E_dir = fftshift(fft(I_E_dir, norm='ortho'))
+        Iw_ortho = fftshift(fft(I_ortho, norm='ortho'))
+
+        # Approximate Emission intensity
+        Int_E_dir = prefac_emission*(freq**2)*np.abs(Iw_E_dir)**2
+        Int_ortho = prefac_emission*(freq**2)*np.abs(Iw_ortho)**2
+
+        I_approx_name = 'Iapprox_' + tail
+
+        np.save(I_approx_name, [t, I_E_dir, I_ortho,
+                                freq/w, Iw_E_dir, Iw_ortho,
+                                Int_E_dir, Int_ortho])
+
+        if save_txt:
+            np.savetxt(I_approx_name + '.txt',
+                       np.column_stack([t, I_E_dir, I_ortho, freq/w, Iw_E_dir, Iw_ortho, Int_E_dir, Int_ortho]),
+                       header="t, I_E_dir, I_ortho, freqw/w, Iw_E_dir, Iw_ortho, Int_E_dir, Int_ortho",
+                       fmt=['%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.16fj', '%+.16f%+.16fj', '%+.16f%+.0fj', '%+.16f%+.0fj'])
+
+    ##############################################################
+    # Always calculate exact emission formula
+    ##############################################################
+    # kweight is different for 2line and full
+    I_exact_E_dir *= kweight
+    I_exact_ortho *= kweight
+
+    Iw_exact_E_dir = fftshift(fft(I_exact_E_dir*gaussian_envelope, norm='ortho'))
+    Iw_exact_ortho = fftshift(fft(I_exact_ortho*gaussian_envelope, norm='ortho'))
+    Int_exact_E_dir = prefac_emission*(freq**2)*np.abs(Iw_exact_E_dir)**2
+    Int_exact_ortho = prefac_emission*(freq**2)*np.abs(Iw_exact_ortho)**2
+
+    I_exact_name = 'Iexact_' + tail
+    np.save(I_exact_name, [t, I_exact_E_dir, I_exact_ortho,
+                           freq/w, Iw_exact_E_dir, Iw_exact_ortho,
+                           Int_exact_E_dir, Int_exact_ortho])
+    if save_txt:
+        np.savetxt(I_exact_name + '.txt',
+                   np.column_stack([t, I_exact_E_dir, I_exact_ortho, freq/w, Iw_exact_E_dir, Iw_exact_ortho, Int_exact_E_dir, Int_exact_ortho]),
+                   header="t, I_exact_E_dir, I_exact_ortho, freqw/w, Iw_exact_E_dir, Iw_exact_ortho, Int_exact_E_dir, Int_exact_ortho",
+                   fmt=['%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.16fj', '%+.16f%+.16fj', '%+.16f%+.0fj', '%+.16f%+.0fj'])
+
+
+def print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alpha, chirp,
+                    T2, tfmt0, dt, B0=None, mu=None, incident_angle=None):
+
+    print("Input parameters:")
+    print("Brillouin zone:                 " + BZ_type)
+    print("Do Semiclassics                 " + str(do_semicl))
+    print("Number of k-points              = " + str(Nk))
+    if BZ_type == 'full':
+        print("Driving field alignment         = " + align)
+    elif BZ_type == '2line':
+        print("Driving field direction         = " + str(angle_inc_E_field))
+    if B0 is not None:
+        print("Incident angle                  = " + str(np.rad2deg(incident_angle)))
+    print("Driving amplitude (MV/cm)[a.u.] = " + "("
+          + '{:.6f}'.format(E0*co.au_to_MVpcm) + ")"
+          + "[" + '{:.6f}'.format(E0) + "]")
+    if B0 is not None:
+        print("Magnetic amplitude (T)[a.u.]    = " + "("
+              + '%.6f'%(B0*co.au_to_T) + ")"
+              + "[" + '%.6f'%(B0) + "]")
+        print("Magnetic moments ", mu)
+    print("Pulse Frequency (THz)[a.u.]     = " + "("
+          + '{:.6f}'.format(w*co.au_to_THz) + ")"
+          + "[" + '{:.6f}'.format(w) + "]")
+    print("Pulse Width (fs)[a.u.]          = " + "("
+          + '{:.6f}'.format(alpha*co.au_to_fs) + ")"
+          + "[" + '{:.6f}'.format(alpha) + "]")
+    print("Chirp rate (THz)[a.u.]          = " + "("
+          + '{:.6f}'.format(chirp*co.au_to_THz) + ")"
+          + "[" + '{:.6f}'.format(chirp) + "]")
+    print("Damping time (fs)[a.u.]         = " + "("
+          + '{:.6f}'.format(T2*co.au_to_fs) + ")"
+          + "[" + '{:.6f}'.format(T2) + "]")
+    print("Total time (fs)[a.u.]           = " + "("
+          + '{:.6f}'.format(tfmt0*co.au_to_fs) + ")"
+          + "[" + '{:.5f}'.format(tfmt0) + "]")
+    print("Time step (fs)[a.u.]            = " + "("
+          + '{:.6f}'.format(dt*co.au_to_fs) + ")"
+          + "[" + '{:.6f}'.format(dt) + "]")
+
+
+def BZ_plot(kpnts, a, b1, b2, paths, si_units=True):
+
+    if si_units:
+        a *= co.au_to_as
+        kpnts *= co.as_to_au
+        b1 *= co.as_to_au
+        b2 *= co.as_to_au
+
+    R = 4.0*np.pi/(3*a)
+    r = 2.0*np.pi/(np.sqrt(3)*a)
+
+    BZ_fig = plt.figure(figsize=(10, 10))
+    ax = BZ_fig.add_subplot(111, aspect='equal')
+
+    for b in ((0, 0), b1, -b1, b2, -b2, b1+b2, -b1-b2):
+        poly = RegularPolygon(b, 6, radius=R, orientation=np.pi/6, fill=False)
+        ax.add_patch(poly)
+
+#    ax.arrow(-0.5*E_dir[0], -0.5*E_dir[1], E_dir[0], E_dir[1],
+#             width=0.005, alpha=0.5, label='E-field')
+
+    plt.scatter(0, 0, s=15, c='black')
+    plt.text(0.01, 0.01, r'$\Gamma$')
+    plt.scatter(r*np.cos(-np.pi/6), r*np.sin(-np.pi/6), s=15, c='black')
+    plt.text(r*np.cos(-np.pi/6)+0.01, r*np.sin(-np.pi/6)-0.05, r'$M$')
+    plt.scatter(R, 0, s=15, c='black')
+    plt.text(R, 0.02, r'$K$')
+    plt.scatter(kpnts[:, 0], kpnts[:, 1], s=10)
+    plt.xlim(-7.0/a, 7.0/a)
+    plt.ylim(-7.0/a, 7.0/a)
+
+    if si_units:
+        plt.xlabel(r'$k_x \text{ in } 1/\si{\angstrom}$')
+        plt.ylabel(r'$k_y \text{ in } 1/\si{\angstrom}$')
+    else:
+        plt.xlabel(r'$k_x \text{ in } 1/a_0$')
+        plt.ylabel(r'$k_y \text{ in } 1/a_0$')
+
+    for path in paths:
+        if si_units:
+            plt.plot(co.as_to_au*path[:, 0], co.as_to_au*path[:, 1])
+        else:
+            plt.plot(path[:, 0], path[:, 1])
+
+    plt.show()
