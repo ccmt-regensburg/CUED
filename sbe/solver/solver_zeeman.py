@@ -2,13 +2,12 @@ from math import ceil
 import numpy as np
 from numpy.fft import fft, fftfreq, fftshift
 from numba import njit
-import matplotlib.pyplot as plt
-from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode
 
 from sbe.brillouin import hex_mesh, rect_mesh
 from sbe.utility import conversion_factors as co
 from sbe.solver import make_electric_field, make_zeeman_field, make_zeeman_field_derivative
+from sbe.solver import print_user_info, BZ_plot, initial_condition, gaussian_envelope, diff
 
 
 def sbe_zeeman_solver(sys, dipole_k, dipole_B, params):
@@ -79,8 +78,8 @@ def sbe_zeeman_solver(sys, dipole_k, dipole_B, params):
     # USER OUTPUT
     ###########################################################################
     if user_out:
-        print_user_info(BZ_type, Nk, align, angle_inc_E_field, E0, B0, w, alpha,
-                        chirp, T2, tf-t0, dt)
+        print_user_info(BZ_type, Nk, align, angle_inc_E_field, E0, w, alpha,
+                        chirp, T2, tf-t0, dt, B0=B0, mu=mu, incident_angle=incident_angle)
     # INITIALIZATIONS
     ###########################################################################
     # Form the E-field direction
@@ -172,9 +171,11 @@ def sbe_zeeman_solver(sys, dipole_k, dipole_B, params):
         # (rho_nn(k), rho_nm(k), rho_mn(k), rho_mm(k))
         m_zee = zeeman_field(t0)
 
+        ev = sys.efjit[0](kx=kx_in_path, ky=ky_in_path, m_zee_x=m_zee[0],
+                          m_zee_y=m_zee[1], m_zee_z=m_zee[2])
         ec = sys.efjit[1](kx=kx_in_path, ky=ky_in_path, m_zee_x=m_zee[0],
                           m_zee_y=m_zee[1], m_zee_z=m_zee[2])
-        y0 = initial_condition(e_fermi, temperature, ec)
+        y0 = initial_condition(e_fermi, temperature, ev, ec)
         y0 = np.append(y0, [0.0])
 
         # Set the initual values and function parameters for the current kpath
@@ -295,27 +296,6 @@ def sbe_zeeman_solver(sys, dipole_k, dipole_B, params):
         S_name = 'Sol_' + tail
         np.savez(S_name, t=t, solution=solution, paths=paths,
                  electric_field=electric_field(t), A_field=A_field, Zee_field=Zee_field)
-
-def diff(x, y):
-    '''
-    Takes the derivative of y w.r.t. x
-    '''
-    if len(x) != len(y):
-        raise ValueError('Vectors have different lengths')
-    if len(y) == 1:
-        return 0
-
-    dx = np.gradient(x)
-    dy = np.gradient(y)
-    return dy/dx
-
-
-def gaussian_envelope(t, alpha):
-    '''
-    Function to multiply a Function f(t) before Fourier transform
-    to ensure no step in time between t_final and t_final + delta
-    '''
-    return np.exp(-t**2.0/(2.0*alpha)**2)
 
 
 def emission_exact(sys, paths, tarr, solution, E_dir, A_field, zeeman_field,
@@ -672,99 +652,3 @@ def make_fnumba(sys, dipole_k, dipole_B, gamma1, gamma2, E_dir,
         return freturn(t, y, kpath, dk, y0)
 
     return f
-
-def initial_condition(e_fermi, temperature, e_c):
-    knum = e_c.size
-    ones = np.ones(knum, dtype=np.float64)
-    zeros = np.zeros(knum, dtype=np.float64)
-    distrib = np.zeros(knum, dtype=np.float64)
-    if temperature > 1e-5:
-        distrib += 1/(np.exp((e_c-e_fermi)/temperature) + 1)
-        return np.array([ones, zeros, zeros, distrib]).flatten('F')
-
-    smaller_e_fermi = (e_fermi - e_c) > 0
-    distrib[smaller_e_fermi] += 1
-    return np.array([ones, zeros, zeros, distrib]).flatten('F')
-
-
-def BZ_plot(kpnts, a, b1, b2, paths, si_units=True):
-
-    if si_units:
-        a *= co.au_to_as
-        kpnts *= co.as_to_au
-        b1 *= co.as_to_au
-        b2 *= co.as_to_au
-
-    R = 4.0*np.pi/(3*a)
-    r = 2.0*np.pi/(np.sqrt(3)*a)
-
-    BZ_fig = plt.figure(figsize=(10, 10))
-    ax = BZ_fig.add_subplot(111, aspect='equal')
-
-    for b in ((0, 0), b1, -b1, b2, -b2, b1+b2, -b1-b2):
-        poly = RegularPolygon(b, 6, radius=R, orientation=np.pi/6, fill=False)
-        ax.add_patch(poly)
-
-#    ax.arrow(-0.5*E_dir[0], -0.5*E_dir[1], E_dir[0], E_dir[1],
-#             width=0.005, alpha=0.5, label='E-field')
-
-    plt.scatter(0, 0, s=15, c='black')
-    plt.text(0.01, 0.01, r'$\Gamma$')
-    plt.scatter(r*np.cos(-np.pi/6), r*np.sin(-np.pi/6), s=15, c='black')
-    plt.text(r*np.cos(-np.pi/6)+0.01, r*np.sin(-np.pi/6)-0.05, r'$M$')
-    plt.scatter(R, 0, s=15, c='black')
-    plt.text(R, 0.02, r'$K$')
-    plt.scatter(kpnts[:, 0], kpnts[:, 1], s=10)
-    plt.xlim(-7.0/a, 7.0/a)
-    plt.ylim(-7.0/a, 7.0/a)
-
-    if si_units:
-        plt.xlabel(r'$k_x \text{ in } 1/\si{\angstrom}$')
-        plt.ylabel(r'$k_y \text{ in } 1/\si{\angstrom}$')
-    else:
-        plt.xlabel(r'$k_x \text{ in } 1/a_0$')
-        plt.ylabel(r'$k_y \text{ in } 1/a_0$')
-
-    for path in paths:
-        if si_units:
-            plt.plot(co.as_to_au*path[:, 0], co.as_to_au*path[:, 1])
-        else:
-            plt.plot(path[:, 0], path[:, 1])
-
-    plt.show()
-
-
-def print_user_info(BZ_type, Nk, align, angle_inc_E_field, E0, B0, w, alpha, chirp,
-                    T2, tfmt0, dt):
-
-    print("Input parameters:")
-    print("Brillouin zone:                 " + BZ_type)
-    print("Number of k-points              = " + str(Nk))
-    if BZ_type == 'full':
-        print("Driving field alignment         = " + align)
-    elif BZ_type == '2line':
-        print("Driving field direction         = " + str(angle_inc_E_field))
-    print("Driving amplitude (MV/cm)[a.u.] = " + "("
-          + '{:.6f}'.format(E0*co.au_to_MVpcm) + ")"
-          + "[" + '{:.6f}'.format(E0) + "]")
-    print("Magnetic amplitude (T)[a.u.]    = " + "("
-          + '%.6f'%(B0*co.au_to_T) + ")"
-          + "[" + '%.6f'%(B0) + "]")
-    print("Pulse Frequency (THz)[a.u.]     = " + "("
-          + '{:.6f}'.format(w*co.au_to_THz) + ")"
-          + "[" + '{:.6f}'.format(w) + "]")
-    print("Pulse Width (fs)[a.u.]          = " + "("
-          + '{:.6f}'.format(alpha*co.au_to_fs) + ")"
-          + "[" + '{:.6f}'.format(alpha) + "]")
-    print("Chirp rate (THz)[a.u.]          = " + "("
-          + '{:.6f}'.format(chirp*co.au_to_THz) + ")"
-          + "[" + '{:.6f}'.format(chirp) + "]")
-    print("Damping time (fs)[a.u.]         = " + "("
-          + '{:.6f}'.format(T2*co.au_to_fs) + ")"
-          + "[" + '{:.6f}'.format(T2) + "]")
-    print("Total time (fs)[a.u.]           = " + "("
-          + '{:.6f}'.format(tfmt0*co.au_to_fs) + ")"
-          + "[" + '{:.5f}'.format(tfmt0) + "]")
-    print("Time step (fs)[a.u.]            = " + "("
-          + '{:.6f}'.format(dt*co.au_to_fs) + ")"
-          + "[" + '{:.6f}'.format(dt) + "]")
