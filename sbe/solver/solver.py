@@ -453,7 +453,9 @@ def solution_containers(Nk1, Nk2, Nt, save_approx, save_full, zeeman=False):
         P_ortho = None
 
     if zeeman:
-        return 0
+        Zee_field = np.empty((params.Nt, 3), dtype=np.float64)
+        return t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, \
+            P_E_dir, P_ortho, Zee_field
 
     return t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, \
         P_E_dir, P_ortho

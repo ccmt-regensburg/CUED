@@ -7,7 +7,7 @@ from scipy.integrate import ode
 from sbe.brillouin import hex_mesh, rect_mesh
 from sbe.utility import conversion_factors as co
 from sbe.solver import make_electric_field, make_zeeman_field, make_zeeman_field_derivative
-from sbe.solver import print_user_info, BZ_plot, initial_condition, gaussian_envelope, diff
+from sbe.solver import print_user_info, BZ_plot, initial_condition, gaussian_envelope, diff, solution_containers, gaussian, write_current_emission
 
 
 def sbe_zeeman_solver(sys, dipole_k, dipole_B, params):
@@ -18,6 +18,7 @@ def sbe_zeeman_solver(sys, dipole_k, dipole_B, params):
     save_file = params.save_file
     save_full = params.save_full
     save_approx = params.save_approx
+    save_txt = params.save_txt
     gauge = params.gauge
 
     # System parameters
@@ -44,7 +45,8 @@ def sbe_zeeman_solver(sys, dipole_k, dipole_B, params):
 
     Nf = int((abs(2*params.t0))/params.dt)
     # Find out integer times Nt fits into total time steps
-    dt_out = int(ceil(Nf/params.Nt))
+    if Nf < params.Nt:
+        dt_out = int(ceil(Nf/params.Nt))
 
     # Expand time window to fit Nf output steps
     Nt = dt_out*params.Nt
@@ -52,7 +54,6 @@ def sbe_zeeman_solver(sys, dipole_k, dipole_B, params):
     t0 = (-total_fs/2)*co.fs_to_au                 # Initial time condition
     tf = (total_fs/2)*co.fs_to_au                  # Final time
     dt = params.dt*co.fs_to_au                     #
-    dt_out = 1/(2*params.dt)                       # Solution output time step
 
     # Brillouin zone type
     BZ_type = params.BZ_type                       # Type of Brillouin zone
@@ -65,12 +66,11 @@ def sbe_zeeman_solver(sys, dipole_k, dipole_B, params):
         align = params.align                       # E-field alignment
         angle_inc_E_field = None
     elif BZ_type == '2line':
-        Nk_in_path = params.Nk_in_path
-        Nk = 2*Nk_in_path
         align = None
-        angle_inc_E_field = params.angle_inc_E_field
-        Nk1 = Nk_in_path
-        Nk2 = 2
+        angle_inc_E_field = params.angle_in_E_field
+        Nk1 = params.Nk1
+        Nk2 = params.Nk2
+        Nk = Nk2*Nk2
 
     b1 = params.b1                                 # Reciprocal lattice vectors
     b2 = params.b2
@@ -93,31 +93,16 @@ def sbe_zeeman_solver(sys, dipole_k, dipole_B, params):
             E_dir = np.array([1, 0])
         elif align == 'M':
             E_dir = np.array([np.cos(np.radians(-30)),
-                             np.sin(np.radians(-30))])
+                              np.sin(np.radians(-30))])
         # BZ_plot(kpnts, a, b1, b2, paths)
     elif BZ_type == '2line':
         E_dir = np.array([np.cos(np.radians(angle_inc_E_field)),
-                         np.sin(np.radians(angle_inc_E_field))])
-        dk, _kpnts, paths = rect_mesh(params, E_dir)
+                          np.sin(np.radians(angle_inc_E_field))])
+        dk, kweight, _kpnts, paths = rect_mesh(params, E_dir)
         # BZ_plot(kpnts, a, b1, b2, paths)
 
     # Time array construction flag
     t_constructed = False
-
-    # Solution containers
-    t = np.empty(params.Nt)
-
-    # The solution array is structred as: first index is Nk1-index,
-    # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
-    if save_full:
-        # Make container for full solution if it is needed
-        solution = np.empty((Nk1, Nk2, params.Nt, 4), dtype=complex)
-    else:
-        # Only one path needed at a time if no full solution is needed
-        solution = np.empty((Nk1, 1, params.Nt, 4), dtype=complex)
-
-    A_field = np.empty(params.Nt, dtype=np.float64)
-    Zee_field = np.empty((params.Nt, 3), dtype=np.float64)
 
     # Initialize electric_field, create fnumba and initialize ode solver
     electric_field = make_electric_field(E0, w, alpha, chirp, phase)
@@ -133,26 +118,16 @@ def sbe_zeeman_solver(sys, dipole_k, dipole_B, params):
     solver = ode(fnumba, jac=None)\
         .set_integrator('zvode', method='bdf', max_step=dt)
 
-    # Exact emission function will be set after end of first run
-    emission_exact_path = None
-    I_exact_E_dir = np.zeros(params.Nt, dtype=np.float64)
-    I_exact_ortho = np.zeros(params.Nt, dtype=np.float64)
+    t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, P_E_dir, P_ortho, Zee_field =\
+        solution_containers(Nk1, Nk2, params.Nt, save_approx, save_full, zeeman=True)
 
-    # Approximate (kira & koch) containers
-    if save_approx:
-        current_path = None
-        J_E_dir = np.zeros(params.Nt, dtype=np.float64)
-        J_ortho = np.zeros(params.Nt, dtype=np.float64)
-        polarization_path = None
-        P_E_dir = np.zeros(params.Nt, dtype=np.float64)
-        P_ortho = np.zeros(params.Nt, dtype=np.float64)
-    else:
-        current_path = None
-        J_E_dir = None
-        J_ortho = None
-        polarization_path = None
-        P_E_dir = None
-        P_ortho = None
+    # Exact emission function
+    # Set after first run
+    emission_exact_path = None
+    # Approximate (kira & koch) emission function
+    # Set after first run if save_approx=True
+    current_path = None
+    polarization_path = None
 
     ###########################################################################
     # SOLVING
@@ -215,78 +190,34 @@ def sbe_zeeman_solver(sys, dipole_k, dipole_B, params):
 
         if not t_constructed:
             # Construct the function after the first full run!
-            emission_exact_zeeman_path = make_emission_exact_zeeman_path(sys, Nk1, params.Nt, E_dir,
-                                                                          A_field, gauge, Zee_field)
+            emission_exact_path = make_emission_exact_zeeman_path(sys, Nk1, params.Nt, E_dir,
+                                                                  A_field, gauge, Zee_field)
             if save_approx:
                 # Only need kira & koch formulas if save_approx is set
-                current_zeeman_path = make_current_zeeman_path(sys, Nk1, params.Nt, E_dir, A_field,
-                                                               gauge, Zee_field)
-                polarization_zeeman_path = make_polarization_zeeman_path(dipole, Nk1, params.Nt, E_dir,
-                                                                         A_field, gauge, Zee_field)
+                current_path = make_current_zeeman_path(sys, Nk1, params.Nt, E_dir, A_field,
+                                                        gauge, Zee_field)
+                polarization_path = make_polarization_zeeman_path(dipole, Nk1, params.Nt, E_dir,
+                                                                  A_field, gauge, Zee_field)
 
 
         #Compute per path observables
-        emission_exact_zeeman_path(path, solution[:, Nk2_idx, :, :], I_exact_E_dir, I_exact_ortho)
+        emission_exact_path(path, solution[:, Nk2_idx, :, :], I_exact_E_dir, I_exact_ortho)
 
         # Flag that time array has been built up
         t_constructed = True
 
 
     # Filename tail
-    tail = 'E_{:.2f}_w_{:.2f}_a_{:.2f}_{}_t0_{:.2f}_NK1-{}_NK2-{}_T1_{:.2f}_T2_{:.2f}_chirp_{:.3f}_ph_{:.2f}'\
-        .format(E0*co.au_to_MVpcm, w*co.au_to_THz, alpha*co.au_to_fs, gauge, params.t0, Nk1, Nk2, T1*co.au_to_fs, T2*co.au_to_fs, chirp*co.au_to_THz, phase)
+    tail = 'E_{:.2f}_B0_{:.3f}_mu_x{:.2f}-y{:2f}-z{:2f}_w_{:.2f}_a_{:.2f}_{}_t0_{:.2f}_NK1-{}_NK2-{}_T1_{:.2f}_T2_{:.2f}_chirp_{:.3f}_ph_{:.2f}'\
+        .format(E0*co.au_to_MVpcm, B0*co.au_to_T,
+                mu[0]*co.au_to_muB, mu[1]*co.au_to_muB, mu[2]*co.au_to_muB,
+                w*co.au_to_THz, alpha*co.au_to_fs, gauge, params.t0, Nk1, Nk2,
+                T1*co.au_to_fs, T2*co.au_to_fs, chirp*co.au_to_THz, phase)
 
-    # Fourier transforms
-    dt_out = t[1] - t[0]
-    freq = fftshift(fftfreq(np.size(t), d=dt_out))
-    if save_approx:
-        # Only do kira & koch emission fourier transforms if save_approx is set
-        # Approximate emission in time
-        I_E_dir = diff(t, P_E_dir)*gaussian_envelope(t, alpha) \
-            + J_E_dir*gaussian_envelope(t, alpha)
-        I_ortho = diff(t, P_ortho)*gaussian_envelope(t, alpha) \
-            + J_ortho*gaussian_envelope(t, alpha)
-        if BZ_type == '2line':
-            I_E_dir *= (dk/(4*np.pi))
-            I_ortho *= (dk/(4*np.pi))
-        if BZ_type == 'full':
-            I_E_dir *= kweight
-            I_ortho *= kweight
+    write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
+                           J_E_dir, J_ortho, P_E_dir, P_ortho,
+                           gaussian(t, alpha), save_approx, save_txt)
 
-
-        Iw_E_dir = fftshift(fft(I_E_dir, norm='ortho'))
-        Iw_ortho = fftshift(fft(I_ortho, norm='ortho'))
-
-        # Approximate Emission intensity
-        Int_E_dir = (freq**2)*np.abs(Iw_E_dir)**2
-        Int_ortho = (freq**2)*np.abs(Iw_ortho)**2
-
-        I_approx_name = 'Iapprox_' + tail
-        np.save(I_approx_name, [t, I_E_dir, I_ortho,
-                                freq/w, Iw_E_dir, Iw_ortho,
-                                Int_E_dir, Int_ortho])
-
-    ##############################################################
-    # Always calculate exact emission formula
-    ##############################################################
-    if BZ_type == '2line':
-        I_exact_E_dir *= (dk/(4*np.pi))
-        I_exact_ortho *= (dk/(4*np.pi))
-    if BZ_type == 'full':
-        I_exact_E_dir *= kweight
-        I_exact_ortho *= kweight
-
-    Iw_exact_E_dir = fftshift(fft(I_exact_E_dir*gaussian_envelope(t, alpha),
-                                  norm='ortho'))
-    Iw_exact_ortho = fftshift(fft(I_exact_ortho*gaussian_envelope(t, alpha),
-                                  norm='ortho'))
-    Int_exact_E_dir = (freq**2)*np.abs(Iw_exact_E_dir)**2
-    Int_exact_ortho = (freq**2)*np.abs(Iw_exact_ortho)**2
-
-    I_exact_name = 'Iexact_' + tail
-    np.save(I_exact_name, [t, I_exact_E_dir, I_exact_ortho,
-                           freq/w, Iw_exact_E_dir, Iw_exact_ortho,
-                           Int_exact_E_dir, Int_exact_ortho])
     # Save the parameters of the calculation
     params_name = 'params_' + tail + '.txt'
     paramsfile = open(params_name, 'w')
