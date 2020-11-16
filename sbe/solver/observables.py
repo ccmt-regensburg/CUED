@@ -92,9 +92,9 @@ def make_current_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge):
             e_deriv_E_dir_c[:] = edx_c * E_dir[0] + edy_c * E_dir[1]
             e_deriv_ortho_c[:] = edx_c * E_ort[0] + edy_c * E_ort[1]
 
-            J_E_dir[i_time] += - np.sum(e_deriv_E_dir_v * (fv[:, i_time].real - fv_subs)) + \
+            J_E_dir[i_time] += - np.sum(e_deriv_E_dir_v * (fv[:, i_time].real - fv_subs)) - \
                 np.sum(e_deriv_E_dir_c * fc[:, i_time].real)
-            J_ortho[i_time] += - np.sum(e_deriv_ortho_v * (fv.real[:, i_time] - fv_subs)) + \
+            J_ortho[i_time] += - np.sum(e_deriv_ortho_v * (fv.real[:, i_time] - fv_subs)) - \
                 np.sum(e_deriv_ortho_c * fc[:, i_time].real)
 
     return current_path
