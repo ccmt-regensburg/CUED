@@ -12,6 +12,54 @@ from sbe.solver import make_electric_field
 
 
 def sbe_solver(sys, dipole, params, curvature):
+    """
+        Solver for the semiconductor bloch equation ( eq. (39) or (47) in https://arxiv.org/abs/2008.03177)
+        for a two band system with analytical calculation of the dipole elements 
+        
+        Author: 
+        Additional Contact: Jan Wilhelm (jan.wilhelm@ur.de)
+
+        Parameters
+        ----------
+        sys : class
+            Symbolic Hamiltonian of the system
+        dipole : class
+            Symbolic expression for the dipole elements (eq. (37/38))
+        params :
+            Parameters from the params.py file
+        curvature : class
+            Symbolic berry curvature (d(Ax)/d(ky) - d(Ay)/d(kx)) with
+            A as the Berry connection (eq. (38))
+        
+        Returns
+        -------
+        params
+        ------
+        saves parameters of the calculation
+
+        Iexact (file, 8 components)
+        ------
+        t : np.ndarray
+            Nt-dimensional array of time-points
+        I_exact_E_dir : np.ndarray
+            Nt-dimensional array of current (eq. (59/64)) in E-field direction
+        I_exact_ortho : np.ndarray
+            Nt-dimensional array of current (eq. (59/64)) orthogonal to E-field
+        freq/w : np.ndarray
+            Nt-dimensional array of time-points in frequency domain
+        Iw_exact_E_dir : np.ndarray
+            Nt-dimensional array of fourier trafo of current in E-field direction
+        Iw_exact_ortho : np.ndarray
+            Nt-dimensional array of fourier trafo of current orthogonal to E-field
+        Int_exact_E_dir : np.ndarray
+            Nt-dimensional array of emission intensity (eq. (51)) in E-field direction
+        Int_exact_ortho : np.ndarray
+            Nt-dimensional array of emission intensity (eq. (51)) orthogonal to E-field
+
+        Iapprox  (file, 8 components)
+        -------
+        approximate solutions, but same components as Iexact
+    """
     # RETRIEVE PARAMETERS
     ###########################################################################
     # Flag evaluation
@@ -244,7 +292,36 @@ def sbe_solver(sys, dipole, params, curvature):
 
 def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
                 do_semicl):
+    """
+        Initialization of the solver for the sbe ( eq. (39/47/80) in https://arxiv.org/abs/2008.03177)
 
+        Author:
+        Additional Contact: Jan Wilhelm (jan.wilhelm@ur.de)
+
+        Parameters
+        ----------
+        sys : class
+            Symbolic Hamiltonian of the system
+        dipole : class
+            Symbolic expression for the dipole elements (eq. (37/38))
+        E_dir : np.ndarray
+            2-dimensional array with the x and y component of the electric field
+        gamma1 : float
+            inverse of occupation damping time (T_1 in (eq. (?))
+        gamma2 : float
+            inverse of polarization damping time (T_2 in eq. (80))
+        electric_field : jitted function
+            absolute value of the instantaneous driving field E(t) (eq. (75))
+        gauge: 'length' or 'velocity'
+            parameter to determine which gauge is used in the routine
+        do_semicl: boolean
+            parameter to determine whether a semiclassical calculation will be done
+
+        Returns
+        -------
+        f : 
+            right hand side of ode d/dt(rho(t)) = f(rho, t) (eq. (39/47/80))
+    """
     ########################################
     # Wire the energies
     ########################################
