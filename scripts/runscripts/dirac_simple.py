@@ -23,7 +23,8 @@ def run(system, dipole, curvature):
 
     params.gauge = 'length'
     params.BZ_type = '2line'
-    params.Nk_in_path = 100
+    params.Nk1 = 1080
+    params.Nk2 = 2
 
     params.E0 = 5
     params.w = 25
@@ -31,17 +32,6 @@ def run(system, dipole, curvature):
 
     params.e_fermi = 0.0
     params.temperature = 0.0
-
-    stretch_t0 = 5
-    # Increase time interval for broader pulses
-    if (params.alpha > 25):
-        stretch_t0 = 2
-    if (params.alpha > 75):
-        stretch_t0 = 3
-
-    # Double time for broader pulses
-    params.t0 *= stretch_t0
-    params.Nt *= stretch_t0
 
     sbe_solver(system, dipole, params, curvature)
 

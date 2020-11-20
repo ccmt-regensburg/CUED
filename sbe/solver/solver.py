@@ -1,4 +1,4 @@
-from math import ceil
+from math import ceil, modf
 import numpy as np
 from numpy.fft import fft, fftfreq, fftshift
 from numba import njit
@@ -15,8 +15,8 @@ def sbe_solver(sys, dipole, params, curvature):
     """
         Solver for the semiconductor bloch equation ( eq. (39) or (47) in https://arxiv.org/abs/2008.03177)
         for a two band system with analytical calculation of the dipole elements 
-        
-        Author: 
+
+        Author:
         Additional Contact: Jan Wilhelm (jan.wilhelm@ur.de)
 
         Parameters
@@ -30,7 +30,7 @@ def sbe_solver(sys, dipole, params, curvature):
         curvature : class
             Symbolic berry curvature (d(Ax)/d(ky) - d(Ay)/d(kx)) with
             A as the Berry connection (eq. (38))
-        
+
         Returns
         -------
         params
@@ -88,17 +88,15 @@ def sbe_solver(sys, dipole, params, curvature):
     gamma1 = 1/T1                                  # Occupation damping parameter
     gamma2 = 1/T2                                  # Polarization damping
 
-    Nf = int((abs(2*params.t0))/params.dt)
-    # Find out integer times Nt fits into total time steps
-    if Nf < params.Nt:
-        params.Nt = Nf
-    dt_out = int(ceil(Nf/params.Nt))
 
-    # Expand time window to fit Nf output steps
-    Nt = dt_out*params.Nt
-    total_fs = Nt*params.dt
-    t0 = (-total_fs/2)*co.fs_to_au
-    tf = (total_fs/2)*co.fs_to_au
+    Nf = int((abs(2*params.t0))/params.dt)
+    if modf((2*params.t0/params.dt))[0] > 1e-12:
+        print("WARNING: The time window divided by dt is not an integer.")
+    # Define a proper time window if Nt exists
+    # +1 assures the inclusion of tf in the calculation
+    Nt = Nf + 1
+    t0 = params.t0*co.fs_to_au
+    tf = -t0
     dt = params.dt*co.fs_to_au
 
     # Brillouin zone type
@@ -157,8 +155,8 @@ def sbe_solver(sys, dipole, params, curvature):
     solver = ode(fnumba, jac=None)\
         .set_integrator('zvode', method='bdf', max_step=dt)
 
-    t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, P_E_dir, P_ortho =\
-        solution_containers(Nk1, Nk2, params.Nt, save_approx, save_full)
+    t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, P_E_dir, P_ortho, _dummy =\
+        solution_containers(Nk1, Nk2, Nt, save_approx, save_full)
 
     # Exact emission function
     # Set after first run
@@ -173,6 +171,7 @@ def sbe_solver(sys, dipole, params, curvature):
     ###########################################################################
     # Iterate through each path in the Brillouin zone
     for Nk2_idx, path in enumerate(paths):
+        print("Path: ", Nk2_idx + 1)
         if not save_full:
             # If we don't need the full solution only operate on path idx 0
             Nk2_idx = 0
@@ -215,45 +214,40 @@ def sbe_solver(sys, dipole, params, curvature):
             .set_f_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
 
         # Propagate through time
-
         # Index of current integration time step
         ti = 0
-        # Index of current output time step
-        t_idx = 0
 
         while solver.successful() and ti < Nt:
             # User output of integration progress
-            if (10*ti % Nt == 0 and user_out):
-                print('{:5.2f}%'.format(ti/Nt*100))
+            if (ti % (Nt//20) == 0 and user_out):
+                print('{:5.2f}%'.format((ti/Nt)*100))
+
+            # Save solution each output step
+            # Do not append the last element (A_field)
+            # If save_full is False Nk2_idx is 0 as only the current path
+            # is saved
+            solution[:, Nk2_idx, ti, :] = solver.y[:-1].reshape(Nk1, 4)
+            # Construct time array only once
+            if not t_constructed:
+                # Construct time and A_field only in first round
+                t[ti] = solver.t
+                A_field[ti] = solver.y[-1].real
+                E_field[ti] = electric_field(t[ti])
 
             # Integrate one integration time step
             solver.integrate(solver.t + dt)
 
-            # Save solution each output step
-            if ti % dt_out == 0:
-                # Do not append the last element (A_field)
-                # If save_full is False Nk2_idx is 0 as only the current path
-                # is saved
-                solution[:, Nk2_idx, t_idx, :] = solver.y[:-1].reshape(Nk1, 4)
-                # Construct time array only once
-                if not t_constructed:
-                    # Construct time and A_field only in first round
-                    t[t_idx] = solver.t
-                    A_field[t_idx] = solver.y[-1].real
-                    E_field[t_idx] = electric_field(t[t_idx])
-
-                t_idx += 1
             # Increment time counter
             ti += 1
 
         if not t_constructed:
             # Construct the function after the first full run!
-            emission_exact_path = make_emission_exact_path(sys, Nk1, params.Nt, E_dir, A_field,
+            emission_exact_path = make_emission_exact_path(sys, Nk1, Nt, E_dir, A_field,
                                                            gauge, do_semicl, curvature, E_field)
             if save_approx:
                 # Only need kira & koch formulas if save_approx is set
-                current_path = make_current_path(sys, Nk1, params.Nt, E_dir, A_field, gauge)
-                polarization_path = make_polarization_path(dipole, Nk1, params.Nt, E_dir, A_field,
+                current_path = make_current_path(sys, Nk1, Nt, E_dir, A_field, gauge)
+                polarization_path = make_polarization_path(dipole, Nk1, Nt, E_dir, A_field,
                                                            gauge)
 
         # Compute per path observables
@@ -530,12 +524,12 @@ def solution_containers(Nk1, Nk2, Nt, save_approx, save_full, zeeman=False):
         P_ortho = None
 
     if zeeman:
-        Zee_field = np.empty((params.Nt, 3), dtype=np.float64)
+        Zee_field = np.empty((Nt, 3), dtype=np.float64)
         return t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, \
             P_E_dir, P_ortho, Zee_field
 
     return t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, \
-        P_E_dir, P_ortho
+        P_E_dir, P_ortho, None
 
 
 def initial_condition(e_fermi, temperature, ev, ec):

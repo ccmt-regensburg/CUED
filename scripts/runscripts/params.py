@@ -47,8 +47,7 @@ class params:
     T1    = 1000   # Phenomenological diagonal damping time
     T2    = 1      # Phenomenological polarization damping time
     t0    = -200   # Start time *pulse centered @ t=0, use t0 << 0
-    dt    = 0.005  # Time step
-    Nt    = 8192   # Length of result time array
+    dt    = 0.05  # Time step
 
     # Flags for testing and features
     ##########################################################################
@@ -57,3 +56,4 @@ class params:
     user_out      = True       # Set to True to get user plotting and progress output
     save_approx   = True
     save_full     = False
+    save_txt      = True
