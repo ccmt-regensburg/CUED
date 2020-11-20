@@ -407,6 +407,25 @@ class Haldane(TwoBandSystem):
         super().__init__(ho, hx, hy, hz)
 
 
+class two_site_semiconductor(TwoBandSystem):
+    """
+    k-dependent Hamiltonian of 1d tight-binding chain with two sites in the unit cell
+    """
+
+    def __init__(self, 
+                 lattice_const=sp.Symbol('lattice_const', real=True),
+                 hopping=sp.Symbol('hopping', real=True),
+                 onsite_energy_difference=sp.Symbol('onsite_energy_difference', real=True)) :
+
+        ho = 0.000001*self.ky
+        hx = hopping * (1 + sp.cos (self.kx * lattice_const))
+        hy = - hopping * sp.sin (self.kx * lattice_const)
+        hz = onsite_energy_difference/2
+
+        super().__init__(ho, hx, hy, hz)
+
+
+
 class BiTe(TwoBandSystem):
     """
     Bismuth Telluride topological insulator model
