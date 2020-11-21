@@ -596,8 +596,8 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
         I_inter_E_dir = diff(t, P_E_dir)*kweight
         I_inter_ortho = diff(t, P_ortho)*kweight
 
-        Iw_E_dir = fftshift(fft(I_E_dir, norm='ortho'))
-        Iw_ortho = fftshift(fft(I_ortho, norm='ortho'))
+        Iw_E_dir = fftshift(fft(I_E_dir*gaussian_envelope, norm='ortho'))
+        Iw_ortho = fftshift(fft(I_ortho*gaussian_envelope, norm='ortho'))
 
         Iw_intra_E_dir = fftshift(fft(I_intra_E_dir*gaussian_envelope, norm='ortho'))
         Iw_intra_ortho = fftshift(fft(I_intra_ortho*gaussian_envelope, norm='ortho'))
