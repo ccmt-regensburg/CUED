@@ -586,25 +586,24 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
     dt_out = t[1] - t[0]
     freq = fftshift(fftfreq(np.size(t), d=dt_out))
     if save_approx:
-        # Only do kira & koch emission fourier transforms if save_approx is set
-        # Approximate emission in time
-        I_E_dir = diff(t, P_E_dir)*gaussian_envelope \
-            + J_E_dir*gaussian_envelope
-        I_ortho = diff(t, P_ortho)*gaussian_envelope \
-            + J_ortho*gaussian_envelope
+        # Only do approximate emission fourier transforms if save_approx is set
+        I_E_dir = kweight*(diff(t, P_E_dir) + J_E_dir)
+        I_ortho = kweight*(diff(t, P_ortho) + J_ortho)
 
-        # kweight is different for 2line and full
-        I_E_dir *= kweight
-        I_ortho *= kweight
+        I_intra_E_dir = J_E_dir*kweight
+        I_intra_ortho = J_ortho*kweight
 
-        I_intra_E_dir = J_E_dir*gaussian_envelope*kweight
-        I_intra_ortho = J_ortho*gaussian_envelope*kweight
+        I_inter_E_dir = diff(t, P_E_dir)*kweight
+        I_inter_ortho = diff(t, P_ortho)*kweight
 
         Iw_E_dir = fftshift(fft(I_E_dir, norm='ortho'))
         Iw_ortho = fftshift(fft(I_ortho, norm='ortho'))
 
-        Iw_intra_E_dir = fftshift(fft(I_intra_E_dir, norm='ortho'))
-        Iw_intra_ortho = fftshift(fft(I_intra_ortho, norm='ortho'))
+        Iw_intra_E_dir = fftshift(fft(I_intra_E_dir*gaussian_envelope, norm='ortho'))
+        Iw_intra_ortho = fftshift(fft(I_intra_ortho*gaussian_envelope, norm='ortho'))
+
+        Iw_inter_E_dir = fftshift(fft(I_inter_E_dir*gaussian_envelope, norm='ortho'))
+        Iw_inter_ortho = fftshift(fft(I_inter_ortho*gaussian_envelope, norm='ortho'))
 
         # Approximate Emission intensity
         Int_E_dir = prefac_emission*(freq**2)*np.abs(Iw_E_dir)**2
@@ -613,13 +612,18 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
         Int_intra_E_dir = prefac_emission*(freq**2)*np.abs(Iw_intra_E_dir)**2
         Int_intra_ortho = prefac_emission*(freq**2)*np.abs(Iw_intra_ortho)**2
 
+        Int_inter_E_dir = prefac_emission*(freq**2)*np.abs(Iw_inter_E_dir)**2
+        Int_inter_ortho = prefac_emission*(freq**2)*np.abs(Iw_inter_ortho)**2
+
         I_approx_name = 'Iapprox_' + tail
 
         np.save(I_approx_name, [t, I_E_dir, I_ortho,
                                 freq/w, Iw_E_dir, Iw_ortho,
                                 Int_E_dir, Int_ortho,
-                                J_E_dir, J_ortho,
-                                Int_intra_E_dir, Int_intra_ortho])
+                                I_intra_E_dir, I_intra_ortho, 
+                                Int_intra_E_dir, Int_intra_ortho,
+                                I_inter_E_dir, I_inter_ortho, 
+                                Int_inter_E_dir, Int_inter_ortho])
 
         if save_txt:
             np.savetxt(I_approx_name + '.txt',
