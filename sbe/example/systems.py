@@ -410,6 +410,7 @@ class Haldane(TwoBandSystem):
 class two_site_semiconductor(TwoBandSystem):
     """
     k-dependent Hamiltonian of 1d tight-binding chain with two sites in the unit cell
+    !!! ONLY WORKS TOGETHER WITH gidx = None, REQUIRES 1D BRILLOUIN ZONE OF LENGTH 2*pi/lattice_const !!!
     """
 
     def __init__(self, 

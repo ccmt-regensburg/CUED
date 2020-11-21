@@ -597,19 +597,29 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
         I_E_dir *= kweight
         I_ortho *= kweight
 
+        I_intra_E_dir = J_E_dir*gaussian_envelope*kweight
+        I_intra_ortho = J_ortho*gaussian_envelope*kweight
 
         Iw_E_dir = fftshift(fft(I_E_dir, norm='ortho'))
         Iw_ortho = fftshift(fft(I_ortho, norm='ortho'))
+
+        Iw_intra_E_dir = fftshift(fft(I_intra_E_dir, norm='ortho'))
+        Iw_intra_ortho = fftshift(fft(I_intra_ortho, norm='ortho'))
 
         # Approximate Emission intensity
         Int_E_dir = prefac_emission*(freq**2)*np.abs(Iw_E_dir)**2
         Int_ortho = prefac_emission*(freq**2)*np.abs(Iw_ortho)**2
 
+        Int_intra_E_dir = prefac_emission*(freq**2)*np.abs(Iw_intra_E_dir)**2
+        Int_intra_ortho = prefac_emission*(freq**2)*np.abs(Iw_intra_ortho)**2
+
         I_approx_name = 'Iapprox_' + tail
 
         np.save(I_approx_name, [t, I_E_dir, I_ortho,
                                 freq/w, Iw_E_dir, Iw_ortho,
-                                Int_E_dir, Int_ortho])
+                                Int_E_dir, Int_ortho,
+                                J_E_dir, J_ortho,
+                                Int_intra_E_dir, Int_intra_ortho])
 
         if save_txt:
             np.savetxt(I_approx_name + '.txt',
