@@ -113,7 +113,7 @@ def sbe_solver_n_bands(params):
         .set_integrator('zvode', method='bdf', max_step=dt)
 
     t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, P_E_dir, P_ortho =\
-        solution_containers(Nk1, Nk2, params.Nt, save_approx, save_full)
+        solution_containers(Nk1, Nk2, params.Nt, params.n, save_approx, save_full)
 
     # Exact emission function
     # Set after first run
@@ -139,7 +139,7 @@ def sbe_solver_n_bands(params):
         ky_in_path = path[:, 1]
 
         if do_semicl:
-            zeros = np.zeros(np.size(kx_in_path, n, n), dtype=np.complex)
+            zeros = np.zeros(np.size(kx_in_path, n, n), dtype=np.complex128)
             dipole_in_path = zeros
         else:
             # Calculate the dipole components along the path
@@ -154,6 +154,9 @@ def sbe_solver_n_bands(params):
 
         e_in_path = e[:, Nk2_idx, :]
 
+        # Initialize right hand side of ode-solver
+
+        rhs_dipole, rhs_e, rhs_gamma1, rhs_gamma2 = rhs_of_sbe(params, dipole_in_path, e_in_path, dk, gamma1, gamma2)
 
         # Initialize the values of of each k point vector
         # (rho_nn(k), rho_nm(k), rho_mn(k), rho_mm(k))
@@ -162,7 +165,7 @@ def sbe_solver_n_bands(params):
 
         # Set the initual values and function parameters for the current kpath
         solver.set_initial_value(y0, t0)\
-            .set_f_params(path, paths, Nk2_idx, dk, e_in_path, dipole_in_path, y0)
+            .set_f_params(rhs_dipole, rhs_e, rhs_gamma1, rhs_gamma2, y0, params, dk)
 
         # Propagate through time
 
@@ -173,7 +176,7 @@ def sbe_solver_n_bands(params):
 
         while solver.successful() and ti < Nt:
             # User output of integration progress
-            if (1000*ti % Nt == 0 and user_out):
+            if (1000000*ti % Nt == 0 and user_out):
                 print('{:5.2f}%'.format(ti/Nt*100))
 
             # Integrate one integration time step
@@ -199,27 +202,6 @@ def sbe_solver_n_bands(params):
         current_path = current_in_path(Nk1, Nk2, params.Nt, solution, params.n, paths, 0, params.epsilon, Nk2_idx)
         emission_exact_path += current_path
 
-        # if not t_constructed:
-        #     # Construct the function after the first full run!
-        #     emission_exact_path = make_emission_exact_path(sys, Nk1, params.Nt, E_dir, A_field,
-        #                                                    gauge, do_semicl, curvature, E_field)
-        #     if save_approx:
-        #         # Only need kira & koch formulas if save_approx is set
-        #         current_path = make_current_path(sys, Nk1, params.Nt, E_dir, A_field, gauge)
-        #         polarization_path = make_polarization_path(dipole, Nk1, params.Nt, E_dir, A_field,
-        #                                                    gauge)
-
-        # # Compute per path observables
-        # emission_exact_path(path, solution[:, Nk2_idx, :, :], I_exact_E_dir, I_exact_ortho)
-        # #print(I_exact_E_dir, I_exact_ortho)
-        # if save_approx:
-        #     # Only calculate kira & koch formula if save_approx is set
-        #     fv = solution[:, Nk2_idx, :, 0]
-        #     fc = solution[:, Nk2_idx, :, 3]
-        #     pcv = solution[:, Nk2_idx, :, 2]
-        #     current_path(path, fv, fc, J_E_dir, J_ortho)
-        #     polarization_path(path, pcv, P_E_dir, P_ortho)
-
         # Flag that time array has been built up
         t_constructed = True
     I_exact_E_dir = emission_exact_path[:,0]
@@ -244,6 +226,31 @@ def sbe_solver_n_bands(params):
         np.savez(S_name, t=t, solution=solution, paths=paths,
                  electric_field=electric_field(t), A_field=A_field)
 
+def rhs_of_sbe(params, dipole_in_path, e_in_path, dk, gamma1, gamma2):
+    n = params.n
+    Nk1 = params.Nk1
+    rhs_dipole = np.zeros([Nk1, (n**2), (n**2)], dtype=np.complex128) # * e_f * y
+    rhs_e = np.zeros([Nk1, (n**2), (n**2)], dtype=np.complex128)     # * y 
+    rhs_gamma1 = np.zeros([Nk1, (n**2), (n**2)], dtype=np.complex128) # * (y - y0)
+    rhs_gamma2 = np.zeros([Nk1, (n**2), (n**2)], dtype=np.complex128) # * y
+    Nk_path = params.Nk1
+    for k in range(Nk_path):
+        for m in range(n):          
+            for i in range(n):
+                for j in range(n):
+                    rhs_dipole[k, m*n + i, m*n + j] += -1j*dipole_in_path[k, i, j]
+                    if i == j:
+                        rhs_e[k, m*n + i, m*n + j] += -1j*(e_in_path[k, m] - e_in_path[k, i])
+                        if m == i:
+                            rhs_gamma1[k, m*n + i, m*n + j] += - gamma1
+                        else: 
+                            rhs_gamma2[k, m*n + i, m*n + j] += - gamma2
+            for l in range(n):
+                for i in range(n):
+                    rhs_dipole[k, m*n + i, l*n + i] -= -1j*dipole_in_path[k, m, l]
+
+    return rhs_dipole, rhs_e, rhs_gamma1, rhs_gamma2
+
 
 def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, gauge,
                 do_semicl):
@@ -254,71 +261,28 @@ def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, gauge,
     else:
         raise AttributeError("You have to either assign velocity or length gauge")
 
-    def fnumba(t, y, path, paths, path_idx, dk, e_in_path, dipole_in_path, y0):
+    def fnumba(t, y, rhs_dipole, rhs_e, rhs_gamma1, rhs_gamma2, y0, params, dk):
         # x != y(t+dt)
         x = np.zeros(np.shape(y), dtype=np.complex128)
-
+        Nk1 = params.Nk1
         # Gradient term coefficient
         electric_f = electric_field(t)
-        if gauge == 'length':
 
-            D = electric_f/(2*dk)
+        D = electric_f/(2*dk)
 
-        elif gauge == 'velocity':
-
-            D = 0
-
-            k_shift = y[-1].real
-            kx_in_path = path[:, 0] + E_dir[0]*k_shift
-            ky_in_path = path[:, 1] + E_dir[1]*k_shift
-            paths[:, 0] += E_dir[0]*k_shift
-            paths[:, 1] += E_dir[1]*k_shift
-        
-            e, wf = diagonalize(params.Nk1, params.Nk2, params.n, paths, 0)
-
-            if do_semicl:
-                zeros = np.zeros(np.size(kx_in_path, n, n), dtype=np.complex)
-                dipole_in_path = zeros
-            else:
-                # Calculate the dipole components along the path
-                dipole_x, dipole_y = dipole_elements(params.Nk1, params.Nk2, params.n, paths, 0, params.epsilon)
-
-                # Calculate the dot products E_dir.d_nm(k).
-                # To be multiplied by E-field magnitude later.
-                dipole_in_path = (E_dir[0]*dipole_x[:, path_idx, :, :] + E_dir[1]*dipole_y[:, path_idx, :, :])
-                #calulate rabi frequency corresponding to d_nm(k)
-        
-        wr = electric_f*dipole_in_path
-
-        # Update the solution vector
-        Nk_path = path.shape[0]
-        for k in range(Nk_path):
-
+        for k in range(Nk1):
             if k == 0:
-                i_k = (n**2)*(k+1)
-                j_k = (n**2)*(Nk_path-1)
-            elif k == Nk_path-1:
+                i_k = (k+1)
+                j_k = (Nk1-1)
+            elif k == Nk1-1:
                 i_k = 0
-                j_k = (n**2)*(k-1)
+                j_k = (k-1)
             else: 
-                i_k = (n**2)*(k+1)
-                j_k = (n**2)*(k-1)
-     
-            for m in range(n):
-                for i in range(n):
-                    for j in range(n):
-                        x[k*(n**2) + m*n + j] += -1j*wr[k, i, j]*y[k*(n**2) + m*n + i]
- #                       x[k*(n**2) + m*n + j] += D*(y[i_k + m*n + i - y[j_k + m*n + i]])
-                        if i == j:
-                            x[k*(n**2) + m*n + j] += 1j*(e_in_path[k, m] - e_in_path[k, i])*y[k*(n**2) + m*n + i]
-                            x[k*(n**2) + m*n + j] += D*(y[i_k + m*n + i] - y[j_k + m*n + i])
-                            if m == i:
-                                x[k*(n**2) + m*n + j] -= gamma1*(y[k*(n**2) + m*n + i] - y0[k*(n**2) + m*n + i]) #diagonalelemente in rho (rho11, rho22,...)
-                            else:
-                                x[k*(n**2) + m*n + j] -= gamma2*y[k*(n**2) + m*n + i]   #offdiagonalelemente in rho (rho 12, rho21, rho13, ...)
-                for l in range(n):
-                    for i in range(n):
-                        x[k*(n**2) + m*n + i] -= -1j*wr[k, m, l]*y[k*(n**2) + l*n + i]
+                i_k = (k+1)
+                j_k = (k-1)
+            x[k*(n**2):(k+1)*(n**2)] += np.dot(electric_f*rhs_dipole[k, :, :] + rhs_e[k, :, :] + rhs_gamma2[k, :, :], y[k*(n**2):(k+1)*(n**2)])
+            x[k*(n**2):(k+1)*(n**2)] += D*(y[i_k*(n**2):(i_k+1)*(n**2)] - (y[j_k*(n**2):(j_k+1)*(n**2)]))
+            x[k*(n**2):(k+1)*(n**2)] += np.dot(rhs_gamma1[k, :, :], (y[k*(n**2):(k+1)*(n**2)] - y0[k*(n**2):(k+1)*(n**2)]))  
         x[-1] = -electric_f
         return x
 
@@ -326,7 +290,7 @@ def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, gauge,
 
     return freturn
 
-def solution_containers(Nk1, Nk2, Nt, save_approx, save_full, zeeman=False):
+def solution_containers(Nk1, Nk2, Nt, n, save_approx, save_full, zeeman=False):
     # Solution containers
     t = np.empty(Nt)
 
@@ -334,10 +298,10 @@ def solution_containers(Nk1, Nk2, Nt, save_approx, save_full, zeeman=False):
     # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
     if save_full:
         # Make container for full solution if it is needed
-        solution = np.empty((Nk1, Nk2, Nt, 4), dtype=complex)
+        solution = np.empty((Nk1, Nk2, Nt, n**2), dtype=np.complex128)
     else:
         # Only one path needed at a time if no full solution is needed
-        solution = np.empty((Nk1, 1, Nt, 4), dtype=complex)
+        solution = np.empty((Nk1, 1, Nt, n**2), dtype=np.complex128)
 
     A_field = np.empty(Nt, dtype=np.float64)
     E_field = np.empty(Nt, dtype=np.float64)
