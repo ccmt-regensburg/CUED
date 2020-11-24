@@ -562,8 +562,11 @@ def diff(x, y):
     if len(y) == 1:
         return 0
 
-    dx = np.gradient(x)
-    dy = np.gradient(y)
+#    dx = np.gradient(x)
+#    dy = np.gradient(y)
+    dx = np.roll(x,-1) - np.roll(x,1)
+    dy = np.roll(y,-1) - np.roll(y,1)
+
     return dy/dx
 
 
