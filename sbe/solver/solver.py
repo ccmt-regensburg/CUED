@@ -1,6 +1,6 @@
 from math import ceil, modf
 import numpy as np
-from numpy.fft import fft, fftfreq, fftshift
+from numpy.fft import fft, fftfreq, fftshift, ifftshift
 from numba import njit
 import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
@@ -569,6 +569,14 @@ def diff(x, y):
 
     return dy/dx
 
+def fourier(dt, data):
+    '''
+    Calculate the phase correct fourier transform with proper normalization
+    for calculations centered around t=0
+    '''
+    return (dt/np.sqrt(2*np.pi))*fftshift(fft(ifftshift(data)))
+
+
 
 def gaussian(t, alpha):
     '''
@@ -587,7 +595,7 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
     # 1/(3c^3) in atomic units
     prefac_emission = 1/(3*(137.036**3))
     dt_out = t[1] - t[0]
-    freq = fftshift(fftfreq(np.size(t), d=dt_out))
+    freq = fftshift(fftfreq(t.size, d=dt_out))
     if save_approx:
         # Only do approximate emission fourier transforms if save_approx is set
         I_E_dir = kweight*(diff(t, P_E_dir) + J_E_dir)
@@ -599,14 +607,14 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
         I_inter_E_dir = diff(t, P_E_dir)*kweight
         I_inter_ortho = diff(t, P_ortho)*kweight
 
-        Iw_E_dir = fftshift(fft(I_E_dir*gaussian_envelope, norm='ortho'))
-        Iw_ortho = fftshift(fft(I_ortho*gaussian_envelope, norm='ortho'))
+        Iw_E_dir = fourier(dt_out, I_E_dir*gaussian_envelope)
+        Iw_ortho = fourier(dt_out, I_ortho*gaussian_envelope)
 
-        Iw_intra_E_dir = fftshift(fft(I_intra_E_dir*gaussian_envelope, norm='ortho'))
-        Iw_intra_ortho = fftshift(fft(I_intra_ortho*gaussian_envelope, norm='ortho'))
+        Iw_intra_E_dir = fourier(dt_out, I_intra_E_dir*gaussian_envelope)
+        Iw_intra_ortho = fourier(dt_out, I_intra_ortho*gaussian_envelope)
 
-        Iw_inter_E_dir = fftshift(fft(I_inter_E_dir*gaussian_envelope, norm='ortho'))
-        Iw_inter_ortho = fftshift(fft(I_inter_ortho*gaussian_envelope, norm='ortho'))
+        Iw_inter_E_dir = fourier(dt_out, I_inter_E_dir*gaussian_envelope)
+        Iw_inter_ortho = fourier(dt_out, I_inter_ortho*gaussian_envelope)
 
         # Approximate Emission intensity
         Int_E_dir = prefac_emission*(freq**2)*np.abs(Iw_E_dir)**2
@@ -629,10 +637,12 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
                                 Int_inter_E_dir, Int_inter_ortho])
 
         if save_txt:
-            np.savetxt(I_approx_name + '.txt',
-                       np.column_stack([t, I_E_dir, I_ortho, freq/w, Iw_E_dir, Iw_ortho, Int_E_dir, Int_ortho]),
-                       header="t, I_E_dir, I_ortho, freqw/w, Iw_E_dir, Iw_ortho, Int_E_dir, Int_ortho",
-                       fmt=['%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.16fj', '%+.16f%+.16fj', '%+.16f%+.0fj', '%+.16f%+.0fj'])
+            np.savetxt(I_approx_name + '.dat',
+                       np.column_stack([t.real, I_E_dir.real, I_ortho.real,
+                                        (freq/w).real, Iw_E_dir.real, Iw_E_dir.imag, Iw_ortho.real, Iw_ortho.imag,
+                                        Int_E_dir.real, Int_ortho.real]),
+                       header="t, I_E_dir, I_ortho, freqw/w, Re(Iw_E_dir), Im(Iw_E_dir), Re(Iw_ortho), Im(Iw_ortho), Int_E_dir, Int_ortho",
+                       fmt='%+.34f')
 
     ##############################################################
     # Always calculate exact emission formula
@@ -641,8 +651,8 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
     I_exact_E_dir *= kweight
     I_exact_ortho *= kweight
 
-    Iw_exact_E_dir = fftshift(fft(I_exact_E_dir*gaussian_envelope, norm='ortho'))
-    Iw_exact_ortho = fftshift(fft(I_exact_ortho*gaussian_envelope, norm='ortho'))
+    Iw_exact_E_dir = fourier(dt_out, I_exact_E_dir*gaussian_envelope)
+    Iw_exact_ortho = fourier(dt_out, I_exact_ortho*gaussian_envelope)
     Int_exact_E_dir = prefac_emission*(freq**2)*np.abs(Iw_exact_E_dir)**2
     Int_exact_ortho = prefac_emission*(freq**2)*np.abs(Iw_exact_ortho)**2
 
@@ -651,10 +661,12 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
                            freq/w, Iw_exact_E_dir, Iw_exact_ortho,
                            Int_exact_E_dir, Int_exact_ortho])
     if save_txt:
-        np.savetxt(I_exact_name + '.txt',
-                   np.column_stack([t, I_exact_E_dir, I_exact_ortho, freq/w, Iw_exact_E_dir, Iw_exact_ortho, Int_exact_E_dir, Int_exact_ortho]),
-                   header="t, I_exact_E_dir, I_exact_ortho, freqw/w, Iw_exact_E_dir, Iw_exact_ortho, Int_exact_E_dir, Int_exact_ortho",
-                   fmt=['%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.0fj', '%+.16f%+.16fj', '%+.16f%+.16fj', '%+.16f%+.0fj', '%+.16f%+.0fj'])
+        np.savetxt(I_exact_name + '.dat',
+                   np.column_stack([t.real, I_exact_E_dir.real, I_exact_ortho.real,
+                                    (freq/w).real, Iw_exact_E_dir.real, Iw_exact_E_dir.imag, Iw_exact_ortho.real, Iw_exact_ortho.imag,
+                                    Int_exact_E_dir.real, Int_exact_ortho.real]),
+                   header="t, I_exact_E_dir, I_exact_ortho, freqw/w, Re(Iw_exact_E_dir), Im(Iw_exact_E_dir), Re(Iw_exact_ortho), Im(Iw_exact_ortho), Int_exact_E_dir, Int_exact_ortho",
+                   fmt='%+.34f')
 
 
 def print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alpha, chirp,
