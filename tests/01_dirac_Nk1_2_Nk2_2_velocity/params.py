@@ -49,7 +49,6 @@ class params:
     T2    = 1        # Phenomenological polarization damping time
     t0    = -1000    # Start time *pulse centered @ t=0, use t0 << 0
     dt    = 0.05     # Time step
-    Nt    = 8192     # Length of result time array
 
     # Flags for testing and features
     ##########################################################################
