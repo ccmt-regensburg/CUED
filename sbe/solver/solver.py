@@ -1,4 +1,4 @@
-from math import ceil, modf
+from math import modf
 import numpy as np
 from numpy.fft import fft, fftfreq, fftshift, ifftshift
 from numba import njit
@@ -11,10 +11,10 @@ from sbe.solver import make_current_path, make_polarization_path, make_emission_
 from sbe.solver import make_electric_field
 
 
-def sbe_solver(sys, dipole, params, curvature):
+def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     """
         Solver for the semiconductor bloch equation ( eq. (39) or (47) in https://arxiv.org/abs/2008.03177)
-        for a two band system with analytical calculation of the dipole elements 
+        for a two band system with analytical calculation of the dipole elements
 
         Author:
         Additional Contact: Jan Wilhelm (jan.wilhelm@ur.de)
@@ -30,6 +30,10 @@ def sbe_solver(sys, dipole, params, curvature):
         curvature : class
             Symbolic berry curvature (d(Ax)/d(ky) - d(Ay)/d(kx)) with
             A as the Berry connection (eq. (38))
+        electric_field_function : function
+            Jitted function of a user provided electric field.
+            Can only take time as parameter. If is None takes
+            electric field from sbe/solver/fields.py
 
         Returns
         -------
@@ -149,7 +153,11 @@ def sbe_solver(sys, dipole, params, curvature):
     t_constructed = False
 
     # Initialize electric_field, create fnumba and initialize ode solver
-    electric_field = make_electric_field(E0, w, alpha, chirp, phase)
+    if electric_field_function is None:
+        electric_field = make_electric_field(E0, w, alpha, chirp, phase)
+    else:
+        electric_field = electric_field_function
+
     fnumba = make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field,
                          gauge=gauge, do_semicl=do_semicl)
     solver = ode(fnumba, jac=None)\
@@ -313,7 +321,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
         Returns
         -------
-        f : 
+        f :
             right hand side of ode d/dt(rho(t)) = f(rho, t) (eq. (39/47/80))
     """
     ########################################
@@ -631,9 +639,9 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
         np.save(I_approx_name, [t, I_E_dir, I_ortho,
                                 freq/w, Iw_E_dir, Iw_ortho,
                                 Int_E_dir, Int_ortho,
-                                I_intra_E_dir, I_intra_ortho, 
+                                I_intra_E_dir, I_intra_ortho,
                                 Int_intra_E_dir, Int_intra_ortho,
-                                I_inter_E_dir, I_inter_ortho, 
+                                I_inter_E_dir, I_inter_ortho,
                                 Int_inter_E_dir, Int_inter_ortho])
 
         if save_txt:
