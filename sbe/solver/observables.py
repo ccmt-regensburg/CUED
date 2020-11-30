@@ -3,6 +3,31 @@ from numba import njit
 from sbe.utility import conversion_factors as co
 
 def make_polarization_path(dipole, pathlen, n_time_steps, E_dir, A_field, gauge):
+    """
+        Function that calculates the polarization for the current path
+
+        Parameters:
+        -----------
+            dipole : Symbolic Dipole
+        pathlen : int
+            Length of one path
+        n_time_steps : int
+            Number of time steps
+        E_dir : np.ndarray
+            Direction of the electric field
+        A_field : np.ndarray
+            Vector potential integrated from electric field
+        gauge : string
+            System gauge 'length' or 'velocity'
+        
+        Returns:
+        --------
+
+        P_E_dir : np.ndarray
+            Polarization in E-field direction
+        P_ortho : np.ndarray
+            Polarization orthogonal to E-field direction
+    """
     dijit_01x = dipole.Axfjit[0][1]
     dijit_01y = dipole.Ayfjit[0][1]
 
@@ -43,8 +68,30 @@ def make_polarization_path(dipole, pathlen, n_time_steps, E_dir, A_field, gauge)
 
 def make_current_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge):
     '''
-    Calculates the current as: J(t) = sum_k sum_n [j_n(k)f_n(k,t)]
+    Calculates the intraband current as: J(t) = sum_k sum_n [j_n(k)f_n(k,t)]
     where j_n(k) != (d/dk) E_n(k)
+    
+    Parameters
+    ----------
+    sys : TwoBandSystem
+        Hamiltonian and related functions
+    pathlen : int
+        Length of one path
+    n_time_steps : int
+        Number of time steps
+    E_dir : np.ndarray
+        Direction of the electric field
+    A_field : np.ndarray
+        Vector potential integrated from electric field
+    gauge : string
+        System gauge 'length' or 'velocity'
+
+    Returns
+    -------
+    J_E_dir : np.ndarray
+        intraband current j_intra in E-field direction
+    J_ortho : np.ndarray
+        intraband current j_intra orthogonal to E-field direction
     '''
     edxjit_v = sys.ederivfjit[0]
     edyjit_v = sys.ederivfjit[1]
@@ -111,7 +158,7 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
         Length of one path
     n_time_steps : int
         Number of time steps
-    E_dir : list
+    E_dir : np.ndarray
         Direction of the electric field
     A_field : np.ndarray
         Vector potential integrated from electric field
@@ -123,6 +170,13 @@ def make_emission_exact_path(sys, pathlen, n_time_steps, E_dir, A_field, gauge, 
         Curvature is only needed for semiclassical calculation
     electric_f : np.ndarray
         Electric field is only needed for semiclassical calculation
+
+    Returns
+    -------
+    I_E_dir : np.ndarray
+        Exact emission in E-field direction
+    I_ortho : np.ndarray
+        Exact emission orthogonal to E-field direction
     """
 
     hderivx = sys.hderivfjit[0]
