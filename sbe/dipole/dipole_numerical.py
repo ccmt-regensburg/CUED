@@ -7,39 +7,39 @@ import math
 from params import params
 from sbe.brillouin import hex_mesh, rect_mesh
 
-# sigma_x = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
-# sigma_y = np.array([[0, -1j, 0],[1j, 0, 0], [0, 0, 0]])
-# sigma_z = np.array([[1, 0, 0],[0, -1, 0], [0, 0, 0]])
+#sigma_x = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
+#sigma_y = np.array([[0, -1j, 0],[1j, 0, 0], [0, 0, 0]])
+#sigma_z = np.array([[1, 0, 0],[0, -1, 0], [0, 0, 0]])
 
 sigma_x = np.array([[0, 1], [1, 0]])
 sigma_y = np.array([[0, -1j],[1j, 0]])
 sigma_z = np.array([[1, 0],[0, -1]])
 
-# def theta(kx, ky):
-#     theta = np.complex
-#     if kx > 0:
-#         theta = math.atan(ky/kx)
-#     elif kx < 0:
-#         if ky >= 0:
-#             theta = math.atan(ky/kx) + np.pi
-#         if ky < 0:
-#             theta = math.atan(ky/kx) - np.pi
-#     else:
-#         if ky > 0:
-#             theta = np.pi / 2
-#         if ky < 0:
-#             theta = - np.pi / 2
+def theta(kx, ky):
+    theta = np.complex128
+    if kx > 0:
+        theta = math.atan(ky/kx)
+    elif kx < 0:
+        if ky >= 0:
+            theta = math.atan(ky/kx) + np.pi
+        if ky < 0:
+            theta = math.atan(ky/kx) - np.pi
+    else:
+        if ky > 0:
+            theta = np.pi / 2
+        if ky < 0:
+            theta = - np.pi / 2
     
-#     return theta
+    return theta
 
-# def wavefunction(kx, ky, n):    
-#     wf = np.empty([n, n], dtype=np.complex) #1st index: component, 2nd index: band
-#     wf[0,0] = -1
-#     wf[0,1] = 1
-#     wf[1, :] = 1j*np.exp(1j*theta(kx, ky))
-#     wf /= np.sqrt(2)
+def wavefunction(kx, ky, n):    
+    wf = np.empty([n, n], dtype=np.complex128) #1st index: component, 2nd index: band
+    wf[0,0] = -1
+    wf[0,1] = 1
+    wf[1, :] = 1j*np.exp(1j*theta(kx, ky))
+    wf /= np.sqrt(2)
 
-#     return wf
+    return wf
 
 def hamiltonian(kx, ky):
     """
@@ -55,6 +55,7 @@ def hamiltonian(kx, ky):
         hmat : np.ndarray
             Hamiltonian in matrix-form at point (kx, ky)
     """
+
     A = 0.1974
     hmat = A*(ky*sigma_x - kx*sigma_y)
 
@@ -97,25 +98,27 @@ def diagonalize(Nk_in_path, num_paths, n, paths, gidx):   #gidx = index of gauge
             fourth index: band index
     """
     e = np.empty([Nk_in_path, num_paths, n], dtype=np.float64)
-    wf = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex)
+    wf = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
     
+    #print(paths)
+
     for j in range(num_paths):
         for i in range(Nk_in_path):
             kx = paths[j, i, 0]
             ky = paths[j, i, 1]
             e[i, j], wf_buff = lin.eigh(hamiltonian(kx, ky))
-            wf_gauged_entry = np.copy(wf_buff[gidx, :])
-            wf_buff[gidx, :] = np.abs(wf_gauged_entry)
-            wf_buff[~(np.arange(np.size(wf_buff, axis=0)) == gidx)] *= np.exp(1j*np.angle(wf_gauged_entry.conj()))
-            wf[i, j] = wf_buff
-            #wf[i, j] = wavefunction(kx, ky, n)
+            #wf_gauged_entry = np.copy(wf_buff[gidx, :])
+            #wf_buff[gidx, :] = np.abs(wf_gauged_entry)
+            #wf_buff[~(np.arange(np.size(wf_buff, axis=0)) == gidx)] *= np.exp(1j*np.angle(wf_gauged_entry.conj()))
+            #wf[i, j] = wf_buff
+            wf[i, j] = wavefunction(kx, ky, n)
 
     return e, wf
 
 def derivative(Nk_in_path, num_paths, n, paths, gidx, epsilon):
 
-    xderivative = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex)
-    yderivative = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex)
+    xderivative = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
+    yderivative = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
 
     pathsplusx = np.copy(paths)
     pathsplusx[:, :, 0] += epsilon
@@ -150,44 +153,6 @@ def derivative(Nk_in_path, num_paths, n, paths, gidx, epsilon):
 
     return xderivative, yderivative
 
-# def gradient(Nk_in_path, num_paths, n, paths, gidx, dk):
-#     """
-#         Calculate the kx- and ky- derivative of the wavefunction 
-#         on the m x m square grid of k-points
-
-#         Parameters
-#         ----------
-#         Nk_in_path : integer
-#             Number of k-points per path
-#         num_paths : integer
-#             Number of paths
-#         n : integer
-#             Number of bands
-#         wf : np.ndarray
-#             wavefunctions on each k-point
-#             first index: k-point in current path
-#             second index: index of current path
-#             third index: component of wf
-#             fourth index: band index
-
-#         Returns
-#         -------
-#         dwfkx, dwfky : np.ndarray
-#             kx and ky derivative of the wavefunction on each k-point
-#             first index: k-point in current path
-#             second index: index of current path
-#             third and fourth index: band indices
-#     """
-#     e, wf = diagonalize(Nk_in_path, num_paths, n, paths, gidx)
-    
-#     dwfkx = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex)
-#     dwfky = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex)
-    
-#     for i in range(n):
-#         for j in range(n):
-#             dwfky[:, :, i, j], dwfkx[:, :, i, j] = np.gradient(wf[:, :, i, j], dk)
-
-#     return dwfkx, dwfky
 
 def dipole_elements(Nk_in_path, num_paths, n, paths, gidx, epsilon):    
     """
@@ -220,70 +185,12 @@ def dipole_elements(Nk_in_path, num_paths, n, paths, gidx, epsilon):
     dwfkx, dwfky = derivative(Nk_in_path, num_paths, n, paths, gidx, epsilon)
     #dwfkx, dwfky = gradient(Nk_in_path, num_paths, n, paths, gidx, dk)
 
-    dx = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex)
-    dy = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex)
+    dx = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
+    dy = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
     
     for j in range(num_paths):
         for i in range(Nk_in_path):
             dx[i, j, :, :] = -1j*np.conjugate(wf[i, j, :, :]).T.dot(dwfkx[i, j, :, :])
             dy[i, j, :, :] = -1j*np.conjugate(wf[i, j, :, :]).T.dot(dwfky[i, j, :, :])
-    
+
     return dx, dy
-   
-def plots(dx, dy, e, wf, num_paths, Nk_in_path, mesh): 
-    """
-    Plots the real part of the dipole-field for each combination of n and n'
-    """
-
-    plt.figure()
-
-    plt.subplot(221)
-
-    plt.quiver(mesh[:, 1], mesh[:, 0], np.real(dx[:, :, 0, 0]), np.real(dy[:, :, 0, 0]))
-
-    plt.subplot(222)
-    plt.quiver(mesh[:, 1], mesh[:, 0], np.real(dx[:, :, 1, 0]), np.real(dy[:, :, 1, 0]))
-
-    plt.subplot(223)
-    plt.quiver(mesh[:, 1], mesh[:, 0], np.real(dx[:, :, 0, 1]), np.real(dy[:, :, 0, 1]))
-
-    plt.subplot(224)
-    plt.quiver(mesh[:, 1], mesh[:, 0], np.real(dx[:, :, 1, 1]), np.real(dy[:, :, 1, 1]))
-
-    plt.show()
-
-
-     
-if __name__ == "__main__":
-
-    n = 2                                   #number of bands
-    Nk_in_path = 2          #number of points per path
-    num_paths = 2            #number of paths in k-space
-    gidx = 0                                #index of gauged entry
-    epsilon = 0.01
-
-    angle_inc_E_field = params.angle_inc_E_field
-    E_dir = np.array([np.cos(np.radians(angle_inc_E_field)),
-                np.sin(np.radians(angle_inc_E_field))])
-
-    dk, kweight, mesh, paths = rect_mesh(params, E_dir)
-    #print(paths)
-    e, wf = diagonalize(Nk_in_path, num_paths, n, paths, gidx)
-    derx, dery = derivative(Nk_in_path, num_paths, n, paths, gidx, epsilon)
-    #gradx, grady = gradient(Nk_in_path, num_paths, n, paths, gidx, dk)
-
-    # plt.figure()
-    # plt.subplot(311)
-    # plt.plot(wf[:, 0, 0, 1].real)
-    # plt.plot(wf[:, 0, 1, 1].real)
-    # plt.subplot(312)
-    # plt.plot(derx[:, 0, 0 ,1].real)
-    # plt.plot(derx[:, 0, 1, 1].real)
-    # plt.subplot(313)
-    # plt.plot(gradx[:, 0, 0 ,1].real)
-    # plt.plot(gradx[:, 0, 1, 1].real)
-    # plt.show()
-
-    dx, dy = dipole_elements(Nk_in_path, num_paths, n, paths, gidx, epsilon) 
-    print('dx = ', dx, '\n dy = ', dy)
-    #plots(dx, dy, e, wf, num_paths, Nk_in_path, mesh)
