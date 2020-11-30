@@ -1,6 +1,6 @@
 from math import modf
 import numpy as np
-from numpy.fft import fft, fftfreq, fftshift, ifftshift
+from numpy.fft import *
 from numba import njit
 import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
@@ -503,7 +503,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
 def solution_containers(Nk1, Nk2, Nt, save_approx, save_full, zeeman=False):
     """
-        Function that builds the containers on which the solutions of the SBE, 
+        Function that builds the containers on which the solutions of the SBE,
         as well as the currents will be written
     """
     # Solution containers
@@ -588,7 +588,12 @@ def fourier(dt, data):
     '''
     return (dt/np.sqrt(2*np.pi))*fftshift(fft(ifftshift(data)))
 
-
+def ifourier(dt, data):
+    '''
+    Calculate the phase correct inverse fourier transform with proper normalization
+    for calculations centered around t=0
+    '''
+    return (np.sqrt(2*np.pi)/dt)*fftshift(ifft(ifftshift(data)))
 
 def gaussian(t, alpha):
     '''
@@ -606,7 +611,7 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
     """
         Calculates the Emission Intensity I(omega) (eq. 51 in https://arxiv.org/abs/2008.03177)
 
-        Author: 
+        Author:
         Additional Contact: Jan Wilhelm (jan.wilhelm@ur.de)
 
         Parameters
@@ -628,7 +633,7 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
             approximate emission j(t) orthogonal to E-field
         P_E_dir : ndarray
             polarization E-field direction
-        P_E_ortho : ndarray 
+        P_E_ortho : ndarray
             polarization orthogonal to E-field
         gaussian_envelope : function
             gaussian function to multiply to a function before Fourier transform
