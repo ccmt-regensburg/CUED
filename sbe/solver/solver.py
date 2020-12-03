@@ -189,9 +189,9 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         ky_in_path = path[:, 1]
 
         if do_semicl:
-            zeros = np.zeros(np.size(kx_in_path), dtype=np.complex)
-            dipole_in_path = zeros
-            A_in_path = zeros
+            zero_arr = np.zeros(np.size(kx_in_path), dtype=np.complex)
+            dipole_in_path = zero_arr
+            A_in_path = zero_arr
         else:
             # Calculate the dipole components along the path
             di_00x = dipole.Axfjit[0][0](kx=kx_in_path, ky=ky_in_path)
@@ -426,9 +426,9 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
         ecv_in_path = ecf(kx=kx, ky=ky) - evf(kx=kx, ky=ky)
 
         if do_semicl:
-            zeros = np.zeros(kx.size, dtype=np.complex128)
-            dipole_in_path = zeros
-            A_in_path = zeros
+            zero_arr = np.zeros(kx.size, dtype=np.complex128)
+            dipole_in_path = zero_arr
+            A_in_path = zero_arr
         else:
             di_00x = di_00xf(kx=kx, ky=ky)
             di_01x = di_01xf(kx=kx, ky=ky)
@@ -549,20 +549,20 @@ def initial_condition(e_fermi, temperature, ev, ec):
     Occupy conduction band according to inital Fermi energy and temperature
     '''
     knum = ec.size
-    zeros = np.zeros(knum, dtype=np.float64)
+    zero_arr = np.zeros(knum, dtype=np.float64)
     distrib_ec = np.zeros(knum, dtype=np.float64)
     distrib_ev = np.zeros(knum, dtype=np.float64)
     if temperature > 1e-5:
         distrib_ec += 1/(np.exp((ec-e_fermi)/temperature) + 1)
         distrib_ev += 1/(np.exp((ev-e_fermi)/temperature) + 1)
-        return np.array([distrib_ev, zeros, zeros, distrib_ec]).flatten('F')
+        return np.array([distrib_ev, zero_arr, zero_arr, distrib_ec]).flatten('F')
 
     smaller_e_fermi_ev = (e_fermi - ev) > 0
     smaller_e_fermi_ec = (e_fermi - ec) > 0
 
     distrib_ev[smaller_e_fermi_ev] += 1
     distrib_ec[smaller_e_fermi_ec] += 1
-    return np.array([distrib_ev, zeros, zeros, distrib_ec]).flatten('F')
+    return np.array([distrib_ev, zero_arr, zero_arr, distrib_ec]).flatten('F')
 
 
 def diff(x, y):
@@ -698,7 +698,7 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
                                         (freq/w).real, Iw_E_dir.real, Iw_E_dir.imag, Iw_ortho.real, Iw_ortho.imag,
                                         Int_E_dir.real, Int_ortho.real]),
                        header="t, I_E_dir, I_ortho, freqw/w, Re(Iw_E_dir), Im(Iw_E_dir), Re(Iw_ortho), Im(Iw_ortho), Int_E_dir, Int_ortho",
-                       fmt='%+.34f')
+                       fmt='%+.18e')
 
     ##############################################################
     # Always calculate exact emission formula
@@ -722,7 +722,7 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
                                     (freq/w).real, Iw_exact_E_dir.real, Iw_exact_E_dir.imag, Iw_exact_ortho.real, Iw_exact_ortho.imag,
                                     Int_exact_E_dir.real, Int_exact_ortho.real]),
                    header="t, I_exact_E_dir, I_exact_ortho, freqw/w, Re(Iw_exact_E_dir), Im(Iw_exact_E_dir), Re(Iw_exact_ortho), Im(Iw_exact_ortho), Int_exact_E_dir, Int_exact_ortho",
-                   fmt='%+.34f')
+                   fmt='%+.18e')
 
 
 def print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alpha, chirp,
