@@ -14,6 +14,55 @@ from sbe.dipole import diagonalize, dipole_elements
 from sbe.solver import make_emission_exact_path, make_current_path, make_polarization_path
 
 def sbe_solver_n_bands(params, sys, dipole, curvature):
+    """
+        Solver for the semiconductor bloch equation ( eq. (39) or (47) in https://arxiv.org/abs/2008.03177)
+        for a n band system with numerical calculation of the dipole elements (unfinished - analytical dipoles
+        can be used for n=2)
+
+        Author: Adrian Seith (adrian.seith@ur.de)
+        Additional Contact: Jan Wilhelm (jan.wilhelm@ur.de)
+
+        Parameters
+        ----------
+        sys : class
+            Symbolic Hamiltonian of the system
+        dipole : class
+            Symbolic expression for the dipole elements (eq. (37/38))
+        params :
+            Parameters from the params.py file
+        curvature : class
+            Symbolic berry curvature (d(Ax)/d(ky) - d(Ay)/d(kx)) with
+            A as the Berry connection (eq. (38))
+
+        Returns
+        -------
+        params
+        ------
+        saves parameters of the calculation
+
+        Iexact (file, 8 components)
+        ------
+        t : np.ndarray
+            Nt-dimensional array of time-points
+        I_exact_E_dir : np.ndarray
+            Nt-dimensional array of current (eq. (59/64)) in E-field direction
+        I_exact_ortho : np.ndarray
+            Nt-dimensional array of current (eq. (59/64)) orthogonal to E-field
+        freq/w : np.ndarray
+            Nt-dimensional array of time-points in frequency domain
+        Iw_exact_E_dir : np.ndarray
+            Nt-dimensional array of fourier trafo of current in E-field direction
+        Iw_exact_ortho : np.ndarray
+            Nt-dimensional array of fourier trafo of current orthogonal to E-field
+        Int_exact_E_dir : np.ndarray
+            Nt-dimensional array of emission intensity (eq. (51)) in E-field direction
+        Int_exact_ortho : np.ndarray
+            Nt-dimensional array of emission intensity (eq. (51)) orthogonal to E-field
+
+        Iapprox  (file, 8 components)
+        -------
+        approximate solutions, but same components as Iexact
+    """
     # RETRIEVE PARAMETERS
     ###########################################################################
     # Flag evaluation
@@ -105,7 +154,7 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
     # Initialize electric_field, create fnumba and initialize ode solver
     electric_field = make_electric_field(E0, w, alpha, chirp, phase)
     fnumba = make_fnumba(n, E_dir, gamma1, gamma2, electric_field,
-                         gauge=gauge, do_semicl=do_semicl)
+                         gauge=gauge)
     solver = ode(fnumba, jac=None)\
         .set_integrator('zvode', method='bdf', max_step=dt)
 
@@ -175,7 +224,7 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
 #############################################################################
         # Initialize right hand side of ode-solver
 
-        rhs_dipole, rhs_e, rhs_gamma1, rhs_gamma2 = rhs_of_sbe(params, dipole_in_path, e_in_path, dk, gamma1, gamma2)
+        rhs_dipole, rhs_e, rhs_gamma1, rhs_gamma2 = rhs_of_sbe(params, dipole_in_path, e_in_path, gamma1, gamma2)
 
         # Initialize the values of of each k point vector
         # (rho_nn(k), rho_nm(k), rho_mn(k), rho_mm(k))
@@ -246,7 +295,37 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
         np.savez(S_name, t=t, solution=solution, paths=paths,
                  electric_field=electric_field(t), A_field=A_field)
 
-def rhs_of_sbe(params, dipole_in_path, e_in_path, dk, gamma1, gamma2):
+def rhs_of_sbe(params, dipole_in_path, e_in_path, gamma1, gamma2):
+    """
+        Right hand side of the SBE in block-matrix form, where each block 
+        corresponds to a single k-point
+
+        Parameters:
+        -----------
+
+        params : class
+            parameters of the calculation
+        dipole_in_path : np.ndarray
+            array with the dipole elements of the current path
+        e_in_path : np.ndarray
+            array with the eigenenergies on the current path
+        gamma1 : float
+            occupation damping parameter
+        gamma2 : float
+            polarization damping parameter
+
+        Returns:
+        --------
+
+        rhs_dipole: np.ndarray
+            blocks of right hand side of SBE containing the dipole moments
+        rhs_e: np.ndarray
+            blocks of RHS of SBE containing eigenenergies
+        rhs_gamma1: np.ndarray
+            blocks of RHS containing gamma1
+        rhs_gamma2: np.ndarray
+            blocks of RHS containing gamma2
+    """
     n = params.n
     Nk1 = params.Nk1
     rhs_dipole = np.zeros([Nk1, (n**2), (n**2)], dtype=np.complex128) # * e_f * y
@@ -272,8 +351,32 @@ def rhs_of_sbe(params, dipole_in_path, e_in_path, dk, gamma1, gamma2):
     return rhs_dipole, rhs_e, rhs_gamma1, rhs_gamma2
 
 
-def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, gauge,
-                do_semicl):
+def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, gauge):
+    """
+        Initialization of the solver for the SBE ( eq. (39/40(80) in https://arxiv.org/abs/2008.03177)
+        
+        Author: Adrian Seith (adrian.seith@ur.de)
+        Additional Contact: Jan Wilhelm (jan.wilhelm@ur.de)
+
+        Parameters:
+        ----------- 
+            n : integer 
+                Number of bands of the system
+            E_dir : np.ndarray
+                x and y component of the direction of the electric field
+            gamma1 : float
+                occupation damping parameter
+            gamma2 : float
+                polarization damping
+            electric_field : function
+                returns the instantaneous driving field
+            gauge : str
+                length or velocity gauge (only v. implemented)
+        
+        Returns:
+        --------
+            freturn : function that is the right hand side of the ode
+    """
     if gauge == 'length':
         print('Using length gauge')
     elif gauge == 'velocity':
@@ -282,6 +385,10 @@ def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, gauge,
         raise AttributeError("You have to either assign velocity or length gauge")
 
     def fnumba(t, y, rhs_dipole, rhs_e, rhs_gamma1, rhs_gamma2, y0, params, dk):
+        """
+            function that multiplies the block-structure of the matrices of the RHS
+            of the SBE with the solution vector
+        """
         # x != y(t+dt)
         x = np.zeros(np.shape(y), dtype=np.complex128)
         Nk1 = params.Nk1
@@ -313,6 +420,10 @@ def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, gauge,
     return freturn
 
 def solution_containers(Nk1, Nk2, Nt, n, save_approx, save_full, zeeman=False):
+    """
+        Function that builds the containers on which the solutions of the SBE, 
+        as well as the currents will be written
+    """
     # Solution containers
     t = np.empty(Nt)
 
@@ -407,6 +518,45 @@ def fourier(dt, data):
 def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
                            J_E_dir, J_ortho, P_E_dir, P_ortho,
                            gaussian_envelope, save_approx, save_txt):
+    """
+        Calculates the Emission Intensity I(omega) (eq. 51 in https://arxiv.org/abs/2008.03177)
+
+        Author: 
+        Additional Contact: Jan Wilhelm (jan.wilhelm@ur.de)
+
+        Parameters
+        ----------
+
+        tail : str
+        kweight : float
+        w : float
+            driving pulse frequency
+        t : ndarray
+            array of the time points corresponding to a solution of the sbe
+        I_exact_E_dir: ndarray
+            exact emission j(t) in E-field direction
+        I_exact_ortho : ndarray
+            exact emission j(t) orthogonal to E-field
+        J_E_dir : ndarray
+            approximate emission j(t) in E-field direction
+        J_E_ortho : ndarray
+            approximate emission j(t) orthogonal to E-field
+        P_E_dir : ndarray
+            polarization E-field direction
+        P_E_ortho : ndarray 
+            polarization orthogonal to E-field
+        gaussian_envelope : function
+            gaussian function to multiply to a function before Fourier transform
+        save_approx : boolean
+            determines whether approximate solutions should be saved
+        save_txt : boolean
+            determines whether a .txt file with the soluion should be saved
+
+        Returns:
+        --------
+
+        savefiles (see documentation of sbe_solver())
+    """
     # Fourier transforms
     # 1/(3c^3) in atomic units
     prefac_emission = 1/(3*(137.036**3))
@@ -488,7 +638,9 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
 
 def print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alpha, chirp,
                     T2, tfmt0, dt, B0=None, mu=None, incident_angle=None):
-
+    """
+        Function that prints the input parameters if usr_info = True
+    """
     print("Input parameters:")
     print("Brillouin zone:                 " + BZ_type)
     print("Do Semiclassics                 " + str(do_semicl))
@@ -528,7 +680,9 @@ def print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alp
 
 
 def BZ_plot(kpnts, a, b1, b2, paths, si_units=True):
-
+    """
+        Function that plots the brillouin zone
+    """
     if si_units:
         a *= co.au_to_as
         kpnts *= co.as_to_au

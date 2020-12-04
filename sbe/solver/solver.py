@@ -1,6 +1,6 @@
 from math import modf
 import numpy as np
-from numpy.fft import fft, fftfreq, fftshift, ifftshift
+from numpy.fft import *
 from numba import njit
 import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
@@ -189,9 +189,9 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         ky_in_path = path[:, 1]
 
         if do_semicl:
-            zeros = np.zeros(np.size(kx_in_path), dtype=np.complex)
-            dipole_in_path = zeros
-            A_in_path = zeros
+            zero_arr = np.zeros(np.size(kx_in_path), dtype=np.complex)
+            dipole_in_path = zero_arr
+            A_in_path = zero_arr
         else:
             # Calculate the dipole components along the path
             di_00x = dipole.Axfjit[0][0](kx=kx_in_path, ky=ky_in_path)
@@ -426,9 +426,9 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
         ecv_in_path = ecf(kx=kx, ky=ky) - evf(kx=kx, ky=ky)
 
         if do_semicl:
-            zeros = np.zeros(kx.size, dtype=np.complex128)
-            dipole_in_path = zeros
-            A_in_path = zeros
+            zero_arr = np.zeros(kx.size, dtype=np.complex128)
+            dipole_in_path = zero_arr
+            A_in_path = zero_arr
         else:
             di_00x = di_00xf(kx=kx, ky=ky)
             di_01x = di_01xf(kx=kx, ky=ky)
@@ -502,6 +502,10 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
     return f
 
 def solution_containers(Nk1, Nk2, Nt, save_approx, save_full, zeeman=False):
+    """
+        Function that builds the containers on which the solutions of the SBE,
+        as well as the currents will be written
+    """
     # Solution containers
     t = np.empty(Nt)
 
@@ -545,20 +549,20 @@ def initial_condition(e_fermi, temperature, ev, ec):
     Occupy conduction band according to inital Fermi energy and temperature
     '''
     knum = ec.size
-    zeros = np.zeros(knum, dtype=np.float64)
+    zero_arr = np.zeros(knum, dtype=np.float64)
     distrib_ec = np.zeros(knum, dtype=np.float64)
     distrib_ev = np.zeros(knum, dtype=np.float64)
     if temperature > 1e-5:
         distrib_ec += 1/(np.exp((ec-e_fermi)/temperature) + 1)
         distrib_ev += 1/(np.exp((ev-e_fermi)/temperature) + 1)
-        return np.array([distrib_ev, zeros, zeros, distrib_ec]).flatten('F')
+        return np.array([distrib_ev, zero_arr, zero_arr, distrib_ec]).flatten('F')
 
     smaller_e_fermi_ev = (e_fermi - ev) > 0
     smaller_e_fermi_ec = (e_fermi - ec) > 0
 
     distrib_ev[smaller_e_fermi_ev] += 1
     distrib_ec[smaller_e_fermi_ec] += 1
-    return np.array([distrib_ev, zeros, zeros, distrib_ec]).flatten('F')
+    return np.array([distrib_ev, zero_arr, zero_arr, distrib_ec]).flatten('F')
 
 
 def diff(x, y):
@@ -584,7 +588,12 @@ def fourier(dt, data):
     '''
     return (dt/np.sqrt(2*np.pi))*fftshift(fft(ifftshift(data)))
 
-
+def ifourier(dt, data):
+    '''
+    Calculate the phase correct inverse fourier transform with proper normalization
+    for calculations centered around t=0
+    '''
+    return (np.sqrt(2*np.pi)/dt)*fftshift(ifft(ifftshift(data)))
 
 def gaussian(t, alpha):
     '''
@@ -599,6 +608,45 @@ def gaussian(t, alpha):
 def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
                            J_E_dir, J_ortho, P_E_dir, P_ortho,
                            gaussian_envelope, save_approx, save_txt):
+    """
+        Calculates the Emission Intensity I(omega) (eq. 51 in https://arxiv.org/abs/2008.03177)
+
+        Author:
+        Additional Contact: Jan Wilhelm (jan.wilhelm@ur.de)
+
+        Parameters
+        ----------
+
+        tail : str
+        kweight : float
+        w : float
+            driving pulse frequency
+        t : ndarray
+            array of the time points corresponding to a solution of the sbe
+        I_exact_E_dir: ndarray
+            exact emission j(t) in E-field direction
+        I_exact_ortho : ndarray
+            exact emission j(t) orthogonal to E-field
+        J_E_dir : ndarray
+            approximate emission j(t) in E-field direction
+        J_E_ortho : ndarray
+            approximate emission j(t) orthogonal to E-field
+        P_E_dir : ndarray
+            polarization E-field direction
+        P_E_ortho : ndarray
+            polarization orthogonal to E-field
+        gaussian_envelope : function
+            gaussian function to multiply to a function before Fourier transform
+        save_approx : boolean
+            determines whether approximate solutions should be saved
+        save_txt : boolean
+            determines whether a .txt file with the soluion should be saved
+
+        Returns:
+        --------
+
+        savefiles (see documentation of sbe_solver())
+    """
     # Fourier transforms
     # 1/(3c^3) in atomic units
     prefac_emission = 1/(3*(137.036**3))
@@ -650,7 +698,7 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
                                         (freq/w).real, Iw_E_dir.real, Iw_E_dir.imag, Iw_ortho.real, Iw_ortho.imag,
                                         Int_E_dir.real, Int_ortho.real]),
                        header="t, I_E_dir, I_ortho, freqw/w, Re(Iw_E_dir), Im(Iw_E_dir), Re(Iw_ortho), Im(Iw_ortho), Int_E_dir, Int_ortho",
-                       fmt='%+.34f')
+                       fmt='%+.18e')
 
     ##############################################################
     # Always calculate exact emission formula
@@ -674,12 +722,14 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
                                     (freq/w).real, Iw_exact_E_dir.real, Iw_exact_E_dir.imag, Iw_exact_ortho.real, Iw_exact_ortho.imag,
                                     Int_exact_E_dir.real, Int_exact_ortho.real]),
                    header="t, I_exact_E_dir, I_exact_ortho, freqw/w, Re(Iw_exact_E_dir), Im(Iw_exact_E_dir), Re(Iw_exact_ortho), Im(Iw_exact_ortho), Int_exact_E_dir, Int_exact_ortho",
-                   fmt='%+.34f')
+                   fmt='%+.18e')
 
 
 def print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alpha, chirp,
                     T2, tfmt0, dt, B0=None, mu=None, incident_angle=None):
-
+    """
+        Function that prints the input parameters if usr_info = True
+    """
     print("Input parameters:")
     print("Brillouin zone:                 " + BZ_type)
     print("Do Semiclassics                 " + str(do_semicl))
@@ -719,7 +769,9 @@ def print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alp
 
 
 def BZ_plot(kpnts, a, b1, b2, paths, si_units=True):
-
+    """
+        Function that plots the brillouin zone
+    """
     if si_units:
         a *= co.au_to_as
         kpnts *= co.as_to_au
