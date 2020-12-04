@@ -2,16 +2,10 @@ import numpy as np
 from sbe.utility import conversion_factors as co
 from sbe.dipole import hamiltonian, diagonalize, derivative, dipole_elements
 
-<<<<<<< HEAD
 def current_in_path_hderiv(Nk_in_path, num_paths, Nt, density_matrix, n, paths, gidx, epsilon, path_idx):
 
     """
         Calculates the full and intraband current for a given path from eq. (67) in sbe_p01
-=======
-def hderiv(Nk_in_path, num_paths, n, paths, epsilon):
-    """
-        Function that calculates the derivative of the hamiltonian in kx- and ky-direction
->>>>>>> cb49baf721b8d8dcd68310b014d59562ba6a9bea
 
         Parameters
         ----------
@@ -19,7 +13,6 @@ def hderiv(Nk_in_path, num_paths, n, paths, epsilon):
             number of k-points in x-direction (in the path)
         num_paths : int
             number of k-points in y-direction (number of paths)
-<<<<<<< HEAD
         Nt : int
             number of time-steps
         density_matrix : np.ndarray
@@ -44,22 +37,6 @@ def hderiv(Nk_in_path, num_paths, n, paths, epsilon):
 
     # derivative dh/dk
 
-=======
-        n : int
-            number of bands
-        paths : np.ndarray
-            k-paths along the derivative is evaluated
-        epsilon : float
-            parameter for the derivative
-        
-        Returns
-        -------
-        dhdkx : np.ndarray
-            kx - derivative of the Hamiltonian
-        dhdky : np.ndarray
-            ky - derivative of the Hamiltonian
-    """
->>>>>>> cb49baf721b8d8dcd68310b014d59562ba6a9bea
     epsilon = 0.15
 
     hgridplusx = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
@@ -83,39 +60,7 @@ def hderiv(Nk_in_path, num_paths, n, paths, epsilon):
     dhdkx = ( hgridplusx -  hgridminusx )/(2*epsilon)
     dhdky = ( hgridplusy -  hgridminusy )/(2*epsilon)
 
-<<<<<<< HEAD
     # matrix elements <n k | dh/dk | n' k>
-=======
-    return dhdkx, dhdky
-
-def matrix_elements(Nk_in_path, num_paths, n, paths, gidx, epsilon):
-    """
-        Function that calculates the matrix elements < n, k| d_k h_in | n' k > 
-        from eq. (67) in sbe_p01
-
-        Parameters
-        ----------
-        Nk_in_path : int
-            number of k-points in x-direction (in the path)
-        num_paths : int
-            number of k-points in y-direction (number of paths)
-        n : int
-            number of bands
-        paths : np.ndarray
-            k-paths along the matrix element is evaluated
-        gidx : int
-            gauge index for the wf-gauge
-        epsilon : float
-            parameter for the derivative
-        
-        Returns
-        -------
-        matrix_element_x, matrix_element_y : np.ndarray
-            matrix elements form eq. 67 for each k-point and band combination
-    """
-    e, wf = diagonalize(Nk_in_path, num_paths, n, paths, gidx)
-    dhdkx, dhdky = hderiv(Nk_in_path, num_paths, n, paths, epsilon)
->>>>>>> cb49baf721b8d8dcd68310b014d59562ba6a9bea
 
     matrix_element_x = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
     matrix_element_y = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
@@ -128,42 +73,8 @@ def matrix_elements(Nk_in_path, num_paths, n, paths, gidx, epsilon):
             buff = dhdky[i,j,:,:] @ wf[i,j,:,:]
             matrix_element_y[i, j, :, :] = np.conjugate(wf[i, j, :, :].T) @ buff
 
-<<<<<<< HEAD
     # full and intraband current via eq. (67) in sbe_p01
 
-=======
-def current_in_path_full(Nk_in_path, num_paths, Nt, density_matrix, n, paths, gidx, epsilon, path_idx):
-    """
-        Calculates the full current for a given path from eq. (67) in sbe_p01
-
-        Parameters
-        ----------
-        Nk_in_path : int
-            number of k-points in x-direction (in the path)
-        num_paths : int
-            number of k-points in y-direction (number of paths)
-        Nt : int
-            number of time-steps
-        density_matrix : np.ndarray
-            solution of the semiconductor bloch equation (eq. 51 in sbe_p01)
-        n : int
-            number of bands
-        paths : np.ndarray
-            k-paths in the mesh
-        gidx : int
-            gauge index for the wf-gauge
-        epsilon : float
-            parameter for the derivative
-        path_idx : int
-            index of the current path
-
-        Returns
-        -------
-        current_in_path : np.ndarray
-            full current of the path with idx path_idx
-        
-    """
->>>>>>> cb49baf721b8d8dcd68310b014d59562ba6a9bea
     current_in_path = np.zeros([Nt, 2], dtype=np.complex128)
     current_in_path_intraband = np.zeros([Nt, 2], dtype=np.complex128)
     melx = matrix_element_x[:, path_idx, :, :].reshape(Nk_in_path, n**2)
@@ -194,7 +105,6 @@ def current_in_path_full(Nk_in_path, num_paths, Nt, density_matrix, n, paths, gi
 
     return current_in_path, current_in_path_intraband
 
-<<<<<<< HEAD
 def matrix_elements_dipoles(Nk_in_path, num_paths, n, paths, gidx, epsilon, dipole_in_path, e_in_path, path_idx):
     
     # derivative of band structure
@@ -249,39 +159,6 @@ def matrix_elements_dipoles(Nk_in_path, num_paths, n, paths, gidx, epsilon, dipo
 
 def current_in_path_dipole(Nk_in_path, num_paths, Nt, density_matrix, n, paths, gidx, epsilon, path_idx, dipole_in_path, e_in_path):
 
-=======
-def current_in_path_intraband(Nk_in_path, num_paths, Nt, density_matrix, n, paths, gidx, epsilon, path_idx):
-    """
-        Calculates the intraband current for a given path from eq. (67) in sbe_p01 (n = n')
-
-        Parameters
-        ----------
-        Nk_in_path : int
-            number of k-points in x-direction (in the path)
-        num_paths : int
-            number of k-points in y-direction (number of paths)
-        Nt : int
-            number of time-steps
-        density_matrix : np.ndarray
-            solution of the semiconductor bloch equation (eq. 51 in sbe_p01)
-        n : int
-            number of bands
-        paths : np.ndarray
-            k-paths in the mesh
-        gidx : int
-            gauge index for the wf-gauge
-        epsilon : float
-            parameter for the derivative
-        path_idx : int
-            index of the current path
-
-        Returns
-        -------
-        current_in_path : np.ndarray
-            intraband current of the path with idx path_idx
-        
-    """    
->>>>>>> cb49baf721b8d8dcd68310b014d59562ba6a9bea
     current_in_path = np.zeros([Nt, 2], dtype=np.complex128)
     current_in_path_intraband = np.zeros([Nt, 2], dtype=np.complex128)
 
