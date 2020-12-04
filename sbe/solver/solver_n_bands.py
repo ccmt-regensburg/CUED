@@ -9,9 +9,9 @@ from scipy.integrate import ode
 from sbe.brillouin import hex_mesh, rect_mesh
 from sbe.utility import conversion_factors as co
 from sbe.solver import make_electric_field
-from sbe.solver import current_in_path_full
+from sbe.solver import current_in_path_hderiv, current_in_path_dipole
 from sbe.dipole import diagonalize, dipole_elements
-from sbe.solver import make_emission_exact_path
+from sbe.solver import make_emission_exact_path, make_current_path, make_polarization_path
 
 def sbe_solver_n_bands(params, sys, dipole, curvature):
     # RETRIEVE PARAMETERS
@@ -114,12 +114,16 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
 
     # Exact emission function
     # Set after first run
-    emission_exact_path = np.zeros([Nt, 2], dtype=np.complex128)
+    emission_exact_path = None
     # Approximate (kira & koch) emission function
     # Set after first run if save_approx=True
     current_path = None
     polarization_path = None
-
+    dipole_in_path = np.empty([Nk1, 2, 2], dtype=np.complex128)
+    e_in_path = np.empty([Nk1, 2], dtype=np.complex128)
+    emission_exact_path_full = np.zeros([Nt, 2], dtype=np.complex128)   
+    emission_path_intraband = np.zeros([Nt, 2], dtype=np.complex128)
+    
     e, wf = diagonalize(Nk1, Nk2, params.n, paths, 0)
 
     ###########################################################################
@@ -138,41 +142,36 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
         kx_in_path = path[:, 0]
         ky_in_path = path[:, 1]
 
-        if do_semicl:
-            zeros = np.zeros(np.size(kx_in_path, n, n), dtype=np.complex128)
-            dipole_in_path = zeros
-        else:
-#############################################################################    
-            # Calculate the dipole components along the path
+#############################################################################
+        if params.dipole_numerics:    
+        # Calculate the dipole components along the path
             dipole_x, dipole_y = dipole_elements(Nk1, Nk2, params.n, paths, 0, params.epsilon)
 
             # Calculate the dot products E_dir.d_nm(k).
             # To be multiplied by E-field magnitude later.
-            # A[0, 1, :] means 0-1 offdiagonal element
-
             dipole_in_path = (E_dir[0]*dipole_x[:, Nk2_idx, :, :] + E_dir[1]*dipole_y[:, Nk2_idx, :, :])
 
-
-        e_in_path = e[:, Nk2_idx, :]
+            e_in_path = e[:, Nk2_idx, :]
 #############################################################################
-        #     # Calculate the dipole components along the path
-        #     di_00x = dipole.Axfjit[0][0](kx=kx_in_path, ky=ky_in_path)
-        #     di_01x = dipole.Axfjit[0][1](kx=kx_in_path, ky=ky_in_path)
-        #     di_11x = dipole.Axfjit[1][1](kx=kx_in_path, ky=ky_in_path)
-        #     di_00y = dipole.Ayfjit[0][0](kx=kx_in_path, ky=ky_in_path)
-        #     di_01y = dipole.Ayfjit[0][1](kx=kx_in_path, ky=ky_in_path)
-        #     di_11y = dipole.Ayfjit[1][1](kx=kx_in_path, ky=ky_in_path)
+        else:
+            # Calculate the dipole components along the path
+            di_00x = dipole.Axfjit[0][0](kx=kx_in_path, ky=ky_in_path)
+            di_01x = dipole.Axfjit[0][1](kx=kx_in_path, ky=ky_in_path)
+            di_11x = dipole.Axfjit[1][1](kx=kx_in_path, ky=ky_in_path)
+            di_00y = dipole.Ayfjit[0][0](kx=kx_in_path, ky=ky_in_path)
+            di_01y = dipole.Ayfjit[0][1](kx=kx_in_path, ky=ky_in_path)
+            di_11y = dipole.Ayfjit[1][1](kx=kx_in_path, ky=ky_in_path)
 
-        #     # Calculate the dot products E_dir.d_nm(k).
-        #     # To be multiplied by E-field magnitude later.
-        #     # A[0, 1, :] means 0-1 offdiagonal element
-        #     dipole_in_path[:, 0, 1] = E_dir[0]*di_01x + E_dir[1]*di_01y
-        #     dipole_in_path[:, 1, 0] = dipole_in_path[:, 0, 1].conjugate()
-        #     dipole_in_path[:, 0, 0] = E_dir[0]*di_00x + E_dir[1]*di_00y
-        #     dipole_in_path[:, 1, 1] = E_dir[0]*di_11x + E_dir[1]*di_11y
+            # Calculate the dot products E_dir.d_nm(k).
+            # To be multiplied by E-field magnitude later.
+            # A[0, 1, :] means 0-1 offdiagonal element
+            dipole_in_path[:, 0, 1] = E_dir[0]*di_01x + E_dir[1]*di_01y
+            dipole_in_path[:, 1, 0] = dipole_in_path[:, 0, 1].conjugate()
+            dipole_in_path[:, 0, 0] = E_dir[0]*di_00x + E_dir[1]*di_00y
+            dipole_in_path[:, 1, 1] = E_dir[0]*di_11x + E_dir[1]*di_11y
 
-        # e_in_path[:, 0] = sys.efjit[0](kx=kx_in_path, ky=ky_in_path)
-        # e_in_path[:, 1] = sys.efjit[1](kx=kx_in_path, ky=ky_in_path)
+        e_in_path[:, 0] = sys.efjit[0](kx=kx_in_path, ky=ky_in_path)
+        e_in_path[:, 1] = sys.efjit[1](kx=kx_in_path, ky=ky_in_path)
 #############################################################################
         # Initialize right hand side of ode-solver
 
@@ -201,7 +200,7 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
             # Do not append the last element (A_field)
             # If save_full is False Nk2_idx is 0 as only the current path
             # is saved
-            solution[:, Nk2_idx, ti, :] = solver.y[:-1].reshape(Nk1, n**2)
+            solution[:, Nk2_idx, ti, :, :] = solver.y[:-1].reshape(Nk1, n, n)
             # Construct time array only once
             if not t_constructed:
                 # Construct time and A_field only in first round
@@ -211,34 +210,23 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
 
             # Integrate one integration time step
             solver.integrate(solver.t + dt)
-
             # Increment time counter
             ti += 1
 
         # Compute per path observables
-################################################################################################################
-        # if not t_constructed:
-        #     # Construct the function after the first full run!
-        #     emission_exact_path = make_emission_exact_path(sys, Nk1, Nt, E_dir, A_field,
-        #                                                    gauge, do_semicl, curvature, E_field)
-        #     if save_approx:
-        #         # Only need kira & koch formulas if save_approx is set
-        #         current_path = make_current_path(sys, Nk1, Nt, E_dir, A_field, gauge)
-        #         polarization_path = make_polarization_path(dipole, Nk1, Nt, E_dir, A_field,
-        #                                                    gauge)
 
-        # # Compute per path observables
-        # emission_exact_path(path, solution[:, Nk2_idx, :, :], I_exact_E_dir, I_exact_ortho)
-        # t_constructed = True
-###################################################################################################################
-        current_path = current_in_path_full(Nk1, Nk2, Nt, solution, params.n, paths, 0, params.epsilon, Nk2_idx)
-        emission_exact_path += current_path
 
+        current_path, current_path_intraband = current_in_path_dipole(Nk1, Nk2, Nt, solution, params.n, paths, 0, params.epsilon, Nk2_idx, dipole_in_path, e_in_path)
+        emission_exact_path_full += current_path
+        emission_path_intraband += current_path_intraband
+        
         # Flag that time array has been built up
         t_constructed = True
-    I_exact_E_dir = emission_exact_path[:,0]
-    I_exact_orth = emission_exact_path[:,1]
-###################################################################################################################
+    I_exact_E_dir = emission_exact_path_full[:,0]
+    I_exact_orth = emission_exact_path_full[:,1]
+    J_E_dir = emission_path_intraband[:,0]
+    J_ortho = emission_path_intraband[:,1]
+    
     # Write solutions
     # Filename tail
     tail = 'E_{:.2f}_w_{:.2f}_a_{:.2f}_{}_t0_{:.2f}_NK1-{}_NK2-{}_T1_{:.2f}_T2_{:.2f}_chirp_{:.3f}_ph_{:.2f}'\
@@ -332,10 +320,10 @@ def solution_containers(Nk1, Nk2, Nt, n, save_approx, save_full, zeeman=False):
     # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
     if save_full:
         # Make container for full solution if it is needed
-        solution = np.empty((Nk1, Nk2, Nt, n**2), dtype=np.complex128)
+        solution = np.empty((Nk1, Nk2, Nt, n, n), dtype=np.complex128)
     else:
         # Only one path needed at a time if no full solution is needed
-        solution = np.empty((Nk1, 1, Nt, n**2), dtype=np.complex128)
+        solution = np.empty((Nk1, 1, Nt, n, n), dtype=np.complex128)
 
     A_field = np.empty(Nt, dtype=np.float64)
     E_field = np.empty(Nt, dtype=np.float64)

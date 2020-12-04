@@ -115,6 +115,41 @@ def diagonalize(Nk_in_path, num_paths, n, paths, gidx):   #gidx = index of gauge
 
     return e, wf
 
+def ederivative(Nk_in_path, num_paths, n, paths, gidx, epsilon):
+
+    pathsplusx = np.copy(paths)
+    pathsplusx[:, :, 0] += epsilon
+    pathsminusx = np.copy(paths)
+    pathsminusx[:, :, 0] -= epsilon
+    pathsplusy = np.copy(paths)
+    pathsplusy[:, :, 1] += epsilon
+    pathsminusy = np.copy(paths)
+    pathsminusy[:, :, 1] -= epsilon
+
+    pathsplus2x = np.copy(paths)
+    pathsplus2x[:, :, 0] += 2*epsilon
+    pathsminus2x = np.copy(paths)
+    pathsminus2x[:, :, 0] -= 2*epsilon
+    pathsplus2y = np.copy(paths)
+    pathsplus2y[:, :, 1] += 2*epsilon
+    pathsminus2y = np.copy(paths)
+    pathsminus2y[:, :, 1] -= 2*epsilon
+
+    eplusx, wfplusx = diagonalize(Nk_in_path, num_paths, n, pathsplusx, gidx)
+    eminusx, wfminusx = diagonalize(Nk_in_path, num_paths, n, pathsminusx, gidx)
+    eplusy, wfplusy = diagonalize(Nk_in_path, num_paths, n, pathsplusy, gidx)
+    eminusy, wfminusy = diagonalize(Nk_in_path, num_paths, n, pathsminusy, gidx)
+
+    eplus2, wfplus2x = diagonalize(Nk_in_path, num_paths, n, pathsplus2x, gidx)
+    eminus2x, wfminus2x = diagonalize(Nk_in_path, num_paths, n, pathsminus2x, gidx)
+    eplus2y, wfplus2y = diagonalize(Nk_in_path, num_paths, n, pathsplus2y, gidx)
+    eminus2y, wfminus2y = diagonalize(Nk_in_path, num_paths, n, pathsminus2y, gidx)
+
+    exderivative = ( - eplus2x + 8 * eplusx - 8 * eminusx + eminus2x)/(12*epsilon)
+    eyderivative = ( - eplus2y + 8 * eplusy - 8 * eminusy + eminus2y)/(12*epsilon)
+
+    return exderivative, eyderivative
+
 def derivative(Nk_in_path, num_paths, n, paths, gidx, epsilon):
 
     xderivative = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)

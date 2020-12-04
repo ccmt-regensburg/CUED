@@ -4,7 +4,7 @@ from params import params
 
 import sbe.dipole
 import sbe.example
-from sbe.solver import sbe_solver_n_bands_intraband
+from sbe.solver import sbe_solver_n_bands
 
 
 def dirac():
@@ -21,19 +21,7 @@ def dirac():
 
 def run(system, dipole, curvature):
 
-    # params.gauge = 'length'
-    # params.BZ_type = '2line'
-    # params.Nk1 = 90
-    # params.Nk2 = 2
-
-    # params.E0 = 5
-    # params.w = 25
-    # params.alpha = 25
-
-    # #params.e_fermi = 0.0
-    # #params.temperature = 0.0
-
-    sbe_solver_n_bands_intraband(params, system, dipole, curvature)
+    sbe_solver_n_bands(params, system, dipole, curvature)
 
 if __name__ == "__main__":
     run(*dirac())

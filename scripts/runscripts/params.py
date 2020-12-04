@@ -57,3 +57,9 @@ class params:
     save_approx   = True
     save_full     = False
     save_txt      = True
+
+    # Parameters for numerical n band solver
+    dipole_numerics = False
+
+    n = 2                       # number of bands
+    epsilon = 0.003             # Parameter for numerical derivative
