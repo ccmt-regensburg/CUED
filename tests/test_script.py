@@ -17,16 +17,17 @@ def check_test(testdir):
     threshold_rel_error = 0.1
 
     filename_params  = testdir + '/params.py'
-    filename_run     = testdir + '/runscript.py' 
+    filename_run     = testdir + '/runscript.py'
 
     for filename in os.listdir(testdir):
         if filename.startswith('reference_Iapprox'):
-            filename_Iapprox         = testdir + '/' + filename 
-            filename_Iapprox_printed = testdir + '/' + filename[10:]
-
+            filename_Iapprox         = testdir + '/' + filename
+        if filename.startswith('Iapprox'):
+            filename_Iapprox_printed = testdir + '/' + filename
         if filename.startswith('reference_Iexact'):
-            filename_Iexact         = testdir + '/' + filename 
-            filename_Iexact_printed = testdir + '/' + filename[10:]
+            filename_Iexact         = testdir + '/' + filename
+        if filename.startswith('Iexact'):
+            filename_Iexact_printed = testdir + '/' + filename
 
     assert os.path.isfile(filename_params),  'params.py is missing.'
     assert os.path.isfile(filename_run),     'runscript.py is missing.'
@@ -40,34 +41,49 @@ def check_test(testdir):
     assert os.path.isfile(filename_Iexact_printed),  "Iexact is not printed from the code"
     assert os.path.isfile(filename_Iapprox_printed), "Iapprox is not printed from the code"
 
+    freqw = Iexact_reference[3]
+    # All indices between 0 and 20th order
+    freq_idx = np.where(np.logical_and(0 <= freqw, freqw <=20))[0]
+
+    # Load all relevant files and restrict data to max 20th order
     Iexact_reference     = np.array(np.load(filename_Iexact))
+    Iexact_E_dir_reference = Iexact_reference[6][freq_idx]
+    Iexact_ortho_reference = Iexact_reference[7][freq_idx]
+
     Iexact_printed       = np.array(np.load(filename_Iexact_printed))
+    Iexact_E_dir_printed = Iexact_printed[6][freq_idx]
+    Iexact_ortho_printed = Iexact_printed[7][freq_idx]
 
     Iapprox_reference    = np.array(np.load(filename_Iapprox))
+    Iapprox_E_dir_reference = Iapprox_reference[6][freq_idx]
+    Iapprox_ortho_reference = Iapprox_reference[7][freq_idx]
+
     Iapprox_printed      = np.array(np.load(filename_Iapprox_printed))
+    Iapprox_E_dir_printed = Iapprox_printed[6][freq_idx]
+    Iapprox_ortho_printed = Iapprox_printed[7][freq_idx]
 
     print("\n\nMaxima of the emission spectra: ", 
-          "\nexact  E_dir: ", np.amax(np.abs(Iexact_reference[6]))  , 
-          "\nexact  ortho: ", np.amax(np.abs(Iexact_reference[7]))  , 
-          "\napprox E_dir: ", np.amax(np.abs(Iapprox_reference[6])) , 
-          "\napprox ortho: ", np.amax(np.abs(Iapprox_reference[7])) )
+          "\nexact  E_dir: ", np.amax(np.abs(Iexact_E_dir_reference))  ,
+          "\nexact  ortho: ", np.amax(np.abs(Iexact_ortho_reference))  ,
+          "\napprox E_dir: ", np.amax(np.abs(Iapprox_E_dir_reference)) ,
+          "\napprox ortho: ", np.amax(np.abs(Iapprox_ortho_reference)) )
 
-    Iexact_relerror      = (np.abs(Iexact_printed[6]    + Iexact_printed[7]   ) + 1.0E-90) / \
-                           (np.abs(Iexact_reference[6]  + Iexact_reference[7] ) + 1.0E-90) - 1
-    Iapprox_relerror     = (np.abs(Iapprox_printed[6]   + Iapprox_printed[7]  ) + 1.0E-90) / \
-                           (np.abs(Iapprox_reference[6] + Iapprox_reference[7]) + 1.0E-90) - 1
+    Iexact_relerror      = (np.abs(Iexact_E_dir_printed    + Iexact_ortho_printed   ) + 1.0E-90) / \
+                           (np.abs(Iexact_E_dir_reference  + Iexact_ortho_reference ) + 1.0E-90) - 1
+    Iapprox_relerror     = (np.abs(Iapprox_E_dir_printed   + Iapprox_ortho_printed  ) + 1.0E-90) / \
+                           (np.abs(Iapprox_E_dir_reference + Iapprox_ortho_reference) + 1.0E-90) - 1
 
     Iexact_max_relerror  = np.amax(np.abs(Iexact_relerror))
     Iapprox_max_relerror = np.amax(np.abs(Iapprox_relerror))
 
     print("\n\nTesting the exact emission spectrum I(omega):", 
-      "\n\nThe maximum relative deviation between the computed and the reference spectrum is:", Iexact_max_relerror, 
+      "\n\nThe maximum relative deviation between the computed and the reference spectrum is:", Iexact_max_relerror,
         "\nThe threshold is:                                                                 ", threshold_rel_error, "\n")
 
     assert Iexact_max_relerror < threshold_rel_error, "The exact emission spectrum is not matching."
 
     print("Testing the approx. emission spectrum I(omega):", 
-      "\n\nThe maximum relative deviation between the computed and the reference spectrum is:", Iapprox_max_relerror, 
+      "\n\nThe maximum relative deviation between the computed and the reference spectrum is:", Iapprox_max_relerror,
         "\nThe threshold is:                                                                 ", threshold_rel_error, "\n")
 
     assert Iapprox_max_relerror < threshold_rel_error, "The approx. emission spectrum is not matching."
