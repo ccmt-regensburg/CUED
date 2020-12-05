@@ -7,7 +7,8 @@ from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode
 from sbe.brillouin import hex_mesh, rect_mesh
 from sbe.utility import conversion_factors as co
-from sbe.solver import make_current_path, make_polarization_path, make_emission_exact_path
+from sbe.solver import make_current_path, make_polarization_path
+from sbe.solver import make_emission_exact_path_length, make_emission_exact_path_velocity
 from sbe.solver import make_electric_field
 
 
@@ -149,9 +150,6 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         dk, kweight, _kpnts, paths = rect_mesh(params, E_dir)
         # BZ_plot(_kpnts, a, b1, b2, paths)
 
-    # Time array construction flag
-    t_constructed = False
-
     # Initialize electric_field, create fnumba and initialize ode solver
     if electric_field_function is None:
         electric_field = make_electric_field(E0, w, alpha, chirp, phase)
@@ -164,32 +162,30 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         .set_integrator('zvode', method='bdf', max_step=dt)
 
     t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, P_E_dir, P_ortho, _dummy =\
-        solution_containers(Nk1, Nk2, Nt, save_approx, save_full)
-
-    # Exact emission function
-    # Set after first run
-    emission_exact_path = None
-    # Approximate (kira & koch) emission function
-    # Set after first run if save_approx=True
-    current_path = None
-    polarization_path = None
+        solution_container(Nk1, Nt, save_approx)
 
     ###########################################################################
     # SOLVING
     ###########################################################################
     # Iterate through each path in the Brillouin zone
     for Nk2_idx, path in enumerate(paths):
+
+        if gauge == 'length':
+            emission_exact_path = make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature)
+        if gauge == 'velocity':
+            emission_exact_path = make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature)
+        if save_approx:
+            polarization_path = make_polarization_path(dipole, path, E_dir, gauge)
+            current_path = make_current_path(sys, path, E_dir, gauge)
+
         print("Path: ", Nk2_idx + 1)
-        if not save_full:
-            # If we don't need the full solution only operate on path idx 0
-            Nk2_idx = 0
 
         # Retrieve the set of k-points for the current path
         kx_in_path = path[:, 0]
         ky_in_path = path[:, 1]
 
         if do_semicl:
-            zero_arr = np.zeros(np.size(kx_in_path), dtype=np.complex)
+            zero_arr = np.zeros(np.size(kx_in_path), dtype=np.complex128)
             dipole_in_path = zero_arr
             A_in_path = zero_arr
         else:
@@ -232,45 +228,30 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
             # Save solution each output step
             # Do not append the last element (A_field)
-            # If save_full is False Nk2_idx is 0 as only the current path
-            # is saved
-            solution[:, Nk2_idx, ti, :] = solver.y[:-1].reshape(Nk1, 4)
+            solution[:, :] = solver.y[:-1].reshape(Nk1, 4)
             # Construct time array only once
-            if not t_constructed:
+            if Nk2_idx == 0:
                 # Construct time and A_field only in first round
                 t[ti] = solver.t
                 A_field[ti] = solver.y[-1].real
                 E_field[ti] = electric_field(t[ti])
+
+            I_E_dir_buf, I_ortho_buf = emission_exact_path(solution, E_field[ti], A_field[ti])
+            I_exact_E_dir[ti] += I_E_dir_buf
+            I_exact_ortho[ti] += I_ortho_buf
+            if save_approx:
+                P_E_dir_buf, P_ortho_buf = polarization_path(solution[:, 2], A_field[ti])
+                P_E_dir[ti] += P_E_dir_buf
+                P_ortho[ti] += P_ortho_buf
+                J_E_dir_buf, J_ortho_buf = current_path(solution[:, 0], solution[:, 3], A_field[ti])
+                J_E_dir[ti] += J_E_dir_buf
+                J_ortho[ti] += J_ortho_buf
 
             # Integrate one integration time step
             solver.integrate(solver.t + dt)
 
             # Increment time counter
             ti += 1
-
-        if not t_constructed:
-            # Construct the function after the first full run!
-            emission_exact_path = make_emission_exact_path(sys, Nk1, Nt, E_dir, A_field,
-                                                           gauge, do_semicl, curvature, E_field)
-            if save_approx:
-                # Only need kira & koch formulas if save_approx is set
-                current_path = make_current_path(sys, Nk1, Nt, E_dir, A_field, gauge)
-                polarization_path = make_polarization_path(dipole, Nk1, Nt, E_dir, A_field,
-                                                           gauge)
-
-        # Compute per path observables
-        emission_exact_path(path, solution[:, Nk2_idx, :, :], I_exact_E_dir, I_exact_ortho)
-
-        if save_approx:
-            # Only calculate kira & koch formula if save_approx is set
-            fv = solution[:, Nk2_idx, :, 0]
-            fc = solution[:, Nk2_idx, :, 3]
-            pcv = solution[:, Nk2_idx, :, 2]
-            current_path(path, fv, fc, J_E_dir, J_ortho)
-            polarization_path(path, pcv, P_E_dir, P_ortho)
-
-        # Flag that time array has been built up
-        t_constructed = True
 
     # Write solutions
     # Filename tail
@@ -501,25 +482,20 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
     return f
 
-def solution_containers(Nk1, Nk2, Nt, save_approx, save_full, zeeman=False):
+def solution_container(Nk1, Nt, save_approx, zeeman=False):
     """
         Function that builds the containers on which the solutions of the SBE,
         as well as the currents will be written
     """
     # Solution containers
-    t = np.empty(Nt)
+    t = np.zeros(Nt)
 
     # The solution array is structred as: first index is Nk1-index,
     # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
-    if save_full:
-        # Make container for full solution if it is needed
-        solution = np.empty((Nk1, Nk2, Nt, 4), dtype=complex)
-    else:
-        # Only one path needed at a time if no full solution is needed
-        solution = np.empty((Nk1, 1, Nt, 4), dtype=complex)
+    solution = np.zeros((Nk1, 4), dtype=complex)
 
-    A_field = np.empty(Nt, dtype=np.float64)
-    E_field = np.empty(Nt, dtype=np.float64)
+    A_field = np.zeros(Nt, dtype=np.float64)
+    E_field = np.zeros(Nt, dtype=np.float64)
 
     I_exact_E_dir = np.zeros(Nt, dtype=np.float64)
     I_exact_ortho = np.zeros(Nt, dtype=np.float64)
@@ -536,7 +512,7 @@ def solution_containers(Nk1, Nk2, Nt, save_approx, save_full, zeeman=False):
         P_ortho = None
 
     if zeeman:
-        Zee_field = np.empty((Nt, 3), dtype=np.float64)
+        Zee_field = np.zeros((Nt, 3), dtype=np.float64)
         return t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, \
             P_E_dir, P_ortho, Zee_field
 

@@ -11,7 +11,7 @@ from sbe.utility import conversion_factors as co
 from sbe.solver import make_electric_field
 from sbe.solver import current_in_path_hderiv, current_in_path_dipole
 from sbe.dipole import diagonalize, dipole_elements
-from sbe.solver import make_emission_exact_path, make_current_path, make_polarization_path
+from sbe.solver import make_emission_exact_path_time, make_current_path_time, make_polarization_path_time
 
 def sbe_solver_n_bands(params, sys, dipole, curvature):
     """
