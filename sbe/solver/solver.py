@@ -68,12 +68,16 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     # RETRIEVE PARAMETERS
     ###########################################################################
     # Flag evaluation
-    user_out = params.user_out
-    save_full = params.save_full
-    save_approx = params.save_approx
-    save_txt = params.save_txt
-    do_semicl = params.do_semicl
-    gauge = params.gauge
+    user_out = params.user_out                     # Command line progress output
+    save_full = params.save_full                   # Save full density matrix
+    save_approx = params.save_approx               # Save kira & koch approx. results
+    save_txt = params.save_txt                     # Save data as human readable text file
+    do_semicl = params.do_semicl                   # Additional semiclassical observable calculation
+    gauge = params.gauge                           # length (dipole) or velocity (houston) gauge
+
+    symmetric_insulator = False                    # special flag for more accurate insulator calc.
+    if hasattr(params, 'symmetric_insulator'):
+        symmetric_insulator = params.symmetric_insulator
 
     # System parameters
     a = params.a                                   # Lattice spacing
@@ -171,9 +175,9 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     for Nk2_idx, path in enumerate(paths):
 
         if gauge == 'length':
-            emission_exact_path = make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature)
+            emission_exact_path = make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature, symmetric_insulator)
         if gauge == 'velocity':
-            emission_exact_path = make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature)
+            emission_exact_path = make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, symmetric_insulator)
         if save_approx:
             polarization_path = make_polarization_path(dipole, path, E_dir, gauge)
             current_path = make_current_path(sys, path, E_dir, gauge)

@@ -345,7 +345,7 @@ def make_polarization_path(dipole, path, E_dir, gauge):
     pathlen = kx_in_path_before_shift.size
 
     @njit
-    def polarization_path(pcv, A_field):
+    def polarization_path(rho_cv, A_field):
         ##################################################
         # Dipole container
         ##################################################
@@ -371,8 +371,8 @@ def make_polarization_path(dipole, path, E_dir, gauge):
         d_E_dir[:] = d_01x * E_dir[0] + d_01y * E_dir[1]
         d_ortho[:] = d_01x * E_ort[0] + d_01y * E_ort[1]
 
-        P_E_dir = 2*np.real(np.sum(d_E_dir * pcv))
-        P_ortho = 2*np.real(np.sum(d_ortho * pcv))
+        P_E_dir = 2*np.real(np.sum(d_E_dir * rho_cv))
+        P_ortho = 2*np.real(np.sum(d_ortho * rho_cv))
 
         return P_E_dir, P_ortho
 
@@ -417,7 +417,7 @@ def make_current_path(sys, path, E_dir, gauge):
     pathlen = kx_in_path_before_shift.size
 
     @njit
-    def current_path_time(fv, fc, A_field):
+    def current_path_time(rho_vv, rho_cc, A_field):
         ##################################################
         # E derivative container
         ##################################################
@@ -434,11 +434,11 @@ def make_current_path(sys, path, E_dir, gauge):
         if gauge == 'length':
             kx_shift = 0
             ky_shift = 0
-            fv_subs = 0
+            rho_vv_subs = 0
         if gauge == 'velocity':
             kx_shift = A_field*E_dir[0]
             ky_shift = A_field*E_dir[1]
-            fv_subs = 1
+            rho_vv_subs = 1
 
         kx_in_path = kx_in_path_before_shift + kx_shift
         ky_in_path = ky_in_path_before_shift + ky_shift
@@ -454,17 +454,17 @@ def make_current_path(sys, path, E_dir, gauge):
         e_deriv_E_dir_c[:] = edx_c * E_dir[0] + edy_c * E_dir[1]
         e_deriv_ortho_c[:] = edx_c * E_ort[0] + edy_c * E_ort[1]
 
-        J_E_dir = - np.sum(e_deriv_E_dir_v * (fv.real - fv_subs)) - \
-            np.sum(e_deriv_E_dir_c * fc.real)
-        J_ortho = - np.sum(e_deriv_ortho_v * (fv.real - fv_subs)) - \
-            np.sum(e_deriv_ortho_c * fc.real)
+        J_E_dir = - np.sum(e_deriv_E_dir_v * (rho_vv.real - rho_vv_subs)) - \
+            np.sum(e_deriv_E_dir_c * rho_cc.real)
+        J_ortho = - np.sum(e_deriv_ortho_v * (rho_vv.real - rho_vv_subs)) - \
+            np.sum(e_deriv_ortho_c * rho_cc.real)
 
         return J_E_dir, J_ortho
 
     return current_path_time
 
 
-def make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature):
+def make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, symmetric_insulator=False):
     """
     Construct a function that calculates the emission for the system solution per path
     Works for velocity gauge.
@@ -596,6 +596,14 @@ def make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature):
         I_E_dir = 0
         I_ortho = 0
 
+        rho_vv = solution[:, 0]
+        rho_vc = solution[:, 1]
+        rho_cv = solution[:, 2]
+        rho_cc = solution[:, 3]
+
+        if symmetric_insulator:
+            rho_vv = -rho_cc + 1
+
         for i_k in range(pathlen):
 
             dH_U_E_dir = h_deriv_E_dir[i_k] @ U[i_k]
@@ -604,25 +612,25 @@ def make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature):
             dH_U_ortho = h_deriv_ortho[i_k] @ U[i_k]
             U_h_H_U_ortho = U_h[i_k] @ dH_U_ortho
 
-            I_E_dir += - U_h_H_U_E_dir[0, 0].real * (solution[i_k, 0].real - 1)
-            I_E_dir += - U_h_H_U_E_dir[1, 1].real * solution[i_k, 3].real
-            I_E_dir += - 2*np.real(U_h_H_U_E_dir[0, 1] * solution[i_k, 2])
+            I_E_dir += - U_h_H_U_E_dir[0, 0].real * (rho_vv[i_k].real - 1)
+            I_E_dir += - U_h_H_U_E_dir[1, 1].real * rho_cc[i_k].real
+            I_E_dir += - 2*np.real(U_h_H_U_E_dir[0, 1] * rho_cv[i_k])
 
-            I_ortho += - U_h_H_U_ortho[0, 0].real * (solution[i_k, 0].real - 1)
-            I_ortho += - U_h_H_U_ortho[1, 1].real * solution[i_k, 3].real
-            I_ortho += - 2*np.real(U_h_H_U_ortho[0, 1] * solution[i_k, 2])
+            I_ortho += - U_h_H_U_ortho[0, 0].real * (rho_vv[i_k].real - 1)
+            I_ortho += - U_h_H_U_ortho[1, 1].real * rho_cc[i_k].real
+            I_ortho += - 2*np.real(U_h_H_U_ortho[0, 1] * rho_cv[i_k])
 
             if do_semicl:
                 # '-' because there is q^2 compared to q only at the SBE current
-                I_ortho += -E_field * Bcurv[i_k, 0].real * solution[i_k, 0].real
-                I_ortho += -E_field * Bcurv[i_k, 1].real * solution[i_k, 1].real
+                I_ortho += -E_field * Bcurv[i_k, 0].real * rho_vv[i_k].real
+                I_ortho += -E_field * Bcurv[i_k, 1].real * rho_vc[i_k].real
 
         return I_E_dir, I_ortho
 
     return emission_exact_path_velocity
 
 
-def make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature):
+def make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature, symmetric_insulator=False):
     """
     Construct a function that calculates the emission for the system solution per path.
     Works for length gauge.
@@ -721,6 +729,13 @@ def make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature):
         I_E_dir = 0
         I_ortho = 0
 
+        rho_vv = solution[:, 0]
+        rho_vc = solution[:, 1]
+        rho_cv = solution[:, 2]
+        rho_cc = solution[:, 3]
+
+        if symmetric_insulator:
+            rho_vv = -rho_cc
 
         for i_k in range(pathlen):
 
@@ -730,18 +745,18 @@ def make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature):
             dH_U_ortho = h_deriv_ortho[i_k] @ U[i_k]
             U_h_H_U_ortho = U_h[i_k] @ dH_U_ortho
 
-            I_E_dir += - U_h_H_U_E_dir[0, 0].real * solution[i_k, 0].real
-            I_E_dir += - U_h_H_U_E_dir[1, 1].real * solution[i_k, 3].real
-            I_E_dir += - 2*np.real(U_h_H_U_E_dir[0, 1] * solution[i_k, 2])
+            I_E_dir += - U_h_H_U_E_dir[0, 0].real * rho_vv[i_k].real
+            I_E_dir += - U_h_H_U_E_dir[1, 1].real * rho_cc[i_k].real
+            I_E_dir += - 2*np.real(U_h_H_U_E_dir[0, 1] * rho_cv[i_k])
 
-            I_ortho += - U_h_H_U_ortho[0, 0].real * solution[i_k, 0].real
-            I_ortho += - U_h_H_U_ortho[1, 1].real * solution[i_k, 3].real
-            I_ortho += - 2*np.real(U_h_H_U_ortho[0, 1] * solution[i_k, 2])
+            I_ortho += - U_h_H_U_ortho[0, 0].real * rho_vv[i_k].real
+            I_ortho += - U_h_H_U_ortho[1, 1].real * rho_cc[i_k].real
+            I_ortho += - 2*np.real(U_h_H_U_ortho[0, 1] * rho_cv[i_k])
 
             if do_semicl:
                 # '-' because there is q^2 compared to q only at the SBE current
-                I_ortho += -E_field * Bcurv[i_k, 0].real * solution[i_k, 0].real
-                I_ortho += -E_field * Bcurv[i_k, 1].real * solution[i_k, 1].real
+                I_ortho += -E_field * Bcurv[i_k, 0].real * rho_vv[i_k].real
+                I_ortho += -E_field * Bcurv[i_k, 1].real * rho_vc[i_k].real
 
         return I_E_dir, I_ortho
 
