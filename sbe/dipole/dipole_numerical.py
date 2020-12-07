@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import math
 
-from params import params
 from sbe.brillouin import hex_mesh, rect_mesh
 
 #sigma_x = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
