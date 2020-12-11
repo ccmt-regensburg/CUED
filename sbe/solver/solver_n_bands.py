@@ -11,7 +11,6 @@ from sbe.utility import conversion_factors as co
 from sbe.solver import make_electric_field
 from sbe.solver import current_in_path_hderiv, current_in_path_dipole
 from sbe.dipole import diagonalize, dipole_elements
-from sbe.solver import make_emission_exact_path_time, make_current_path_time, make_polarization_path_time
 
 def sbe_solver_n_bands(params, sys, dipole, curvature):
     """
@@ -153,8 +152,11 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
 
     # Initialize electric_field, create fnumba and initialize ode solver
     electric_field = make_electric_field(E0, w, alpha, chirp, phase)
-    fnumba = make_fnumba(n, E_dir, gamma1, gamma2, electric_field,
-                         gauge=gauge)
+    # fnumba = make_fnumba(n, E_dir, gamma1, gamma2, electric_field,
+    #                      gauge=gauge)
+    # solver = ode(fnumba, jac=None)\
+    #     .set_integrator('zvode', method='bdf', max_step=dt)
+    fnumba = make_fnumba(n, E_dir, gamma1, gamma2, electric_field, params, dk, gauge=gauge)
     solver = ode(fnumba, jac=None)\
         .set_integrator('zvode', method='bdf', max_step=dt)
 
@@ -168,8 +170,7 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
     # Set after first run if save_approx=True
     current_path = None
     polarization_path = None
-    dipole_in_path = np.empty([Nk1, 2, 2], dtype=np.complex128)
-    e_in_path = np.empty([Nk1, 2], dtype=np.complex128)
+
     emission_exact_path_full = np.zeros([Nt, 2], dtype=np.complex128)   
     emission_path_intraband = np.zeros([Nt, 2], dtype=np.complex128)
     
@@ -180,6 +181,7 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
     ###########################################################################
     # Iterate through each path in the Brillouin zone
     dipole_in_path = np.empty([Nk1, n, n], dtype=np.complex128)
+    dipole_in_path2 = np.empty([Nk1, n, n], dtype=np.complex128)
     e_in_path = np.empty([Nk1, n], dtype=np.complex128)    
     for Nk2_idx, path in enumerate(paths):
         print("Path: ", Nk2_idx + 1)
@@ -194,7 +196,7 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
 #############################################################################
         if params.dipole_numerics:    
         # Calculate the dipole components along the path
-            dipole_x, dipole_y = dipole_elements(Nk1, Nk2, params.n, paths, 0, params.epsilon)
+            dipole_x, dipole_y = dipole_elements(Nk1, Nk2, params.n, paths, 1, params.epsilon)
 
             # Calculate the dot products E_dir.d_nm(k).
             # To be multiplied by E-field magnitude later.
@@ -224,7 +226,7 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
 #############################################################################
         # Initialize right hand side of ode-solver
 
-        rhs_dipole, rhs_e, rhs_gamma1, rhs_gamma2 = rhs_of_sbe(params, dipole_in_path, e_in_path, gamma1, gamma2)
+        rhs_dipole, rhs_e, rhs_gamma1, rhs_gamma2 = rhs_of_sbe(n, Nk1, dipole_in_path, e_in_path, gamma1, gamma2)
 
         # Initialize the values of of each k point vector
         # (rho_nn(k), rho_nm(k), rho_mn(k), rho_mm(k))
@@ -232,8 +234,9 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
         y0 = np.append(y0, [0.0])
 
         # Set the initual values and function parameters for the current kpath
+
         solver.set_initial_value(y0, t0)\
-            .set_f_params(rhs_dipole, rhs_e, rhs_gamma1, rhs_gamma2, y0, params, dk)
+            .set_f_params(rhs_dipole, rhs_e, rhs_gamma1, rhs_gamma2, dipole_in_path, e_in_path, y0)
 
         # Propagate through time
 
@@ -264,8 +267,7 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
 
         # Compute per path observables
 
-
-        current_path, current_path_intraband = current_in_path_dipole(Nk1, Nk2, Nt, solution, params.n, paths, 0, params.epsilon, Nk2_idx, dipole_in_path, e_in_path)
+        current_path, current_path_intraband = current_in_path_dipole(Nk1, Nk2, Nt, solution, params.n, paths, 1, params.epsilon, Nk2_idx, dipole_in_path, e_in_path)
         emission_exact_path_full += current_path
         emission_path_intraband += current_path_intraband
         
@@ -295,7 +297,7 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
         np.savez(S_name, t=t, solution=solution, paths=paths,
                  electric_field=electric_field(t), A_field=A_field)
 
-def rhs_of_sbe(params, dipole_in_path, e_in_path, gamma1, gamma2):
+def rhs_of_sbe(n, Nk1, dipole_in_path, e_in_path, gamma1, gamma2):
     """
         Right hand side of the SBE in block-matrix form, where each block 
         corresponds to a single k-point
@@ -326,13 +328,12 @@ def rhs_of_sbe(params, dipole_in_path, e_in_path, gamma1, gamma2):
         rhs_gamma2: np.ndarray
             blocks of RHS containing gamma2
     """
-    n = params.n
-    Nk1 = params.Nk1
+
     rhs_dipole = np.zeros([Nk1, (n**2), (n**2)], dtype=np.complex128) # * e_f * y
     rhs_e = np.zeros([Nk1, (n**2), (n**2)], dtype=np.complex128)     # * y 
     rhs_gamma1 = np.zeros([Nk1, (n**2), (n**2)], dtype=np.complex128) # * (y - y0)
     rhs_gamma2 = np.zeros([Nk1, (n**2), (n**2)], dtype=np.complex128) # * y
-    Nk_path = params.Nk1
+    Nk_path = Nk1
     for k in range(Nk_path):
         for m in range(n):          
             for i in range(n):
@@ -351,7 +352,7 @@ def rhs_of_sbe(params, dipole_in_path, e_in_path, gamma1, gamma2):
     return rhs_dipole, rhs_e, rhs_gamma1, rhs_gamma2
 
 
-def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, gauge):
+def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, params, dk, gauge):
     """
         Initialization of the solver for the SBE ( eq. (39/40(80) in https://arxiv.org/abs/2008.03177)
         
@@ -383,15 +384,17 @@ def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, gauge):
         print('Using velocity gauge')
     else:
         raise AttributeError("You have to either assign velocity or length gauge")
+    
+    Nk1 = params.Nk1
 
-    def fnumba(t, y, rhs_dipole, rhs_e, rhs_gamma1, rhs_gamma2, y0, params, dk):
+    @njit
+    def fnumba(t, y,rhs_dipole, rhs_e, rhs_gamma1, rhs_gamma2, dipole_in_path, e_in_path, y0):
         """
             function that multiplies the block-structure of the matrices of the RHS
             of the SBE with the solution vector
         """
         # x != y(t+dt)
         x = np.zeros(np.shape(y), dtype=np.complex128)
-        Nk1 = params.Nk1
         # Gradient term coefficient
         electric_f = electric_field(t)
 
@@ -407,17 +410,27 @@ def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, gauge):
             else: 
                 i_k = (k+1)
                 j_k = (k-1)
-            x[k*(n**2):(k+1)*(n**2)] += np.dot(electric_f*rhs_dipole[k, :, :] + rhs_e[k, :, :] + rhs_gamma2[k, :, :], y[k*(n**2):(k+1)*(n**2)])
-            x[k*(n**2):(k+1)*(n**2)] += D*(y[i_k*(n**2):(i_k+1)*(n**2)] - (y[j_k*(n**2):(j_k+1)*(n**2)]))
-            x[k*(n**2):(k+1)*(n**2)] += np.dot(rhs_gamma1[k, :, :], (y[k*(n**2):(k+1)*(n**2)] - y0[k*(n**2):(k+1)*(n**2)]))  
+            for i in range(n):
+                for j in range(n):
+                    x[k*(n**2) + i*n + j] += -1j * ( e_in_path[k, i] - e_in_path[k, j] ) * y[k*(n**2) + i*n + j]
+                    x[k*(n**2) + i*n + j] += D * ( y[i_k*(n**2) + i*n + j] - y[j_k*(n**2) + i*n + j] )
+                    if i == j:
+                        x[k*(n**2) + i*n + j] += - gamma1 * (y[k*(n**2) + i*n + j] - y0[k*(n**2) + i*n + j])
+                    else: 
+                        x[k*(n**2) + i*n + j] += - gamma2 * y[k*(n**2) + i*n + j]
+                    for nbar in range(n):
+                        if i == j:
+                            x[k*(n**2) + i*n + j] += 2 * np.imag( electric_f * y[k*(n**2) + i*n + nbar] * dipole_in_path[k, nbar, i] )
+                        else:
+                            x[k*(n**2) + i*n + j] += -1j * electric_f * ( y[k*(n**2) + i*n + nbar] * dipole_in_path[k, nbar, j] - dipole_in_path[k, i, nbar] * y[k*(n**2) + nbar*n + j])
 
         x[-1] = -electric_f
 
         return x
+    def f(t, y, rhs_dipole, rhs_e, rhs_gamma1, rhs_gamma2, dipole_in_path, e_in_path, y0):
+        return fnumba(t, y, rhs_dipole, rhs_e, rhs_gamma1, rhs_gamma2, dipole_in_path, e_in_path, y0)
 
-    freturn = fnumba
-
-    return freturn
+    return f
 
 def solution_containers(Nk1, Nk2, Nt, n, save_approx, save_full, zeeman=False):
     """
@@ -462,7 +475,7 @@ def solution_containers(Nk1, Nk2, Nt, n, save_approx, save_full, zeeman=False):
         P_E_dir, P_ortho
 
 
-def initial_condition(e_fermi, temperature, e_in_path):
+def initial_condition(e_fermi, temperature, e_in_path): # Check if this does what it should!
     '''
     Occupy conduction band according to inital Fermi energy and temperature
     '''
@@ -479,7 +492,6 @@ def initial_condition(e_fermi, temperature, e_in_path):
     for k in range(num_kpoints):
         initial_condition[k, :, :] = np.diag(distrib_bands[k, :])
     return initial_condition.flatten('C')
-
 
 def diff(x, y):
     '''
@@ -514,6 +526,12 @@ def fourier(dt, data):
     '''
     return (dt/np.sqrt(2*np.pi))*fftshift(fft(ifftshift(data)))
 
+def ifourier(dt, data):
+    '''
+    Calculate the phase correct inverse fourier transform with proper normalization
+    for calculations centered around t=0
+    '''
+    return (np.sqrt(2*np.pi)/dt)*fftshift(ifft(ifftshift(data)))
 
 def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
                            J_E_dir, J_ortho, P_E_dir, P_ortho,

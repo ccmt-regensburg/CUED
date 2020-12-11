@@ -4,12 +4,14 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import math
 
+from params import params
 from sbe.brillouin import hex_mesh, rect_mesh
 
 #sigma_x = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
 #sigma_y = np.array([[0, -1j, 0],[1j, 0, 0], [0, 0, 0]])
 #sigma_z = np.array([[1, 0, 0],[0, -1, 0], [0, 0, 0]])
 
+sigma_0 = np.array([[1, 0], [0, 1]])
 sigma_x = np.array([[0, 1], [1, 0]])
 sigma_y = np.array([[0, -1j],[1j, 0]])
 sigma_z = np.array([[1, 0],[0, -1]])
@@ -55,8 +57,9 @@ def hamiltonian(kx, ky):
             Hamiltonian in matrix-form at point (kx, ky)
     """
 
-    A = 0.1974
-    hmat = A*(ky*sigma_x - kx*sigma_y)
+    A = 0.19732
+    m = 0
+    hmat = A*(ky*sigma_x - kx*sigma_y) + m*sigma_z
 
     return hmat
 
@@ -106,11 +109,11 @@ def diagonalize(Nk_in_path, num_paths, n, paths, gidx):   #gidx = index of gauge
             kx = paths[j, i, 0]
             ky = paths[j, i, 1]
             e[i, j], wf_buff = lin.eigh(hamiltonian(kx, ky))
-            #wf_gauged_entry = np.copy(wf_buff[gidx, :])
-            #wf_buff[gidx, :] = np.abs(wf_gauged_entry)
-            #wf_buff[~(np.arange(np.size(wf_buff, axis=0)) == gidx)] *= np.exp(1j*np.angle(wf_gauged_entry.conj()))
-            #wf[i, j] = wf_buff
-            wf[i, j] = wavefunction(kx, ky, n)
+            wf_gauged_entry = np.copy(wf_buff[gidx, :])
+            wf_buff[gidx, :] = np.abs(wf_gauged_entry)
+            wf_buff[~(np.arange(np.size(wf_buff, axis=0)) == gidx)] *= np.exp(1j*np.angle(wf_gauged_entry.conj()))
+            wf[i, j] = wf_buff
+            #wf[i, j] = wavefunction(kx, ky, n)
 
     return e, wf
 
@@ -172,21 +175,48 @@ def derivative(Nk_in_path, num_paths, n, paths, gidx, epsilon):
     pathsminus2y = np.copy(paths)
     pathsminus2y[:, :, 1] -= 2*epsilon
 
+    pathsplus3x = np.copy(paths)
+    pathsplus3x[:, :, 0] += 3*epsilon
+    pathsminus3x = np.copy(paths)
+    pathsminus3x[:, :, 0] -= 3*epsilon
+    pathsplus3y = np.copy(paths)
+    pathsplus3y[:, :, 1] += 3*epsilon
+    pathsminus3y = np.copy(paths)
+    pathsminus3y[:, :, 1] -= 3*epsilon
+
+    pathsplus4x = np.copy(paths)
+    pathsplus4x[:, :, 0] += 4*epsilon
+    pathsminus4x = np.copy(paths)
+    pathsminus4x[:, :, 0] -= 4*epsilon
+    pathsplus4y = np.copy(paths)
+    pathsplus4y[:, :, 1] += 4*epsilon
+    pathsminus4y = np.copy(paths)
+    pathsminus4y[:, :, 1] -= 4*epsilon
+
     eplusx, wfplusx = diagonalize(Nk_in_path, num_paths, n, pathsplusx, gidx)
     eminusx, wfminusx = diagonalize(Nk_in_path, num_paths, n, pathsminusx, gidx)
     eplusy, wfplusy = diagonalize(Nk_in_path, num_paths, n, pathsplusy, gidx)
     eminusy, wfminusy = diagonalize(Nk_in_path, num_paths, n, pathsminusy, gidx)
 
-    eplus2, wfplus2x = diagonalize(Nk_in_path, num_paths, n, pathsplus2x, gidx)
+    eplus2x, wfplus2x = diagonalize(Nk_in_path, num_paths, n, pathsplus2x, gidx)
     eminus2x, wfminus2x = diagonalize(Nk_in_path, num_paths, n, pathsminus2x, gidx)
     eplus2y, wfplus2y = diagonalize(Nk_in_path, num_paths, n, pathsplus2y, gidx)
     eminus2y, wfminus2y = diagonalize(Nk_in_path, num_paths, n, pathsminus2y, gidx)
 
-    xderivative = ( - wfplus2x + 8 * wfplusx - 8 * wfminusx + wfminus2x)/(12*epsilon)
-    yderivative = ( - wfplus2y + 8 * wfplusy - 8 * wfminusy + wfminus2y)/(12*epsilon)
+    eplus3x, wfplus3x = diagonalize(Nk_in_path, num_paths, n, pathsplus3x, gidx)
+    eminus3x, wfminus3x = diagonalize(Nk_in_path, num_paths, n, pathsminus3x, gidx)
+    eplus3y, wfplus3y = diagonalize(Nk_in_path, num_paths, n, pathsplus3y, gidx)
+    eminus3y, wfminus3y = diagonalize(Nk_in_path, num_paths, n, pathsminus3y, gidx)
+
+    eplus4x, wfplus4x = diagonalize(Nk_in_path, num_paths, n, pathsplus4x, gidx)
+    eminus4x, wfminus4x = diagonalize(Nk_in_path, num_paths, n, pathsminus4x, gidx)
+    eplus4y, wfplus4y = diagonalize(Nk_in_path, num_paths, n, pathsplus4y, gidx)
+    eminus4y, wfminus4y = diagonalize(Nk_in_path, num_paths, n, pathsminus4y, gidx)
+
+    xderivative = (1/280*(wfminus4x - wfplus4x) + 4/105*( wfplus3x - wfminus3x ) + 1/5*( wfminus2x - wfplus2x ) + 4/5*(wfplusx - wfminusx) )/epsilon
+    yderivative = (1/280*(wfminus4y - wfplus4y) + 4/105*( wfplus3y - wfminus3y ) + 1/5*( wfminus2y - wfplus2y ) + 4/5*( wfplusy - wfminusy ) )/epsilon
 
     return xderivative, yderivative
-
 
 def dipole_elements(Nk_in_path, num_paths, n, paths, gidx, epsilon):    
     """

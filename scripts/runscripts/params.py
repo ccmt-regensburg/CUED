@@ -47,12 +47,12 @@ class params:
     T1    = 1000   # Phenomenological diagonal damping time
     T2    = 1      # Phenomenological polarization damping time
     t0    = -200   # Start time *pulse centered @ t=0, use t0 << 0
-    dt    = 0.05  # Time step
+    dt    = 0.005  # Time step
 
     # Flags for testing and features
     ##########################################################################
     gauge         = 'length'   # Gauge of the system
-    do_semicl     = True       # Turn all dipoles to 0 and use Berry curvature in emission
+    do_semicl     = False       # Turn all dipoles to 0 and use Berry curvature in emission
     user_out      = True       # Set to True to get user plotting and progress output
     save_approx   = True
     save_full     = False
@@ -62,4 +62,4 @@ class params:
     dipole_numerics = False
 
     n = 2                       # number of bands
-    epsilon = 0.003             # Parameter for numerical derivative
+    epsilon = 0.002             # Parameter for numerical derivative

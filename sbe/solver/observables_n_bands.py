@@ -160,7 +160,7 @@ def matrix_elements_dipoles(Nk_in_path, num_paths, n, paths, gidx, epsilon, dipo
 def current_in_path_dipole(Nk_in_path, num_paths, Nt, density_matrix, n, paths, gidx, epsilon, path_idx, dipole_in_path, e_in_path):
 
     current_in_path = np.zeros([Nt, 2], dtype=np.complex128)
-    current_in_path_intraband = np.zeros([Nt, 2], dtype=np.complex128)
+    current_in_path_intraband = np.zeros([Nt, 2], dtype=np.float64)
 
     melx, mel_intraband= matrix_elements_dipoles(Nk_in_path, num_paths, n, paths, gidx, epsilon, dipole_in_path, e_in_path, path_idx)
 
