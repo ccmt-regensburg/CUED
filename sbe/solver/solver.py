@@ -1,3 +1,4 @@
+import time
 from math import modf
 import numpy as np
 from numpy.fft import *
@@ -65,6 +66,9 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         -------
         approximate solutions, but same components as Iexact
     """
+    # Start time of sbe_solver
+    start_time = time.perf_counter()
+
     # RETRIEVE PARAMETERS
     ###########################################################################
     # Flag evaluation
@@ -257,6 +261,9 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
             # Increment time counter
             ti += 1
 
+    # End time of solver loop
+    end_time = time.perf_counter()
+
     # Write solutions
     # Filename tail
     tail = 'E_{:.4f}_w_{:.1f}_a_{:.1f}_{}_t0_{:.1f}_dt_{:.6f}_NK1-{}_NK2-{}_T1_{:.1f}_T2_{:.1f}_chirp_{:.3f}_ph_{:.2f}'\
@@ -267,9 +274,12 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                            gaussian(t, alpha), save_approx, save_txt)
 
     # Save the parameters of the calculation
+    run_time = end_time - start_time
     params_name = 'params_' + tail + '.txt'
     paramsfile = open(params_name, 'w')
-    paramsfile.write(str(params.__dict__))
+    paramsfile.write(str(params.__dict__) + "\n\n")
+    paramsfile.write("Runtime: {:.16f} s".format(run_time))
+    paramsfile.close()
 
     if save_full:
         S_name = 'Sol_' + tail
