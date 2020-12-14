@@ -83,6 +83,11 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     if hasattr(params, 'symmetric_insulator'):
         symmetric_insulator = params.symmetric_insulator
 
+    if hasattr(params, 'solver_method'):           # 'adams' non-stiff and 'bdf' stiff problems
+        method = params.solver_method
+    else:
+        method = 'bdf'
+
     # System parameters
     a = params.a                                   # Lattice spacing
     e_fermi = params.e_fermi*co.eV_to_au           # Fermi energy
@@ -167,7 +172,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     fnumba = make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field,
                          gauge=gauge, do_semicl=do_semicl)
     solver = ode(fnumba, jac=None)\
-        .set_integrator('zvode', method='bdf', max_step=dt)
+        .set_integrator('zvode', method=method, max_step=dt)
 
     t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, P_E_dir, P_ortho, _dummy =\
         solution_container(Nk1, Nt, save_approx)
