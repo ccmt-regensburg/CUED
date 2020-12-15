@@ -1,6 +1,6 @@
 import numpy as np
 from sbe.utility import conversion_factors as co
-from sbe.dipole import hamiltonian, diagonalize, derivative, dipole_elements
+from sbe.dipole import diagonalize, derivative, dipole_elements
 
 def current_in_path_hderiv(Nk_in_path, num_paths, Nt, density_matrix, n, paths, gidx, epsilon, path_idx):
 
@@ -105,8 +105,14 @@ def current_in_path_hderiv(Nk_in_path, num_paths, Nt, density_matrix, n, paths, 
 
     return current_in_path, current_in_path_intraband
 
-def matrix_elements_dipoles(Nk_in_path, num_paths, n, paths, gidx, epsilon, dipole_in_path, e_in_path, path_idx):
+def matrix_elements_dipoles(params, hamiltonian, paths, dipole_in_path, e_in_path, path_idx):
     
+    Nk_in_path = params.Nk1
+    num_paths = params.Nk2
+    n = params.n
+    gidx = params.gidx
+    epsilon = params.epsilon
+
     # derivative of band structure
 
     pathsplusx = np.copy(paths)
@@ -127,15 +133,15 @@ def matrix_elements_dipoles(Nk_in_path, num_paths, n, paths, gidx, epsilon, dipo
     pathsminus2y = np.copy(paths)
     pathsminus2y[:, :, 1] -= 2*epsilon
 
-    eplusx, wfplusx = diagonalize(Nk_in_path, num_paths, n, pathsplusx, gidx)
-    eminusx, wfminusx = diagonalize(Nk_in_path, num_paths, n, pathsminusx, gidx)
-    eplusy, wfplusy = diagonalize(Nk_in_path, num_paths, n, pathsplusy, gidx)
-    eminusy, wfminusy = diagonalize(Nk_in_path, num_paths, n, pathsminusy, gidx)
+    eplusx, wfplusx = diagonalize(params, hamiltonian, pathsplusx)
+    eminusx, wfminusx = diagonalize(params, hamiltonian, pathsminusx)
+    eplusy, wfplusy = diagonalize(params, hamiltonian, pathsplusy)
+    eminusy, wfminusy = diagonalize(params, hamiltonian, pathsminusy)
 
-    eplus2x, wfplus2x = diagonalize(Nk_in_path, num_paths, n, pathsplus2x, gidx)
-    eminus2x, wfminus2x = diagonalize(Nk_in_path, num_paths, n, pathsminus2x, gidx)
-    eplus2y, wfplus2y = diagonalize(Nk_in_path, num_paths, n, pathsplus2y, gidx)
-    eminus2y, wfminus2y = diagonalize(Nk_in_path, num_paths, n, pathsminus2y, gidx)
+    eplus2x, wfplus2x = diagonalize(params, hamiltonian, pathsplus2x)
+    eminus2x, wfminus2x = diagonalize(params, hamiltonian, pathsminus2x)
+    eplus2y, wfplus2y = diagonalize(params, hamiltonian, pathsplus2y)
+    eminus2y, wfminus2y = diagonalize(params, hamiltonian, pathsminus2y)
 
     ederivx = ( - eplus2x + 8 * eplusx - 8 * eminusx + eminus2x)/(12*epsilon)
     ederivy = ( - eplus2y + 8 * eplusy - 8 * eminusy + eminus2y)/(12*epsilon)
@@ -157,12 +163,18 @@ def matrix_elements_dipoles(Nk_in_path, num_paths, n, paths, gidx, epsilon, dipo
 
     return mel_x.reshape(Nk_in_path, n, n), mel_x_intraband.reshape(Nk_in_path, n, n)
 
-def current_in_path_dipole(Nk_in_path, num_paths, Nt, density_matrix, n, paths, gidx, epsilon, path_idx, dipole_in_path, e_in_path):
+def current_in_path_dipole(params, hamiltonian, paths, dipole_in_path, e_in_path, path_idx, Nt, density_matrix):
+
+    Nk_in_path = params.Nk1
+    num_paths = params.Nk2
+    n = params.n
+    gidx = params.gidx
+    epsilon = params.epsilon
 
     current_in_path = np.zeros([Nt, 2], dtype=np.complex128)
     current_in_path_intraband = np.zeros([Nt, 2], dtype=np.float64)
 
-    melx, mel_intraband= matrix_elements_dipoles(Nk_in_path, num_paths, n, paths, gidx, epsilon, dipole_in_path, e_in_path, path_idx)
+    melx, mel_intraband= matrix_elements_dipoles(params, hamiltonian, paths, dipole_in_path, e_in_path, path_idx)
 
     for i_t in range(Nt):
         for i in range(n):

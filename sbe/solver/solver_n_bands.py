@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode
 
+import sbe.example
 from sbe.brillouin import hex_mesh, rect_mesh
 from sbe.utility import conversion_factors as co
 from sbe.solver import make_electric_field
@@ -83,6 +84,7 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
 
     # System parameters
     n = params.n
+    gidx = params.gidx
     a = params.a                                   # Lattice spacing
     e_fermi = params.e_fermi*co.eV_to_au           # Fermi energy
     temperature = params.temperature*co.eV_to_au   # Temperature
@@ -179,16 +181,18 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
 
     emission_exact_path_full = np.zeros([Nt, 2], dtype=np.complex128)   
     emission_path_intraband = np.zeros([Nt, 2], dtype=np.complex128)
-    
-    e, wf = diagonalize(Nk1, Nk2, params.n, paths, 0)
+    dipole_in_path = np.empty([Nk1, n, n], dtype=np.complex128)
+    dipole_in_path2 = np.empty([Nk1, n, n], dtype=np.complex128)
+    e_in_path = np.empty([Nk1, n], dtype=np.complex128)    
+    #e, wf = diagonalize(Nk1, Nk2, params.n, paths, 0)
+
+    hnp = sys.numpy_hamiltonian()
 
     ###########################################################################
     # SOLVING
     ###########################################################################
     # Iterate through each path in the Brillouin zone
-    dipole_in_path = np.empty([Nk1, n, n], dtype=np.complex128)
-    dipole_in_path2 = np.empty([Nk1, n, n], dtype=np.complex128)
-    e_in_path = np.empty([Nk1, n], dtype=np.complex128)    
+
     for Nk2_idx, path in enumerate(paths):
         print("Path: ", Nk2_idx + 1)
         if not save_full:
@@ -202,13 +206,16 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
 #############################################################################
         if params.dipole_numerics:    
         # Calculate the dipole components along the path
-            dipole_x, dipole_y = dipole_elements(Nk1, Nk2, params.n, paths, 1, params.epsilon)
+
+            e, wf = diagonalize(params, hnp, paths)
+            dipole_x, dipole_y = dipole_elements(params, hnp, paths)
 
             # Calculate the dot products E_dir.d_nm(k).
             # To be multiplied by E-field magnitude later.
             dipole_in_path = (E_dir[0]*dipole_x[:, Nk2_idx, :, :] + E_dir[1]*dipole_y[:, Nk2_idx, :, :])
 
             e_in_path = e[:, Nk2_idx, :]
+
 #############################################################################
         else:
             # Calculate the dipole components along the path
@@ -273,7 +280,7 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
 
         # Compute per path observables
 
-        current_path, current_path_intraband = current_in_path_dipole(Nk1, Nk2, Nt, solution, params.n, paths, 1, params.epsilon, Nk2_idx, dipole_in_path, e_in_path)
+        current_path, current_path_intraband = current_in_path_dipole(params, hnp, paths, dipole_in_path, e_in_path, Nk2_idx, Nt, solution)
         emission_exact_path_full += current_path
         emission_path_intraband += current_path_intraband
         
@@ -289,8 +296,8 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
 
     # Write solutions
     # Filename tail
-    tail = 'E_{:.2f}_w_{:.2f}_a_{:.2f}_{}_t0_{:.2f}_NK1-{}_NK2-{}_T1_{:.2f}_T2_{:.2f}_chirp_{:.3f}_ph_{:.2f}'\
-        .format(E0*co.au_to_MVpcm, w*co.au_to_THz, alpha*co.au_to_fs, gauge, params.t0, Nk1, Nk2, T1*co.au_to_fs, T2*co.au_to_fs, chirp*co.au_to_THz, phase)
+    tail = 'E_{:.4f}_w_{:.1f}_a_{:.1f}_{}_t0_{:.1f}_dt_{:.6f}_NK1-{}_NK2-{}_T1_{:.1f}_T2_{:.1f}_chirp_{:.3f}_ph_{:.2f}'\
+        .format(E0*co.au_to_MVpcm, w*co.au_to_THz, alpha*co.au_to_fs, gauge, params.t0, params.dt, Nk1, Nk2, T1*co.au_to_fs, T2*co.au_to_fs, chirp*co.au_to_THz, phase)
 
     write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
                            J_E_dir, J_ortho, P_E_dir, P_ortho,

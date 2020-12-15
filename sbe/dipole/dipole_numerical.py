@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import math
 
+from params import params
+
 from sbe.brillouin import hex_mesh, rect_mesh
 
 #sigma_x = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
@@ -15,54 +17,54 @@ sigma_x = np.array([[0, 1], [1, 0]])
 sigma_y = np.array([[0, -1j],[1j, 0]])
 sigma_z = np.array([[1, 0],[0, -1]])
 
-def theta(kx, ky):
-    theta = np.complex128
-    if kx > 0:
-        theta = math.atan(ky/kx)
-    elif kx < 0:
-        if ky >= 0:
-            theta = math.atan(ky/kx) + np.pi
-        if ky < 0:
-            theta = math.atan(ky/kx) - np.pi
-    else:
-        if ky > 0:
-            theta = np.pi / 2
-        if ky < 0:
-            theta = - np.pi / 2
+# def theta(kx, ky):
+#     theta = np.complex128
+#     if kx > 0:
+#         theta = math.atan(ky/kx)
+#     elif kx < 0:
+#         if ky >= 0:
+#             theta = math.atan(ky/kx) + np.pi
+#         if ky < 0:
+#             theta = math.atan(ky/kx) - np.pi
+#     else:
+#         if ky > 0:
+#             theta = np.pi / 2
+#         if ky < 0:
+#             theta = - np.pi / 2
     
-    return theta
+#     return theta
 
-def wavefunction(kx, ky, n):    
-    wf = np.empty([n, n], dtype=np.complex128) #1st index: component, 2nd index: band
-    wf[0,0] = -1
-    wf[0,1] = 1
-    wf[1, :] = 1j*np.exp(1j*theta(kx, ky))
-    wf /= np.sqrt(2)
+# def wavefunction(kx, ky, n):    
+#     wf = np.empty([n, n], dtype=np.complex128) #1st index: component, 2nd index: band
+#     wf[0,0] = -1
+#     wf[0,1] = 1
+#     wf[1, :] = 1j*np.exp(1j*theta(kx, ky))
+#     wf /= np.sqrt(2)
 
-    return wf
+#     return wf
 
-def hamiltonian(kx, ky):
-    """
-        Build the 2-dimensional Dirac-hamiltonian matrix at the point (kx, ky)
+# def hamiltonian(kx, ky):
+#     """
+#         Build the 2-dimensional Dirac-hamiltonian matrix at the point (kx, ky)
 
-        Parameters
-        ----------
-        kx, ky : 
-            coordinates of the k-point on the rectangular mesh
+#         Parameters
+#         ----------
+#         kx, ky : 
+#             coordinates of the k-point on the rectangular mesh
 
-        Returns
-        -------
-        hmat : np.ndarray
-            Hamiltonian in matrix-form at point (kx, ky)
-    """
+#         Returns
+#         -------
+#         hmat : np.ndarray
+#             Hamiltonian in matrix-form at point (kx, ky)
+#     """
 
-    A = 0.19732
-    m = 0
-    hmat = A*(ky*sigma_x - kx*sigma_y) + m*sigma_z
+#     A = 0.19732
+#     m = 0
+#     hmat = A*(ky*sigma_x - kx*sigma_y) + m*sigma_z
 
-    return hmat
+#     return hmat
 
-def diagonalize(Nk_in_path, num_paths, n, paths, gidx):   #gidx = index of gauged entry
+def diagonalize(params, hamiltonian, paths):   #gidx = index of gauged entry
     """
         Diagonalize the n-dimensional Hamiltonian matrix on a 2-dimensional
         square k-grid with m*m k-points.
@@ -98,16 +100,20 @@ def diagonalize(Nk_in_path, num_paths, n, paths, gidx):   #gidx = index of gauge
             third index: component of wf
             fourth index: band index
     """
+    n = params.n
+    Nk_in_path = params.Nk1
+    num_paths = params.Nk2
+    epsilon = params.epsilon
+    gidx = params.gidx
+    
     e = np.empty([Nk_in_path, num_paths, n], dtype=np.float64)
     wf = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
     
-    #print(paths)
-
     for j in range(num_paths):
         for i in range(Nk_in_path):
-            kx = paths[j, i, 0]
-            ky = paths[j, i, 1]
-            e[i, j], wf_buff = lin.eigh(hamiltonian(kx, ky))
+            kx_in_path = paths[j, i, 0]
+            ky_in_path = paths[j, i, 1]
+            e[i, j], wf_buff = lin.eigh(hamiltonian(kx=kx_in_path, ky=ky_in_path))
             wf_gauged_entry = np.copy(wf_buff[gidx, :])
             wf_buff[gidx, :] = np.abs(wf_gauged_entry)
             wf_buff[~(np.arange(np.size(wf_buff, axis=0)) == gidx)] *= np.exp(1j*np.angle(wf_gauged_entry.conj()))
@@ -151,7 +157,13 @@ def ederivative(Nk_in_path, num_paths, n, paths, gidx, epsilon):
 
     return exderivative, eyderivative
 
-def derivative(Nk_in_path, num_paths, n, paths, gidx, epsilon):
+def derivative(params, hamiltonian, paths):
+
+    n = params.n
+    Nk_in_path = params.Nk1
+    num_paths = params.Nk2
+    epsilon = params.epsilon
+    gidx = params.gidx
 
     xderivative = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
     yderivative = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
@@ -192,32 +204,32 @@ def derivative(Nk_in_path, num_paths, n, paths, gidx, epsilon):
     pathsminus4y = np.copy(paths)
     pathsminus4y[:, :, 1] -= 4*epsilon
 
-    eplusx, wfplusx = diagonalize(Nk_in_path, num_paths, n, pathsplusx, gidx)
-    eminusx, wfminusx = diagonalize(Nk_in_path, num_paths, n, pathsminusx, gidx)
-    eplusy, wfplusy = diagonalize(Nk_in_path, num_paths, n, pathsplusy, gidx)
-    eminusy, wfminusy = diagonalize(Nk_in_path, num_paths, n, pathsminusy, gidx)
+    eplusx, wfplusx = diagonalize(params, hamiltonian, pathsplusx)
+    eminusx, wfminusx = diagonalize(params, hamiltonian, pathsminusx)
+    eplusy, wfplusy = diagonalize(params, hamiltonian, pathsplusy)
+    eminusy, wfminusy = diagonalize(params, hamiltonian, pathsminusy)
 
-    eplus2x, wfplus2x = diagonalize(Nk_in_path, num_paths, n, pathsplus2x, gidx)
-    eminus2x, wfminus2x = diagonalize(Nk_in_path, num_paths, n, pathsminus2x, gidx)
-    eplus2y, wfplus2y = diagonalize(Nk_in_path, num_paths, n, pathsplus2y, gidx)
-    eminus2y, wfminus2y = diagonalize(Nk_in_path, num_paths, n, pathsminus2y, gidx)
+    eplus2x, wfplus2x = diagonalize(params, hamiltonian, pathsplus2x)
+    eminus2x, wfminus2x = diagonalize(params, hamiltonian, pathsminus2x)
+    eplus2y, wfplus2y = diagonalize(params, hamiltonian, pathsplus2y)
+    eminus2y, wfminus2y = diagonalize(params, hamiltonian, pathsminus2y)
 
-    eplus3x, wfplus3x = diagonalize(Nk_in_path, num_paths, n, pathsplus3x, gidx)
-    eminus3x, wfminus3x = diagonalize(Nk_in_path, num_paths, n, pathsminus3x, gidx)
-    eplus3y, wfplus3y = diagonalize(Nk_in_path, num_paths, n, pathsplus3y, gidx)
-    eminus3y, wfminus3y = diagonalize(Nk_in_path, num_paths, n, pathsminus3y, gidx)
+    eplus3x, wfplus3x = diagonalize(params, hamiltonian, pathsplus3x)
+    eminus3x, wfminus3x = diagonalize(params, hamiltonian, pathsminus3x)
+    eplus3y, wfplus3y = diagonalize(params, hamiltonian, pathsplus3y)
+    eminus3y, wfminus3y = diagonalize(params, hamiltonian, pathsminus3y)
 
-    eplus4x, wfplus4x = diagonalize(Nk_in_path, num_paths, n, pathsplus4x, gidx)
-    eminus4x, wfminus4x = diagonalize(Nk_in_path, num_paths, n, pathsminus4x, gidx)
-    eplus4y, wfplus4y = diagonalize(Nk_in_path, num_paths, n, pathsplus4y, gidx)
-    eminus4y, wfminus4y = diagonalize(Nk_in_path, num_paths, n, pathsminus4y, gidx)
+    eplus4x, wfplus4x = diagonalize(params, hamiltonian, pathsplus4x)
+    eminus4x, wfminus4x = diagonalize(params, hamiltonian, pathsminus4x)
+    eplus4y, wfplus4y = diagonalize(params, hamiltonian, pathsplus4y)
+    eminus4y, wfminus4y = diagonalize(params, hamiltonian, pathsminus4y)
 
     xderivative = (1/280*(wfminus4x - wfplus4x) + 4/105*( wfplus3x - wfminus3x ) + 1/5*( wfminus2x - wfplus2x ) + 4/5*(wfplusx - wfminusx) )/epsilon
     yderivative = (1/280*(wfminus4y - wfplus4y) + 4/105*( wfplus3y - wfminus3y ) + 1/5*( wfminus2y - wfplus2y ) + 4/5*( wfplusy - wfminusy ) )/epsilon
 
     return xderivative, yderivative
 
-def dipole_elements(Nk_in_path, num_paths, n, paths, gidx, epsilon):    
+def dipole_elements(params, hamiltonian, paths):    
     """
     Calculate the dipole elements
 
@@ -244,8 +256,14 @@ def dipole_elements(Nk_in_path, num_paths, n, paths, gidx, epsilon):
     dx, dy : np.ndarray
         x and y component of the Dipole-field d_nn'(k) (Eq. (37)) for each k-point    
     """
-    e, wf = diagonalize(Nk_in_path, num_paths, n, paths, gidx)
-    dwfkx, dwfky = derivative(Nk_in_path, num_paths, n, paths, gidx, epsilon)
+    n = params.n
+    Nk_in_path = params.Nk1
+    num_paths = params.Nk2
+    epsilon = params.epsilon
+    gidx = params.gidx
+    
+    e, wf = diagonalize(params, hamiltonian, paths)
+    dwfkx, dwfky = derivative(params, hamiltonian, paths)
     #dwfkx, dwfky = gradient(Nk_in_path, num_paths, n, paths, gidx, dk)
 
     dx = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)

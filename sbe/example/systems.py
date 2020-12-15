@@ -126,6 +126,12 @@ class TwoBandSystem():
             ed.append(sp.diff(e, self.ky))
         return ed
 
+    def numpy_hamiltonian(self):
+        self.hsym = self.ho*self.so + self.hx*self.sx + self.hy*self.sy \
+            + self.hz*self.sz
+        hnp = to_numpy_function(self.hsym)
+        return hnp
+
     def eigensystem(self, gidx=None):
         """
         Generic form of Hamiltonian, energies and wave functions in a two band

@@ -59,7 +59,8 @@ class params:
     save_txt      = True
 
     # Parameters for numerical n band solver
-    dipole_numerics = False
+    dipole_numerics = True
 
     n = 2                       # number of bands
     epsilon = 0.002             # Parameter for numerical derivative
+    gidx = 1                    # gauge index of wavefunction
