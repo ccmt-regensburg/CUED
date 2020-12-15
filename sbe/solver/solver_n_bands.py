@@ -1,3 +1,4 @@
+import time
 from math import ceil, modf
 import numpy as np
 from numpy.fft import fft, fftfreq, fftshift, ifftshift
@@ -62,6 +63,9 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
         -------
         approximate solutions, but same components as Iexact
     """
+    # Start time of sbe_solver
+    start_time = time.perf_counter()
+
     # RETRIEVE PARAMETERS
     ###########################################################################
     # Flag evaluation
@@ -71,6 +75,11 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
     save_txt = params.save_txt
     do_semicl = params.do_semicl
     gauge = params.gauge
+
+    if hasattr(params, 'solver_method'):           # 'adams' non-stiff and 'bdf' stiff problems
+        method = params.solver_method
+    else:
+        method = 'bdf'
 
     # System parameters
     n = params.n
@@ -152,13 +161,10 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
 
     # Initialize electric_field, create fnumba and initialize ode solver
     electric_field = make_electric_field(E0, w, alpha, chirp, phase)
-    # fnumba = make_fnumba(n, E_dir, gamma1, gamma2, electric_field,
-    #                      gauge=gauge)
-    # solver = ode(fnumba, jac=None)\
-    #     .set_integrator('zvode', method='bdf', max_step=dt)
+
     fnumba = make_fnumba(n, E_dir, gamma1, gamma2, electric_field, params, dk, gauge=gauge)
     solver = ode(fnumba, jac=None)\
-        .set_integrator('zvode', method='bdf', max_step=dt)
+        .set_integrator('zvode', method=method, max_step=dt)
 
     t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, P_E_dir, P_ortho =\
         solution_containers(Nk1, Nk2, Nt, params.n, save_approx, save_full)
@@ -277,7 +283,10 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
     I_exact_orth = emission_exact_path_full[:,1]
     J_E_dir = emission_path_intraband[:,0]
     J_ortho = emission_path_intraband[:,1]
-    
+
+    # End time of solver loop
+    end_time = time.perf_counter()
+
     # Write solutions
     # Filename tail
     tail = 'E_{:.2f}_w_{:.2f}_a_{:.2f}_{}_t0_{:.2f}_NK1-{}_NK2-{}_T1_{:.2f}_T2_{:.2f}_chirp_{:.3f}_ph_{:.2f}'\
@@ -288,9 +297,12 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
                            gaussian(t, alpha), save_approx, save_txt)
 
     # Save the parameters of the calculation
+    run_time = end_time - start_time
     params_name = 'params_' + tail + '.txt'
     paramsfile = open(params_name, 'w')
-    paramsfile.write(str(params.__dict__))
+    paramsfile.write(str(params.__dict__) + "\n\n")
+    paramsfile.write("Runtime: {:.16f} s".format(run_time))
+    paramsfile.close()
 
     if save_full:
         S_name = 'Sol_' + tail
