@@ -177,6 +177,10 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, P_E_dir, P_ortho, _dummy =\
         solution_container(Nk1, Nt, save_approx)
 
+    # Only define full density matrix solution if save_full is True
+    if save_full:
+        solution_full = np.empty(Nk1, Nk2, Nt, 4)
+
     ###########################################################################
     # SOLVING
     ###########################################################################
@@ -242,6 +246,11 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
             # Save solution each output step
             # Do not append the last element (A_field)
             solution[:, :] = solver.y[:-1].reshape(Nk1, 4)
+
+            # Only write full density matrix solution if save_full is True
+            if save_full:
+                solution_full[:, Nk2_idx, ti, :] = solution
+
             # Construct time array only once
             if Nk2_idx == 0:
                 # Construct time and A_field only in first round
@@ -268,11 +277,12 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
     # End time of solver loop
     end_time = time.perf_counter()
+    # breakpoint()
 
     # Write solutions
     # Filename tail
-    tail = 'E_{:.4f}_w_{:.1f}_a_{:.1f}_{}_t0_{:.1f}_dt_{:.6f}_NK1-{}_NK2-{}_T1_{:.1f}_T2_{:.1f}_chirp_{:.3f}_ph_{:.2f}'\
-        .format(E0*co.au_to_MVpcm, w*co.au_to_THz, alpha*co.au_to_fs, gauge, params.t0, params.dt, Nk1, Nk2, T1*co.au_to_fs, T2*co.au_to_fs, chirp*co.au_to_THz, phase)
+    tail = 'E_{:.4f}_w_{:.1f}_a_{:.1f}_{}_t0_{:.1f}_dt_{:.6f}_NK1-{}_NK2-{}_T1_{:.1f}_T2_{:.1f}_chirp_{:.3f}_ph_{:.2f}_solver_{:s}'\
+        .format(E0*co.au_to_MVpcm, w*co.au_to_THz, alpha*co.au_to_fs, gauge, params.t0, params.dt, Nk1, Nk2, T1*co.au_to_fs, T2*co.au_to_fs, chirp*co.au_to_THz, phase, method)
 
     write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
                            J_E_dir, J_ortho, P_E_dir, P_ortho,
@@ -288,7 +298,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
     if save_full:
         S_name = 'Sol_' + tail
-        np.savez(S_name, t=t, solution=solution, paths=paths,
+        np.savez(S_name, t=t, solution_full=solution_full, paths=paths,
                  electric_field=electric_field(t), A_field=A_field)
 
 
