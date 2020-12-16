@@ -176,11 +176,11 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
     fnumba, fjac = make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field,
                                gauge=gauge, do_semicl=do_semicl, use_jacobian=use_jacobian)
-    solver = ode(fnumba, jac=fjac)
-    if use_jacobian:
-        solver.set_integrator('zvode', method=method, max_step=dt, lband=2, uband=2)
-    else:
-        solver.set_integrator('zvode', method=method, max_step=dt)
+    solver = ode(fnumba, jac=fjac).set_integrator('zvode', method=method, max_step=dt)
+    # if use_jacobian:
+        # solver.set_integrator('zvode', method=method, max_step=dt, lband=2, uband=2)
+    # else:
+        # solver.set_integrator('zvode', method=method, max_step=dt)
 
     t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, P_E_dir, P_ortho, _dummy =\
         solution_container(Nk1, Nt, save_approx)
@@ -240,9 +240,10 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
         # Set the initual values and function parameters for the current kpath
         solver.set_initial_value(y0, t0)\
-            .set_f_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
-        if use_jacobian:
-            solver.set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path)
+            .set_f_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0)\
+            .set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
+        # if use_jacobian:
+        #     solver.set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path)
 
         # Propagate through time
         # Index of current integration time step
@@ -510,18 +511,18 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
         return x
 
     @njit
-    def jac_velocity(t, y, kpath, _dk, ecv_in_path, dipole_in_path, A_in_path):
+    def jac_velocity(t, y, kpath, _dk, ecv_in_path, dipole_in_path, A_in_path, _y0):
         """
         Jacobian of SBE in the velocity gauge
         """
-
-        ecv_in_path, dipole_in_path, A_in_path = pre_velocity(kpath, y[-1].real)
+        ecv_in_path, dipole_in_path, A_in_path = pre_velocity(kpath, y[-1])
 
         # Empty Jacobian, packed format
         # Read https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.ode.html
         # definition of uband in 'vode'
         # J[i-j+uband, j] = J[i, j]; uband=2
-        J = np.zeros((5, np.shape(y)[0]), dtype=np.complex128)
+        dim = np.shape(y)[0]
+        J = np.zeros((dim, dim), dtype=np.complex128)
 
         electric_f = electric_field(t)
 
@@ -541,37 +542,37 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
             # wr_d_diag   = A_in_path[k]*D
             wr_d_diag = A_in_path[k]*electric_f
 
-            # J[i, i]   = -gamma1
-            J[2, i] = -gamma1
-            # J[i, i+1] = -1j*wr_c
-            J[1, i+1] = -1j*wr_c
-            # J[i, i+2] = 1j*wr
-            J[0, i+2] = 1j*wr
+            J[i, i]   = -gamma1
+            # J[2, i] = -gamma1
+            J[i, i+1] = -1j*wr_c
+            # J[1, i+1] = -1j*wr_c
+            J[i, i+2] = 1j*wr
+            # J[0, i+2] = 1j*wr
             # J[i, i+3] is zero
 
-            # J[i+1, i]   = -1j*wr_c
-            J[3, i]   = -1j*wr_c
-            # J[i+1, i+1] = -1j*ecv - gamma2 + 1j*wr_d_diag
-            J[2, i+1] = -1j*ecv - gamma2 + 1j*wr_d_diag
+            J[i+1, i]   = -1j*wr_c
+            # J[3, i]   = -1j*wr_c
+            J[i+1, i+1] = -1j*ecv - gamma2 + 1j*wr_d_diag
+            # J[2, i+1] = -1j*ecv - gamma2 + 1j*wr_d_diag
             # J[i+1, i+2] is zero
-            # J[i+1, i+3] = 1j*wr
-            J[0, i+3] = 1j*wr
+            J[i+1, i+3] = 1j*wr
+            # J[0, i+3] = 1j*wr
 
-            # J[i+2, i]   = 1j*wr_c
-            J[4, i]   = 1j*wr_c
+            J[i+2, i]   = 1j*wr_c
+            # J[4, i]   = 1j*wr_c
             # J[i+2, i+1] is zero
-            # J[i+2, i+2] = 1j*ecv - gamma2 - 1j*wr_d_diag
-            J[2, i+2] = 1j*ecv - gamma2 - 1j*wr_d_diag
-            # J[i+2, i+3] = -1j*wr_c
-            J[1, i+3] = -1j*wr_c
+            J[i+2, i+2] = 1j*ecv - gamma2 - 1j*wr_d_diag
+            # J[2, i+2] = 1j*ecv - gamma2 - 1j*wr_d_diag
+            J[i+2, i+3] = -1j*wr_c
+            # J[1, i+3] = -1j*wr_c
 
             # J[i+3, i] is zero
-            # J[i+3, i+1] = 1j*wr_c
-            J[4, i+1] = 1j*wr_c
-            # J[i+3, i+2] = -1j*wr
-            J[3, i+2] = -1j*wr
-            # J[i+3, i+3] = -gamma1
-            J[2, i+3] = -gamma1
+            J[i+3, i+1] = 1j*wr_c
+            # J[4, i+1] = 1j*wr_c
+            J[i+3, i+2] = -1j*wr
+            # J[3, i+2] = -1j*wr
+            J[i+3, i+3] = -gamma1
+            # J[2, i+3] = -gamma1
 
         return J
 
@@ -596,8 +597,8 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
         return freturn(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
 
     if fjac_return is not None:
-        def fjac(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path):
-            return fjac_return(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path)
+        def fjac(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0):
+            return fjac_return(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
     else:
         fjac = None
 
@@ -646,9 +647,9 @@ def initial_condition(e_fermi, temperature, ev, ec):
     Occupy conduction band according to inital Fermi energy and temperature
     '''
     knum = ec.size
-    zero_arr = np.zeros(knum, dtype=np.float64)
-    distrib_ec = np.zeros(knum, dtype=np.float64)
-    distrib_ev = np.zeros(knum, dtype=np.float64)
+    zero_arr = np.zeros(knum, dtype=np.complex128)
+    distrib_ec = np.zeros(knum, dtype=np.complex128)
+    distrib_ev = np.zeros(knum, dtype=np.complex128)
     if temperature > 1e-5:
         distrib_ec += 1/(np.exp((ec-e_fermi)/temperature) + 1)
         distrib_ev += 1/(np.exp((ev-e_fermi)/temperature) + 1)
