@@ -6,6 +6,7 @@ from numba import njit
 import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode
+from scipy.sparse import lil_matrix
 from sbe.brillouin import hex_mesh, rect_mesh
 from sbe.utility import conversion_factors as co
 from sbe.solver import make_current_path, make_polarization_path
@@ -78,6 +79,10 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     save_txt = params.save_txt                     # Save data as human readable text file
     do_semicl = params.do_semicl                   # Additional semiclassical observable calculation
     gauge = params.gauge                           # length (dipole) or velocity (houston) gauge
+
+    use_jacobian = False
+    if hasattr(params, 'use_jacobian'):
+        use_jacobian = params.use_jacobian
 
     symmetric_insulator = False                    # special flag for more accurate insulator calc.
     if hasattr(params, 'symmetric_insulator'):
@@ -169,9 +174,9 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     else:
         electric_field = electric_field_function
 
-    fnumba = make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field,
-                         gauge=gauge, do_semicl=do_semicl)
-    solver = ode(fnumba, jac=None)\
+    fnumba, fjac = make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field,
+                               gauge=gauge, do_semicl=do_semicl, use_jacobian=use_jacobian)
+    solver = ode(fnumba, jac=fjac)\
         .set_integrator('zvode', method=method, max_step=dt)
 
     t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, P_E_dir, P_ortho, _dummy =\
@@ -233,6 +238,8 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         # Set the initual values and function parameters for the current kpath
         solver.set_initial_value(y0, t0)\
             .set_f_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
+        if use_jacobian:
+            solver.set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path)
 
         # Propagate through time
         # Index of current integration time step
@@ -303,7 +310,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
 
 def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
-                do_semicl):
+                do_semicl, use_jacobian):
     """
         Initialization of the solver for the sbe ( eq. (39/47/80) in https://arxiv.org/abs/2008.03177)
 
@@ -421,15 +428,9 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
         return x
 
     @njit
-    def fvelocity(t, y, kpath, _dk, ecv_in_path, dipole_in_path, A_in_path, y0):
-        """
-        Velocity gauge needs a recalculation of energies and dipoles as k
-        is shifted according to the vector potential A
-        """
-
+    def pre_velocity(kpath, k_shift):
         # First round k_shift is zero, consequently we just recalculate
         # the original data ecv_in_path, dipole_in_path, A_in_path
-        k_shift = y[-1].real
         kx = kpath[:, 0] + E_dir[0]*k_shift
         ky = kpath[:, 1] + E_dir[1]*k_shift
 
@@ -451,10 +452,20 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
             A_in_path = E_dir[0]*di_00x + E_dir[1]*di_00y \
                 - (E_dir[0]*di_11x + E_dir[1]*di_11y)
 
+        return ecv_in_path, dipole_in_path, A_in_path
+
+    @njit
+    def fvelocity(t, y, kpath, _dk, ecv_in_path, dipole_in_path, A_in_path, y0):
+        """
+        Velocity gauge needs a recalculation of energies and dipoles as k
+        is shifted according to the vector potential A
+        """
+
+        ecv_in_path, dipole_in_path, A_in_path = pre_velocity(kpath, y[-1].real)
+
         # x != y(t+dt)
         x = np.empty(np.shape(y), dtype=np.complex128)
 
-        # Gradient term coefficient
         electric_f = electric_field(t)
 
         # Update the solution vector
@@ -495,21 +506,85 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
         return x
 
+    @njit
+    def jac_velocity(t, y, kpath, _dk, ecv_in_path, dipole_in_path, A_in_path):
+        """
+        Jacobian of SBE in the velocity gauge
+        """
+
+        ecv_in_path, dipole_in_path, A_in_path = pre_velocity(kpath, y[-1].real)
+
+        # Empty Jacobian
+        dim = np.shape(y)[0]
+        J = np.zeros((dim, dim), dtype=np.complex128)
+
+        electric_f = electric_field(t)
+
+        # Update the solution vector
+        Nk_path = kpath.shape[0]
+        for k in range(Nk_path):
+            i = 4*k
+            # Energy term eband(i,k) the energy of band i at point k
+            ecv = ecv_in_path[k]
+
+            # Rabi frequency: w_R = d_12(k).E(t)
+            # Rabi frequency conjugate
+            wr = dipole_in_path[k]*electric_f
+            wr_c = wr.conjugate()
+
+            # Rabi frequency: w_R = (d_11(k) - d_22(k))*E(t)
+            # wr_d_diag   = A_in_path[k]*D
+            wr_d_diag = A_in_path[k]*electric_f
+
+            J[i, i]   = -gamma1
+            J[i, i+1] = -1j*wr_c
+            J[i, i+2] = 1j*wr
+            # J[i, i+3] is zero
+
+            J[i+1, i]   = -1j*wr_c
+            J[i+1, i+1] = -1j*ecv - gamma2 + 1j*wr_d_diag
+            # J[i+1, i+2] is zero
+            J[i+1, i+3] = 1j*wr
+
+            J[i+2, i]   = 1j*wr_c
+            # J[i+2, i+1] is zero
+            J[i+2, i+2] = 1j*ecv - gamma2 - 1j*wr_d_diag
+            J[i+2, i+3] = -1j*wr_c
+
+            # J[i+3, i] is zero
+            J[i+3, i+1] = 1j*wr_c
+            J[i+3, i+2] = -1j*wr
+            J[i+3, i+3] = -gamma1
+
+        return J
+
     freturn = None
+    fjac_return = None
     if gauge == 'length':
         print("Using length gauge")
         freturn = flength
+        if use_jacobian:
+            fjac_return = None
     elif gauge == 'velocity':
         print("Using velocity gauge")
         freturn = fvelocity
+        if use_jacobian:
+            fjac_return = jac_velocity
     else:
         raise AttributeError("You have to either assign velocity or length gauge")
+
 
     # The python solver does not directly accept jitted functions so we wrap it
     def f(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0):
         return freturn(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
 
-    return f
+    if fjac_return is not None:
+        def fjac(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path):
+            return fjac_return(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path)
+    else:
+        fjac = None
+
+    return f, fjac
 
 def solution_container(Nk1, Nt, save_approx, zeeman=False):
     """
