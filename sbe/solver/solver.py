@@ -178,7 +178,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                                gauge=gauge, do_semicl=do_semicl, use_jacobian=use_jacobian)
     solver = ode(fnumba, jac=fjac)
     if use_jacobian:
-        solver.set_integrator('zvode', method=method, max_step=dt, lband=3, uband=3)
+        solver.set_integrator('zvode', method=method, max_step=dt, lband=2, uband=2)
     else:
         solver.set_integrator('zvode', method=method, max_step=dt)
 
@@ -520,8 +520,8 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
         # Empty Jacobian, packed format
         # Read https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.ode.html
         # definition of uband in 'vode'
-        # J[i-j+uband, j] = J[i, j]; uband=3
-        J = np.zeros((7, np.shape(y)[0]), dtype=np.complex128)
+        # J[i-j+uband, j] = J[i, j]; uband=2
+        J = np.zeros((5, np.shape(y)[0]), dtype=np.complex128)
 
         electric_f = electric_field(t)
 
@@ -542,36 +542,36 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
             wr_d_diag = A_in_path[k]*electric_f
 
             # J[i, i]   = -gamma1
-            J[3, i] = -gamma1
+            J[2, i] = -gamma1
             # J[i, i+1] = -1j*wr_c
-            J[2, i+1] = -1j*wr_c
+            J[1, i+1] = -1j*wr_c
             # J[i, i+2] = 1j*wr
-            J[1, i+2] = 1j*wr
+            J[0, i+2] = 1j*wr
             # J[i, i+3] is zero
 
             # J[i+1, i]   = -1j*wr_c
-            J[4, i]   = -1j*wr_c
+            J[3, i]   = -1j*wr_c
             # J[i+1, i+1] = -1j*ecv - gamma2 + 1j*wr_d_diag
-            J[3, i+1] = -1j*ecv - gamma2 + 1j*wr_d_diag
+            J[2, i+1] = -1j*ecv - gamma2 + 1j*wr_d_diag
             # J[i+1, i+2] is zero
             # J[i+1, i+3] = 1j*wr
-            J[1, i+3] = 1j*wr
+            J[0, i+3] = 1j*wr
 
             # J[i+2, i]   = 1j*wr_c
-            J[5, i]   = 1j*wr_c
+            J[4, i]   = 1j*wr_c
             # J[i+2, i+1] is zero
             # J[i+2, i+2] = 1j*ecv - gamma2 - 1j*wr_d_diag
-            J[3, i+2] = 1j*ecv - gamma2 - 1j*wr_d_diag
+            J[2, i+2] = 1j*ecv - gamma2 - 1j*wr_d_diag
             # J[i+2, i+3] = -1j*wr_c
-            J[2, i+3] = -1j*wr_c
+            J[1, i+3] = -1j*wr_c
 
             # J[i+3, i] is zero
             # J[i+3, i+1] = 1j*wr_c
-            J[5, i+1] = 1j*wr_c
+            J[4, i+1] = 1j*wr_c
             # J[i+3, i+2] = -1j*wr
-            J[4, i+2] = -1j*wr
+            J[3, i+2] = -1j*wr
             # J[i+3, i+3] = -gamma1
-            J[3, i+3] = -gamma1
+            J[2, i+3] = -gamma1
 
         return J
 
