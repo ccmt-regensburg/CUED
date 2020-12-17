@@ -183,18 +183,26 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
     emission_path_intraband = np.zeros([Nt, 2], dtype=np.complex128)
     dipole_in_path = np.empty([Nk1, n, n], dtype=np.complex128)
     dipole_in_path2 = np.empty([Nk1, n, n], dtype=np.complex128)
-    e_in_path = np.empty([Nk1, n], dtype=np.complex128)    
+    e_in_path = np.empty([Nk1, n], dtype=np.complex128)  
+    e_in_path2 = np.empty([Nk1, n], dtype=np.complex128)    
     #e, wf = diagonalize(Nk1, Nk2, params.n, paths, 0)
 
     hnp = sys.numpy_hamiltonian()
 
+    if params.dipole_numerics:
+    # Calculate the dipole elements on the full k-mesh
+        if user_out: 
+            print("Calculating dipoles...")
+
+        e, wf = diagonalize(params, hnp, paths)
+        dipole_x, dipole_y = dipole_elements(params, hnp, paths)
     ###########################################################################
     # SOLVING
     ###########################################################################
     # Iterate through each path in the Brillouin zone
 
     for Nk2_idx, path in enumerate(paths):
-        print("Path: ", Nk2_idx + 1)
+        print("Solving SBE for Path: ", Nk2_idx + 1)
         if not save_full:
             # If we don't need the full solution only operate on path idx 0
             Nk2_idx = 0
@@ -205,10 +213,7 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
 
 #############################################################################
         if params.dipole_numerics:    
-        # Calculate the dipole components along the path
-
-            e, wf = diagonalize(params, hnp, paths)
-            dipole_x, dipole_y = dipole_elements(params, hnp, paths)
+        # Evaluate the dipole components along the path
 
             # Calculate the dot products E_dir.d_nm(k).
             # To be multiplied by E-field magnitude later.
@@ -234,8 +239,8 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
             dipole_in_path[:, 0, 0] = E_dir[0]*di_00x + E_dir[1]*di_00y
             dipole_in_path[:, 1, 1] = E_dir[0]*di_11x + E_dir[1]*di_11y
 
-        e_in_path[:, 0] = sys.efjit[0](kx=kx_in_path, ky=ky_in_path)
-        e_in_path[:, 1] = sys.efjit[1](kx=kx_in_path, ky=ky_in_path)
+            e_in_path[:, 0] = sys.efjit[0](kx=kx_in_path, ky=ky_in_path)
+            e_in_path[:, 1] = sys.efjit[1](kx=kx_in_path, ky=ky_in_path)
 #############################################################################
         # Initialize right hand side of ode-solver
 
@@ -279,6 +284,8 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
             ti += 1
 
         # Compute per path observables
+        if user_out: 
+            print("Calculating emission of the current path...")
 
         current_path, current_path_intraband = current_in_path_dipole(params, hnp, paths, dipole_in_path, e_in_path, Nk2_idx, Nt, solution)
         emission_exact_path_full += current_path
