@@ -105,7 +105,51 @@ def current_in_path_hderiv(Nk_in_path, num_paths, Nt, density_matrix, n, paths, 
 
     return current_in_path, current_in_path_intraband
 
-def matrix_elements_dipoles(params, hamiltonian, paths, dipole_in_path, e_in_path, path_idx):
+def make_matrix_elements_hderiv(params, hamiltonian, paths, wf, E_dir, path_idx):
+
+    Nk_in_path = params.Nk1
+    num_paths = params.Nk2
+    n = params.n
+    epsilon = 0.15
+
+    hgridplusx = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
+    hgridminusx = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
+    hgridplusy = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
+    hgridminusy = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
+
+    for i in range(Nk_in_path):
+        for j in range(num_paths):
+            kx = paths[j, i, 0]
+            ky = paths[j, i, 1]
+            hgridplusx[i, j, :, :] = hamiltonian(kx=kx+epsilon, ky=ky)
+            hgridminusx[i, j, :, :] = hamiltonian(kx=kx-epsilon, ky=ky)
+            hgridplusy[i, j, :, :] = hamiltonian(kx=kx, ky=ky+epsilon)
+            hgridminusy[i, j, :, :] = hamiltonian(kx=kx, ky=ky-epsilon)
+    dhdkx = ( hgridplusx -  hgridminusx )/(2*epsilon)
+    dhdky = ( hgridplusy -  hgridminusy )/(2*epsilon)
+    
+    print(dhdkx[0, 0, 0, 1])
+    print(dhdky[0, 0, 0, 1])
+
+    matrix_element_x = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
+    matrix_element_y = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
+    
+    for i in range(Nk_in_path):
+        for j in range(num_paths):
+            buff = dhdkx[i,j,:,:] @ wf[i,j,:,:]
+            matrix_element_x[i, j, :, :] = np.conjugate(wf[i, j, :, :].T) @ buff
+
+            buff = dhdky[i,j,:,:] @ wf[i,j,:,:]
+            matrix_element_y[i, j, :, :] = np.conjugate(wf[i, j, :, :].T) @ buff
+
+    E_ort = np.array([E_dir[1], -E_dir[0]])
+
+    mel_in_path = matrix_element_x[:, path_idx, :, :] * E_dir[0] + matrix_element_y[:, path_idx, :, :] * E_dir[1]
+    mel_ortho = matrix_element_x[:, path_idx, :, :] * E_ort[0] + matrix_element_y[:, path_idx, :, :] * E_ort[1]
+
+    return mel_in_path.reshape(Nk_in_path, n, n), mel_ortho.reshape(Nk_in_path, n, n)
+
+def make_matrix_elements_dipoles(params, hamiltonian, paths, dipole_in_path, dipole_ortho, e_in_path, E_dir, path_idx):
     
     Nk_in_path = params.Nk1
     num_paths = params.Nk2
@@ -146,49 +190,45 @@ def matrix_elements_dipoles(params, hamiltonian, paths, dipole_in_path, e_in_pat
     ederivx = ( - eplus2x + 8 * eplusx - 8 * eminusx + eminus2x)/(12*epsilon)
     ederivy = ( - eplus2y + 8 * eplusy - 8 * eminusy + eminus2y)/(12*epsilon)
 
+    # In path direction and orthogonal
+
+    E_ort = np.array([E_dir[1], -E_dir[0]])
+    ederiv_in_path = E_dir[0] * ederivx + E_dir[1] * ederivy
+    ederiv_ortho = E_ort[0] * ederivx + E_ort[1] * ederivy
     # matrix elements
 
-    mel_x = np.zeros([Nk_in_path, n, n], dtype=np.complex128)
-   # mel_y = np.zeros([Nk_in_path, n, n], dtype=np.float64)
-    mel_x_intraband = np.zeros([Nk_in_path, n, n], dtype=np.float64)
-   # mel_y_intraband = np.zeros([Nk_in_path, n, n], dtype=np.float64)
+    mel_in_path = np.zeros([Nk_in_path, n, n], dtype=np.complex128)
+    mel_ortho = np.zeros([Nk_in_path, n, n], dtype=np.complex128)
 
     for i in range(n):
-        mel_x[:, i, i] += ederivx[:, path_idx, i]
-        mel_x_intraband[:, i, i] += ederivx[:, path_idx, i]
-       # matrix_element_y[:, i, i] += ederivx[:, path_idx, i]
-       # matrix_element_y_intraband[:, i, i] += ederivx[:, path_idx, i]
+        mel_in_path[:, i, i] += ederiv_in_path[:, path_idx, i]
+        mel_ortho[:, i, i] += ederiv_ortho[:, path_idx, i]
         for j in range(n):
-            mel_x[:, i, j] += 1j*dipole_in_path[:, i, j]*(e_in_path[:, j]-e_in_path[:, i])
+            if i != j:
+                mel_in_path[:, i, j] += 1j*dipole_in_path[:, i, j] * (e_in_path[:, j]-e_in_path[:, i])
+                mel_ortho[:, i, j] += 1j*dipole_ortho[:, i, j] * (e_in_path[:, j]-e_in_path[:, i])
 
-    return mel_x.reshape(Nk_in_path, n, n), mel_x_intraband.reshape(Nk_in_path, n, n)
+    return mel_in_path.reshape(Nk_in_path, n, n), mel_ortho.reshape(Nk_in_path, n, n)
 
-def current_in_path_dipole(params, hamiltonian, paths, dipole_in_path, e_in_path, path_idx, Nt, density_matrix):
+def current_per_path(params, Nt, mel_in_path, mel_ortho, density_matrix, path_idx):
 
-    Nk_in_path = params.Nk1
-    num_paths = params.Nk2
     n = params.n
-    gidx = params.gidx
-    epsilon = params.epsilon
 
-    current_in_path = np.zeros([Nt, 2], dtype=np.complex128)
-    current_in_path_intraband = np.zeros([Nt, 2], dtype=np.float64)
+    current_in_path = np.zeros(Nt, dtype=np.complex128)
+    current_in_path_intraband = np.zeros(Nt, dtype=np.complex128)
+    current_ortho = np.zeros(Nt, dtype=np.complex128)
+    current_ortho_intraband = np.zeros(Nt, dtype=np.complex128)
 
-    melx, mel_intraband= matrix_elements_dipoles(params, hamiltonian, paths, dipole_in_path, e_in_path, path_idx)
 
     for i_t in range(Nt):
         for i in range(n):
-            current_in_path[i_t, 0] += - np.sum(melx[:, i, i] * density_matrix[:, path_idx, i_t, i, i].real)
-            current_in_path_intraband[i_t, 0] += - np.sum(mel_intraband[:, i, i] * density_matrix[:, path_idx, i_t, i, i].real)
+            current_in_path[i_t] += - np.sum(mel_in_path[:, i, i] * density_matrix[:, path_idx, i_t, i, i].real)
+            current_in_path_intraband[i_t] += - np.sum(mel_in_path[:, i, i] * density_matrix[:, path_idx, i_t, i, i].real)
+            current_ortho[i_t] += - np.sum(mel_ortho[:, i, i] * density_matrix[:, path_idx, i_t, i, i].real)
+            current_ortho_intraband[i_t] += - np.sum(mel_ortho[:, i, i] * density_matrix[:, path_idx, i_t, i, i].real)
             for j in range(n):        
                 if i != j:
-                    current_in_path[i_t, 0] += - np.sum(np.real(melx[:, i, j] * density_matrix[:, path_idx, i_t, j, i]))
+                    current_in_path[i_t] += - np.sum(np.real(mel_in_path[:, i, j] * density_matrix[:, path_idx, i_t, j, i]))
+                    current_ortho[i_t] += - np.sum(np.real(mel_ortho[:, i, j] * density_matrix[:, path_idx, i_t, j, i]))
 
-        # current_in_path[i_t, 0] +=  -np.sum(melx[:, 0] * density_matrix[:, path_idx, i_t, 0].real)           
-        # current_in_path[i_t, 0] +=  -2*np.sum(np.real(melx[:, 1] * density_matrix[:, path_idx, i_t, 2]))       
-        # current_in_path[i_t, 0] +=  -np.sum(melx[:, 3] * density_matrix[:, path_idx, i_t, 3].real)
-
-        # current_in_path_intraband[i_t, 0] +=  -np.sum(mel_intraband[:, 0] * density_matrix[:, path_idx, i_t, 0].real) 
-        # current_in_path_intraband[i_t, 0] +=  -np.sum(mel_intraband[:, 3] * density_matrix[:, path_idx, i_t, 3].real) 
-
-    return current_in_path, current_in_path_intraband
+    return current_in_path, current_in_path_intraband, current_ortho, current_ortho_intraband
