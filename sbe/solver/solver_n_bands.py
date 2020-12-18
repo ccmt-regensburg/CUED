@@ -14,7 +14,7 @@ from sbe.solver import make_electric_field
 from sbe.solver import make_matrix_elements_hderiv, make_matrix_elements_dipoles, current_per_path
 from sbe.dipole import diagonalize, dipole_elements
 
-def sbe_solver_n_bands(params, sys, dipole, curvature, wf_sym):
+def sbe_solver_n_bands(params, sys, dipole, curvature):
     """
         Solver for the semiconductor bloch equation ( eq. (39) or (47) in https://arxiv.org/abs/2008.03177)
         for a n band system with numerical calculation of the dipole elements (unfinished - analytical dipoles
@@ -199,6 +199,11 @@ def sbe_solver_n_bands(params, sys, dipole, curvature, wf_sym):
             print("Calculating dipoles...")
               
         dipole_x, dipole_y = dipole_elements(params, hnp, paths)
+
+    # Only define full density matrix solution if save_full is True
+    if save_full:
+        solution_full = np.empty((Nk1, Nk2, Nt, 4), dtype=np.complex128)
+
     ###########################################################################
     # SOLVING
     ###########################################################################
@@ -206,9 +211,6 @@ def sbe_solver_n_bands(params, sys, dipole, curvature, wf_sym):
 
     for Nk2_idx, path in enumerate(paths):
         print("Solving SBE for Path: ", Nk2_idx + 1)
-        if not save_full:
-            # If we don't need the full solution only operate on path idx 0
-            Nk2_idx = 0
 
         # Retrieve the set of k-points for the current path
         kx_in_path = path[:, 0]
@@ -275,7 +277,12 @@ def sbe_solver_n_bands(params, sys, dipole, curvature, wf_sym):
             # Do not append the last element (A_field)
             # If save_full is False Nk2_idx is 0 as only the current path
             # is saved
-            solution[:, Nk2_idx, ti, :, :] = solver.y[:-1].reshape(Nk1, n, n)
+            solution[:, ti, :, :] = solver.y[:-1].reshape(Nk1, n, n)
+
+            # Only write full density matrix solution if save_full is True
+            if save_full:
+                solution_full[:, Nk2_idx, ti, :] = solution
+
             # Construct time array only once
             if not t_constructed:
                 # Construct time and A_field only in first round
@@ -292,10 +299,10 @@ def sbe_solver_n_bands(params, sys, dipole, curvature, wf_sym):
         if user_out: 
             print("Calculating emission of the current path...")
 
-        #mel_in_path, mel_ortho = make_matrix_elements_dipoles(params, hnp, paths, dipole_in_path, dipole_ortho, e_in_path, E_dir, Nk2_idx)
-        mel_in_path, mel_ortho = make_matrix_elements_hderiv(params, hnp, paths, wf, E_dir, Nk2_idx)      
+        mel_in_path, mel_ortho = make_matrix_elements_dipoles(params, hnp, paths, dipole_in_path, dipole_ortho, e_in_path, E_dir, Nk2_idx)
+        #mel_in_path, mel_ortho = make_matrix_elements_hderiv(params, hnp, paths, wf, E_dir, Nk2_idx)     # NOT ACCURATE (YET!) 
 
-        current_in_path, current_in_path_intraband, current_ortho, current_ortho_intraband = current_per_path(params, Nt, mel_in_path, mel_ortho, solution, Nk2_idx)
+        current_in_path, current_in_path_intraband, current_ortho, current_ortho_intraband = current_per_path(params, Nt, mel_in_path, mel_ortho, solution)
         
         emission_exact_E_dir += current_in_path
         emission_intraband_E_dir += current_in_path_intraband
@@ -331,7 +338,7 @@ def sbe_solver_n_bands(params, sys, dipole, curvature, wf_sym):
 
     if save_full:
         S_name = 'Sol_' + tail
-        np.savez(S_name, t=t, solution=solution, paths=paths,
+        np.savez(S_name, t=t, solution_full=solution_full, paths=paths,
                  electric_field=electric_field(t), A_field=A_field)
 
 def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, params, dk, gauge):
@@ -424,12 +431,9 @@ def solution_containers(Nk1, Nk2, Nt, n, save_approx, save_full, zeeman=False):
 
     # The solution array is structred as: first index is Nk1-index,
     # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
-    if save_full:
-        # Make container for full solution if it is needed
-        solution = np.empty((Nk1, Nk2, Nt, n, n), dtype=np.complex128)
-    else:
-        # Only one path needed at a time if no full solution is needed
-        solution = np.empty((Nk1, 1, Nt, n, n), dtype=np.complex128)
+
+    # Only one path needed at a time if no full solution is needed
+    solution = np.empty((Nk1, Nt, n, n), dtype=np.complex128)
 
     A_field = np.empty(Nt, dtype=np.float64)
     E_field = np.empty(Nt, dtype=np.float64)
