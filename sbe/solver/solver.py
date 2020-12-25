@@ -88,10 +88,13 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     if hasattr(params, 'symmetric_insulator'):
         symmetric_insulator = params.symmetric_insulator
 
+    method = 'bdf'
     if hasattr(params, 'solver_method'):           # 'adams' non-stiff and 'bdf' stiff problems
         method = params.solver_method
-    else:
-        method = 'bdf'
+
+    dk_order = 6
+    if hasattr(params, 'dk_order'):                # Order of numerical density-matrix k-derivative
+        dk_order = params.dk_order                 # when using the length gauge
 
     # System parameters
     a = params.a                                   # Lattice spacing
@@ -240,8 +243,8 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
         # Set the initual values and function parameters for the current kpath
         solver.set_initial_value(y0, t0)\
-            .set_f_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0)\
-            .set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
+            .set_f_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)\
+            .set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
         # if use_jacobian:
         #     solver.set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path)
 
@@ -365,7 +368,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
     di_11yf = dipole.Ayfjit[1][1]
 
     @njit
-    def flength(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0):
+    def flength(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order):
         """
         Length gauge doesn't need recalculation of energies and dipoles.
         The length gauge is evaluated on a constant pre-defined k-grid.
@@ -444,23 +447,24 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
             # Update each component of the solution vector
             # i = f_v, i+1 = p_vc, i+2 = p_cv, i+3 = f_c
+            x[i]   = 2*(y[i+1]*wr_c).imag - gamma1*(y[i]-y0[i])
 
-            # New solver routine (correct)
-            x[i] = 2*(y[i+1]*wr_c).imag \
-                   + D*(y[right3]/60 - 3/20*y[right2] + 3/4*y[right] - 3/4*y[left] + 3/20*y[left2] - y[left3]/60) \
-                   - gamma1*(y[i]-y0[i])
+            x[i+1] = (1j*ecv - gamma2 + 1j*wr_d_diag)*y[i+1] - 1j*wr*(y[i]-y[i+3])
 
-            x[i+1] = (1j*ecv - gamma2 + 1j*wr_d_diag)*y[i+1] \
-                     - 1j*wr*(y[i]-y[i+3]) \
-                     + D*(y[right3+1]/60 - 3/20*y[right2+1] + 3/4*y[right+1] \
-                          - 3/4*y[left+1] + 3/20*y[left2+1] - y[left3+1]/60)
+            x[i+3] = -2*(y[i+1]*wr_c).imag - gamma1*(y[i+3]-y0[i+3])
+
+            # compute drift term via k-derivative
+            if dk_order == 6:
+                x[i]   += D*(y[right3]/60 - 3/20*y[right2] + 3/4*y[right] \
+                             - 3/4*y[left] + 3/20*y[left2] - y[left3]/60)
+
+                x[i+1] += D*(y[right3+1]/60 - 3/20*y[right2+1] + 3/4*y[right+1] \
+                             - 3/4*y[left+1] + 3/20*y[left2+1] - y[left3+1]/60)
+
+                x[i+3] += D*(y[right3+3]/60 - 3/20*y[right2+3] + 3/4*y[right+3] \
+                             - 3/4*y[left+3] + 3/20*y[left2+3] - y[left3+3]/60)
 
             x[i+2] = x[i+1].conjugate()
-
-            x[i+3] = -2*(y[i+1]*wr_c).imag \
-                     + D*(y[right3+3]/60 - 3/20*y[right2+3] + 3/4*y[right+3] \
-                          - 3/4*y[left+3] + 3/20*y[left2+3] - y[left3+3]/60) \
-                     - gamma1*(y[i+3]-y0[i+3])
 
         x[-1] = -electric_f
         return x
@@ -619,12 +623,12 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
 
     # The python solver does not directly accept jitted functions so we wrap it
-    def f(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0):
-        return freturn(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
+    def f(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order):
+        return freturn(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
 
     if fjac_return is not None:
-        def fjac(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0):
-            return fjac_return(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
+        def fjac(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order):
+            return fjac_return(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
     else:
         fjac = None
 
