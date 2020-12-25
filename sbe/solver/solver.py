@@ -405,17 +405,6 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
             # Update each component of the solution vector
             # i = f_v, i+1 = p_vc, i+2 = p_cv, i+3 = f_c
 
-#            x[i] = 2*(wr*y[i+1]).imag + D*(y[m] - y[n]) \
-#                - gamma1*(y[i]-y0[i])
-#
-#            x[i+1] = (1j*ecv - gamma2 + 1j*wr_d_diag)*y[i+1] \
-#                - 1j*wr_c*(y[i]-y[i+3]) + D*(y[m+1] - y[n+1])
-#
-#            x[i+2] = x[i+1].conjugate()
-#
-#            x[i+3] = -2*(wr*y[i+1]).imag + D*(y[m+3] - y[n+3]) \
-#                - gamma1*(y[i+3]-y0[i+3])
-
             # New solver routine (correct)
             x[i] = 2*(y[i+1]*wr_c).imag + D*(y[m] - y[n]) \
                    - gamma1*(y[i]-y0[i])
@@ -490,14 +479,6 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
             # Update each component of the solution vector
             # i = f_v, i+1 = p_vc, i+2 = p_cv, i+3 = f_c
-#            x[i] = 2*(wr*y[i+1]).imag - gamma1*(y[i]-y0[i])
-#
-#            x[i+1] = (1j*ecv - gamma2 + 1j*wr_d_diag)*y[i+1] - 1j*wr_c*(y[i]-y[i+3])
-#
-#            x[i+2] = x[i+1].conjugate()
-#
-#            x[i+3] = -2*(wr*y[i+1]).imag - gamma1*(y[i+3]-y0[i+3])
-
             x[i] = 2*(y[i+1]*wr_c).imag - gamma1*(y[i]-y0[i])
 
             x[i+1] = (1j*ecv - gamma2 + 1j*wr_d_diag)*y[i+1] - 1j*wr*(y[i]-y[i+3])
