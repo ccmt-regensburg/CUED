@@ -447,17 +447,19 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
             # New solver routine (correct)
             x[i] = 2*(y[i+1]*wr_c).imag \
-                   + D*(-y[right2]/12 + 2/3*y[right] - 2/3*y[left] + y[left2]/12) \
+                   + D*(y[right3]/60 - 3/20*y[right2] + 3/4*y[right] - 3/4*y[left] + 3/20*y[left2] - y[left3]/60) \
                    - gamma1*(y[i]-y0[i])
 
             x[i+1] = (1j*ecv - gamma2 + 1j*wr_d_diag)*y[i+1] \
                      - 1j*wr*(y[i]-y[i+3]) \
-                     + D*(-y[right2+1]/12 + 2/3*y[right+1] - 2/3*y[left+1] + y[left2+1]/12)
+                     + D*(y[right3+1]/60 - 3/20*y[right2+1] + 3/4*y[right+1] \
+                          - 3/4*y[left+1] + 3/20*y[left2+1] - y[left3+1]/60)
 
             x[i+2] = x[i+1].conjugate()
 
             x[i+3] = -2*(y[i+1]*wr_c).imag \
-                     + D*(-y[right2+3]/12 + 2/3*y[right+3] - 2/3*y[left+3] + y[left2+3]/12) \
+                     + D*(y[right3+3]/60 - 3/20*y[right2+3] + 3/4*y[right+3] \
+                          - 3/4*y[left+3] + 3/20*y[left2+3] - y[left3+3]/60) \
                      - gamma1*(y[i+3]-y0[i+3])
 
         x[-1] = -electric_f
