@@ -92,7 +92,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     if hasattr(params, 'solver_method'):           # 'adams' non-stiff and 'bdf' stiff problems
         method = params.solver_method
 
-    dk_order = 6
+    dk_order = 8
     if hasattr(params, 'dk_order'):                # Order of numerical density-matrix k-derivative
         dk_order = params.dk_order                 # when using the length gauge
 
@@ -385,54 +385,86 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
         for k in range(Nk_path):
             i = 4*k
             if k == 0:
+                right4 = 4*(k+4)
                 right3 = 4*(k+3)
                 right2 = 4*(k+2)
                 right  = 4*(k+1)
                 left   = 4*(Nk_path-1)
                 left2  = 4*(Nk_path-2)
-                left3  = 4*(Nk_path-3)
+                left3  = 4*(Nk_path-3)           
+                left4  = 4*(Nk_path-4)           
             elif k == 1:
+                right4 = 4*(k+4)
                 right3 = 4*(k+3)
                 right2 = 4*(k+2)
                 right  = 4*(k+1)
                 left   = 4*(k-1)
                 left2  = 4*(Nk_path-1)
-                left3  = 4*(Nk_path-2)
+                left3  = 4*(Nk_path-2)            
+                left4  = 4*(Nk_path-3)          
             elif k == 2:
+                right4 = 4*(k+4)
                 right3 = 4*(k+3)
                 right2 = 4*(k+2)
                 right  = 4*(k+1)
                 left   = 4*(k-1)
                 left2  = 4*(k-2)
-                left3  = 4*(Nk_path-1)
+                left3  = 4*(Nk_path-1)          
+                left4  = 4*(Nk_path-2) 
+            elif k == 3:
+                right4 = 4*(k+4)
+                right3 = 4*(k+3)
+                right2 = 4*(k+2)
+                right  = 4*(k+1)
+                left   = 4*(k-1)
+                left2  = 4*(k-2)
+                left3  = 4*(k-3)
+                left4  = 4*(Nk_path-1) 
             elif k == Nk_path-1:
+                right4 = 4*3
                 right3 = 4*2
                 right2 = 4*1
                 right  = 4*0
                 left   = 4*(k-1)
                 left2  = 4*(k-2)
-                left3  = 4*(k-3)            
+                left3  = 4*(k-3)             
+                left4  = 4*(k-4)          
             elif k == Nk_path-2:
+                right4 = 4*2
                 right3 = 4*1
                 right2 = 4*0
                 right  = 4*(k+1)
                 left   = 4*(k-1)
                 left2  = 4*(k-2)
                 left3  = 4*(k-3)            
+                left4  = 4*(k-4)           
             elif k == Nk_path-3:
+                right4 = 4*1
                 right3 = 4*0
                 right2 = 4*(k+2)
                 right  = 4*(k+1)
                 left   = 4*(k-1)
                 left2  = 4*(k-2)
-                left3  = 4*(k-3)   
+                left3  = 4*(k-3)           
+                left4  = 4*(k-4)   
+            elif k == Nk_path-4:
+                right4 = 4*0
+                right3 = 4*(k+3)
+                right2 = 4*(k+2)
+                right  = 4*(k+1)
+                left   = 4*(k-1)
+                left2  = 4*(k-2)
+                left3  = 4*(k-3)           
+                left4  = 4*(k-4)  
             else:
+                right4 = 4*(k+4)
                 right3 = 4*(k+3)                
                 right2 = 4*(k+2)
                 right  = 4*(k+1)
                 left   = 4*(k-1)
                 left2  = 4*(k-2)            
                 left3  = 4*(k-3)            
+                left4  = 4*(k-4)            
 
             # Energy gap e_2(k) - e_1(k) >= 0 at point k
             ecv = ecv_in_path[k]
@@ -463,6 +495,15 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
                 x[i+3] += D*(y[right3+3]/60 - 3/20*y[right2+3] + 3/4*y[right+3] \
                              - 3/4*y[left+3] + 3/20*y[left2+3] - y[left3+3]/60)
+            if dk_order == 8:
+                x[i]   += D*(- y[right4]/280 + 4/105*y[right3] - 1/5*y[right2] + 4/5*y[right] \
+                             + y[left4] /280 - 4/105*y[left3]  + 1/5*y[left2]  - 4/5*y[left] )
+
+                x[i+1] += D*(- y[right4+1]/280 + 4/105*y[right3+1] - 1/5*y[right2+1] + 4/5*y[right+1] \
+                             + y[left4+1] /280 - 4/105*y[left3+1]  + 1/5*y[left2+1]  - 4/5*y[left+1] )
+
+                x[i+3] += D*(- y[right4+3]/280 + 4/105*y[right3+3] - 1/5*y[right2+3] + 4/5*y[right+3] \
+                             + y[left4+3] /280 - 4/105*y[left3+3]  + 1/5*y[left2+3]  - 4/5*y[left+3] )
 
             x[i+2] = x[i+1].conjugate()
 
