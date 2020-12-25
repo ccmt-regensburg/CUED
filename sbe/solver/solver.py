@@ -375,37 +375,61 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
         # Gradient term coefficient
         electric_f = electric_field(t)
-        D = electric_f/(12*dk)
+        D = electric_f/dk
 
         # Update the solution vector
         Nk_path = kpath.shape[0]
         for k in range(Nk_path):
             i = 4*k
             if k == 0:
-                rightright = 4*(k+2)
-                right      = 4*(k+1)
-                left       = 4*(Nk_path-1)
-                leftleft   = 4*(Nk_path-2)
+                right3 = 4*(k+3)
+                right2 = 4*(k+2)
+                right  = 4*(k+1)
+                left   = 4*(Nk_path-1)
+                left2  = 4*(Nk_path-2)
+                left3  = 4*(Nk_path-3)
             elif k == 1:
-                rightright = 4*(k+2)
-                right      = 4*(k+1)
-                left       = 4*(k-1)
-                leftleft   = 4*(Nk_path-1)
+                right3 = 4*(k+3)
+                right2 = 4*(k+2)
+                right  = 4*(k+1)
+                left   = 4*(k-1)
+                left2  = 4*(Nk_path-1)
+                left3  = 4*(Nk_path-2)
+            elif k == 2:
+                right3 = 4*(k+3)
+                right2 = 4*(k+2)
+                right  = 4*(k+1)
+                left   = 4*(k-1)
+                left2  = 4*(k-2)
+                left3  = 4*(Nk_path-1)
             elif k == Nk_path-1:
-                rightright = 4*1
-                right      = 4*0
-                left       = 4*(k-1)
-                leftleft   = 4*(k-2)
+                right3 = 4*2
+                right2 = 4*1
+                right  = 4*0
+                left   = 4*(k-1)
+                left2  = 4*(k-2)
+                left3  = 4*(k-3)            
             elif k == Nk_path-2:
-                rightright = 4*0
-                right      = 4*(k+1)
-                left       = 4*(k-1)
-                leftleft   = 4*(k-2)
+                right3 = 4*1
+                right2 = 4*0
+                right  = 4*(k+1)
+                left   = 4*(k-1)
+                left2  = 4*(k-2)
+                left3  = 4*(k-3)            
+            elif k == Nk_path-3:
+                right3 = 4*0
+                right2 = 4*(k+2)
+                right  = 4*(k+1)
+                left   = 4*(k-1)
+                left2  = 4*(k-2)
+                left3  = 4*(k-3)   
             else:
-                rightright = 4*(k+2)
-                right      = 4*(k+1)
-                left       = 4*(k-1)
-                leftleft   = 4*(k-2)            
+                right3 = 4*(k+3)                
+                right2 = 4*(k+2)
+                right  = 4*(k+1)
+                left   = 4*(k-1)
+                left2  = 4*(k-2)            
+                left3  = 4*(k-3)            
 
             # Energy gap e_2(k) - e_1(k) >= 0 at point k
             ecv = ecv_in_path[k]
@@ -423,17 +447,17 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
             # New solver routine (correct)
             x[i] = 2*(y[i+1]*wr_c).imag \
-                   + D*(-y[rightright] + 8*y[right] - 8*y[left] + y[leftleft]) \
+                   + D*(-y[right2]/12 + 2/3*y[right] - 2/3*y[left] + y[left2]/12) \
                    - gamma1*(y[i]-y0[i])
 
             x[i+1] = (1j*ecv - gamma2 + 1j*wr_d_diag)*y[i+1] \
                      - 1j*wr*(y[i]-y[i+3]) \
-                     + D*(-y[rightright+1] + 8*y[right+1] - 8*y[left+1] + y[leftleft+1])
+                     + D*(-y[right2+1]/12 + 2/3*y[right+1] - 2/3*y[left+1] + y[left2+1]/12)
 
             x[i+2] = x[i+1].conjugate()
 
             x[i+3] = -2*(y[i+1]*wr_c).imag \
-                     + D*(-y[rightright+3] + 8*y[right+3] - 8*y[left+3] + y[leftleft+3]) \
+                     + D*(-y[right2+3]/12 + 2/3*y[right+3] - 2/3*y[left+3] + y[left2+3]/12) \
                      - gamma1*(y[i+3]-y0[i+3])
 
         x[-1] = -electric_f
