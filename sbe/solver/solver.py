@@ -93,8 +93,8 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         method = params.solver_method
 
     dk_order = 8
-    if hasattr(params, 'dk_order'):                # Order of numerical density-matrix k-derivative
-        dk_order = params.dk_order                 # when using the length gauge
+    if hasattr(params, 'dk_order'):                # Accuracy order of numerical density-matrix k-deriv.
+        dk_order = params.dk_order                 # when using the length gauge (avail: 2,4,6,8)
 
     # System parameters
     a = params.a                                   # Lattice spacing
@@ -486,7 +486,9 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
             x[i+3] = -2*(y[i+1]*wr_c).imag - gamma1*(y[i+3]-y0[i+3])
 
             # compute drift term via k-derivative
-            if dk_order == 6:
+            if dk_order == 4:
+
+            elif dk_order == 6:
                 x[i]   += D*(y[right3]/60 - 3/20*y[right2] + 3/4*y[right] \
                              - 3/4*y[left] + 3/20*y[left2] - y[left3]/60)
 
@@ -495,7 +497,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
                 x[i+3] += D*(y[right3+3]/60 - 3/20*y[right2+3] + 3/4*y[right+3] \
                              - 3/4*y[left+3] + 3/20*y[left2+3] - y[left3+3]/60)
-            if dk_order == 8:
+            elif dk_order == 8:
                 x[i]   += D*(- y[right4]/280 + 4/105*y[right3] - 1/5*y[right2] + 4/5*y[right] \
                              + y[left4] /280 - 4/105*y[left3]  + 1/5*y[left2]  - 4/5*y[left] )
 
@@ -504,7 +506,9 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
                 x[i+3] += D*(- y[right4+3]/280 + 4/105*y[right3+3] - 1/5*y[right2+3] + 4/5*y[right+3] \
                              + y[left4+3] /280 - 4/105*y[left3+3]  + 1/5*y[left2+3]  - 4/5*y[left+3] )
-
+            else:
+                # order not implemented
+                quit()
             x[i+2] = x[i+1].conjugate()
 
         x[-1] = -electric_f
