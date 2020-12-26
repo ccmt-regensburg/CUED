@@ -181,7 +181,8 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
     fnumba, fjac = make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field,
                                gauge=gauge, do_semicl=do_semicl, use_jacobian=use_jacobian)
-    solver = ode(fnumba, jac=fjac).set_integrator('zvode', method=method, max_step=dt)
+    if method == 'bdf' or method == 'adams':
+        solver = ode(fnumba, jac=fjac).set_integrator('zvode', method=method, max_step=dt)
     # if use_jacobian:
         # solver.set_integrator('zvode', method=method, max_step=dt, lband=2, uband=2)
     # else:
@@ -244,35 +245,53 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         y0 = np.append(y0, [0.0])
 
         # Set the initual values and function parameters for the current kpath
-        solver.set_initial_value(y0, t0)\
-            .set_f_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)\
-            .set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
-        # if use_jacobian:
-        #     solver.set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path)
+        if method == 'bdf' or method == 'adams':
+            solver.set_initial_value(y0, t0)\
+                .set_f_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)\
+               .set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
+            # if use_jacobian:
+            #     solver.set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path)
+
+        elif method == 'rk4':
+            a = 0
 
         # Propagate through time
         # Index of current integration time step
         ti = 0
+        solver_successful = True
 
-        while solver.successful() and ti < Nt:
+        while solver_successful and ti < Nt:
             # User output of integration progress
             if (ti % (Nt//20) == 0 and user_out):
                 print('{:5.2f}%'.format((ti/Nt)*100))
 
-            # Save solution each output step
-            # Do not append the last element (A_field)
-            solution[:, :] = solver.y[:-1].reshape(Nk1, 4)
+            if method == 'bdf' or method == 'adams':
+
+                # Save solution each output step
+                # Do not append the last element (A_field)
+                solution[:, :] = solver.y[:-1].reshape(Nk1, 4)
+
+                # Construct time array only once
+                if Nk2_idx == 0:
+                    # Construct time and A_field only in first round
+                    t[ti] = solver.t
+                    A_field[ti] = solver.y[-1].real
+                    E_field[ti] = electric_field(t[ti])
+
+            elif method == 'rk4':
+                a = 0
+
+
+                # Construct time array only once
+                if Nk2_idx == 0:
+                    # Construct time and A_field only in first round
+                    t[ti] = ti*dt
+                    # A_field[ti] = 
+                    E_field[ti] = electric_field(t[ti])
 
             # Only write full density matrix solution if save_full is True
             if save_full:
                 solution_full[:, Nk2_idx, ti, :] = solution
-
-            # Construct time array only once
-            if Nk2_idx == 0:
-                # Construct time and A_field only in first round
-                t[ti] = solver.t
-                A_field[ti] = solver.y[-1].real
-                E_field[ti] = electric_field(t[ti])
 
             I_E_dir_buf, I_ortho_buf = emission_exact_path(solution, E_field[ti], A_field[ti])
             I_exact_E_dir[ti] += I_E_dir_buf
@@ -285,8 +304,16 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                 J_E_dir[ti] += J_E_dir_buf
                 J_ortho[ti] += J_ortho_buf
 
-            # Integrate one integration time step
-            solver.integrate(solver.t + dt)
+            if method == 'bdf' or method == 'adams':
+                # Integrate one integration time step
+                solver.integrate(solver.t + dt)
+                solver_successful = solver.successful()
+
+            elif method == 'rk4':
+                a = 0
+
+
+
 
             # Increment time counter
             ti += 1
