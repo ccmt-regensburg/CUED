@@ -499,7 +499,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
         return ecv_in_path, dipole_in_path, A_in_path
 
     @njit
-    def fvelocity(t, y, kpath, _dk, ecv_in_path, dipole_in_path, A_in_path, y0):
+    def fvelocity(t, y, kpath, _dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order):
         """
         Velocity gauge needs a recalculation of energies and dipoles as k
         is shifted according to the vector potential A
@@ -629,8 +629,8 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
         return freturn(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
 
     if fjac_return is not None:
-        def fjac(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order):
-            return fjac_return(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
+        def fjac(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0):
+            return fjac_return(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
     else:
         fjac = None
 
