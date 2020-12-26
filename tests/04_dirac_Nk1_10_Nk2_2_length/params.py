@@ -32,6 +32,7 @@ class params:
     rel_dist_to_Gamma   = 0.008      # relative distance (in units of 2pi/a) of both paths to Gamma
     length_path_in_BZ   = 1500*0.00306  # Length of path in BZ K-direction
     angle_inc_E_field   = 0          # incoming angle of the E-field in degree
+    dk_order            = 2           # order for numerical derivative of density matrix
 
     # Driving field parameters
     ##########################################################################
