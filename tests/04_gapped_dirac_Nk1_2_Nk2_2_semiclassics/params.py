@@ -35,7 +35,7 @@ class params:
     # Driving field parameters
     ##########################################################################
     align               = 'K'         # E-field direction (gamma-'K' or gamma-'M')
-    E0                  = 0.01        # Pulse amplitude (MV/cm)
+    E0                  = 5.0         # Pulse amplitude (MV/cm)
     w                   = 25.0        # Pulse frequency (THz)
     chirp               = 0.00        # Pulse chirp ratio (chirp = c/w) (THz)
     alpha               = 25.0        # Gaussian pulse width (femtoseconds)
