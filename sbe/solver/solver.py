@@ -92,12 +92,18 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     if hasattr(params, 'solver_method'):           # 'adams' non-stiff and 'bdf' stiff problems,
         method = params.solver_method              # 'rk4' Runge-Kutta 4th order with quadruple precision
 
+    print("method =", method)
+
     if method == 'bdf' or method == 'adams':
-        type_real    = np.float64
-        type_complex = np.complex128
-    if method == 'rk4':
-        type_real    = np.float128
-        type_complex = np.complex256
+        type_real_np    = np.float64
+        type_complex_np = np.complex128
+    elif method == 'rk4':
+#        type_real_np    = np.float128
+#        type_complex_np = np.complex256
+        type_real_np    = np.float64
+        type_complex_np = np.complex128
+    else:
+        quit()
 
     dk_order = 8
     if hasattr(params, 'dk_order'):                # Accuracy order of numerical density-matrix k-deriv.
@@ -196,8 +202,9 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     # else:
         # solver.set_integrator('zvode', method=method, max_step=dt)
 
-    t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, P_E_dir, P_ortho, _dummy =\
-        solution_container(Nk1, Nt, save_approx, type_real, type_complex)
+    t, A_field, E_field, solution, solution_y_vec, I_exact_E_dir, I_exact_ortho, \
+        J_E_dir, J_ortho, P_E_dir, P_ortho, _dummy = \
+        solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np)
 
     # Only define full density matrix solution if save_full is True
     if save_full:
@@ -261,8 +268,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
             #     solver.set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path)
 
         elif method == 'rk4':
-            solution_y
-            solution[:, :] = y0.reshape(Nk1, 4)
+            solution_y_vec[:] = y0
 
         # Propagate through time
         # Index of current integration time step
@@ -276,7 +282,6 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
             if method == 'bdf' or method == 'adams':
 
-                # Save solution each output step
                 # Do not append the last element (A_field)
                 solution[:, :] = solver.y[:-1].reshape(Nk1, 4)
 
@@ -288,14 +293,15 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                     E_field[ti] = electric_field(t[ti])
 
             elif method == 'rk4':
-                a = 0
 
+                # Do not append the last element (A_field)
+                solution[:, :] = solution_y_vec[:-1].reshape(Nk1, 4)
 
                 # Construct time array only once
                 if Nk2_idx == 0:
                     # Construct time and A_field only in first round
                     t[ti] = ti*dt
-                    # A_field[ti] = 
+                    A_field[ti] = solution_y_vec[-1].real
                     E_field[ti] = electric_field(t[ti])
 
             # Only write full density matrix solution if save_full is True
@@ -672,7 +678,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
     return f, fjac
 
-def solution_container(Nk1, Nt, save_approx, type_real, type_complex, zeeman=False):
+def solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np, zeeman=False):
     """
         Function that builds the containers on which the solutions of the SBE,
         as well as the currents will be written
@@ -682,11 +688,12 @@ def solution_container(Nk1, Nt, save_approx, type_real, type_complex, zeeman=Fal
 
     # The solution array is structred as: first index is Nk1-index,
     # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
-    solution = np.zeros((Nk1, 4), dtype=complex)
+#    solution = np.zeros((Nk1, 4), dtype=np.complex128)
+    solution = np.zeros((Nk1, 4), dtype=type_complex_np)
 
     # For hand-made Runge-Kutta method, we need the solution as array with 
     # a single index
-#    solution = np.zeros((Nk1, 4), dtype=type_complex)
+    solution_y_vec = np.zeros((4*Nk1+1), dtype=type_complex_np)
 
     A_field = np.zeros(Nt, dtype=np.float64)
     E_field = np.zeros(Nt, dtype=np.float64)
@@ -710,8 +717,8 @@ def solution_container(Nk1, Nt, save_approx, type_real, type_complex, zeeman=Fal
         return t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, \
             P_E_dir, P_ortho, Zee_field
 
-    return t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, \
-        P_E_dir, P_ortho, None
+    return t, A_field, E_field, solution, solution_y_vec, I_exact_E_dir, I_exact_ortho, \
+        J_E_dir, J_ortho, P_E_dir, P_ortho, None
 
 
 def initial_condition(e_fermi, temperature, ev, ec):
