@@ -330,10 +330,8 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                 solver_successful = solver.successful()
 
             elif method == 'rk4':
-                a = 0
-
-
-
+                solution_y_vec = rk_integrate(t[ti], solution_y_vec, path, dk, ecv_in_path, \
+                                              dipole_in_path, A_in_path, y0, dk_order)
 
             # Increment time counter
             ti += 1
@@ -682,6 +680,12 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
         fjac = None
 
     return f, fjac
+
+def rk_integrate(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order):
+
+
+
+    return y
 
 def solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np, zeeman=False):
     """
