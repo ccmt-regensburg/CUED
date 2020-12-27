@@ -913,10 +913,10 @@ def print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alp
         Function that prints the input parameters if usr_info = True
     """
     print("Input parameters:")
-    print("Brillouin zone:                 " + BZ_type)
-    print("Do Semiclassics                 " + str(do_semicl))
-    print("ODE solver method               " + str(method))
-    print("Precision (default = double)    " + str(precision))
+    print("Brillouin zone                  = " + BZ_type)
+    print("Do Semiclassics                 = " + str(do_semicl))
+    print("ODE solver method               = " + str(method))
+    print("Precision (default = double)    = " + str(precision))
     print("Number of k-points              = " + str(Nk))
     if BZ_type == 'full':
         print("Driving field alignment         = " + align)
