@@ -1,4 +1,5 @@
 import time
+import os
 from math import modf
 import numpy as np
 from numpy.fft import *
@@ -90,26 +91,13 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
     method = 'bdf'
     if hasattr(params, 'solver_method'):           # 'adams' non-stiff and 'bdf' stiff problems,
-        method = params.solver_method              # 'rk4' Runge-Kutta 4th order with quadruple precision
-
-    print("method =", method)
-
-    if method == 'bdf' or method == 'adams':
-        type_real_np    = np.float64
-        type_complex_np = np.complex128
-    elif method == 'rk4':
-#        type_real_np    = np.float128
-#        type_complex_np = np.complex256
-        type_real_np    = np.float64
-        type_complex_np = np.complex128
-    else:
-        quit()
+        method = params.solver_method              # 'rk4' Runge-Kutta 4th order
 
     dk_order = 8
     if hasattr(params, 'dk_order'):                # Accuracy order of numerical density-matrix k-deriv.
         dk_order = params.dk_order                 # when using the length gauge (avail: 2,4,6,8)
         if dk_order not in [2, 4, 6, 8]: 
-            quit()
+            quit("dk_order needs to be either 2, 4, 6, or 8.")
 
     # System parameters
     a = params.a                                   # Lattice spacing
@@ -128,7 +116,6 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     T2 = params.T2*co.fs_to_au                     # Polarization damping time
     gamma1 = 1/T1                                  # Occupation damping parameter
     gamma2 = 1/T2                                  # Polarization damping
-
 
     Nf = int((abs(2*params.t0))/params.dt)
     if modf((2*params.t0/params.dt))[0] > 1e-12:
@@ -160,11 +147,29 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     b1 = params.b1                                 # Reciprocal lattice vectors
     b2 = params.b2
 
+    # higher precision (quadruple for reducing numerical noise
+    precision = 'default'
+    if hasattr(params, 'precision'):
+        precision = params.precision
+
+    if precision == 'default':
+        type_real_np    = np.float64
+        type_complex_np = np.complex128
+    elif precision == 'quadruple':
+        type_real_np    = np.float128
+        type_complex_np = np.complex256
+        # disable numba since it doesn't support float128 and complex256
+        os.environ['NUMBA_DISABLE_JIT'] = '1'
+        if method != 'rk4': quit("Error: Quadruple precision only works with Runge-Kutta 4 ODE solver.")
+    else: quit("Only default or quadruple precision available.")
+
+    print("precision =", precision)
+
     # USER OUTPUT
     ###########################################################################
     if user_out:
         print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alpha,
-                        chirp, T2, tf-t0, dt)
+                        chirp, T2, tf-t0, dt, method, precision)
     # INITIALIZATIONS
     ###########################################################################
     # Form the E-field direction
@@ -903,13 +908,15 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
 
 
 def print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alpha, chirp,
-                    T2, tfmt0, dt, B0=None, mu=None, incident_angle=None):
+                    T2, tfmt0, dt, method, precision, B0=None, mu=None, incident_angle=None):
     """
         Function that prints the input parameters if usr_info = True
     """
     print("Input parameters:")
     print("Brillouin zone:                 " + BZ_type)
     print("Do Semiclassics                 " + str(do_semicl))
+    print("ODE solver method               " + str(method))
+    print("Precision (default = double)    " + str(precision))
     print("Number of k-points              = " + str(Nk))
     if BZ_type == 'full':
         print("Driving field alignment         = " + align)
