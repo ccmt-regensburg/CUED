@@ -89,8 +89,15 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         symmetric_insulator = params.symmetric_insulator
 
     method = 'bdf'
-    if hasattr(params, 'solver_method'):           # 'adams' non-stiff and 'bdf' stiff problems
-        method = params.solver_method
+    if hasattr(params, 'solver_method'):           # 'adams' non-stiff and 'bdf' stiff problems,
+        method = params.solver_method              # 'rk4' Runge-Kutta 4th order with quadruple precision
+
+    if method == 'bdf' or method == 'adams':
+        type_real    = np.float64
+        type_complex = np.complex128
+    if method == 'rk4':
+        type_real    = np.float128
+        type_complex = np.complex256
 
     dk_order = 8
     if hasattr(params, 'dk_order'):                # Accuracy order of numerical density-matrix k-deriv.
@@ -181,6 +188,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
     fnumba, fjac = make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field,
                                gauge=gauge, do_semicl=do_semicl, use_jacobian=use_jacobian)
+
     if method == 'bdf' or method == 'adams':
         solver = ode(fnumba, jac=fjac).set_integrator('zvode', method=method, max_step=dt)
     # if use_jacobian:
@@ -189,7 +197,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         # solver.set_integrator('zvode', method=method, max_step=dt)
 
     t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, P_E_dir, P_ortho, _dummy =\
-        solution_container(Nk1, Nt, save_approx)
+        solution_container(Nk1, Nt, save_approx, type_real, type_complex)
 
     # Only define full density matrix solution if save_full is True
     if save_full:
@@ -253,7 +261,8 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
             #     solver.set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path)
 
         elif method == 'rk4':
-            a = 0
+            solution_y
+            solution[:, :] = y0.reshape(Nk1, 4)
 
         # Propagate through time
         # Index of current integration time step
@@ -663,7 +672,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
     return f, fjac
 
-def solution_container(Nk1, Nt, save_approx, zeeman=False):
+def solution_container(Nk1, Nt, save_approx, type_real, type_complex, zeeman=False):
     """
         Function that builds the containers on which the solutions of the SBE,
         as well as the currents will be written
@@ -674,6 +683,10 @@ def solution_container(Nk1, Nt, save_approx, zeeman=False):
     # The solution array is structred as: first index is Nk1-index,
     # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
     solution = np.zeros((Nk1, 4), dtype=complex)
+
+    # For hand-made Runge-Kutta method, we need the solution as array with 
+    # a single index
+#    solution = np.zeros((Nk1, 4), dtype=type_complex)
 
     A_field = np.zeros(Nt, dtype=np.float64)
     E_field = np.zeros(Nt, dtype=np.float64)
