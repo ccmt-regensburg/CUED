@@ -220,12 +220,15 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     for Nk2_idx, path in enumerate(paths):
 
         if gauge == 'length':
-            emission_exact_path = make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature, symmetric_insulator)
+            emission_exact_path = make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature, \
+                                    type_real_np, type_complex_np, symmetric_insulator)
         if gauge == 'velocity':
-            emission_exact_path = make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, symmetric_insulator)
+            emission_exact_path = make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, \
+                                    type_real_np, type_complex_np, symmetric_insulator)
         if save_approx:
-            polarization_path = make_polarization_path(dipole, path, E_dir, gauge)
-            current_path = make_current_path(sys, path, E_dir, gauge)
+            polarization_path = make_polarization_path(dipole, path, E_dir, gauge, \
+                                                       type_real_np, type_complex_np)
+            current_path = make_current_path(sys, path, E_dir, gauge, type_real_np, type_complex_np)
 
         print("Path: ", Nk2_idx + 1)
 
@@ -705,17 +708,17 @@ def solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np, zeem
     # a single index
     solution_y_vec = np.zeros((4*Nk1+1), dtype=type_complex_np)
 
-    A_field = np.zeros(Nt, dtype=np.float64)
-    E_field = np.zeros(Nt, dtype=np.float64)
+    A_field = np.zeros(Nt, dtype=type_real_np)
+    E_field = np.zeros(Nt, dtype=type_real_np)
 
-    I_exact_E_dir = np.zeros(Nt, dtype=np.float64)
-    I_exact_ortho = np.zeros(Nt, dtype=np.float64)
+    I_exact_E_dir = np.zeros(Nt, dtype=type_real_np)
+    I_exact_ortho = np.zeros(Nt, dtype=type_real_np)
 
     if save_approx:
-        J_E_dir = np.zeros(Nt, dtype=np.float64)
-        J_ortho = np.zeros(Nt, dtype=np.float64)
-        P_E_dir = np.zeros(Nt, dtype=np.float64)
-        P_ortho = np.zeros(Nt, dtype=np.float64)
+        J_E_dir = np.zeros(Nt, dtype=type_real_np)
+        J_ortho = np.zeros(Nt, dtype=type_real_np)
+        P_E_dir = np.zeros(Nt, dtype=type_real_np)
+        P_ortho = np.zeros(Nt, dtype=type_real_np)
     else:
         J_E_dir = None
         J_ortho = None
@@ -723,7 +726,7 @@ def solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np, zeem
         P_ortho = None
 
     if zeeman:
-        Zee_field = np.zeros((Nt, 3), dtype=np.float64)
+        Zee_field = np.zeros((Nt, 3), dtype=type_real_np)
         return t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, \
             P_E_dir, P_ortho, Zee_field
 
