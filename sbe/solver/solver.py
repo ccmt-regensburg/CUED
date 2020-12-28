@@ -81,6 +81,26 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     do_semicl = params.do_semicl                   # Additional semiclassical observable calculation
     gauge = params.gauge                           # length (dipole) or velocity (houston) gauge
 
+    method = 'bdf'
+    if hasattr(params, 'solver_method'):           # 'adams' non-stiff and 'bdf' stiff problems,
+        method = params.solver_method              # 'rk4' Runge-Kutta 4th order
+
+    # higher precision (quadruple for reducing numerical noise
+    precision = 'default'
+    if hasattr(params, 'precision'):
+        precision = params.precision
+
+    if precision == 'default':
+        type_real_np    = np.float64
+        type_complex_np = np.complex128
+    elif precision == 'quadruple':
+        type_real_np    = np.float128
+        type_complex_np = np.complex256
+        # disable numba since it doesn't support float128 and complex256
+        os.environ['NUMBA_DISABLE_JIT'] = '1'
+        if method != 'rk4': quit("Error: Quadruple precision only works with Runge-Kutta 4 ODE solver.")
+    else: quit("Only default or quadruple precision available.")
+
     use_jacobian = False
     if hasattr(params, 'use_jacobian'):
         use_jacobian = params.use_jacobian
@@ -88,10 +108,6 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     symmetric_insulator = False                    # special flag for more accurate insulator calc.
     if hasattr(params, 'symmetric_insulator'):
         symmetric_insulator = params.symmetric_insulator
-
-    method = 'bdf'
-    if hasattr(params, 'solver_method'):           # 'adams' non-stiff and 'bdf' stiff problems,
-        method = params.solver_method              # 'rk4' Runge-Kutta 4th order
 
     dk_order = 8
     if hasattr(params, 'dk_order'):                # Accuracy order of numerical density-matrix k-deriv.
@@ -125,7 +141,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     Nt = Nf + 1
     t0 = params.t0*co.fs_to_au
     tf = -t0
-    dt = params.dt*co.fs_to_au
+    dt = type_real_np(params.dt*co.fs_to_au)
 
     # Brillouin zone type
     BZ_type = params.BZ_type                       # Type of Brillouin zone
@@ -146,22 +162,6 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
     b1 = params.b1                                 # Reciprocal lattice vectors
     b2 = params.b2
-
-    # higher precision (quadruple for reducing numerical noise
-    precision = 'default'
-    if hasattr(params, 'precision'):
-        precision = params.precision
-
-    if precision == 'default':
-        type_real_np    = np.float64
-        type_complex_np = np.complex128
-    elif precision == 'quadruple':
-        type_real_np    = np.float128
-        type_complex_np = np.complex256
-        # disable numba since it doesn't support float128 and complex256
-        os.environ['NUMBA_DISABLE_JIT'] = '1'
-        if method != 'rk4': quit("Error: Quadruple precision only works with Runge-Kutta 4 ODE solver.")
-    else: quit("Only default or quadruple precision available.")
 
     # USER OUTPUT
     ###########################################################################
@@ -186,7 +186,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     elif BZ_type == '2line':
         E_dir = np.array([np.cos(np.radians(angle_inc_E_field)),
                           np.sin(np.radians(angle_inc_E_field))])
-        dk, kweight, _kpnts, paths = rect_mesh(params, E_dir)
+        dk, kweight, _kpnts, paths = rect_mesh(params, E_dir, type_real_np)
         # BZ_plot(_kpnts, a, b1, b2, paths)
 
     # Initialize electric_field, create fnumba and initialize ode solver
@@ -697,7 +697,7 @@ def solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np, zeem
         as well as the currents will be written
     """
     # Solution containers
-    t = np.zeros(Nt)
+    t = np.zeros(Nt, dtype=type_real_np)
 
     # The solution array is structred as: first index is Nk1-index,
     # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
@@ -842,6 +842,7 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
     prefac_emission = 1/(3*(137.036**3))
     dt_out = t[1] - t[0]
     freq = fftshift(fftfreq(t.size, d=dt_out))
+
     if save_approx:
         # Only do approximate emission fourier transforms if save_approx is set
         I_E_dir = kweight*(diff(t, P_E_dir) + J_E_dir)
