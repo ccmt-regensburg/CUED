@@ -196,7 +196,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         electric_field = electric_field_function
 
     fnumba, fjac = make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field,
-                               gauge=gauge, do_semicl=do_semicl, use_jacobian=use_jacobian)
+                               gauge, type_complex_np, do_semicl, use_jacobian=use_jacobian)
 
     if method == 'bdf' or method == 'adams':
         solver = ode(fnumba, jac=fjac).set_integrator('zvode', method=method, max_step=dt)
@@ -211,7 +211,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
     # Only define full density matrix solution if save_full is True
     if save_full:
-        solution_full = np.empty((Nk1, Nk2, Nt, 4), dtype=np.complex128)
+        solution_full = np.empty((Nk1, Nk2, Nt, 4), dtype=type_complex_np)
 
     ###########################################################################
     # SOLVING
@@ -237,7 +237,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         ky_in_path = path[:, 1]
 
         if do_semicl:
-            zero_arr = np.zeros(np.size(kx_in_path), dtype=np.complex128)
+            zero_arr = np.zeros(np.size(kx_in_path), dtype=type_complex_np)
             dipole_in_path = zero_arr
             A_in_path = zero_arr
         else:
@@ -262,7 +262,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
         # Initialize the values of of each k point vector
         # (rho_nn(k), rho_nm(k), rho_mn(k), rho_mm(k))
-        y0 = initial_condition(e_fermi, temperature, ev, ec)
+        y0 = initial_condition(e_fermi, temperature, ev, ec, type_complex_np)
         y0 = np.append(y0, [0.0])
 
         # Set the initual values and function parameters for the current kpath
@@ -361,7 +361,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                  electric_field=electric_field(t), A_field=A_field)
 
 
-def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, gauge,
+def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, gauge, type_complex_np, 
                 do_semicl, use_jacobian):
     """
         Initialization of the solver for the sbe ( eq. (39/47/80) in https://arxiv.org/abs/2008.03177)
@@ -419,7 +419,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
         The length gauge is evaluated on a constant pre-defined k-grid.
         """
         # x != y(t+dt)
-        x = np.empty(np.shape(y), dtype=np.complex128)
+        x = np.empty(np.shape(y), dtype=type_complex_np)
 
         # Gradient term coefficient
         electric_f = electric_field(t)
@@ -524,7 +524,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
         ecv_in_path = ecf(kx=kx, ky=ky) - evf(kx=kx, ky=ky)
 
         if do_semicl:
-            zero_arr = np.zeros(kx.size, dtype=np.complex128)
+            zero_arr = np.zeros(kx.size, dtype=type_complex_np)
             dipole_in_path = zero_arr
             A_in_path = zero_arr
         else:
@@ -551,7 +551,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
         ecv_in_path, dipole_in_path, A_in_path = pre_velocity(kpath, y[-1].real)
 
         # x != y(t+dt)
-        x = np.empty(np.shape(y), dtype=np.complex128)
+        x = np.empty(np.shape(y), dtype=type_complex_np)
 
         electric_f = electric_field(t)
 
@@ -597,7 +597,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
         # definition of uband in 'vode'
         # J[i-j+uband, j] = J[i, j]; uband=2
         dim = np.shape(y)[0]
-        J = np.zeros((dim, dim), dtype=np.complex128)
+        J = np.zeros((dim, dim), dtype=type_complex_np)
 
         electric_f = electric_field(t)
 
@@ -701,7 +701,7 @@ def solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np, zeem
 
     # The solution array is structred as: first index is Nk1-index,
     # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
-#    solution = np.zeros((Nk1, 4), dtype=np.complex128)
+#    solution = np.zeros((Nk1, 4), dtype=type_complex_np)
     solution = np.zeros((Nk1, 4), dtype=type_complex_np)
 
     # For hand-made Runge-Kutta method, we need the solution as array with 
@@ -734,14 +734,14 @@ def solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np, zeem
         J_E_dir, J_ortho, P_E_dir, P_ortho, None
 
 
-def initial_condition(e_fermi, temperature, ev, ec):
+def initial_condition(e_fermi, temperature, ev, ec, type_complex_np):
     '''
     Occupy conduction band according to inital Fermi energy and temperature
     '''
     knum = ec.size
-    zero_arr = np.zeros(knum, dtype=np.complex128)
-    distrib_ec = np.zeros(knum, dtype=np.complex128)
-    distrib_ev = np.zeros(knum, dtype=np.complex128)
+    zero_arr = np.zeros(knum, dtype=type_complex_np)
+    distrib_ec = np.zeros(knum, dtype=type_complex_np)
+    distrib_ev = np.zeros(knum, dtype=type_complex_np)
     if temperature > 1e-5:
         distrib_ec += 1/(np.exp((ec-e_fermi)/temperature) + 1)
         distrib_ev += 1/(np.exp((ev-e_fermi)/temperature) + 1)
