@@ -303,7 +303,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                 # Construct time array only once
                 if Nk2_idx == 0:
                     # Construct time and A_field only in first round
-                    t[ti] = ti*dt
+                    t[ti] = ti*dt + t0
                     A_field[ti] = solution_y_vec[-1].real
                     E_field[ti] = electric_field(t[ti])
 
@@ -326,7 +326,6 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                 # Integrate one integration time step
                 solver.integrate(solver.t + dt)
                 solver_successful = solver.successful()
-
             elif method == 'rk4':
                 solution_y_vec = rk_integrate(t[ti], solution_y_vec, path, dk, ecv_in_path, \
                                               dipole_in_path, A_in_path, y0, dk_order, \
@@ -701,9 +700,9 @@ def rk_integrate(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk
 #
 #    quit()
 
-    y = y + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
+    ynew = y + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
 
-    return y
+    return ynew
 
 def solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np, zeeman=False):
     """
