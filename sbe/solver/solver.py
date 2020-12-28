@@ -284,7 +284,6 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                 print('{:5.2f}%'.format((ti/Nt)*100))
 
             if method == 'bdf' or method == 'adams':
-
                 # Do not append the last element (A_field)
                 solution[:, :] = solver.y[:-1].reshape(Nk1, 4)
 
@@ -296,7 +295,6 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                     E_field[ti] = electric_field(t[ti])
 
             elif method == 'rk4':
-
                 # Do not append the last element (A_field)
                 solution[:, :] = solution_y_vec[:-1].reshape(Nk1, 4)
 
@@ -682,23 +680,10 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 def rk_integrate(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order, \
                  dt, fnumba, type_complex_np):
 
-    k1 = np.zeros(np.size(y), dtype=type_complex_np)
-    k2 = np.zeros(np.size(y), dtype=type_complex_np)
-    k3 = np.zeros(np.size(y), dtype=type_complex_np)
-    k4 = np.zeros(np.size(y), dtype=type_complex_np)
-
     k1 = fnumba(t,          y,          kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
     k2 = fnumba(t + 0.5*dt, y + 0.5*k1, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
     k3 = fnumba(t + 0.5*dt, y + 0.5*k2, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
     k4 = fnumba(t +     dt, y +     k3, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
-
-#    print("\ny  =", y)
-#    print("\nk1 =", k1)
-#    print("\nk2 =", k2)
-#    print("\nk3 =", k3)
-#    print("\nk4 =", k4)
-#
-#    quit()
 
     ynew = y + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
 
