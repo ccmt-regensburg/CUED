@@ -5,7 +5,7 @@ def make_electric_field(E0, w, alpha, chirp, phase):
     """
     Creates a jitted version of the electric field for fast use inside a solver
     """
-#    @njit
+    @njit
     def electric_field(t):
         '''
         Returns the instantaneous driving pulse field

@@ -81,26 +81,6 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     do_semicl = params.do_semicl                   # Additional semiclassical observable calculation
     gauge = params.gauge                           # length (dipole) or velocity (houston) gauge
 
-    method = 'bdf'
-    if hasattr(params, 'solver_method'):           # 'adams' non-stiff and 'bdf' stiff problems,
-        method = params.solver_method              # 'rk4' Runge-Kutta 4th order
-
-    # higher precision (quadruple for reducing numerical noise
-    precision = 'default'
-    if hasattr(params, 'precision'):
-        precision = params.precision
-
-    if precision == 'default':
-        type_real_np    = np.float64
-        type_complex_np = np.complex128
-    elif precision == 'quadruple':
-        type_real_np    = np.float128
-        type_complex_np = np.complex256
-        # disable numba since it doesn't support float128 and complex256
-        os.environ['NUMBA_DISABLE_JIT'] = '1'
-        if method != 'rk4': quit("Error: Quadruple precision only works with Runge-Kutta 4 ODE solver.")
-    else: quit("Only default or quadruple precision available.")
-
     use_jacobian = False
     if hasattr(params, 'use_jacobian'):
         use_jacobian = params.use_jacobian
@@ -108,6 +88,10 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     symmetric_insulator = False                    # special flag for more accurate insulator calc.
     if hasattr(params, 'symmetric_insulator'):
         symmetric_insulator = params.symmetric_insulator
+
+    method = 'bdf'
+    if hasattr(params, 'solver_method'):           # 'adams' non-stiff and 'bdf' stiff problems,
+        method = params.solver_method              # 'rk4' Runge-Kutta 4th order
 
     dk_order = 8
     if hasattr(params, 'dk_order'):                # Accuracy order of numerical density-matrix k-deriv.
@@ -141,7 +125,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     Nt = Nf + 1
     t0 = params.t0*co.fs_to_au
     tf = -t0
-    dt = type_real_np(params.dt*co.fs_to_au)
+    dt = params.dt*co.fs_to_au
 
     # Brillouin zone type
     BZ_type = params.BZ_type                       # Type of Brillouin zone
@@ -162,6 +146,22 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
     b1 = params.b1                                 # Reciprocal lattice vectors
     b2 = params.b2
+
+    # higher precision (quadruple for reducing numerical noise
+    precision = 'default'
+    if hasattr(params, 'precision'):
+        precision = params.precision
+
+    if precision == 'default':
+        type_real_np    = np.float64
+        type_complex_np = np.complex128
+    elif precision == 'quadruple':
+        type_real_np    = np.float128
+        type_complex_np = np.complex256
+        # disable numba since it doesn't support float128 and complex256
+        os.environ['NUMBA_DISABLE_JIT'] = '1'
+        if method != 'rk4': quit("Error: Quadruple precision only works with Runge-Kutta 4 ODE solver.")
+    else: quit("Only default or quadruple precision available.")
 
     # USER OUTPUT
     ###########################################################################
@@ -186,7 +186,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     elif BZ_type == '2line':
         E_dir = np.array([np.cos(np.radians(angle_inc_E_field)),
                           np.sin(np.radians(angle_inc_E_field))])
-        dk, kweight, _kpnts, paths = rect_mesh(params, E_dir, type_real_np)
+        dk, kweight, _kpnts, paths = rect_mesh(params, E_dir)
         # BZ_plot(_kpnts, a, b1, b2, paths)
 
     # Initialize electric_field, create fnumba and initialize ode solver
@@ -195,8 +195,8 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     else:
         electric_field = electric_field_function
 
-    fnumba, fjac = make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field,
-                               gauge, type_complex_np, do_semicl, use_jacobian=use_jacobian)
+    fnumba, fjac = make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field,
+                               gauge=gauge, do_semicl=do_semicl, use_jacobian=use_jacobian)
 
     if method == 'bdf' or method == 'adams':
         solver = ode(fnumba, jac=fjac).set_integrator('zvode', method=method, max_step=dt)
@@ -211,7 +211,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
     # Only define full density matrix solution if save_full is True
     if save_full:
-        solution_full = np.empty((Nk1, Nk2, Nt, 4), dtype=type_complex_np)
+        solution_full = np.empty((Nk1, Nk2, Nt, 4), dtype=np.complex128)
 
     ###########################################################################
     # SOLVING
@@ -220,15 +220,12 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     for Nk2_idx, path in enumerate(paths):
 
         if gauge == 'length':
-            emission_exact_path = make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature, \
-                                    type_real_np, type_complex_np, symmetric_insulator)
+            emission_exact_path = make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature, symmetric_insulator)
         if gauge == 'velocity':
-            emission_exact_path = make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, \
-                                    type_real_np, type_complex_np, symmetric_insulator)
+            emission_exact_path = make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, symmetric_insulator)
         if save_approx:
-            polarization_path = make_polarization_path(dipole, path, E_dir, gauge, \
-                                                       type_real_np, type_complex_np)
-            current_path = make_current_path(sys, path, E_dir, gauge, type_real_np, type_complex_np)
+            polarization_path = make_polarization_path(dipole, path, E_dir, gauge)
+            current_path = make_current_path(sys, path, E_dir, gauge)
 
         print("Path: ", Nk2_idx + 1)
 
@@ -237,7 +234,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         ky_in_path = path[:, 1]
 
         if do_semicl:
-            zero_arr = np.zeros(np.size(kx_in_path), dtype=type_complex_np)
+            zero_arr = np.zeros(np.size(kx_in_path), dtype=np.complex128)
             dipole_in_path = zero_arr
             A_in_path = zero_arr
         else:
@@ -262,14 +259,14 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
         # Initialize the values of of each k point vector
         # (rho_nn(k), rho_nm(k), rho_mn(k), rho_mm(k))
-        y0 = initial_condition(e_fermi, temperature, ev, ec, type_complex_np)
+        y0 = initial_condition(e_fermi, temperature, ev, ec)
         y0 = np.append(y0, [0.0])
 
         # Set the initual values and function parameters for the current kpath
         if method == 'bdf' or method == 'adams':
             solver.set_initial_value(y0, t0)\
-                .set_f_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0)\
-               .set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
+                .set_f_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)\
+               .set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
             # if use_jacobian:
             #     solver.set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path)
 
@@ -287,6 +284,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                 print('{:5.2f}%'.format((ti/Nt)*100))
 
             if method == 'bdf' or method == 'adams':
+
                 # Do not append the last element (A_field)
                 solution[:, :] = solver.y[:-1].reshape(Nk1, 4)
 
@@ -298,6 +296,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                     E_field[ti] = electric_field(t[ti])
 
             elif method == 'rk4':
+
                 # Do not append the last element (A_field)
                 solution[:, :] = solution_y_vec[:-1].reshape(Nk1, 4)
 
@@ -329,7 +328,8 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                 solver_successful = solver.successful()
             elif method == 'rk4':
                 solution_y_vec = rk_integrate(t[ti], solution_y_vec, path, dk, ecv_in_path, \
-                                              dipole_in_path, A_in_path, y0, dt, fnumba, type_complex_np)
+                                              dipole_in_path, A_in_path, y0, dk_order, \
+                                              dt, fnumba, type_complex_np)
 
             # Increment time counter
             ti += 1
@@ -361,7 +361,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                  electric_field=electric_field(t), A_field=A_field)
 
 
-def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, gauge, type_complex_np, 
+def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
                 do_semicl, use_jacobian):
     """
         Initialization of the solver for the sbe ( eq. (39/47/80) in https://arxiv.org/abs/2008.03177)
@@ -412,14 +412,14 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
     di_01yf = dipole.Ayfjit[0][1]
     di_11yf = dipole.Ayfjit[1][1]
 
-#    @njit
-    def flength(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0):
+    @njit
+    def flength(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order):
         """
         Length gauge doesn't need recalculation of energies and dipoles.
         The length gauge is evaluated on a constant pre-defined k-grid.
         """
         # x != y(t+dt)
-        x = np.empty(np.shape(y), dtype=type_complex_np)
+        x = np.empty(np.shape(y), dtype=np.complex128)
 
         # Gradient term coefficient
         electric_f = electric_field(t)
@@ -514,7 +514,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
         x[-1] = -electric_f
         return x
 
-#    @njit
+    @njit
     def pre_velocity(kpath, k_shift):
         # First round k_shift is zero, consequently we just recalculate
         # the original data ecv_in_path, dipole_in_path, A_in_path
@@ -524,7 +524,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
         ecv_in_path = ecf(kx=kx, ky=ky) - evf(kx=kx, ky=ky)
 
         if do_semicl:
-            zero_arr = np.zeros(kx.size, dtype=type_complex_np)
+            zero_arr = np.zeros(kx.size, dtype=np.complex128)
             dipole_in_path = zero_arr
             A_in_path = zero_arr
         else:
@@ -541,8 +541,8 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
 
         return ecv_in_path, dipole_in_path, A_in_path
 
-#    @njit
-    def fvelocity(t, y, kpath, _dk, ecv_in_path, dipole_in_path, A_in_path, y0):
+    @njit
+    def fvelocity(t, y, kpath, _dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order):
         """
         Velocity gauge needs a recalculation of energies and dipoles as k
         is shifted according to the vector potential A
@@ -551,7 +551,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
         ecv_in_path, dipole_in_path, A_in_path = pre_velocity(kpath, y[-1].real)
 
         # x != y(t+dt)
-        x = np.empty(np.shape(y), dtype=type_complex_np)
+        x = np.empty(np.shape(y), dtype=np.complex128)
 
         electric_f = electric_field(t)
 
@@ -585,7 +585,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
 
         return x
 
-#    @njit
+    @njit
     def jac_velocity(t, y, kpath, _dk, ecv_in_path, dipole_in_path, A_in_path, _y0):
         """
         Jacobian of SBE in the velocity gauge
@@ -597,7 +597,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
         # definition of uband in 'vode'
         # J[i-j+uband, j] = J[i, j]; uband=2
         dim = np.shape(y)[0]
-        J = np.zeros((dim, dim), dtype=type_complex_np)
+        J = np.zeros((dim, dim), dtype=np.complex128)
 
         electric_f = electric_field(t)
 
@@ -668,8 +668,8 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
 
 
     # The python solver does not directly accept jitted functions so we wrap it
-    def f(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0):
-        return freturn(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
+    def f(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order):
+        return freturn(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
 
     if fjac_return is not None:
         def fjac(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0):
@@ -679,13 +679,26 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
 
     return f, fjac
 
-def rk_integrate(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, \
+def rk_integrate(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order, \
                  dt, fnumba, type_complex_np):
 
-    k1 = fnumba(t,          y,          kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
-    k2 = fnumba(t + 0.5*dt, y + 0.5*k1, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
-    k3 = fnumba(t + 0.5*dt, y + 0.5*k2, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
-    k4 = fnumba(t +     dt, y +     k3, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
+    k1 = np.zeros(np.size(y), dtype=type_complex_np)
+    k2 = np.zeros(np.size(y), dtype=type_complex_np)
+    k3 = np.zeros(np.size(y), dtype=type_complex_np)
+    k4 = np.zeros(np.size(y), dtype=type_complex_np)
+
+    k1 = fnumba(t,          y,          kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
+    k2 = fnumba(t + 0.5*dt, y + 0.5*k1, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
+    k3 = fnumba(t + 0.5*dt, y + 0.5*k2, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
+    k4 = fnumba(t +     dt, y +     k3, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
+
+#    print("\ny  =", y)
+#    print("\nk1 =", k1)
+#    print("\nk2 =", k2)
+#    print("\nk3 =", k3)
+#    print("\nk4 =", k4)
+#
+#    quit()
 
     ynew = y + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
 
@@ -697,28 +710,28 @@ def solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np, zeem
         as well as the currents will be written
     """
     # Solution containers
-    t = np.zeros(Nt, dtype=type_real_np)
+    t = np.zeros(Nt)
 
     # The solution array is structred as: first index is Nk1-index,
     # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
-#    solution = np.zeros((Nk1, 4), dtype=type_complex_np)
+#    solution = np.zeros((Nk1, 4), dtype=np.complex128)
     solution = np.zeros((Nk1, 4), dtype=type_complex_np)
 
     # For hand-made Runge-Kutta method, we need the solution as array with 
     # a single index
     solution_y_vec = np.zeros((4*Nk1+1), dtype=type_complex_np)
 
-    A_field = np.zeros(Nt, dtype=type_real_np)
-    E_field = np.zeros(Nt, dtype=type_real_np)
+    A_field = np.zeros(Nt, dtype=np.float64)
+    E_field = np.zeros(Nt, dtype=np.float64)
 
-    I_exact_E_dir = np.zeros(Nt, dtype=type_real_np)
-    I_exact_ortho = np.zeros(Nt, dtype=type_real_np)
+    I_exact_E_dir = np.zeros(Nt, dtype=np.float64)
+    I_exact_ortho = np.zeros(Nt, dtype=np.float64)
 
     if save_approx:
-        J_E_dir = np.zeros(Nt, dtype=type_real_np)
-        J_ortho = np.zeros(Nt, dtype=type_real_np)
-        P_E_dir = np.zeros(Nt, dtype=type_real_np)
-        P_ortho = np.zeros(Nt, dtype=type_real_np)
+        J_E_dir = np.zeros(Nt, dtype=np.float64)
+        J_ortho = np.zeros(Nt, dtype=np.float64)
+        P_E_dir = np.zeros(Nt, dtype=np.float64)
+        P_ortho = np.zeros(Nt, dtype=np.float64)
     else:
         J_E_dir = None
         J_ortho = None
@@ -726,7 +739,7 @@ def solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np, zeem
         P_ortho = None
 
     if zeeman:
-        Zee_field = np.zeros((Nt, 3), dtype=type_real_np)
+        Zee_field = np.zeros((Nt, 3), dtype=np.float64)
         return t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, \
             P_E_dir, P_ortho, Zee_field
 
@@ -734,14 +747,14 @@ def solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np, zeem
         J_E_dir, J_ortho, P_E_dir, P_ortho, None
 
 
-def initial_condition(e_fermi, temperature, ev, ec, type_complex_np):
+def initial_condition(e_fermi, temperature, ev, ec):
     '''
     Occupy conduction band according to inital Fermi energy and temperature
     '''
     knum = ec.size
-    zero_arr = np.zeros(knum, dtype=type_complex_np)
-    distrib_ec = np.zeros(knum, dtype=type_complex_np)
-    distrib_ev = np.zeros(knum, dtype=type_complex_np)
+    zero_arr = np.zeros(knum, dtype=np.complex128)
+    distrib_ec = np.zeros(knum, dtype=np.complex128)
+    distrib_ev = np.zeros(knum, dtype=np.complex128)
     if temperature > 1e-5:
         distrib_ec += 1/(np.exp((ec-e_fermi)/temperature) + 1)
         distrib_ev += 1/(np.exp((ev-e_fermi)/temperature) + 1)
@@ -842,7 +855,6 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
     prefac_emission = 1/(3*(137.036**3))
     dt_out = t[1] - t[0]
     freq = fftshift(fftfreq(t.size, d=dt_out))
-
     if save_approx:
         # Only do approximate emission fourier transforms if save_approx is set
         I_E_dir = kweight*(diff(t, P_E_dir) + J_E_dir)

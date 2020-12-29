@@ -6,8 +6,7 @@ from sbe.utility import conversion_factors as co
 ##########################################################################################
 ## Observables working with density matrices that contain time data
 ##########################################################################################
-def make_polarization_path_time(dipole, pathlen, n_time_steps, E_dir, A_field, \
-                                gauge, type_real_np, type_complex_np):
+def make_polarization_path_time(dipole, pathlen, n_time_steps, E_dir, A_field, gauge):
     """
     Function that calculates the polarization for the current path
 
@@ -18,18 +17,18 @@ def make_polarization_path_time(dipole, pathlen, n_time_steps, E_dir, A_field, \
         Length of one path
     n_time_steps : int
         Number of time steps
-    E_dir : np.ndarray [type_real_np]
+    E_dir : np.ndarray [np.float64]
         Direction of the electric field
-    A_field : np.ndarray [type_real_np]
+    A_field : np.ndarray [np.float64]
         Vector potential integrated from electric field
     gauge : string
         System gauge 'length' or 'velocity'
 
     Returns:
     --------
-    P_E_dir : np.ndarray [type_real_np]
+    P_E_dir : np.ndarray [np.float64]
         Polarization in E-field direction
-    P_ortho : np.ndarray [type_real_np]
+    P_ortho : np.ndarray [np.float64]
         Polarization orthogonal to E-field direction
     """
     dijit_01x = dipole.Axfjit[0][1]
@@ -37,16 +36,16 @@ def make_polarization_path_time(dipole, pathlen, n_time_steps, E_dir, A_field, \
 
     E_ort = np.array([E_dir[1], -E_dir[0]])
 
-#    @njit
+    @njit
     def polarization_path_time(path, pcv, P_E_dir, P_ortho):
         ##################################################
         # Dipole container
         ##################################################
-        d_01x = np.zeros(pathlen, dtype=type_complex_np)
-        d_01y = np.zeros(pathlen, dtype=type_complex_np)
+        d_01x = np.zeros(pathlen, dtype=np.complex128)
+        d_01y = np.zeros(pathlen, dtype=np.complex128)
 
-        d_E_dir = np.zeros(pathlen, dtype=type_complex_np)
-        d_ortho = np.zeros(pathlen, dtype=type_complex_np)
+        d_E_dir = np.zeros(pathlen, dtype=np.complex128)
+        d_ortho = np.zeros(pathlen, dtype=np.complex128)
 
         for i_time in range(n_time_steps):
             if gauge == 'length':
@@ -71,7 +70,7 @@ def make_polarization_path_time(dipole, pathlen, n_time_steps, E_dir, A_field, \
     return polarization_path_time
 
 
-def make_current_path_time(sys, pathlen, n_time_steps, E_dir, A_field, gauge, type_real_np, type_complex_np):
+def make_current_path_time(sys, pathlen, n_time_steps, E_dir, A_field, gauge):
     '''
     Calculates the intraband current as: J(t) = sum_k sum_n [j_n(k)f_n(k,t)]
     where j_n(k) != (d/dk) E_n(k)
@@ -84,18 +83,18 @@ def make_current_path_time(sys, pathlen, n_time_steps, E_dir, A_field, gauge, ty
         Length of one path
     n_time_steps : int
         Number of time steps
-    E_dir : np.ndarray [type_real_np]
+    E_dir : np.ndarray [np.float64]
         Direction of the electric field
-    A_field : np.ndarray [type_real_np]
+    A_field : np.ndarray [np.float64]
         Vector potential integrated from electric field
     gauge : string
         System gauge 'length' or 'velocity'
 
     Returns
     -------
-    J_E_dir : np.ndarray [type_real_np]
+    J_E_dir : np.ndarray [np.float64]
         intraband current j_intra in E-field direction
-    J_ortho : np.ndarray [type_real_np]
+    J_ortho : np.ndarray [np.float64]
         intraband current j_intra orthogonal to E-field direction
     '''
     edxjit_v = sys.ederivfjit[0]
@@ -105,20 +104,20 @@ def make_current_path_time(sys, pathlen, n_time_steps, E_dir, A_field, gauge, ty
 
     E_ort = np.array([E_dir[1], -E_dir[0]])
 
-#    @njit
+    @njit
     def current_path_time(path, fv, fc, J_E_dir, J_ortho):
         ##################################################
         # E derivative container
         ##################################################
-        edx_v = np.zeros(pathlen, dtype=type_real_np)
-        edy_v = np.zeros(pathlen, dtype=type_real_np)
-        edx_c = np.zeros(pathlen, dtype=type_real_np)
-        edy_c = np.zeros(pathlen, dtype=type_real_np)
+        edx_v = np.zeros(pathlen, dtype=np.float64)
+        edy_v = np.zeros(pathlen, dtype=np.float64)
+        edx_c = np.zeros(pathlen, dtype=np.float64)
+        edy_c = np.zeros(pathlen, dtype=np.float64)
 
-        e_deriv_E_dir_v = np.zeros(pathlen, dtype=type_real_np)
-        e_deriv_ortho_v = np.zeros(pathlen, dtype=type_real_np)
-        e_deriv_E_dir_c = np.zeros(pathlen, dtype=type_real_np)
-        e_deriv_ortho_c = np.zeros(pathlen, dtype=type_real_np)
+        e_deriv_E_dir_v = np.zeros(pathlen, dtype=np.float64)
+        e_deriv_ortho_v = np.zeros(pathlen, dtype=np.float64)
+        e_deriv_E_dir_c = np.zeros(pathlen, dtype=np.float64)
+        e_deriv_ortho_c = np.zeros(pathlen, dtype=np.float64)
 
         for i_time in range(n_time_steps):
             if gauge == 'length':
@@ -152,8 +151,7 @@ def make_current_path_time(sys, pathlen, n_time_steps, E_dir, A_field, gauge, ty
     return current_path_time
 
 
-def make_emission_exact_path_time(sys, pathlen, n_time_steps, E_dir, A_field, \
-                                  gauge, type_real_np, type_complex_np, do_semicl, curvature, E_field):
+def make_emission_exact_path_time(sys, pathlen, n_time_steps, E_dir, A_field, gauge, do_semicl, curvature, E_field):
     """
     Construct a function that calculates the emission for the system solution per path
 
@@ -165,9 +163,9 @@ def make_emission_exact_path_time(sys, pathlen, n_time_steps, E_dir, A_field, \
         Length of one path
     n_time_steps : int
         Number of time steps
-    E_dir : np.ndarray [type_real_np]
+    E_dir : np.ndarray [np.float64]
         Direction of the electric field
-    A_field : np.ndarray [type_real_np]
+    A_field : np.ndarray [np.float64]
         Vector potential integrated from electric field
     gauge : string
         System gauge 'length' or 'velocity'
@@ -175,14 +173,14 @@ def make_emission_exact_path_time(sys, pathlen, n_time_steps, E_dir, A_field, \
         if semiclassical calculation should be done
     curvature : SymbolicCurvature
         Curvature is only needed for semiclassical calculation
-    E_field : np.ndarray [type_real_np]
+    E_field : np.ndarray [np.float64]
         Electric field is only needed for semiclassical calculation
 
     Returns
     -------
-    I_E_dir : np.ndarray [type_real_np]
+    I_E_dir : np.ndarray [np.float64]
         Exact emission in E-field direction
-    I_ortho : np.ndarray [type_real_np]
+    I_ortho : np.ndarray [np.float64]
         Exact emission orthogonal to E-field direction
     """
 
@@ -216,27 +214,27 @@ def make_emission_exact_path_time(sys, pathlen, n_time_steps, E_dir, A_field, \
 
     E_ort = np.array([E_dir[1], -E_dir[0]])
 
-#    @njit
+    @njit
     def emission_exact_path_time(path, solution, I_E_dir, I_ortho):
         ##########################################################
         # H derivative container
         ##########################################################
-        h_deriv_x = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-        h_deriv_y = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-        h_deriv_E_dir = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-        h_deriv_ortho = np.empty((pathlen, 2, 2), dtype=type_complex_np)
+        h_deriv_x = np.empty((pathlen, 2, 2), dtype=np.complex128)
+        h_deriv_y = np.empty((pathlen, 2, 2), dtype=np.complex128)
+        h_deriv_E_dir = np.empty((pathlen, 2, 2), dtype=np.complex128)
+        h_deriv_ortho = np.empty((pathlen, 2, 2), dtype=np.complex128)
 
         ##########################################################
         # Wave function container
         ##########################################################
-        U = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-        U_h = np.empty((pathlen, 2, 2), dtype=type_complex_np)
+        U = np.empty((pathlen, 2, 2), dtype=np.complex128)
+        U_h = np.empty((pathlen, 2, 2), dtype=np.complex128)
 
         ##########################################################
         # Berry curvature container
         ##########################################################
         if do_semicl:
-            Bcurv = np.empty((pathlen, 2), dtype=type_complex_np)
+            Bcurv = np.empty((pathlen, 2), dtype=np.complex128)
 
         # I_E_dir is of size (number of time steps)
         for i_time in range(n_time_steps):
@@ -313,7 +311,7 @@ def make_emission_exact_path_time(sys, pathlen, n_time_steps, E_dir, A_field, \
 ##########################################################################################
 ## Observables working with density matrices that contain NO time data; only path
 ##########################################################################################
-def make_polarization_path(dipole, path, E_dir, gauge, type_real_np, type_complex_np):
+def make_polarization_path(dipole, path, E_dir, gauge):
     """
     Function that calculates the polarization for the current path
 
@@ -324,18 +322,18 @@ def make_polarization_path(dipole, path, E_dir, gauge, type_real_np, type_comple
         Length of one path
     n_time_steps : int
         Number of time steps
-    E_dir : np.ndarray [type_real_np]
+    E_dir : np.ndarray [np.float64]
         Direction of the electric field
-    A_field : np.ndarray [type_real_np]
+    A_field : np.ndarray [np.float64]
         Vector potential integrated from electric field
     gauge : string
         System gauge 'length' or 'velocity'
 
     Returns:
     --------
-    P_E_dir : np.ndarray [type_real_np]
+    P_E_dir : np.ndarray [np.float64]
         Polarization in E-field direction
-    P_ortho : np.ndarray [type_real_np]
+    P_ortho : np.ndarray [np.float64]
         Polarization orthogonal to E-field direction
     """
     di_01xf = dipole.Axfjit[0][1]
@@ -346,16 +344,16 @@ def make_polarization_path(dipole, path, E_dir, gauge, type_real_np, type_comple
     ky_in_path_before_shift = path[:, 1]
     pathlen = kx_in_path_before_shift.size
 
-#    @njit
+    @njit
     def polarization_path(rho_cv, A_field):
         ##################################################
         # Dipole container
         ##################################################
-        d_01x = np.empty(pathlen, dtype=type_complex_np)
-        d_01y = np.empty(pathlen, dtype=type_complex_np)
+        d_01x = np.empty(pathlen, dtype=np.complex128)
+        d_01y = np.empty(pathlen, dtype=np.complex128)
 
-        d_E_dir = np.empty(pathlen, dtype=type_complex_np)
-        d_ortho = np.empty(pathlen, dtype=type_complex_np)
+        d_E_dir = np.empty(pathlen, dtype=np.complex128)
+        d_ortho = np.empty(pathlen, dtype=np.complex128)
 
         if gauge == 'length':
             kx_shift = 0
@@ -381,7 +379,7 @@ def make_polarization_path(dipole, path, E_dir, gauge, type_real_np, type_comple
     return polarization_path
 
 
-def make_current_path(sys, path, E_dir, gauge, type_real_np, type_complex_np):
+def make_current_path(sys, path, E_dir, gauge):
     '''
     Calculates the intraband current as: J(t) = sum_k sum_n [j_n(k)f_n(k,t)]
     where j_n(k) != (d/dk) E_n(k)
@@ -394,18 +392,18 @@ def make_current_path(sys, path, E_dir, gauge, type_real_np, type_complex_np):
         Length of one path
     n_time_steps : int
         Number of time steps
-    E_dir : np.ndarray [type_real_np]
+    E_dir : np.ndarray [np.float64]
         Direction of the electric field
-    A_field : np.ndarray [type_real_np]
+    A_field : np.ndarray [np.float64]
         Vector potential integrated from electric field
     gauge : string
         System gauge 'length' or 'velocity'
 
     Returns
     -------
-    J_E_dir : np.ndarray [type_real_np]
+    J_E_dir : np.ndarray [np.float64]
         intraband current j_intra in E-field direction
-    J_ortho : np.ndarray [type_real_np]
+    J_ortho : np.ndarray [np.float64]
         intraband current j_intra orthogonal to E-field direction
     '''
     edxjit_v = sys.ederivfjit[0]
@@ -418,20 +416,20 @@ def make_current_path(sys, path, E_dir, gauge, type_real_np, type_complex_np):
     ky_in_path_before_shift = path[:, 1]
     pathlen = kx_in_path_before_shift.size
 
-#    @njit
+    @njit
     def current_path_time(rho_vv, rho_cc, A_field):
         ##################################################
         # E derivative container
         ##################################################
-        edx_v = np.empty(pathlen, dtype=type_real_np)
-        edy_v = np.empty(pathlen, dtype=type_real_np)
-        edx_c = np.empty(pathlen, dtype=type_real_np)
-        edy_c = np.empty(pathlen, dtype=type_real_np)
+        edx_v = np.empty(pathlen, dtype=np.float64)
+        edy_v = np.empty(pathlen, dtype=np.float64)
+        edx_c = np.empty(pathlen, dtype=np.float64)
+        edy_c = np.empty(pathlen, dtype=np.float64)
 
-        e_deriv_E_dir_v = np.empty(pathlen, dtype=type_real_np)
-        e_deriv_ortho_v = np.empty(pathlen, dtype=type_real_np)
-        e_deriv_E_dir_c = np.empty(pathlen, dtype=type_real_np)
-        e_deriv_ortho_c = np.empty(pathlen, dtype=type_real_np)
+        e_deriv_E_dir_v = np.empty(pathlen, dtype=np.float64)
+        e_deriv_ortho_v = np.empty(pathlen, dtype=np.float64)
+        e_deriv_E_dir_c = np.empty(pathlen, dtype=np.float64)
+        e_deriv_ortho_c = np.empty(pathlen, dtype=np.float64)
 
         if gauge == 'length':
             kx_shift = 0
@@ -466,8 +464,7 @@ def make_current_path(sys, path, E_dir, gauge, type_real_np, type_complex_np):
     return current_path_time
 
 
-def make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, \
-                                      type_real_np, type_complex_np, symmetric_insulator=False):
+def make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, symmetric_insulator=False):
     """
     Construct a function that calculates the emission for the system solution per path
     Works for velocity gauge.
@@ -476,9 +473,9 @@ def make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, \
     ----------
     sys : TwoBandSystem
         Hamiltonian and related functions
-    path : np.ndarray [type_real_np]
+    path : np.ndarray [np.float64]
         kx and ky components of path
-    E_dir : np.ndarray [type_real_np]
+    E_dir : np.ndarray [np.float64]
         Direction of the electric field
     do_semicl : bool
         if semiclassical calculation should be done
@@ -525,46 +522,46 @@ def make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, \
     ky_in_path_before_shift = path[:, 1]
     pathlen = kx_in_path_before_shift.size
 
-#    @njit
+    @njit
     def emission_exact_path_velocity(solution, E_field, A_field):
         '''
         Calculates current from the system density matrix
 
         Parameters:
         -----------
-        solution : np.ndarray [type_complex_np]
+        solution : np.ndarray [np.complex128]
             Per timestep solution, idx 0 is k; idx 1 is fv, pvc, pcv, fc
-        E_field : type_real_np
+        E_field : np.float64
             Per timestep E_field
-        A_field : type_real_np
+        A_field : np.float64
             In the velocity gauge this determines the k-shift
 
         Returns:
         --------
-        I_E_dir : type_real_np
+        I_E_dir : np.float64
             Parallel to electric field component of current
-        I_ortho : type_real_np
+        I_ortho : np.float64
             Orthogonal to electric field component of current
         '''
         ##########################################################
         # H derivative container
         ##########################################################
-        h_deriv_x = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-        h_deriv_y = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-        h_deriv_E_dir = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-        h_deriv_ortho = np.empty((pathlen, 2, 2), dtype=type_complex_np)
+        h_deriv_x = np.empty((pathlen, 2, 2), dtype=np.complex128)
+        h_deriv_y = np.empty((pathlen, 2, 2), dtype=np.complex128)
+        h_deriv_E_dir = np.empty((pathlen, 2, 2), dtype=np.complex128)
+        h_deriv_ortho = np.empty((pathlen, 2, 2), dtype=np.complex128)
 
         ##########################################################
         # Wave function container
         ##########################################################
-        U = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-        U_h = np.empty((pathlen, 2, 2), dtype=type_complex_np)
+        U = np.empty((pathlen, 2, 2), dtype=np.complex128)
+        U_h = np.empty((pathlen, 2, 2), dtype=np.complex128)
 
         ##########################################################
         # Berry curvature container
         ##########################################################
         if do_semicl:
-            Bcurv = np.empty((pathlen, 2), dtype=type_complex_np)
+            Bcurv = np.empty((pathlen, 2), dtype=np.complex128)
 
         kx_in_path = kx_in_path_before_shift + A_field*E_dir[0]
         ky_in_path = ky_in_path_before_shift + A_field*E_dir[1]
@@ -633,8 +630,7 @@ def make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, \
     return emission_exact_path_velocity
 
 
-def make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature, \
-                                    type_real_np, type_complex_np, symmetric_insulator=False):
+def make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature, symmetric_insulator=False):
     """
     Construct a function that calculates the emission for the system solution per path.
     Works for length gauge.
@@ -643,9 +639,9 @@ def make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature, \
     ----------
     sys : TwoBandSystem
         Hamiltonian and related functions
-    path : np.ndarray [type_real_np]
+    path : np.ndarray [np.float64]
         kx and ky components of path
-    E_dir : np.ndarray [type_real_np]
+    E_dir : np.ndarray [np.float64]
         Direction of the electric field
     do_semicl : bool
         if semiclassical calculation should be done
@@ -667,22 +663,22 @@ def make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature, \
     ##########################################################
     # H derivative container
     ##########################################################
-    h_deriv_x = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-    h_deriv_y = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-    h_deriv_E_dir = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-    h_deriv_ortho = np.empty((pathlen, 2, 2), dtype=type_complex_np)
+    h_deriv_x = np.empty((pathlen, 2, 2), dtype=np.complex128)
+    h_deriv_y = np.empty((pathlen, 2, 2), dtype=np.complex128)
+    h_deriv_E_dir = np.empty((pathlen, 2, 2), dtype=np.complex128)
+    h_deriv_ortho = np.empty((pathlen, 2, 2), dtype=np.complex128)
 
     ##########################################################
     # Wave function container
     ##########################################################
-    U = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-    U_h = np.empty((pathlen, 2, 2), dtype=type_complex_np)
+    U = np.empty((pathlen, 2, 2), dtype=np.complex128)
+    U_h = np.empty((pathlen, 2, 2), dtype=np.complex128)
 
     ##########################################################
     # Berry curvature container
     ##########################################################
     if do_semicl:
-        Bcurv = np.empty((pathlen, 2), dtype=type_complex_np)
+        Bcurv = np.empty((pathlen, 2), dtype=np.complex128)
 
     h_deriv_x[:, 0, 0] = sys.hderivfjit[0][0][0](kx=kx_in_path, ky=ky_in_path)
     h_deriv_x[:, 0, 1] = sys.hderivfjit[0][0][1](kx=kx_in_path, ky=ky_in_path)
@@ -711,23 +707,23 @@ def make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature, \
         Bcurv[:, 0] = curvature.Bfjit[0][0](kx=kx_in_path, ky=ky_in_path)
         Bcurv[:, 1] = curvature.Bfjit[1][1](kx=kx_in_path, ky=ky_in_path)
 
-#    @njit
+    @njit
     def emission_exact_path_length(solution, E_field, _A_field=1):
         '''
         Parameters:
         -----------
-        solution : np.ndarray [type_complex_np]
+        solution : np.ndarray [np.complex128]
             Per timestep solution, idx 0 is k; idx 1 is fv, pvc, pcv, fc
-        E_field : type_real_np
+        E_field : np.float64
             Per timestep E_field
         _A_field : dummy
             In the length gauge this is just a dummy variable
 
         Returns:
         --------
-        I_E_dir : type_real_np
+        I_E_dir : np.float64
             Parallel to electric field component of current
-        I_ortho : type_real_np
+        I_ortho : np.float64
             Orthogonal to electric field component of current
         '''
         I_E_dir = 0
