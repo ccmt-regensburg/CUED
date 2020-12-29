@@ -147,27 +147,11 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     b1 = params.b1                                 # Reciprocal lattice vectors
     b2 = params.b2
 
-    # higher precision (quadruple for reducing numerical noise
-    precision = 'default'
-    if hasattr(params, 'precision'):
-        precision = params.precision
-
-    if precision == 'default':
-        type_real_np    = np.float64
-        type_complex_np = np.complex128
-    elif precision == 'quadruple':
-        type_real_np    = np.float128
-        type_complex_np = np.complex256
-        # disable numba since it doesn't support float128 and complex256
-#        os.environ['NUMBA_DISABLE_JIT'] = '1'
-        if method != 'rk4': quit("Error: Quadruple precision only works with Runge-Kutta 4 ODE solver.")
-    else: quit("Only default or quadruple precision available.")
-
     # USER OUTPUT
     ###########################################################################
     if user_out:
         print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alpha,
-                        chirp, T2, tf-t0, dt, method, precision)
+                        chirp, T2, tf-t0, dt, method)
     # INITIALIZATIONS
     ###########################################################################
     # Form the E-field direction
@@ -207,7 +191,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
     t, A_field, E_field, solution, solution_y_vec, I_exact_E_dir, I_exact_ortho, \
         J_E_dir, J_ortho, P_E_dir, P_ortho, _dummy = \
-        solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np)
+        solution_container(Nk1, Nt, save_approx)
 
     # Only define full density matrix solution if save_full is True
     if save_full:
@@ -329,7 +313,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
             elif method == 'rk4':
                 solution_y_vec = rk_integrate(t[ti], solution_y_vec, path, dk, ecv_in_path, \
                                               dipole_in_path, A_in_path, y0, dk_order, \
-                                              dt, fnumba, type_complex_np)
+                                              dt, fnumba)
 
             # Increment time counter
             ti += 1
@@ -412,7 +396,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
     di_01yf = dipole.Ayfjit[0][1]
     di_11yf = dipole.Ayfjit[1][1]
 
-#    @njit
+    @njit
     def flength(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order):
         """
         Length gauge doesn't need recalculation of energies and dipoles.
@@ -680,7 +664,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
     return f, fjac
 
 def rk_integrate(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order, \
-                 dt, fnumba, type_complex_np):
+                 dt, fnumba):
 
     k1 = fnumba(t,          np.complex128(y),          kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
     k2 = fnumba(t + 0.5*dt, np.complex128(y + 0.5*k1), kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
@@ -691,7 +675,7 @@ def rk_integrate(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk
 
     return ynew
 
-def solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np, zeeman=False):
+def solution_container(Nk1, Nt, save_approx, zeeman=False):
     """
         Function that builds the containers on which the solutions of the SBE,
         as well as the currents will be written
@@ -705,7 +689,7 @@ def solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np, zeem
 
     # For hand-made Runge-Kutta method, we need the solution as array with 
     # a single index
-    solution_y_vec = np.zeros((4*Nk1+1), dtype=type_complex_np)
+    solution_y_vec = np.zeros((4*Nk1+1), dtype=np.complex256)
 
     A_field = np.zeros(Nt, dtype=np.float64)
     E_field = np.zeros(Nt, dtype=np.float64)
@@ -915,7 +899,7 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
 
 
 def print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alpha, chirp,
-                    T2, tfmt0, dt, method, precision, B0=None, mu=None, incident_angle=None):
+                    T2, tfmt0, dt, method, B0=None, mu=None, incident_angle=None):
     """
         Function that prints the input parameters if usr_info = True
     """
@@ -923,7 +907,6 @@ def print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alp
     print("Brillouin zone                  = " + BZ_type)
     print("Do Semiclassics                 = " + str(do_semicl))
     print("ODE solver method               = " + str(method))
-    print("Precision (default = double)    = " + str(precision))
     print("Number of k-points              = " + str(Nk))
     if BZ_type == 'full':
         print("Driving field alignment         = " + align)
