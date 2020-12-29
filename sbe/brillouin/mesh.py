@@ -2,20 +2,21 @@ import numpy as np
 ###############################################################################
 # K-Point meshes
 ###############################################################################
-def rect_mesh(params, E_dir):
+def rect_mesh(params, E_dir, type_real_np):
     '''
     Create a rectangular mesh
     '''
     # Number of kpoints in each of the two paths
-    Nk_in_path = params.Nk1
+    Nk_in_path_integer = params.Nk1
+    Nk_in_path         = type_real_np(Nk_in_path_integer)
     # relative distance (in units of 2pi/a) of both paths to Gamma
-    rel_dist_to_Gamma = params.rel_dist_to_Gamma
-    a = params.a
-    length_path_in_BZ = params.length_path_in_BZ
-    num_paths = params.Nk2
+    rel_dist_to_Gamma = type_real_np(params.rel_dist_to_Gamma)
+    a                 = type_real_np(params.a)
+    length_path_in_BZ = type_real_np(params.length_path_in_BZ)
+    num_paths         = params.Nk2
 
     alpha_array = np.linspace(-0.5 + (1/(2*Nk_in_path)),
-                              0.5 - (1/(2*Nk_in_path)), num=Nk_in_path)
+                              0.5 - (1/(2*Nk_in_path)), num=Nk_in_path_integer)
     vec_k_path = E_dir*length_path_in_BZ
 
     vec_k_ortho = 2.0*(np.pi/a)*rel_dist_to_Gamma*np.array([E_dir[1], -E_dir[0]])
