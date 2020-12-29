@@ -159,7 +159,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         type_real_np    = np.float128
         type_complex_np = np.complex256
         # disable numba since it doesn't support float128 and complex256
-        os.environ['NUMBA_DISABLE_JIT'] = '1'
+#        os.environ['NUMBA_DISABLE_JIT'] = '1'
         if method != 'rk4': quit("Error: Quadruple precision only works with Runge-Kutta 4 ODE solver.")
     else: quit("Only default or quadruple precision available.")
 
@@ -412,7 +412,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
     di_01yf = dipole.Ayfjit[0][1]
     di_11yf = dipole.Ayfjit[1][1]
 
-    @njit
+#    @njit
     def flength(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order):
         """
         Length gauge doesn't need recalculation of energies and dipoles.
@@ -682,23 +682,10 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 def rk_integrate(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order, \
                  dt, fnumba, type_complex_np):
 
-    k1 = np.zeros(np.size(y), dtype=type_complex_np)
-    k2 = np.zeros(np.size(y), dtype=type_complex_np)
-    k3 = np.zeros(np.size(y), dtype=type_complex_np)
-    k4 = np.zeros(np.size(y), dtype=type_complex_np)
-
-    k1 = fnumba(t,          y,          kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
-    k2 = fnumba(t + 0.5*dt, y + 0.5*k1, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
-    k3 = fnumba(t + 0.5*dt, y + 0.5*k2, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
-    k4 = fnumba(t +     dt, y +     k3, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
-
-#    print("\ny  =", y)
-#    print("\nk1 =", k1)
-#    print("\nk2 =", k2)
-#    print("\nk3 =", k3)
-#    print("\nk4 =", k4)
-#
-#    quit()
+    k1 = fnumba(t,          np.complex128(y),          kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
+    k2 = fnumba(t + 0.5*dt, np.complex128(y + 0.5*k1), kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
+    k3 = fnumba(t + 0.5*dt, np.complex128(y + 0.5*k2), kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
+    k4 = fnumba(t +     dt, np.complex128(y +     k3), kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
 
     ynew = y + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
 
@@ -714,8 +701,7 @@ def solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np, zeem
 
     # The solution array is structred as: first index is Nk1-index,
     # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
-#    solution = np.zeros((Nk1, 4), dtype=np.complex128)
-    solution = np.zeros((Nk1, 4), dtype=type_complex_np)
+    solution = np.zeros((Nk1, 4), dtype=np.complex128)
 
     # For hand-made Runge-Kutta method, we need the solution as array with 
     # a single index
