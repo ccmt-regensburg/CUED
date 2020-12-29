@@ -412,7 +412,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
     di_01yf = dipole.Ayfjit[0][1]
     di_11yf = dipole.Ayfjit[1][1]
 
-#    @njit
+    @njit
     def flength(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0):
         """
         Length gauge doesn't need recalculation of energies and dipoles.
@@ -514,7 +514,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
         x[-1] = -electric_f
         return x
 
-#    @njit
+    @njit
     def pre_velocity(kpath, k_shift):
         # First round k_shift is zero, consequently we just recalculate
         # the original data ecv_in_path, dipole_in_path, A_in_path
@@ -541,7 +541,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
 
         return ecv_in_path, dipole_in_path, A_in_path
 
-#    @njit
+    @njit
     def fvelocity(t, y, kpath, _dk, ecv_in_path, dipole_in_path, A_in_path, y0):
         """
         Velocity gauge needs a recalculation of energies and dipoles as k
@@ -585,7 +585,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
 
         return x
 
-#    @njit
+    @njit
     def jac_velocity(t, y, kpath, _dk, ecv_in_path, dipole_in_path, A_in_path, _y0):
         """
         Jacobian of SBE in the velocity gauge
