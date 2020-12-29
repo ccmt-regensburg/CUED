@@ -179,7 +179,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     else:
         electric_field = electric_field_function
 
-    fnumba, fjac = make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field,
+    fnumba, fjac = make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field,
                                gauge=gauge, do_semicl=do_semicl, use_jacobian=use_jacobian)
 
     if method == 'bdf' or method == 'adams':
@@ -249,8 +249,8 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         # Set the initual values and function parameters for the current kpath
         if method == 'bdf' or method == 'adams':
             solver.set_initial_value(y0, t0)\
-                .set_f_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)\
-               .set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
+                .set_f_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0)\
+               .set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
             # if use_jacobian:
             #     solver.set_jac_params(path, dk, ecv_in_path, dipole_in_path, A_in_path)
 
@@ -345,7 +345,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                  electric_field=electric_field(t), A_field=A_field)
 
 
-def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
+def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, gauge,
                 do_semicl, use_jacobian):
     """
         Initialization of the solver for the sbe ( eq. (39/47/80) in https://arxiv.org/abs/2008.03177)
@@ -397,7 +397,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
     di_11yf = dipole.Ayfjit[1][1]
 
     @njit
-    def flength(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order):
+    def flength(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0):
         """
         Length gauge doesn't need recalculation of energies and dipoles.
         The length gauge is evaluated on a constant pre-defined k-grid.
@@ -526,7 +526,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
         return ecv_in_path, dipole_in_path, A_in_path
 
     @njit
-    def fvelocity(t, y, kpath, _dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order):
+    def fvelocity(t, y, kpath, _dk, ecv_in_path, dipole_in_path, A_in_path, y0):
         """
         Velocity gauge needs a recalculation of energies and dipoles as k
         is shifted according to the vector potential A
@@ -652,8 +652,8 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 
 
     # The python solver does not directly accept jitted functions so we wrap it
-    def f(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order):
-        return freturn(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
+    def f(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0):
+        return freturn(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
 
     if fjac_return is not None:
         def fjac(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0):
@@ -666,10 +666,10 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, electric_field, gauge,
 def rk_integrate(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order, \
                  dt, fnumba):
 
-    k1 = fnumba(t,          np.complex128(y),          kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
-    k2 = fnumba(t + 0.5*dt, np.complex128(y + 0.5*k1), kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
-    k3 = fnumba(t + 0.5*dt, np.complex128(y + 0.5*k2), kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
-    k4 = fnumba(t +     dt, np.complex128(y +     k3), kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, dk_order)
+    k1 = fnumba(t,          np.complex128(y),          kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
+    k2 = fnumba(t + 0.5*dt, np.complex128(y + 0.5*k1), kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
+    k3 = fnumba(t + 0.5*dt, np.complex128(y + 0.5*k2), kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
+    k4 = fnumba(t +     dt, np.complex128(y +     k3), kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
 
     ynew = y + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
 
