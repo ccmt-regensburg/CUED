@@ -848,34 +848,26 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
     freq = fftshift(fftfreq(t.size, d=dt_out))
 
     if save_approx:
-        # Only do approximate emission fourier transforms if save_approx is set
-        I_E_dir = kweight*(diff(t, P_E_dir) + J_E_dir)
-        I_ortho = kweight*(diff(t, P_ortho) + J_ortho)
-
         I_intra_E_dir = J_E_dir*kweight
         I_intra_ortho = J_ortho*kweight
 
         I_inter_E_dir = diff(t, P_E_dir)*kweight
         I_inter_ortho = diff(t, P_ortho)*kweight
 
-        Iw_E_dir = fourier(dt_out, I_E_dir*gaussian_envelope)
-        Iw_ortho = fourier(dt_out, I_ortho*gaussian_envelope)
+        I_E_dir = I_intra_E_dir + I_inter_E_dir
+        I_ortho = I_intra_ortho + I_inter_ortho
 
-        Iw_intra_E_dir = fourier(dt_out, I_intra_E_dir*gaussian_envelope)
-        Iw_intra_ortho = fourier(dt_out, I_intra_ortho*gaussian_envelope)
+        # Approximate current and emission intensity
+        Int_E_dir, Int_ortho, Iw_E_dir, Iw_ortho = fourier_current_intensity(
+             I_E_dir, I_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
 
-        Iw_inter_E_dir = fourier(dt_out, I_inter_E_dir*gaussian_envelope)
-        Iw_inter_ortho = fourier(dt_out, I_inter_ortho*gaussian_envelope)
+        # Intraband current and emission intensity
+        Int_intra_E_dir, Int_intra_ortho, Iw_intra_E_dir, Iw_intra_ortho = fourier_current_intensity(
+             I_intra_E_dir, I_intra_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
 
-        # Approximate Emission intensity
-        Int_E_dir = prefac_emission*(freq**2)*np.abs(Iw_E_dir)**2
-        Int_ortho = prefac_emission*(freq**2)*np.abs(Iw_ortho)**2
-
-        Int_intra_E_dir = prefac_emission*(freq**2)*np.abs(Iw_intra_E_dir)**2
-        Int_intra_ortho = prefac_emission*(freq**2)*np.abs(Iw_intra_ortho)**2
-
-        Int_inter_E_dir = prefac_emission*(freq**2)*np.abs(Iw_inter_E_dir)**2
-        Int_inter_ortho = prefac_emission*(freq**2)*np.abs(Iw_inter_ortho)**2
+        # Polarization-related current and emission intensity
+        Int_inter_E_dir, Int_inter_ortho, Iw_inter_E_dir, Iw_inter_ortho = fourier_current_intensity(
+             I_inter_E_dir, I_inter_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
 
         I_approx_name = 'Iapprox_' + tail
 
