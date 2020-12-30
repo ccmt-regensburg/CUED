@@ -902,10 +902,13 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
     I_exact_E_dir *= kweight
     I_exact_ortho *= kweight
 
-    Iw_exact_E_dir = fourier(dt_out, I_exact_E_dir*gaussian_envelope)
-    Iw_exact_ortho = fourier(dt_out, I_exact_ortho*gaussian_envelope)
-    Int_exact_E_dir = prefac_emission*(freq**2)*np.abs(Iw_exact_E_dir)**2
-    Int_exact_ortho = prefac_emission*(freq**2)*np.abs(Iw_exact_ortho)**2
+    Int_exact_E_dir, Int_exact_ortho, Iw_exact_E_dir, Iw_exact_ortho = fourier_current_intensity(
+            I_exact_E_dir, I_exact_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
+
+#    Iw_exact_E_dir = fourier(dt_out, I_exact_E_dir*gaussian_envelope)
+#    Iw_exact_ortho = fourier(dt_out, I_exact_ortho*gaussian_envelope)
+#    Int_exact_E_dir = prefac_emission*(freq**2)*np.abs(Iw_exact_E_dir)**2
+#    Int_exact_ortho = prefac_emission*(freq**2)*np.abs(Iw_exact_ortho)**2
 
     I_exact_name = 'Iexact_' + tail
     np.save(I_exact_name, [t, I_exact_E_dir, I_exact_ortho,
@@ -918,6 +921,16 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
                                     Int_exact_E_dir.real, Int_exact_ortho.real]),
                    header="t, I_exact_E_dir, I_exact_ortho, freqw/w, Re(Iw_exact_E_dir), Im(Iw_exact_E_dir), Re(Iw_exact_ortho), Im(Iw_exact_ortho), Int_exact_E_dir, Int_exact_ortho",
                    fmt='%+.18e')
+
+
+def fourier_current_intensity(I_exact_E_dir, I_exact_ortho, gaussian_envelope, dt_out, prefac_emission, freq):
+
+    Iw_exact_E_dir = fourier(dt_out, I_exact_E_dir*gaussian_envelope)
+    Iw_exact_ortho = fourier(dt_out, I_exact_ortho*gaussian_envelope)
+    Int_exact_E_dir = prefac_emission*(freq**2)*np.abs(Iw_exact_E_dir)**2
+    Int_exact_ortho = prefac_emission*(freq**2)*np.abs(Iw_exact_ortho)**2
+
+    return Int_exact_E_dir, Int_exact_ortho, Iw_exact_E_dir, Iw_exact_ortho
 
 
 def print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alpha, chirp,
