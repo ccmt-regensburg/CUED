@@ -683,6 +683,7 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
 
     return f, fjac
 
+@njit
 def rk_integrate(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, \
                  dt, fnumba, type_complex_np):
 
@@ -882,7 +883,8 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
         if save_txt:
             np.savetxt(I_approx_name + '.dat',
                        np.column_stack([t.real, I_E_dir.real, I_ortho.real,
-                                        (freq/w).real, Iw_E_dir.real, Iw_E_dir.imag, Iw_ortho.real, Iw_ortho.imag,
+                                        (freq/w).real, Iw_E_dir.real, Iw_E_dir.imag, 
+                                        Iw_ortho.real, Iw_ortho.imag,
                                         Int_E_dir.real, Int_ortho.real]),
                        header="t, I_E_dir, I_ortho, freqw/w, Re(Iw_E_dir), Im(Iw_E_dir), Re(Iw_ortho), Im(Iw_ortho), Int_E_dir, Int_ortho",
                        fmt='%+.18e')
@@ -897,11 +899,6 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
     Int_exact_E_dir, Int_exact_ortho, Iw_exact_E_dir, Iw_exact_ortho = fourier_current_intensity(
             I_exact_E_dir, I_exact_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
 
-#    Iw_exact_E_dir = fourier(dt_out, I_exact_E_dir*gaussian_envelope)
-#    Iw_exact_ortho = fourier(dt_out, I_exact_ortho*gaussian_envelope)
-#    Int_exact_E_dir = prefac_emission*(freq**2)*np.abs(Iw_exact_E_dir)**2
-#    Int_exact_ortho = prefac_emission*(freq**2)*np.abs(Iw_exact_ortho)**2
-
     I_exact_name = 'Iexact_' + tail
     np.save(I_exact_name, [t, I_exact_E_dir, I_exact_ortho,
                            freq/w, Iw_exact_E_dir, Iw_exact_ortho,
@@ -909,20 +906,21 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
     if save_txt:
         np.savetxt(I_exact_name + '.dat',
                    np.column_stack([t.real, I_exact_E_dir.real, I_exact_ortho.real,
-                                    (freq/w).real, Iw_exact_E_dir.real, Iw_exact_E_dir.imag, Iw_exact_ortho.real, Iw_exact_ortho.imag,
+                                    (freq/w).real, Iw_exact_E_dir.real, Iw_exact_E_dir.imag, 
+                                    Iw_exact_ortho.real, Iw_exact_ortho.imag,
                                     Int_exact_E_dir.real, Int_exact_ortho.real]),
                    header="t, I_exact_E_dir, I_exact_ortho, freqw/w, Re(Iw_exact_E_dir), Im(Iw_exact_E_dir), Re(Iw_exact_ortho), Im(Iw_exact_ortho), Int_exact_E_dir, Int_exact_ortho",
                    fmt='%+.18e')
 
 
-def fourier_current_intensity(I_exact_E_dir, I_exact_ortho, gaussian_envelope, dt_out, prefac_emission, freq):
+def fourier_current_intensity(I_E_dir, I_ortho, gaussian_envelope, dt_out, prefac_emission, freq):
 
-    Iw_exact_E_dir = fourier(dt_out, I_exact_E_dir*gaussian_envelope)
-    Iw_exact_ortho = fourier(dt_out, I_exact_ortho*gaussian_envelope)
-    Int_exact_E_dir = prefac_emission*(freq**2)*np.abs(Iw_exact_E_dir)**2
-    Int_exact_ortho = prefac_emission*(freq**2)*np.abs(Iw_exact_ortho)**2
+    Iw_E_dir = fourier(dt_out, I_E_dir*gaussian_envelope)
+    Iw_ortho = fourier(dt_out, I_ortho*gaussian_envelope)
+    Int_E_dir = prefac_emission*(freq**2)*np.abs(Iw_E_dir)**2
+    Int_ortho = prefac_emission*(freq**2)*np.abs(Iw_ortho)**2
 
-    return Int_exact_E_dir, Int_exact_ortho, Iw_exact_E_dir, Iw_exact_ortho
+    return Int_E_dir, Int_ortho, Iw_E_dir, Iw_ortho
 
 
 def print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alpha, chirp,
