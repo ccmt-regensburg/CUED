@@ -329,7 +329,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                 solver_successful = solver.successful()
             elif method == 'rk4':
                 solution_y_vec = rk_integrate(t[ti], solution_y_vec, path, dk, ecv_in_path, \
-                                              dipole_in_path, A_in_path, y0, dt, fnumba, type_complex_np)
+                                              dipole_in_path, A_in_path, y0, dt, fnumba)
 
             # Increment time counter
             ti += 1
@@ -679,9 +679,8 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
 
     return f, fjac
 
-@njit
 def rk_integrate(t, y, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0, \
-                 dt, fnumba, type_complex_np):
+                 dt, fnumba):
 
     k1 = fnumba(t,          y,          kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
     k2 = fnumba(t + 0.5*dt, y + 0.5*k1, kpath, dk, ecv_in_path, dipole_in_path, A_in_path, y0)
@@ -702,7 +701,6 @@ def solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np, zeem
 
     # The solution array is structred as: first index is Nk1-index,
     # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
-#    solution = np.zeros((Nk1, 4), dtype=type_complex_np)
     solution = np.zeros((Nk1, 4), dtype=type_complex_np)
 
     # For hand-made Runge-Kutta method, we need the solution as array with 
