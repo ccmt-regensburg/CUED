@@ -163,10 +163,6 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     b1 = params.b1                                 # Reciprocal lattice vectors
     b2 = params.b2
 
-    scale_current = 1.0
-    if hasattr(params, 'scale_current'):
-        scale_current = params.scale_current
-
     # USER OUTPUT
     ###########################################################################
     if user_out:
@@ -317,15 +313,15 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                 solution_full[:, Nk2_idx, ti, :] = solution
 
             I_E_dir_buf, I_ortho_buf = emission_exact_path(solution, E_field[ti], A_field[ti])
-            I_exact_E_dir[ti] += I_E_dir_buf * scale_current
-            I_exact_ortho[ti] += I_ortho_buf * scale_current
+            I_exact_E_dir[ti] += I_E_dir_buf
+            I_exact_ortho[ti] += I_ortho_buf
             if save_approx:
                 P_E_dir_buf, P_ortho_buf = polarization_path(solution[:, 2], A_field[ti])
-                P_E_dir[ti] += P_E_dir_buf * scale_current
-                P_ortho[ti] += P_ortho_buf * scale_current
+                P_E_dir[ti] += P_E_dir_buf
+                P_ortho[ti] += P_ortho_buf
                 J_E_dir_buf, J_ortho_buf = current_path(solution[:, 0], solution[:, 3], A_field[ti])
-                J_E_dir[ti] += J_E_dir_buf * scale_current
-                J_ortho[ti] += J_ortho_buf * scale_current
+                J_E_dir[ti] += J_E_dir_buf
+                J_ortho[ti] += J_ortho_buf
 
             if method == 'bdf' or method == 'adams':
                 # Integrate one integration time step
