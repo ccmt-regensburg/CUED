@@ -94,7 +94,8 @@ def check_test(testdir):
     assert Iapprox_max_relerror < threshold_rel_error, "The approx. emission spectrum is not matching."
 
     shutil.rmtree(testdir + '/__pycache__')
-    for E0_dirname in glob.glob(testdir + '/E0*'): shutil.rmtree(E0_dirname)
+    for E0_dirname   in glob.glob(testdir + '/E0*'):   shutil.rmtree(E0_dirname)
+    for PATH_dirname in glob.glob(testdir + '/PATH*'): shutil.rmtree(PATH_dirname)
 
     os.remove(testdir + '/' + glob.glob("Iexact_*")[0])
     os.remove(testdir + '/' + glob.glob("Iapprox_*")[0])
