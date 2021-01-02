@@ -145,23 +145,23 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
     # Brillouin zone type
     BZ_type = params.BZ_type                       # Type of Brillouin zone
+    Nk1 = params.Nk1                               # kpoints in b1 direction
+    Nk2 = params.Nk2                               # kpoints in b2 direction
+    Nk = Nk1*Nk2                                   # Total number of kpoints
+    b1 = params.b1                                 # Reciprocal lattice vectors
+    b2 = params.b2
 
-    # Brillouin zone type
+    # special parameters for individual Brillouin zone types
     if BZ_type == 'full':
-        Nk1 = params.Nk1                           # kpoints in b1 direction
-        Nk2 = params.Nk2                           # kpoints in b2 direction
-        Nk = Nk1*Nk2                               # Total number of kpoints
         align = params.align                       # E-field alignment
         angle_inc_E_field = None
     elif BZ_type == '2line':
         align = None
         angle_inc_E_field = params.angle_inc_E_field
-        Nk1 = params.Nk1
-        Nk2 = params.Nk2
-        Nk = Nk1*Nk2
 
-    b1 = params.b1                                 # Reciprocal lattice vectors
-    b2 = params.b2
+    Nk2_idx_ext = -1
+    if hasattr(params, 'Nk2_idx_ext'):                     # For parallelization: only do calculation 
+        Nk2_idx_ext = params.Nk2_idx_ext                           # for path Nk2_idx_ext (in total Nk2 paths)
 
     # USER OUTPUT
     ###########################################################################
@@ -218,6 +218,9 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     ###########################################################################
     # Iterate through each path in the Brillouin zone
     for Nk2_idx, path in enumerate(paths):
+
+        # parallelization if requested in runscript
+        if Nk2_idx_ext != Nk2_idx and Nk2_idx_ext >= 0: continue
 
         if gauge == 'length':
             emission_exact_path = make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature, \
@@ -291,7 +294,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                 solution[:, :] = solver.y[:-1].reshape(Nk1, 4)
 
                 # Construct time array only once
-                if Nk2_idx == 0:
+                if Nk2_idx == 0 or Nk2_idx_ext > 0:
                     # Construct time and A_field only in first round
                     t[ti] = solver.t
                     A_field[ti] = solver.y[-1].real
@@ -302,7 +305,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                 solution[:, :] = solution_y_vec[:-1].reshape(Nk1, 4)
 
                 # Construct time array only once
-                if Nk2_idx == 0:
+                if Nk2_idx == 0 or Nk2_idx_ext > 0:
                     # Construct time and A_field only in first round
                     t[ti] = ti*dt + t0
                     A_field[ti] = solution_y_vec[-1].real
