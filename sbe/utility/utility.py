@@ -6,6 +6,14 @@ import numpy as np
 import sympy as sp
 from sympy.utilities.lambdify import lambdify
 
+class conditional_njit():
+    def __init__(self, precision):
+        self.precision = precision
+
+    def __call__(self, func):
+        if self.precision in (np.float128, np.complex256):
+            return func
+        return njit(func)
 
 def matrix_to_njit_functions(sf, hsymbols, kpflag=False):
     """

@@ -1,11 +1,11 @@
 import numpy as np
-from numba import njit
+from sbe.utility import conditional_njit
 
-def make_electric_field(E0, w, alpha, chirp, phase):
+def make_electric_field(E0, w, alpha, chirp, phase, type_real_np):
     """
     Creates a jitted version of the electric field for fast use inside a solver
     """
-    @njit
+    @conditional_njit(type_real_np)
     def electric_field(t):
         '''
         Returns the instantaneous driving pulse field
@@ -28,8 +28,8 @@ def electric_field(t, E0, w, alpha, chirp, phase):
     return E0*np.exp(-t**2/(2*alpha)**2) \
         * np.sin(2.0*np.pi*w*t*(1 + chirp*t) + phase)
 
-def make_zeeman_field(B0, mu, w, alpha, chirp, phase, E_dir, incident_angle):
-    @njit
+def make_zeeman_field(B0, mu, w, alpha, chirp, phase, E_dir, incident_angle, type_real_np):
+    @conditional_njit(type_real_np)
     def zeeman_field(t):
         time_dep = np.exp(-t**2.0/(2.0*alpha)**2) \
             * np.sin(2.0*np.pi*w*t*(1 + chirp*t) + phase)
@@ -45,9 +45,9 @@ def make_zeeman_field(B0, mu, w, alpha, chirp, phase, E_dir, incident_angle):
     return zeeman_field
 
 def make_zeeman_field_derivative(B0, mu, w, alpha, chirp, phase, E_dir,
-                                 incident_angle):
+                                 incident_angle, type_real_np):
     # WARNING NO CHIRP HERE!
-    @njit
+    @conditional_njit(type_real_np)
     def zeeman_field_derivative(t):
         time_dep = np.exp(-t**2.0/(2.0*alpha)**2) \
             * (2*np.pi*w*np.cos(2.0*np.pi*w*t + phase)

@@ -1,6 +1,7 @@
 import numpy as np
 from numba import njit
 from sbe.utility import conversion_factors as co
+from sbe.utility import conditional_njit
 
 
 ##########################################################################################
@@ -37,7 +38,7 @@ def make_polarization_path_time(dipole, pathlen, n_time_steps, E_dir, A_field, \
 
     E_ort = np.array([E_dir[1], -E_dir[0]])
 
-    @njit
+    @conditional_njit(type_complex_np)
     def polarization_path_time(path, pcv, P_E_dir, P_ortho):
         ##################################################
         # Dipole container
@@ -105,7 +106,7 @@ def make_current_path_time(sys, pathlen, n_time_steps, E_dir, A_field, gauge, ty
 
     E_ort = np.array([E_dir[1], -E_dir[0]])
 
-    @njit
+    @conditional_njit(type_complex_np)
     def current_path_time(path, fv, fc, J_E_dir, J_ortho):
         ##################################################
         # E derivative container
@@ -216,7 +217,7 @@ def make_emission_exact_path_time(sys, pathlen, n_time_steps, E_dir, A_field, \
 
     E_ort = np.array([E_dir[1], -E_dir[0]])
 
-    @njit
+    @conditional_njit(type_complex_np)
     def emission_exact_path_time(path, solution, I_E_dir, I_ortho):
         ##########################################################
         # H derivative container
@@ -346,7 +347,7 @@ def make_polarization_path(dipole, path, E_dir, gauge, type_real_np, type_comple
     ky_in_path_before_shift = path[:, 1]
     pathlen = kx_in_path_before_shift.size
 
-    @njit
+    @conditional_njit(type_complex_np)
     def polarization_path(rho_cv, A_field):
         ##################################################
         # Dipole container
@@ -418,7 +419,7 @@ def make_current_path(sys, path, E_dir, gauge, type_real_np, type_complex_np):
     ky_in_path_before_shift = path[:, 1]
     pathlen = kx_in_path_before_shift.size
 
-    @njit
+    @conditional_njit(type_complex_np)
     def current_path_time(rho_vv, rho_cc, A_field):
         ##################################################
         # E derivative container
@@ -525,7 +526,7 @@ def make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, \
     ky_in_path_before_shift = path[:, 1]
     pathlen = kx_in_path_before_shift.size
 
-    @njit
+    @conditional_njit(type_complex_np)
     def emission_exact_path_velocity(solution, E_field, A_field):
         '''
         Calculates current from the system density matrix
@@ -711,7 +712,7 @@ def make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature, \
         Bcurv[:, 0] = curvature.Bfjit[0][0](kx=kx_in_path, ky=ky_in_path)
         Bcurv[:, 1] = curvature.Bfjit[1][1](kx=kx_in_path, ky=ky_in_path)
 
-    @njit
+    @conditional_njit(type_complex_np)
     def emission_exact_path_length(solution, E_field, _A_field=1):
         '''
         Parameters:
