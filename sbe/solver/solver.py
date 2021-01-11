@@ -185,7 +185,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
     # Initialize electric_field, create fnumba and initialize ode solver
     if electric_field_function is None:
-        electric_field = make_electric_field(E0, w, alpha, chirp, phase)
+        electric_field = make_electric_field(E0, w, alpha, chirp, phase, type_real_np)
     else:
         electric_field = electric_field_function
 
