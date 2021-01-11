@@ -431,28 +431,28 @@ def make_fnumba(sys, dipole, E_dir, gamma1, gamma2, dk_order, electric_field, ga
                 left2  = 4*(Nk_path-2)
                 left3  = 4*(Nk_path-3)
                 left4  = 4*(Nk_path-4)
-            elif k == 1:
+            elif k == 1 and dk_order >= 4:
                 left2  = 4*(Nk_path-1)
                 left3  = 4*(Nk_path-2)
                 left4  = 4*(Nk_path-3)
-            elif k == 2:
+            elif k == 2 and dk_order >= 6:
                 left3  = 4*(Nk_path-1)
                 left4  = 4*(Nk_path-2)
-            elif k == 3:
+            elif k == 3 and dk_order >= 8:
                 left4  = 4*(Nk_path-1)
             elif k == Nk_path-1:
                 right4 = 4*3
                 right3 = 4*2
                 right2 = 4*1
                 right  = 4*0
-            elif k == Nk_path-2:
+            elif k == Nk_path-2 and dk_order >= 4:
                 right4 = 4*2
                 right3 = 4*1
                 right2 = 4*0
-            elif k == Nk_path-3:
+            elif k == Nk_path-3 and dk_order >= 6:
                 right4 = 4*1
                 right3 = 4*0
-            elif k == Nk_path-4:
+            elif k == Nk_path-4 and dk_order >= 8:
                 right4 = 4*0
 
             # Energy gap e_2(k) - e_1(k) >= 0 at point k
