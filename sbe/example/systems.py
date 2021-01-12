@@ -432,6 +432,24 @@ class two_site_semiconductor(TwoBandSystem):
         super().__init__(ho, hx, hy, hz)
 
 
+class one_site_semiconductor(TwoBandSystem):
+    """
+    k-dependent Hamiltonian of 1d tight-binding chain with two sites in the unit cell
+    !!! ONLY WORKS TOGETHER WITH gidx = None, REQUIRES 1D BRILLOUIN ZONE OF LENGTH 2*pi/lattice_const !!!
+    """
+
+    def __init__(self, 
+                 lattice_const=sp.Symbol('lattice_const', real=True),
+                 hopping=sp.Symbol('hopping', real=True)):
+
+        ho = hopping * (1 - 2*sp.cos (self.kx * lattice_const))
+        hx = 1.0e-50*self.ky
+        hy = 1.0e-50
+        hz = 1.0e-50
+
+        super().__init__(ho, hx, hy, hz)
+
+
 
 class BiTe(TwoBandSystem):
     """
