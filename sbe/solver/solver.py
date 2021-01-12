@@ -109,8 +109,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         if dk_order not in [2, 4, 6, 8]:
             quit("dk_order needs to be either 2, 4, 6, or 8.")
 
-    # System parameters
-    a = params.a                                   # Lattice spacing
+    # Parameters for initial occupation
     e_fermi = params.e_fermi*co.eV_to_au           # Fermi energy
     temperature = params.temperature*co.eV_to_au   # Temperature
 
@@ -142,20 +141,21 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     Nk1 = params.Nk1                               # kpoints in b1 direction
     Nk2 = params.Nk2                               # kpoints in b2 direction
     Nk = Nk1*Nk2                                   # Total number of kpoints
-    b1 = params.b1                                 # Reciprocal lattice vectors
-    b2 = params.b2
 
     # special parameters for individual Brillouin zone types
     if BZ_type == 'full':
         align = params.align                       # E-field alignment
         angle_inc_E_field = None
+        b1 = params.b1                             # Reciprocal lattice vectors
+        b2 = params.b2
+        a = params.a                               # Lattice spacing
     elif BZ_type == '2line':
         align = None
         angle_inc_E_field = params.angle_inc_E_field
 
     Nk2_idx_ext = -1
-    if hasattr(params, 'Nk2_idx_ext'):                     # For parallelization: only do calculation
-        Nk2_idx_ext = params.Nk2_idx_ext                           # for path Nk2_idx_ext (in total Nk2 paths)
+    if hasattr(params, 'Nk2_idx_ext'):             # For parallelization: only do calculation
+        Nk2_idx_ext = params.Nk2_idx_ext           # for path Nk2_idx_ext (in total Nk2 paths)
 
     # USER OUTPUT
     ###########################################################################
