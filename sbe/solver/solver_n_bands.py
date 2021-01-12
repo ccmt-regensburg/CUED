@@ -82,6 +82,26 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
     else:
         method = 'bdf'
 
+    # higher precision (quadruple for reducing numerical noise
+    precision = 'default'
+    if hasattr(params, 'precision'):
+        precision = params.precision
+
+    if precision == 'default':
+        type_real_np    = np.float64
+        type_complex_np = np.complex128
+    elif precision == 'quadruple':
+        type_real_np    = np.float128
+        type_complex_np = np.complex256
+        if method != 'rk4': quit("Error: Quadruple precision only works with Runge-Kutta 4 ODE solver.")
+    else: quit("Only default or quadruple precision available.")
+
+    dk_order = 8
+    if hasattr(params, 'dk_order'):                # Accuracy order of numerical density-matrix k-deriv.
+        dk_order = params.dk_order                 # when using the length gauge (avail: 2,4,6,8)
+        if dk_order not in [2, 4, 6, 8]:
+            quit("dk_order needs to be either 2, 4, 6, or 8.")
+
     # System parameters
     n = params.n
     gidx = params.gidx
@@ -155,7 +175,7 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
     elif BZ_type == '2line':
         E_dir = np.array([np.cos(np.radians(angle_inc_E_field)),
                           np.sin(np.radians(angle_inc_E_field))])
-        dk, kweight, _kpnts, paths = rect_mesh(params, E_dir)
+        dk, kweight, _kpnts, paths = rect_mesh(params, E_dir, type_real_np)
         # BZ_plot(_kpnts, a, b1, b2, paths)
 
     E_ort = np.array([E_dir[1], -E_dir[0]])
@@ -164,9 +184,9 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
     t_constructed = False
 
     # Initialize electric_field, create fnumba and initialize ode solver
-    electric_field = make_electric_field(E0, w, alpha, chirp, phase)
+    electric_field = make_electric_field(E0, w, alpha, chirp, phase, type_real_np)
 
-    fnumba = make_fnumba(n, E_dir, gamma1, gamma2, electric_field, params, dk, gauge=gauge)
+    fnumba = make_fnumba(n, E_dir, gamma1, gamma2, electric_field, params, dk, dk_order, gauge=gauge)
     solver = ode(fnumba, jac=None)\
         .set_integrator('zvode', method=method, max_step=dt)
 
@@ -187,8 +207,10 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
     emission_intraband_ortho = np.zeros(Nt, dtype=np.complex128)
 
     dipole_in_path = np.empty([Nk1, n, n], dtype=np.complex128)
+    dipole_in_path2 = np.empty([Nk1, n, n], dtype=np.complex128)
     dipole_ortho = np.empty([Nk1, n, n], dtype=np.complex128)
     e_in_path = np.empty([Nk1, n], dtype=np.complex128)  
+    e_in_path2 = np.empty([Nk1, n], dtype=np.complex128) 
 
     hnp = sys.numpy_hamiltonian()
     e, wf = diagonalize(params, hnp, paths)  
@@ -253,6 +275,8 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
             e_in_path[:, 1] = sys.efjit[1](kx=kx_in_path, ky=ky_in_path)
 #############################################################################
 
+
+    # for i in range(n):
         # Initialize the values of of each k point vector
         # (rho_nn(k), rho_nm(k), rho_mn(k), rho_mm(k))
         y0 = initial_condition(e_fermi, temperature, e_in_path)
@@ -341,7 +365,7 @@ def sbe_solver_n_bands(params, sys, dipole, curvature):
         np.savez(S_name, t=t, solution_full=solution_full, paths=paths,
                  electric_field=electric_field(t), A_field=A_field)
 
-def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, params, dk, gauge):
+def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, params, dk, dk_order, gauge):
     """
         Initialization of the solver for the SBE ( eq. (39/40(80) in https://arxiv.org/abs/2008.03177)
         
@@ -387,22 +411,63 @@ def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, params, dk, gauge):
         # Gradient term coefficient
         electric_f = electric_field(t)
 
-        D = electric_f/(2*dk)
+        D = electric_f/dk
 
         for k in range(Nk1):
+            right4 = (k+4)
+            right3 = (k+3)
+            right2 = (k+2)
+            right  = (k+1)
+            left   = (k-1)
+            left2  = (k-2)
+            left3  = (k-3)
+            left4  = (k-4)
             if k == 0:
-                i_k = (k+1)
-                j_k = (Nk1-1)
+                left   = (Nk1-1)
+                left2  = (Nk1-2)
+                left3  = (Nk1-3)           
+                left4  = (Nk1-4)           
+            elif k == 1 and dk_order >= 4:
+                left2  = (Nk1-1)
+                left3  = (Nk1-2)            
+                left4  = (Nk1-3)          
+            elif k == 2 and dk_order >= 6:
+                left3  = (Nk1-1)          
+                left4  = (Nk1-2) 
+            elif k == 3 and dk_order >= 8:
+                left4  = (Nk1-1) 
             elif k == Nk1-1:
-                i_k = 0
-                j_k = (k-1)
-            else: 
-                i_k = (k+1)
-                j_k = (k-1)
+                right4 = 3
+                right3 = 2
+                right2 = 1
+                right  = 0
+            elif k == Nk1-2 and dk_order >= 4:
+                right4 = 2
+                right3 = 1
+                right2 = 0
+            elif k == Nk1-3 and dk_order >= 6:
+                right4 = 1
+                right3 = 0
+            elif k == Nk1-4 and dk_order >= 8:
+                right4 = 0
             for i in range(n):
                 for j in range(n):
                     x[k*(n**2) + i*n + j] += -1j * ( e_in_path[k, i] - e_in_path[k, j] ) * y[k*(n**2) + i*n + j]
-                    x[k*(n**2) + i*n + j] += D * ( y[i_k*(n**2) + i*n + j] - y[j_k*(n**2) + i*n + j] )
+                    
+                    if dk_order ==2:
+                        x[k*(n**2) + i*n + j] += D * (  y[right*(n**2) + i*n + j]/2 - y[left*(n**2) + i*n + j]/2 )
+                    elif dk_order ==4:
+                        x[k*(n**2) + i*n + j] += D * (- y[right2*(n**2) + i*n + j]/12 + 2/3*y[right*(n**2) + i*n + j] \
+                                                      - 2/3*y[left*(n**2) + i*n + j] + y[left2*(n**2) + i*n + j]/12 )
+                    elif dk_order ==6:
+                        x[k*(n**2) + i*n + j] += D * (  y[right3*(n**2) + i*n + j]/60 - 3/20*y[right2*(n**2) + i*n + j] + 3/4*y[right*(n**2) + i*n + j] \
+                                                      - y[left3*(n**2) + i*n + j]/60 + 3/20*y[left2*(n**2) + i*n + j] - 3/4*y[left*(n**2) + i*n + j] )
+                    elif dk_order ==8:
+                        x[k*(n**2) + i*n + j] += D * (- y[right4*(n**2) + i*n + j]/280 + 4/105*y[right3*(n**2) + i*n + j] \
+                                                      -  1/5*y[right2*(n**2) + i*n + j] + 4/5*y[right*(n**2) + i*n + j] \
+                                                      + y[left4*(n**2) + i*n + j]/280 - 4/105*y[left3*(n**2) + i*n + j] \
+                                                      + 1/5*y[left2*(n**2) + i*n + j] - 4/5*y[left*(n**2) + i*n + j] )
+
                     if i == j:
                         x[k*(n**2) + i*n + j] += - gamma1 * (y[k*(n**2) + i*n + j] - y0[k*(n**2) + i*n + j])
                     else: 
@@ -488,8 +553,6 @@ def diff(x, y):
     if len(y) == 1:
         return 0
 
-#    dx = np.gradient(x)
-#    dy = np.gradient(y)
     dx = np.roll(x,-1) - np.roll(x,1)
     dy = np.roll(y,-1) - np.roll(y,1)
 
