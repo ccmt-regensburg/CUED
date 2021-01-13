@@ -46,7 +46,7 @@ def run(system, dipole, curvat):
 
         os.chdir('..')
 
-    # collect all the currents from different E-field strenghts
+    # collect all the currents from different k-paths
     for Nk2_idx_ext in range(params.Nk2):
 
         print("\nSTARTED WITH READING PATH =", Nk2_idx_ext + 1, "\n")
