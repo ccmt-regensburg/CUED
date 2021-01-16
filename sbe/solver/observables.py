@@ -382,7 +382,7 @@ def make_polarization_path(dipole, path, E_dir, gauge, type_real_np, type_comple
     return polarization_path
 
 
-def make_current_path(sys, path, E_dir, gauge, type_real_np, type_complex_np):
+def make_current_path(sys, curvature, path, E_dir, gauge, type_real_np, type_complex_np):
     '''
     Calculates the intraband current as: J(t) = sum_k sum_n [j_n(k)f_n(k,t)]
     where j_n(k) != (d/dk) E_n(k)
@@ -414,13 +414,16 @@ def make_current_path(sys, path, E_dir, gauge, type_real_np, type_complex_np):
     edxjit_c = sys.ederivfjit[2]
     edyjit_c = sys.ederivfjit[3]
 
+    Bcurv_00 = curvature.Bfjit[0][0]
+    Bcurv_11 = curvature.Bfjit[1][1]
+
     E_ort = np.array([E_dir[1], -E_dir[0]])
     kx_in_path_before_shift = path[:, 0]
     ky_in_path_before_shift = path[:, 1]
     pathlen = kx_in_path_before_shift.size
 
     @conditional_njit(type_complex_np)
-    def current_path_time(rho_vv, rho_cc, A_field):
+    def current_path(rho_vv, rho_cc, A_field, E_field):
         ##################################################
         # E derivative container
         ##################################################
@@ -433,6 +436,9 @@ def make_current_path(sys, path, E_dir, gauge, type_real_np, type_complex_np):
         e_deriv_ortho_v = np.empty(pathlen, dtype=type_real_np)
         e_deriv_E_dir_c = np.empty(pathlen, dtype=type_real_np)
         e_deriv_ortho_c = np.empty(pathlen, dtype=type_real_np)
+
+        Bcurv_v = np.empty(pathlen, dtype=type_complex_np)
+        Bcurv_c = np.empty(pathlen, dtype=type_complex_np)
 
         if gauge == 'length':
             kx_shift = 0
@@ -451,20 +457,25 @@ def make_current_path(sys, path, E_dir, gauge, type_real_np, type_complex_np):
         edx_c[:] = edxjit_c(kx=kx_in_path, ky=ky_in_path)
         edy_c[:] = edyjit_c(kx=kx_in_path, ky=ky_in_path)
 
-
         e_deriv_E_dir_v[:] = edx_v * E_dir[0] + edy_v * E_dir[1]
         e_deriv_ortho_v[:] = edx_v * E_ort[0] + edy_v * E_ort[1]
         e_deriv_E_dir_c[:] = edx_c * E_dir[0] + edy_c * E_dir[1]
         e_deriv_ortho_c[:] = edx_c * E_ort[0] + edy_c * E_ort[1]
+
+        Bcurv_v = Bcurv_00(kx=kx_in_path, ky=ky_in_path)
+        Bcurv_c = Bcurv_11(kx=kx_in_path, ky=ky_in_path)
 
         J_E_dir = - np.sum(e_deriv_E_dir_v * (rho_vv.real - rho_vv_subs)) - \
             np.sum(e_deriv_E_dir_c * rho_cc.real)
         J_ortho = - np.sum(e_deriv_ortho_v * (rho_vv.real - rho_vv_subs)) - \
             np.sum(e_deriv_ortho_c * rho_cc.real)
 
-        return J_E_dir, J_ortho
+        J_anom_ortho = -E_field * np.sum( Bcurv_v.real * rho_vv.real )
+        J_anom_ortho = -E_field * np.sum( Bcurv_c.real * rho_cc.real )
 
-    return current_path_time
+        return J_E_dir, J_ortho, J_anom_ortho
+
+    return current_path
 
 
 def make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, \
@@ -627,7 +638,7 @@ def make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, \
             if do_semicl:
                 # '-' because there is q^2 compared to q only at the SBE current
                 I_ortho += -E_field * Bcurv[i_k, 0].real * rho_vv[i_k].real
-                I_ortho += -E_field * Bcurv[i_k, 1].real * rho_vc[i_k].real
+                I_ortho += -E_field * Bcurv[i_k, 1].real * rho_cc[i_k].real
 
         return I_E_dir, I_ortho
 

@@ -74,12 +74,12 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     # RETRIEVE PARAMETERS
     ###########################################################################
     # Flag evaluation
-    user_out = params.user_out                     # Command line progress output
-    save_full = params.save_full                   # Save full density matrix
-    save_approx = params.save_approx               # Save kira & koch approx. results
-    save_txt = params.save_txt                     # Save data as human readable text file
-    do_semicl = params.do_semicl                   # Additional semiclassical observable calculation
-    gauge = params.gauge                           # length (dipole) or velocity (houston) gauge
+    user_out      = params.user_out                # Command line progress output
+    save_full     = params.save_full               # Save full density matrix
+    save_approx   = params.save_approx             # Save j^intra, j^anom, dP^inter/dt 
+    save_txt      = params.save_txt                # Save data as human readable text file
+    do_semicl     = params.do_semicl               # Semiclassical calculation (dipole = 0)
+    gauge         = params.gauge                   # length (dipole) or velocity (houston) gauge
 
     method = 'bdf'
     if hasattr(params, 'solver_method'):           # 'adams' non-stiff and 'bdf' stiff problems,
@@ -196,7 +196,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         solver = ode(fnumba).set_integrator('zvode', method=method, max_step=dt)
 
     t, A_field, E_field, solution, solution_y_vec, I_exact_E_dir, I_exact_ortho, \
-        J_E_dir, J_ortho, P_E_dir, P_ortho, _dummy = \
+        J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho, _dummy = \
         solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np)
 
     # Only define full density matrix solution if save_full is True
@@ -221,7 +221,8 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         if save_approx:
             polarization_path = make_polarization_path(dipole, path, E_dir, gauge, \
                                                        type_real_np, type_complex_np)
-            current_path = make_current_path(sys, path, E_dir, gauge, type_real_np, type_complex_np)
+            current_path = make_current_path(sys, curvature, path, E_dir, gauge, \
+                                                       type_real_np, type_complex_np)
 
         print("Path: ", Nk2_idx + 1)
 
@@ -309,9 +310,11 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
                 P_E_dir_buf, P_ortho_buf = polarization_path(solution[:, 2], A_field[ti])
                 P_E_dir[ti] += P_E_dir_buf
                 P_ortho[ti] += P_ortho_buf
-                J_E_dir_buf, J_ortho_buf = current_path(solution[:, 0], solution[:, 3], A_field[ti])
-                J_E_dir[ti] += J_E_dir_buf
-                J_ortho[ti] += J_ortho_buf
+                J_E_dir_buf, J_ortho_buf, J_anom_ortho_buf = current_path(solution[:, 0], solution[:, 3], \
+                                                                          A_field[ti], E_field[ti] )
+                J_E_dir[ti]      += J_E_dir_buf
+                J_ortho[ti]      += J_ortho_buf
+                J_anom_ortho[ti] += J_anom_ortho_buf
 
             if method == 'bdf' or method == 'adams':
                 # Integrate one integration time step
@@ -333,7 +336,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         .format(E0*co.au_to_MVpcm, w*co.au_to_THz, alpha*co.au_to_fs, gauge, params.t0, params.dt, Nk1, Nk2, T1*co.au_to_fs, T2*co.au_to_fs, chirp*co.au_to_THz, phase, method)
 
     write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
-                           J_E_dir, J_ortho, P_E_dir, P_ortho,
+                           J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho,
                            gaussian(t, alpha), save_approx, save_txt)
 
     # Save the parameters of the calculation
@@ -626,15 +629,17 @@ def solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np, zeem
     I_exact_ortho = np.zeros(Nt, dtype=type_real_np)
 
     if save_approx:
-        J_E_dir = np.zeros(Nt, dtype=type_real_np)
-        J_ortho = np.zeros(Nt, dtype=type_real_np)
-        P_E_dir = np.zeros(Nt, dtype=type_real_np)
-        P_ortho = np.zeros(Nt, dtype=type_real_np)
+        J_E_dir      = np.zeros(Nt, dtype=type_real_np)
+        J_ortho      = np.zeros(Nt, dtype=type_real_np)
+        P_E_dir      = np.zeros(Nt, dtype=type_real_np)
+        P_ortho      = np.zeros(Nt, dtype=type_real_np)
+        J_anom_ortho = np.zeros(Nt, dtype=type_real_np)
     else:
-        J_E_dir = None
-        J_ortho = None
-        P_E_dir = None
-        P_ortho = None
+        J_E_dir      = None
+        J_ortho      = None
+        P_E_dir      = None
+        P_ortho      = None
+        J_anom_ortho = None
 
     if zeeman:
         Zee_field = np.zeros((Nt, 3), dtype=type_real_np)
@@ -642,7 +647,7 @@ def solution_container(Nk1, Nt, save_approx, type_real_np, type_complex_np, zeem
             P_E_dir, P_ortho, Zee_field
 
     return t, A_field, E_field, solution, solution_y_vec, I_exact_E_dir, I_exact_ortho, \
-        J_E_dir, J_ortho, P_E_dir, P_ortho, None
+        J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho, None
 
 
 def initial_condition(e_fermi, temperature, ev, ec, type_complex_np):
@@ -707,7 +712,7 @@ def gaussian(t, alpha):
 
 
 def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
-                           J_E_dir, J_ortho, P_E_dir, P_ortho,
+                           J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho, 
                            gaussian_envelope, save_approx, save_txt):
     """
         Calculates the Emission Intensity I(omega) (eq. 51 in https://arxiv.org/abs/2008.03177)
@@ -761,8 +766,12 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
         I_inter_E_dir = diff(t, P_E_dir)*kweight
         I_inter_ortho = diff(t, P_ortho)*kweight
 
+        I_anom_ortho  = J_anom_ortho*kweight
+
         I_E_dir = I_intra_E_dir + I_inter_E_dir
         I_ortho = I_intra_ortho + I_inter_ortho
+
+        I_intra_plus_anom_ortho = I_intra_ortho + I_anom_ortho
 
         # Approximate current and emission intensity
         Int_E_dir, Int_ortho, Iw_E_dir, Iw_ortho = fourier_current_intensity(
@@ -776,6 +785,11 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
         Int_inter_E_dir, Int_inter_ortho, Iw_inter_E_dir, Iw_inter_ortho = fourier_current_intensity(
              I_inter_E_dir, I_inter_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
 
+        # Anomalous current, intraband current (de/dk-related) + anomalous current; and emission int. 
+        Int_anom_ortho, Int_intra_plus_anom_ortho, Iw_anom_ortho, Iw_intra_plus_anom_ortho = \
+             fourier_current_intensity( I_anom_ortho, I_intra_plus_anom_ortho, 
+                                           gaussian_envelope, dt_out, prefac_emission, freq)
+
         I_approx_name = 'Iapprox_' + tail
 
         np.save(I_approx_name, [t, I_E_dir, I_ortho,
@@ -784,7 +798,9 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
                                 I_intra_E_dir, I_intra_ortho,
                                 Int_intra_E_dir, Int_intra_ortho,
                                 I_inter_E_dir, I_inter_ortho,
-                                Int_inter_E_dir, Int_inter_ortho])
+                                Int_inter_E_dir, Int_inter_ortho, 
+                                Int_anom_ortho, Int_intra_plus_anom_ortho, 
+                                Iw_anom_ortho, Iw_intra_plus_anom_ortho])
 
         if save_txt:
             np.savetxt(I_approx_name + '.dat',
