@@ -160,7 +160,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     # USER OUTPUT
     ###########################################################################
     if user_out:
-        print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alpha,
+        print_user_info(BZ_type, do_semicl, Nk, dk_order, align, angle_inc_E_field, E0, w, alpha,
                         chirp, T2, tf-t0, dt, method, precision)
     # INITIALIZATIONS
     ###########################################################################
@@ -799,8 +799,8 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
                                 Int_intra_E_dir, Int_intra_ortho,
                                 I_inter_E_dir, I_inter_ortho,
                                 Int_inter_E_dir, Int_inter_ortho, 
-                                Int_anom_ortho, Int_intra_plus_anom_ortho, 
-                                Iw_anom_ortho, Iw_intra_plus_anom_ortho])
+                                I_anom_ortho, I_intra_plus_anom_ortho, 
+                                Int_anom_ortho, Int_intra_plus_anom_ortho] )
 
         if save_txt:
             np.savetxt(I_approx_name + '.dat',
@@ -845,7 +845,7 @@ def fourier_current_intensity(I_E_dir, I_ortho, gaussian_envelope, dt_out, prefa
     return Int_E_dir, Int_ortho, Iw_E_dir, Iw_ortho
 
 
-def print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alpha, chirp,
+def print_user_info(BZ_type, do_semicl, Nk, dk_order, align, angle_inc_E_field, E0, w, alpha, chirp,
                     T2, tfmt0, dt, method, precision, B0=None, mu=None, incident_angle=None):
     """
         Function that prints the input parameters if usr_info = True
@@ -856,6 +856,7 @@ def print_user_info(BZ_type, do_semicl, Nk, align, angle_inc_E_field, E0, w, alp
     print("ODE solver method               = " + str(method))
     print("Precision (default = double)    = " + str(precision))
     print("Number of k-points              = " + str(Nk))
+    print("Order of k-derivative           = " + str(dk_order))
     if BZ_type == 'full':
         print("Driving field alignment         = " + align)
     elif BZ_type == '2line':
