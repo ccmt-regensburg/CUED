@@ -17,8 +17,8 @@ class params:
     BZ_type = '2line'
 
     # Reciprocal lattice vectors
-    b1 = (2*np.pi/(a*np.sqrt(3)))*np.array([np.sqrt(3), -1])
-    b2 = (4*np.pi/(a*np.sqrt(3)))*np.array([0, 1])
+#    b1 = (2*np.pi/(a*np.sqrt(3)))*np.array([np.sqrt(3), -1])
+#    b2 = (4*np.pi/(a*np.sqrt(3)))*np.array([0, 1])
 
     # 2line BZ parameters
 #    Nk1                 = 600         # Number of kpoints in each of the paths

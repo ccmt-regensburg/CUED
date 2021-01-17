@@ -17,8 +17,8 @@ class params:
     BZ_type = '2line'
 
     # Reciprocal lattice vectors
-    b1 = (2*np.pi/(a*np.sqrt(3)))*np.array([np.sqrt(3), -1])
-    b2 = (4*np.pi/(a*np.sqrt(3)))*np.array([0, 1])
+#    b1 = (2*np.pi/(a*np.sqrt(3)))*np.array([np.sqrt(3), -1])
+#    b2 = (4*np.pi/(a*np.sqrt(3)))*np.array([0, 1])
 
     # full BZ parametes
 #    Nk1                 = 90         # Number of kpoints in b1 direction
@@ -36,7 +36,7 @@ class params:
 
     # Driving field parameters
     ##########################################################################
-    align               = 'K'         # E-field direction (gamma-'K' or gamma-'M')
+#    align               = 'K'         # E-field direction (gamma-'K' or gamma-'M')
     E0                  = 5.00        # Pulse amplitude (MV/cm)
     w                   = 25.0        # Pulse frequency (THz)
     chirp               = 0.00        # Pulse chirp ratio (chirp = c/w) (THz)
