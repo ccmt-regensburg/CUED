@@ -74,12 +74,15 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     # RETRIEVE PARAMETERS
     ###########################################################################
     # Flag evaluation
-    user_out      = params.user_out                # Command line progress output
-    save_full     = params.save_full               # Save full density matrix
-    save_approx   = params.save_approx             # Save j^intra, j^anom, dP^inter/dt 
-    save_txt      = params.save_txt                # Save data as human readable text file
-    do_semicl     = params.do_semicl               # Semiclassical calculation (dipole = 0)
-    gauge         = params.gauge                   # length (dipole) or velocity (houston) gauge
+    user_out    = params.user_out                  # Command line progress output
+    save_full   = params.save_full                 # Save full density matrix
+    save_approx = params.save_approx               # Save j^intra, j^anom, dP^inter/dt 
+    save_txt    = params.save_txt                  # Save data as human readable text file
+    do_semicl   = params.do_semicl                 # Semiclassical calculation (dipole = 0)
+    gauge       = params.gauge                     # length (dipole) or velocity (houston) gauge
+    save_anom   = False                            # when save_approx = True, decide whether to compute
+    if hasattr(params, 'save_anom'):               # anomalous current (comp. expensive)
+        save_anom = params.save_anom  
 
     method = 'bdf'
     if hasattr(params, 'solver_method'):           # 'adams' non-stiff and 'bdf' stiff problems,
@@ -222,7 +225,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
             polarization_path = make_polarization_path(dipole, path, E_dir, gauge, \
                                                        type_real_np, type_complex_np)
             current_path = make_current_path(sys, curvature, path, E_dir, gauge, \
-                                                       type_real_np, type_complex_np)
+                                             type_real_np, type_complex_np, save_anom)
 
         print("Path: ", Nk2_idx + 1)
 
@@ -337,7 +340,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
     write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
                            J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho,
-                           gaussian(t, alpha), save_approx, save_txt)
+                           gaussian(t, alpha), T2, save_approx, save_txt)
 
     # Save the parameters of the calculation
     run_time = end_time - start_time
@@ -713,7 +716,7 @@ def gaussian(t, alpha):
 
 def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
                            J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho, 
-                           gaussian_envelope, save_approx, save_txt):
+                           gaussian_envelope, T2, save_approx, save_txt):
     """
         Calculates the Emission Intensity I(omega) (eq. 51 in https://arxiv.org/abs/2008.03177)
 
@@ -759,58 +762,6 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
     dt_out = t[1] - t[0]
     freq = fftshift(fftfreq(t.size, d=dt_out))
 
-    if save_approx:
-        I_intra_E_dir = J_E_dir*kweight
-        I_intra_ortho = J_ortho*kweight
-
-        I_inter_E_dir = diff(t, P_E_dir)*kweight
-        I_inter_ortho = diff(t, P_ortho)*kweight
-
-        I_anom_ortho  = J_anom_ortho*kweight
-
-        I_E_dir = I_intra_E_dir + I_inter_E_dir
-        I_ortho = I_intra_ortho + I_inter_ortho
-
-        I_intra_plus_anom_ortho = I_intra_ortho + I_anom_ortho
-
-        # Approximate current and emission intensity
-        Int_E_dir, Int_ortho, Iw_E_dir, Iw_ortho = fourier_current_intensity(
-             I_E_dir, I_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
-
-        # Intraband current and emission intensity
-        Int_intra_E_dir, Int_intra_ortho, Iw_intra_E_dir, Iw_intra_ortho = fourier_current_intensity(
-             I_intra_E_dir, I_intra_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
-
-        # Polarization-related current and emission intensity
-        Int_inter_E_dir, Int_inter_ortho, Iw_inter_E_dir, Iw_inter_ortho = fourier_current_intensity(
-             I_inter_E_dir, I_inter_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
-
-        # Anomalous current, intraband current (de/dk-related) + anomalous current; and emission int. 
-        Int_anom_ortho, Int_intra_plus_anom_ortho, Iw_anom_ortho, Iw_intra_plus_anom_ortho = \
-             fourier_current_intensity( I_anom_ortho, I_intra_plus_anom_ortho, 
-                                           gaussian_envelope, dt_out, prefac_emission, freq)
-
-        I_approx_name = 'Iapprox_' + tail
-
-        np.save(I_approx_name, [t, I_E_dir, I_ortho,
-                                freq/w, Iw_E_dir, Iw_ortho,
-                                Int_E_dir, Int_ortho,
-                                I_intra_E_dir, I_intra_ortho,
-                                Int_intra_E_dir, Int_intra_ortho,
-                                I_inter_E_dir, I_inter_ortho,
-                                Int_inter_E_dir, Int_inter_ortho, 
-                                I_anom_ortho, I_intra_plus_anom_ortho, 
-                                Int_anom_ortho, Int_intra_plus_anom_ortho] )
-
-        if save_txt:
-            np.savetxt(I_approx_name + '.dat',
-                       np.column_stack([t.real, I_E_dir.real, I_ortho.real,
-                                        (freq/w).real, Iw_E_dir.real, Iw_E_dir.imag,
-                                        Iw_ortho.real, Iw_ortho.imag,
-                                        Int_E_dir.real, Int_ortho.real]),
-                       header="t, I_E_dir, I_ortho, freqw/w, Re(Iw_E_dir), Im(Iw_E_dir), Re(Iw_ortho), Im(Iw_ortho), Int_E_dir, Int_ortho",
-                       fmt='%+.18e')
-
     ##############################################################
     # Always calculate exact emission formula
     ##############################################################
@@ -833,6 +784,78 @@ def write_current_emission(tail, kweight, w, t, I_exact_E_dir, I_exact_ortho,
                                     Int_exact_E_dir.real, Int_exact_ortho.real]),
                    header="t, I_exact_E_dir, I_exact_ortho, freqw/w, Re(Iw_exact_E_dir), Im(Iw_exact_E_dir), Re(Iw_exact_ortho), Im(Iw_exact_ortho), Int_exact_E_dir, Int_exact_ortho",
                    fmt='%+.18e')
+
+    if save_approx:
+        I_intra_E_dir = J_E_dir*kweight
+        I_intra_ortho = J_ortho*kweight
+
+        I_inter_E_dir = diff(t, P_E_dir)*kweight
+        I_inter_ortho = diff(t, P_ortho)*kweight
+
+        I_anom_ortho  = J_anom_ortho*kweight
+
+        # Eq. (81( SBE formalism paper
+        I_deph_E_dir = 1/T2*P_E_dir*kweight
+        I_deph_ortho = 1/T2*P_ortho*kweight
+
+        I_E_dir = I_intra_E_dir + I_inter_E_dir
+        I_ortho = I_intra_ortho + I_inter_ortho
+
+        I_intra_plus_anom_ortho = I_intra_ortho + I_anom_ortho
+
+        I_without_deph_E_dir = I_exact_E_dir - I_deph_E_dir
+        I_without_deph_ortho = I_exact_ortho - I_deph_ortho
+
+        I_intra_plus_deph_E_dir = I_intra_E_dir + I_deph_E_dir
+        I_intra_plus_deph_ortho = I_intra_ortho + I_deph_ortho
+
+        # Approximate current and emission intensity
+        Int_E_dir, Int_ortho, Iw_E_dir, Iw_ortho = fourier_current_intensity(
+             I_E_dir, I_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
+
+        # Intraband current and emission intensity
+        Int_intra_E_dir, Int_intra_ortho, Iw_intra_E_dir, Iw_intra_ortho = fourier_current_intensity(
+             I_intra_E_dir, I_intra_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
+
+        # Polarization-related current and emission intensity
+        Int_inter_E_dir, Int_inter_ortho, Iw_inter_E_dir, Iw_inter_ortho = fourier_current_intensity(
+             I_inter_E_dir, I_inter_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
+
+        # Anomalous current, intraband current (de/dk-related) + anomalous current; and emission int. 
+        Int_anom_ortho, Int_intra_plus_anom_ortho, Iw_anom_ortho, Iw_intra_plus_anom_ortho = \
+             fourier_current_intensity( I_anom_ortho, I_intra_plus_anom_ortho, 
+                                        gaussian_envelope, dt_out, prefac_emission, freq)
+
+        # Total current without dephasing current and respectice emission intensity
+        Int_without_deph_E_dir, Int_without_deph_ortho, Iw_without_deph_E_dir, Iw_without_deph_ortho = fourier_current_intensity(
+             I_without_deph_E_dir, I_without_deph_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
+
+        # Total current without dephasing current and respectice emission intensity
+        Int_intra_plus_deph_E_dir, Int_intra_plus_deph_ortho, Iw_intra_plus_deph_E_dir, Iw_intra_plus_deph_ortho = fourier_current_intensity(
+             I_intra_plus_deph_E_dir, I_intra_plus_deph_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
+
+        I_approx_name = 'Iapprox_' + tail
+
+        np.save(I_approx_name, [t, I_E_dir, I_ortho,
+                                freq/w, Iw_E_dir, Iw_ortho,
+                                Int_E_dir, Int_ortho,
+                                I_intra_E_dir, I_intra_ortho,
+                                Int_intra_E_dir, Int_intra_ortho,
+                                I_inter_E_dir, I_inter_ortho,
+                                Int_inter_E_dir, Int_inter_ortho, 
+                                I_anom_ortho, I_intra_plus_anom_ortho, 
+                                Int_anom_ortho, Int_intra_plus_anom_ortho, 
+                                Int_without_deph_E_dir, Int_without_deph_ortho, 
+                                Int_intra_plus_deph_E_dir, Int_intra_plus_deph_ortho] )
+
+        if save_txt:
+            np.savetxt(I_approx_name + '.dat',
+                       np.column_stack([t.real, I_E_dir.real, I_ortho.real,
+                                        (freq/w).real, Iw_E_dir.real, Iw_E_dir.imag,
+                                        Iw_ortho.real, Iw_ortho.imag,
+                                        Int_E_dir.real, Int_ortho.real]),
+                       header="t, I_E_dir, I_ortho, freqw/w, Re(Iw_E_dir), Im(Iw_E_dir), Re(Iw_ortho), Im(Iw_ortho), Int_E_dir, Int_ortho",
+                       fmt='%+.18e')
 
 
 def fourier_current_intensity(I_E_dir, I_ortho, gaussian_envelope, dt_out, prefac_emission, freq):
