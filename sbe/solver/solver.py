@@ -205,7 +205,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
             elif P.solver_method == 'rk4':
                 # Do not append the last element (A_field)
-                solution[:, :] = solution_y_vec[:-1].reshape(Nk1, 4)
+                solution[:, :] = solution_y_vec[:-1].reshape(P.Nk1, 4)
 
                 # Construct time array only once
                 if Nk2_idx == 0 or P.Nk2_idx_ext > 0:
