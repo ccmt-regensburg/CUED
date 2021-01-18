@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import sbe.check.symbolic_checks as symbolic_checks
-from sbe.utility import matrix_to_njit_functions, to_numpy_function
+from sbe.utility import matrix_to_njit_functions, to_numpy_function, evaluate_njit_matrix
 
 plt.rcParams['figure.figsize'] = [150, 15]
 plt.rcParams['text.usetex'] = True
@@ -100,7 +100,7 @@ class SymbolicDipole():
 
     """
 
-    def __init__(self, h, e, wf, offdiagonal_k=False, test=False):
+    def __init__(self, h, e, wf, offdiagonal_k=False, test=False, kdotp=None):
         """
         Diagonal and off-diagonal (band index) elements <n k| d/dk |m k>
         i.e. Berry connection and Dipoles.
@@ -119,6 +119,10 @@ class SymbolicDipole():
             Additional k-offdiagonal dipoles populated
         test : bool
             Wheter to perform a orthonormality and eigensystem test
+        kdotp : np.ndarray of np.complex128
+            Wheter to use dipoles from k.p theory. Whereas coupling constant is kdotp.
+            kdotp = d_nn'(k=0) * (ev(k=0) - ec(k=0)). Dipoles will just be inverse
+            energy difference times constant.
         """
 
         if (test):
@@ -135,14 +139,14 @@ class SymbolicDipole():
         self.hsymbols = h.free_symbols
         # self.e = e
 
-        self.Ax, self.Ay = self.__fields(wf[0], wf[1])
+        if kdotp is None:
+            self.Ax, self.Ay = self.__fields(wf[0], wf[1])
+        else:
+            self.Ax, self.Ay = self.__kdotp_fields(kdotp, e[0], e[1])
 
         # Numpy function and function arguments
         self.Axfjit = matrix_to_njit_functions(self.Ax, self.hsymbols)
         self.Ayfjit = matrix_to_njit_functions(self.Ay, self.hsymbols)
-
-        self.Axf = to_numpy_function(self.Ax)
-        self.Ayf = to_numpy_function(self.Ay)
 
         # Evaluated fields
         self.Ax_eval = None
@@ -164,6 +168,11 @@ class SymbolicDipole():
         # Minus sign is the charge
         return -sp.I*U_h * dUx, -sp.I*U_h * dUy
 
+    def __kdotp_fields(self, kdotp, ev, ec):
+        Ax = sp.Matrix([[0, kdotp[0]/(ec-ev)], [np.conjugate(kdotp[0])/(ec-ev), 0]])
+        Ay = sp.Matrix([[0, kdotp[1]/(ec-ev)], [np.conjugate(kdotp[1])/(ec-ev), 0]])
+        return Ax, Ay
+
     def evaluate(self, kx, ky, **fkwargs):
         """
         Transforms the symbolic expression for the
@@ -178,8 +187,8 @@ class SymbolicDipole():
             keyword arguments passed to the symbolic expression
         """
         # Evaluate all kpoints without BZ
-        self.Ax_eval = self.Axf(kx=kx, ky=ky, **fkwargs)
-        self.Ay_eval = self.Ayf(kx=kx, ky=ky, **fkwargs)
+        self.Ax_eval = evaluate_njit_matrix(self.Axfjit, kx, ky, **fkwargs)
+        self.Ay_eval = evaluate_njit_matrix(self.Ayfjit, kx, ky, **fkwargs)
         return self.Ax_eval, self.Ay_eval
 
     def offdiagonal_k(self, wf):

@@ -314,7 +314,7 @@ def make_emission_exact_path_time(sys, pathlen, n_time_steps, E_dir, A_field, \
 ##########################################################################################
 ## Observables working with density matrices that contain NO time data; only path
 ##########################################################################################
-def make_polarization_path(dipole, path, E_dir, gauge, type_real_np, type_complex_np):
+def make_polarization_path(dipole, path, E_dir, P):
     """
     Function that calculates the polarization for the current path
 
@@ -347,6 +347,8 @@ def make_polarization_path(dipole, path, E_dir, gauge, type_real_np, type_comple
     ky_in_path_before_shift = path[:, 1]
     pathlen = kx_in_path_before_shift.size
 
+    type_complex_np = P.type_complex_np
+    gauge = P.gauge
     @conditional_njit(type_complex_np)
     def polarization_path(rho_cv, A_field):
         ##################################################
@@ -382,7 +384,7 @@ def make_polarization_path(dipole, path, E_dir, gauge, type_real_np, type_comple
     return polarization_path
 
 
-def make_current_path(sys, curvature, path, E_dir, gauge, type_real_np, type_complex_np, save_anom):
+def make_current_path(sys, path, E_dir, curvature, P):
     '''
     Calculates the intraband current as: J(t) = sum_k sum_n [j_n(k)f_n(k,t)]
     where j_n(k) != (d/dk) E_n(k)
@@ -414,7 +416,7 @@ def make_current_path(sys, curvature, path, E_dir, gauge, type_real_np, type_com
     edxjit_c = sys.ederivfjit[2]
     edyjit_c = sys.ederivfjit[3]
 
-    if save_anom:
+    if P.save_anom:
         Bcurv_00 = curvature.Bfjit[0][0]
         Bcurv_11 = curvature.Bfjit[1][1]
 
@@ -423,6 +425,10 @@ def make_current_path(sys, curvature, path, E_dir, gauge, type_real_np, type_com
     ky_in_path_before_shift = path[:, 1]
     pathlen = kx_in_path_before_shift.size
 
+    type_real_np = P.type_real_np
+    type_complex_np = P.type_complex_np
+    gauge = P.gauge
+    save_anom = P.save_anom
     @conditional_njit(type_complex_np)
     def current_path(rho_vv, rho_cc, A_field, E_field):
         ##################################################
@@ -455,6 +461,7 @@ def make_current_path(sys, curvature, path, E_dir, gauge, type_real_np, type_com
         edx_c[:] = edxjit_c(kx=kx_in_path, ky=ky_in_path)
         edy_c[:] = edyjit_c(kx=kx_in_path, ky=ky_in_path)
 
+
         e_deriv_E_dir_v[:] = edx_v * E_dir[0] + edy_v * E_dir[1]
         e_deriv_ortho_v[:] = edx_v * E_ort[0] + edy_v * E_ort[1]
         e_deriv_E_dir_c[:] = edx_c * E_dir[0] + edy_c * E_dir[1]
@@ -466,18 +473,15 @@ def make_current_path(sys, curvature, path, E_dir, gauge, type_real_np, type_com
             np.sum(e_deriv_ortho_c * rho_cc.real)
 
         if save_anom:
-
             Bcurv_v = np.empty(pathlen, dtype=type_complex_np)
             Bcurv_c = np.empty(pathlen, dtype=type_complex_np)
 
             Bcurv_v = Bcurv_00(kx=kx_in_path, ky=ky_in_path)
             Bcurv_c = Bcurv_11(kx=kx_in_path, ky=ky_in_path)
 
-            J_anom_ortho = -E_field * np.sum( Bcurv_v.real * rho_vv.real )
-            J_anom_ortho = -E_field * np.sum( Bcurv_c.real * rho_cc.real )
-
+            J_anom_ortho = -E_field * np.sum(Bcurv_v.real * rho_vv.real)
+            J_anom_ortho = -E_field * np.sum(Bcurv_c.real * rho_cc.real)
         else:
-
             J_anom_ortho = 0
 
         return J_E_dir, J_ortho, J_anom_ortho
@@ -485,8 +489,7 @@ def make_current_path(sys, curvature, path, E_dir, gauge, type_real_np, type_com
     return current_path
 
 
-def make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, \
-                                      type_real_np, type_complex_np, symmetric_insulator=False):
+def make_emission_exact_path_velocity(sys, path, E_dir, curvature, P):
     """
     Construct a function that calculates the emission for the system solution per path
     Works for velocity gauge.
@@ -534,7 +537,7 @@ def make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, \
     U_h_10 = Ujit_h[1][0]
     U_h_11 = Ujit_h[1][1]
 
-    if do_semicl:
+    if P.do_semicl:
         Bcurv_00 = curvature.Bfjit[0][0]
         Bcurv_11 = curvature.Bfjit[1][1]
 
@@ -544,6 +547,9 @@ def make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, \
     ky_in_path_before_shift = path[:, 1]
     pathlen = kx_in_path_before_shift.size
 
+    type_complex_np = P.type_complex_np
+    symmetric_insulator = P.symmetric_insulator
+    do_semicl = P.do_semicl
     @conditional_njit(type_complex_np)
     def emission_exact_path_velocity(solution, E_field, A_field):
         '''
@@ -652,8 +658,7 @@ def make_emission_exact_path_velocity(sys, path, E_dir, do_semicl, curvature, \
     return emission_exact_path_velocity
 
 
-def make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature, \
-                                    type_real_np, type_complex_np, symmetric_insulator=False):
+def make_emission_exact_path_length(sys, path, E_dir, curvature, P):
     """
     Construct a function that calculates the emission for the system solution per path.
     Works for length gauge.
@@ -686,22 +691,22 @@ def make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature, \
     ##########################################################
     # H derivative container
     ##########################################################
-    h_deriv_x = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-    h_deriv_y = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-    h_deriv_E_dir = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-    h_deriv_ortho = np.empty((pathlen, 2, 2), dtype=type_complex_np)
+    h_deriv_x = np.empty((pathlen, 2, 2), dtype=P.type_complex_np)
+    h_deriv_y = np.empty((pathlen, 2, 2), dtype=P.type_complex_np)
+    h_deriv_E_dir = np.empty((pathlen, 2, 2), dtype=P.type_complex_np)
+    h_deriv_ortho = np.empty((pathlen, 2, 2), dtype=P.type_complex_np)
 
     ##########################################################
     # Wave function container
     ##########################################################
-    U = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-    U_h = np.empty((pathlen, 2, 2), dtype=type_complex_np)
+    U = np.empty((pathlen, 2, 2), dtype=P.type_complex_np)
+    U_h = np.empty((pathlen, 2, 2), dtype=P.type_complex_np)
 
     ##########################################################
     # Berry curvature container
     ##########################################################
-    if do_semicl:
-        Bcurv = np.empty((pathlen, 2), dtype=type_complex_np)
+    if P.do_semicl:
+        Bcurv = np.empty((pathlen, 2), dtype=P.type_complex_np)
 
     h_deriv_x[:, 0, 0] = sys.hderivfjit[0][0][0](kx=kx_in_path, ky=ky_in_path)
     h_deriv_x[:, 0, 1] = sys.hderivfjit[0][0][1](kx=kx_in_path, ky=ky_in_path)
@@ -726,11 +731,13 @@ def make_emission_exact_path_length(sys, path, E_dir, do_semicl, curvature, \
     U_h[:, 1, 0] = sys.Ujit_h[1][0](kx=kx_in_path, ky=ky_in_path)
     U_h[:, 1, 1] = sys.Ujit_h[1][1](kx=kx_in_path, ky=ky_in_path)
 
-    if do_semicl:
+    if P.do_semicl:
         Bcurv[:, 0] = curvature.Bfjit[0][0](kx=kx_in_path, ky=ky_in_path)
         Bcurv[:, 1] = curvature.Bfjit[1][1](kx=kx_in_path, ky=ky_in_path)
 
-    @conditional_njit(type_complex_np)
+    symmetric_insulator = P.symmetric_insulator
+    do_semicl = P.do_semicl
+    @conditional_njit(P.type_complex_np)
     def emission_exact_path_length(solution, E_field, _A_field=1):
         '''
         Parameters:

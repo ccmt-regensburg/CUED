@@ -78,7 +78,7 @@ def __to_njit_function_kp(sf, hsymbols, kx, ky, kxp, kyp):
 def evaluate_njit_matrix(mjit, kx=np.empty(1), ky=np.empty(1),
                          **fkwargs):
     shp = np.shape(mjit)
-    numpy_matrix = np.empty(shp + (kx.size,), dtype=np.complex)
+    numpy_matrix = np.empty(shp + (kx.size,), dtype=np.complex128)
 
     for r in range(shp[0]):
         for c in range(shp[1]):
