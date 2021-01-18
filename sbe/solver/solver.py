@@ -386,10 +386,6 @@ def parse_params_add_default_values(user_params):
     P.rel_dist_to_Gamma = UP.rel_dist_to_Gamma
     P.length_path_in_BZ = UP.length_path_in_BZ
 
-    P.b1 = UP.b1                                # Reciprocal lattice vectors
-    P.b1_dangs = P.b1*co.as_to_au
-    P.b2 = UP.b2
-    P.b2_dangs = P.b2*co.as_to_au
     P.a = UP.a                                  # Lattice spacing
     P.a_angs = P.a*co.au_to_as
 
@@ -397,6 +393,10 @@ def parse_params_add_default_values(user_params):
     if P.BZ_type == 'full':
         P.align = UP.align                      # E-field alignment
         P.angle_inc_E_field = None
+        P.b1 = UP.b1                                # Reciprocal lattice vectors
+        P.b1_dangs = P.b1*co.as_to_au
+        P.b2 = UP.b2
+        P.b2_dangs = P.b2*co.as_to_au
     elif P.BZ_type == '2line':
         P.align = None
         P.angle_inc_E_field = UP.angle_inc_E_field
