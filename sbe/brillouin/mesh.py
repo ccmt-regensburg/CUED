@@ -92,7 +92,6 @@ def hex_mesh(P):
         b_a2 = (2*np.pi/(3*P.a))*np.array([1, np.sqrt(3)])
         alpha1 = np.linspace(-0.5 + (1/(2*P.Nk1)), 0.5 - (1/(2*P.Nk1)), num=P.Nk1)
         alpha2 = np.linspace(-1.0 + (1.5/(2*P.Nk2)), 0.5 - (1.5/(2*P.Nk2)), num=P.Nk2)
-        print(alpha2)
         for a2 in alpha2:
             # Container for a single gamma-M path
             path_M = []

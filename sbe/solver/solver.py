@@ -94,7 +94,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         elif P.align == 'M':
             E_dir = np.array([np.cos(np.radians(-30)),
                               np.sin(np.radians(-30))])
-        BZ_plot(_kpnts, paths, P)
+        # BZ_plot(_kpnts, paths, P)
     elif P.BZ_type == '2line':
         E_dir = np.array([np.cos(np.radians(P.angle_inc_E_field)),
                           np.sin(np.radians(P.angle_inc_E_field))])
