@@ -86,7 +86,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
 
     # Form the Brillouin zone in consideration
     if P.BZ_type == 'full':
-        _kpnts, paths, area = hex_mesh(P.Nk1, P.Nk2, P.a, P.b1, P.b2, P.align)
+        _kpnts, paths, area = hex_mesh(P)
         kweight = area/P.Nk
         dk = 1/P.Nk1
         if P.align == 'K':
@@ -94,7 +94,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
         elif P.align == 'M':
             E_dir = np.array([np.cos(np.radians(-30)),
                               np.sin(np.radians(-30))])
-        # BZ_plot(_kpnts, a, b1, b2, paths)
+        BZ_plot(_kpnts, paths, P)
     elif P.BZ_type == '2line':
         E_dir = np.array([np.cos(np.radians(P.angle_inc_E_field)),
                           np.sin(np.radians(P.angle_inc_E_field))])
@@ -823,7 +823,7 @@ def print_user_info(P, B0=None, mu=None, incident_angle=None):
           + "[" + '{:.6f}'.format(P.dt) + "]")
 
 
-def BZ_plot(kpnts, paths, P, si_units=True):
+def BZ_plot(kpnts, paths, P, si_units=False):
     """
         Function that plots the brillouin zone
     """
@@ -856,7 +856,7 @@ def BZ_plot(kpnts, paths, P, si_units=True):
     plt.text(r*np.cos(-np.pi/6)+0.01, r*np.sin(-np.pi/6)-0.05, r'$M$')
     plt.scatter(R, 0, s=15, c='black')
     plt.text(R, 0.02, r'$K$')
-    plt.scatter(kpnts[:, 0], kpnts[:, 1], s=10)
+    plt.scatter(kpnts[:, 0], kpnts[:, 1], s=0.1)
     plt.xlim(-7.0/a, 7.0/a)
     plt.ylim(-7.0/a, 7.0/a)
 
@@ -869,8 +869,8 @@ def BZ_plot(kpnts, paths, P, si_units=True):
 
     for path in paths:
         if si_units:
-            plt.plot(co.as_to_au*path[:, 0], co.as_to_au*path[:, 1])
+            plt.plot(co.as_to_au*path[:, 0], co.as_to_au*path[:, 1], lw=0.1)
         else:
-            plt.plot(path[:, 0], path[:, 1])
+            plt.plot(path[:, 0], path[:, 1], lw=0.1)
 
     plt.show()

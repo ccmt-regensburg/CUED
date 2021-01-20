@@ -121,8 +121,6 @@ def parse_params(user_params):
     P.Nk2 = UP.Nk2                              # kpoints in b2 direction
     P.Nk = P.Nk1 * P.Nk2
 
-    P.rel_dist_to_Gamma = UP.rel_dist_to_Gamma
-    P.length_path_in_BZ = UP.length_path_in_BZ
 
     P.a = UP.a                                  # Lattice spacing
     P.a_angs = P.a*co.au_to_as
@@ -138,6 +136,8 @@ def parse_params(user_params):
     elif P.BZ_type == '2line':
         P.align = None
         P.angle_inc_E_field = UP.angle_inc_E_field
+        P.rel_dist_to_Gamma = UP.rel_dist_to_Gamma
+        P.length_path_in_BZ = UP.length_path_in_BZ
 
     P.Nk2_idx_ext = -1
     if hasattr(UP, 'Nk2_idx_ext'):        # For parallelization: only do calculation

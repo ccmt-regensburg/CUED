@@ -38,12 +38,15 @@ def topological(kx, ky, eflag=False, edflag=False, dipflag=False):
         Ax_kdotp, Ay_kdotp = dip_kdotp.evaluate(kx, ky)
         Ax_kfull, Ay_kfull = dip_kfull.evaluate(kx, ky)
         plt.plot(kx, Ax_kdotp[0, 1].imag, kx, Ax_kfull[0, 1].imag, ls='', marker='.')
+        plt.legend([r'$k\cdot p$ fit', r'$k$-derivative'])
+        plt.xlabel(r'$k_x$ in at.u.')
+        plt.ylabel(r'$d_{vc}^x$ in at.u.')
         plt.show()
         # dip.plot_dipoles(kx, ky)
 
 
 if __name__ == "__main__":
-    N = 101
+    N = 201
     kinit = np.linspace(-3/(2*a)*np.pi, 3/(2*a)*np.pi, N)
     # kx, ky = kmat(kinit)
     kx = kinit
