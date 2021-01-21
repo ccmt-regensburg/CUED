@@ -143,4 +143,14 @@ def parse_params(user_params):
     if hasattr(UP, 'Nk2_idx_ext'):        # For parallelization: only do calculation
         P.Nk2_idx_ext = UP.Nk2_idx_ext    # for path Nk2_idx_ext (in total Nk2 paths)
 
+    # params for n-band solver
+    P.n = UP.n 
+
+    P.dipole_numerics = True
+    if hasattr(UP, 'dipole_numerics'):
+        P.dipole_numerics = UP.dipole_numerics
+
+    P.epsilon = UP.epsilon
+    P.gidx = UP.gidx
+    
     return P

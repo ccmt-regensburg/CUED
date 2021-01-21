@@ -33,7 +33,7 @@ def run(system, dipole, curvature):
     params.e_fermi = 0.0
     params.temperature = 0.0
 
-    sbe_solver_n_bands(params, system, dipole, curvature)
+    sbe_solver_n_bands(system, dipole, params, curvature)
 
 if __name__ == "__main__":
     run(*dirac())

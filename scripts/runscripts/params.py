@@ -62,5 +62,5 @@ class params:
     dipole_numerics = True
 
     n = 2                       # number of bands
-    epsilon = 0.002             # Parameter for numerical derivative
+    epsilon = 2e-5             # Parameter for numerical derivative
     gidx = 1                    # gauge index of wavefunction
