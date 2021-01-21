@@ -121,23 +121,24 @@ def parse_params(user_params):
     P.Nk2 = UP.Nk2                              # kpoints in b2 direction
     P.Nk = P.Nk1 * P.Nk2
 
-
-    P.a = UP.a                                  # Lattice spacing
-    P.a_angs = P.a*co.au_to_as
-
     # special parameters for individual Brillouin zone types
-    if P.BZ_type == 'full':
+    if P.BZ_type == 'hexagon':
         P.align = UP.align                      # E-field alignment
         P.angle_inc_E_field = None
         P.b1 = UP.b1                                # Reciprocal lattice vectors
         P.b1_dangs = P.b1*co.as_to_au
         P.b2 = UP.b2
         P.b2_dangs = P.b2*co.as_to_au
-    elif P.BZ_type == '2line':
+        P.a = UP.a                                  # Lattice spacing
+        P.a_angs = P.a*co.au_to_as
+    elif P.BZ_type == 'rectangle':
+        P.a = UP.a                                  # Lattice spacing
         P.align = None
         P.angle_inc_E_field = UP.angle_inc_E_field
-        P.rel_dist_to_Gamma = UP.rel_dist_to_Gamma
-        P.length_path_in_BZ = UP.length_path_in_BZ
+        P.length_ortho = UP.length_ortho
+        P.length_E_dir = UP.length_E_dir
+    else:
+        quit("BZ_type needs to be either hexagon or rectangle.")
 
     P.Nk2_idx_ext = -1
     if hasattr(UP, 'Nk2_idx_ext'):        # For parallelization: only do calculation

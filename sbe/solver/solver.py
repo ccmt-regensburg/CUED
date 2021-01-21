@@ -85,7 +85,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
     # Form the E-field direction
 
     # Form the Brillouin zone in consideration
-    if P.BZ_type == 'full':
+    if P.BZ_type == 'hexagon':
         _kpnts, paths, area = hex_mesh(P)
         kweight = area/P.Nk
         dk = 1/P.Nk1
@@ -95,7 +95,7 @@ def sbe_solver(sys, dipole, params, curvature, electric_field_function=None):
             E_dir = np.array([np.cos(np.radians(-30)),
                               np.sin(np.radians(-30))])
         # BZ_plot(_kpnts, paths, P)
-    elif P.BZ_type == '2line':
+    elif P.BZ_type == 'rectangle':
         E_dir = np.array([np.cos(np.radians(P.angle_inc_E_field)),
                           np.sin(np.radians(P.angle_inc_E_field))])
         dk, kweight, _kpnts, paths = rect_mesh(P, E_dir, P.type_real_np)
@@ -746,7 +746,7 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
     ##############################################################
     # Conditional save of exact formula
     ##############################################################
-    # kweight is different for 2line and full
+    # kweight is different for rectangle and full
     if P.save_exact:
         I_exact_E_dir *= kweight
         I_exact_ortho *= kweight
@@ -789,9 +789,9 @@ def print_user_info(P, B0=None, mu=None, incident_angle=None):
     print("Precision (default = double)    = " + str(P.precision))
     print("Number of k-points              = " + str(P.Nk))
     print("Order of k-derivative           = " + str(P.dk_order))
-    if P.BZ_type == 'full':
+    if P.BZ_type == 'hexagon':
         print("Driving field alignment         = " + P.align)
-    elif P.BZ_type == '2line':
+    elif P.BZ_type == 'rectangle':
         print("Driving field direction         = " + str(P.angle_inc_E_field))
     if B0 is not None:
         print("Incident angle                  = " + str(np.rad2deg(incident_angle)))

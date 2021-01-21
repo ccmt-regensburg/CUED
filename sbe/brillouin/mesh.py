@@ -2,47 +2,54 @@ import numpy as np
 ###############################################################################
 # K-Point meshes
 ###############################################################################
-def rect_mesh(params, E_dir, type_real_np):
+def rect_mesh(P, E_dir, type_real_np):
     '''
     Create a rectangular mesh
     '''
-    # Number of kpoints in each of the two paths
-    Nk_in_path_integer = params.Nk1
-    Nk_in_path         = type_real_np(Nk_in_path_integer)
-    # relative distance (in units of 2pi/a) of both paths to Gamma
-    rel_dist_to_Gamma = type_real_np(params.rel_dist_to_Gamma)
-    a                 = type_real_np(params.a)
-    length_path_in_BZ = type_real_np(params.length_path_in_BZ)
-    num_paths         = params.Nk2
+    # Number of kpoints in E-field direction and orthogonal to the E-field
+    Nk_E_dir_integer = P.Nk1
+    Nk_E_dir         = type_real_np(Nk_E_dir_integer)
+    Nk_ortho_integer = P.Nk2
+    Nk_ortho         = type_real_np(Nk_ortho_integer)
 
-    alpha_array = np.linspace(-0.5 + (1/(2*Nk_in_path)),
-                              0.5 - (1/(2*Nk_in_path)), num=Nk_in_path_integer)
-    vec_k_path = E_dir*length_path_in_BZ
+    # length of the rectangle in E-field direction and orthogonal to it
+    length_E_dir = type_real_np(P.length_E_dir)
+    length_ortho = type_real_np(P.length_ortho)
 
-    vec_k_ortho = 2.0*(np.pi/a)*rel_dist_to_Gamma*np.array([E_dir[1], -E_dir[0]])
+    alpha_array = np.linspace(-0.5 + (1/(2*Nk_E_dir)),
+                               0.5 - (1/(2*Nk_E_dir)), num=Nk_E_dir_integer)
+    beta_array  = np.linspace(-0.5 + (1/(2*Nk_ortho)),
+                               0.5 - (1/(2*Nk_ortho)), num=Nk_ortho_integer)
+
+    vec_k_E_dir = length_E_dir*E_dir
+    vec_k_ortho = length_ortho*np.array([E_dir[1], -E_dir[0]])
 
     # Containers for the mesh, and BZ directional paths
     mesh = []
     paths = []
 
     # Create the kpoint mesh and the paths
-    for path_index in np.linspace(-num_paths + 1, num_paths - 1, num=num_paths):
+    for beta in beta_array:
+
         # Container for a single path
         path = []
         for alpha in alpha_array:
             # Create a k-point
-            kpoint = path_index*vec_k_ortho + alpha*vec_k_path
+            kpoint = alpha*vec_k_E_dir + beta*vec_k_ortho
 
             mesh.append(kpoint)
             path.append(kpoint)
 
+#            print("kpoint =", kpoint)
+
         # Append the a1'th path to the paths array
         paths.append(path)
 
-    dk = length_path_in_BZ/Nk_in_path
-    kweight = 2*rel_dist_to_Gamma*length_path_in_BZ/(Nk_in_path - 1)
+    dk = length_E_dir/Nk_E_dir
+#    kweight = length_E_dir/Nk_E_dir * length_ortho/Nk_ortho
+    kweight = length_E_dir/(Nk_E_dir - 1) * length_ortho/Nk_ortho / (2*np.pi/P.a)
+#    print("kweight =", kweight)
     return dk, kweight, np.array(mesh), np.array(paths)
-
 
 def hex_mesh(P):
     '''
