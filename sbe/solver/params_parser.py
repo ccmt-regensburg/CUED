@@ -135,8 +135,8 @@ def parse_params(user_params):
         P.a = UP.a                                  # Lattice spacing
         P.align = None
         P.angle_inc_E_field = UP.angle_inc_E_field
-        P.length_ortho = UP.length_ortho
-        P.length_E_dir = UP.length_E_dir
+        P.length_BZ_ortho = UP.length_BZ_ortho
+        P.length_BZ_E_dir = UP.length_BZ_E_dir
     else:
         quit("BZ_type needs to be either hexagon or rectangle.")
 

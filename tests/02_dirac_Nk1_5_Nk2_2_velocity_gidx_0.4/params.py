@@ -13,24 +13,18 @@ class params:
     # Brillouin zone parameters
     ##########################################################################
     # Type of Brillouin zone
-    # 'full' for full hexagonal BZ, '2line' for two lines with adjustable size
-    BZ_type = '2line'
-
-    # Reciprocal lattice vectors
-#    b1 = (2*np.pi/(a*np.sqrt(3)))*np.array([np.sqrt(3), -1])
-#    b2 = (4*np.pi/(a*np.sqrt(3)))*np.array([0, 1])
-
+    BZ_type             = 'rectangle' # rectangle or hexagon
     Nk1                 = 5           # Number of kpoints in each of the paths
     Nk2                 = 2           # Number of paths
 
-    rel_dist_to_Gamma   = 0.03        # relative distance (in units of 2pi/a) of both paths to Gamma
-    length_path_in_BZ   = 1500*0.00306   # Length of path in BZ K-direction
-    # length_path_in_BZ   = 4*np.pi/(np.sqrt(3)*a) # Length of path in BZ M-direction
+#    rel_dist_to_Gamma   = 0.03        # relative distance (in units of 2pi/a) of both paths to Gamma
+#    length_path_in_BZ   = 1500*0.00306   # Length of path in BZ K-direction
+    length_BZ_E_dir     = 1500*0.00306
+    length_BZ_ortho     = 0.008*2*np.pi/8.304*4
     angle_inc_E_field   = 0           # incoming angle of the E-field in degree
 
     # Driving field parameters
     ##########################################################################
-#    align               = 'K'         # E-field direction (gamma-'K' or gamma-'M')
     E0                  = 5.00        # Pulse amplitude (MV/cm)
     w                   = 25.0        # Pulse frequency (THz)
     chirp               = 0.00        # Pulse chirp ratio (chirp = c/w) (THz)

@@ -13,16 +13,16 @@ def rect_mesh(P, E_dir, type_real_np):
     Nk_ortho         = type_real_np(Nk_ortho_integer)
 
     # length of the rectangle in E-field direction and orthogonal to it
-    length_E_dir = type_real_np(P.length_E_dir)
-    length_ortho = type_real_np(P.length_ortho)
+    length_BZ_E_dir = type_real_np(P.length_BZ_E_dir)
+    length_BZ_ortho = type_real_np(P.length_BZ_ortho)
 
     alpha_array = np.linspace(-0.5 + (1/(2*Nk_E_dir)),
                                0.5 - (1/(2*Nk_E_dir)), num=Nk_E_dir_integer)
     beta_array  = np.linspace(-0.5 + (1/(2*Nk_ortho)),
                                0.5 - (1/(2*Nk_ortho)), num=Nk_ortho_integer)
 
-    vec_k_E_dir = length_E_dir*E_dir
-    vec_k_ortho = length_ortho*np.array([E_dir[1], -E_dir[0]])
+    vec_k_E_dir = length_BZ_E_dir*E_dir
+    vec_k_ortho = length_BZ_ortho*np.array([E_dir[1], -E_dir[0]])
 
     # Containers for the mesh, and BZ directional paths
     mesh = []
@@ -40,15 +40,13 @@ def rect_mesh(P, E_dir, type_real_np):
             mesh.append(kpoint)
             path.append(kpoint)
 
-#            print("kpoint =", kpoint)
-
         # Append the a1'th path to the paths array
         paths.append(path)
 
-    dk = length_E_dir/Nk_E_dir
-#    kweight = length_E_dir/Nk_E_dir * length_ortho/Nk_ortho
-    kweight = length_E_dir/(Nk_E_dir - 1) * length_ortho/Nk_ortho / (2*np.pi/P.a)
-#    print("kweight =", kweight)
+    dk = length_BZ_E_dir/Nk_E_dir
+#    kweight = length_BZ_E_dir/Nk_E_dir * length_BZ_ortho/Nk_ortho
+    kweight = length_BZ_E_dir/(Nk_E_dir - 1) * length_BZ_ortho/Nk_ortho / (2*np.pi/P.a)
+
     return dk, kweight, np.array(mesh), np.array(paths)
 
 def hex_mesh(P):
