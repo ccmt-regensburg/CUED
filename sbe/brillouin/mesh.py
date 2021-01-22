@@ -44,8 +44,7 @@ def rect_mesh(P, E_dir, type_real_np):
         paths.append(path)
 
     dk = length_BZ_E_dir/Nk_E_dir
-#    kweight = length_BZ_E_dir/Nk_E_dir * length_BZ_ortho/Nk_ortho
-    kweight = length_BZ_E_dir/(Nk_E_dir - 1) * length_BZ_ortho/Nk_ortho / (2*np.pi/P.a)
+    kweight = length_BZ_E_dir/Nk_E_dir * length_BZ_ortho/Nk_ortho
 
     return dk, kweight, np.array(mesh), np.array(paths)
 
