@@ -46,10 +46,10 @@ def check_test(testdir):
     assert os.path.isfile(filename_Iapprox_printed), "Iapprox is not printed from the code"
 
 
-    # Load all relevant files and restrict data to max 20th order
+    # Load all relevant files and restrict data to max 10th order
     Iexact_reference     = np.array(np.load(filename_Iexact))
     freqw = Iexact_reference[3]
-    # All indices between 0 and 20th order
+    # All indices between 0 and 10th order
     freq_idx = np.where(np.logical_and(0 <= freqw, freqw <= 10))[0]
 
     Iexact_E_dir_reference = Iexact_reference[6][freq_idx]
@@ -59,11 +59,11 @@ def check_test(testdir):
     Iexact_E_dir_printed = Iexact_printed[6][freq_idx]
     Iexact_ortho_printed = Iexact_printed[7][freq_idx]
 
-    Iapprox_reference    = np.array(np.load(filename_Iapprox))
+    Iapprox_reference       = np.array(np.load(filename_Iapprox))
     Iapprox_E_dir_reference = Iapprox_reference[6][freq_idx]
     Iapprox_ortho_reference = Iapprox_reference[7][freq_idx]
 
-    Iapprox_printed      = np.array(np.load(filename_Iapprox_printed))
+    Iapprox_printed       = np.array(np.load(filename_Iapprox_printed))
     Iapprox_E_dir_printed = Iapprox_printed[6][freq_idx]
     Iapprox_ortho_printed = Iapprox_printed[7][freq_idx]
 

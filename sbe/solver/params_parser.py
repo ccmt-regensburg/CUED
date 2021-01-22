@@ -132,7 +132,6 @@ def parse_params(user_params):
         P.a = UP.a                                  # Lattice spacing
         P.a_angs = P.a*co.au_to_as
     elif P.BZ_type == 'rectangle':
-        P.a = UP.a                                  # Lattice spacing
         P.align = None
         P.angle_inc_E_field = UP.angle_inc_E_field
         P.length_BZ_ortho = UP.length_BZ_ortho
