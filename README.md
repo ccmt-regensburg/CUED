@@ -1,3 +1,1 @@
-Python package for the simulation of light matter interaction in solids.
-Analytical calculation of dipole moments in two band models, SBE solver and
-evaluation scripts included.
+Package for density matrix dynamics in solids exposed to ultrafast light pulses implementing the Semiconductor Bloch equations (SBE). Includes computation of analytical k-dependent bandstructures and dipole moments, computation of currents and emission intensity. 
