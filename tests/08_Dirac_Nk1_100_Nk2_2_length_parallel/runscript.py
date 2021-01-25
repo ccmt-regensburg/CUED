@@ -1,20 +1,18 @@
-import os
 import numpy as np
-import importlib
-from params import params
-from numpy.fft import *
+from numpy.fft import fftshift, fftfreq
 import multiprocessing
-import sbe.dipole
-import sbe.example
-from sbe.solver.runloops import mkdir_chdir
+import sbe
+from sbe.utility import mkdir_chdir
 from sbe.solver import sbe_solver, fourier_current_intensity, gaussian
 from sbe.plotting import read_dataset
-from sbe.utility import conversion_factors as co
+from sbe.utility import ConversionFactors as co
+
+from params import params
 
 def dirac():
     A = 0.1974      # Fermi velocity
 
-    dirac_system = sbe.example.BiTe(C0=0, C2=0, A=A, R=0, mz=0)
+    dirac_system = sbe.hamiltonian.BiTe(C0=0, C2=0, A=A, R=0, mz=0)
     h_sym, ef_sym, wf_sym, _ediff_sym = dirac_system.eigensystem(gidx=1)
     dirac_dipole = sbe.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
     dirac_curvature = sbe.dipole.SymbolicCurvature(h_sym, dirac_dipole.Ax, dirac_dipole.Ay)
@@ -72,17 +70,17 @@ def run(system, dipole, curvat):
     freq = fftshift(fftfreq(t.size, d=dt))
 
     Int_exact_E_dir, Int_exact_ortho, Iw_exact_E_dir, Iw_exact_ortho = fourier_current_intensity(
-            current_time_E_dir_integrated, current_time_ortho_integrated, 
+            current_time_E_dir_integrated, current_time_ortho_integrated,
             gaussian(t, alpha), dt, prefac_emission, freq)
 
-    np.save('Iexact_fully_k_integrated', [t, 
-                           current_time_E_dir_integrated, current_time_ortho_integrated, 
+    np.save('Iexact_fully_k_integrated', [t,
+                           current_time_E_dir_integrated, current_time_ortho_integrated,
                            freq/w, Iw_exact_E_dir, Iw_exact_ortho,
                            Int_exact_E_dir, Int_exact_ortho])
 
     # dummy
-    np.save('Iapprox_fully_k_integrated', [t, 
-                           current_time_E_dir_integrated, current_time_ortho_integrated, 
+    np.save('Iapprox_fully_k_integrated', [t,
+                           current_time_E_dir_integrated, current_time_ortho_integrated,
                            freq/w, Iw_exact_E_dir, Iw_exact_ortho,
                            Int_exact_E_dir, Int_exact_ortho])
 

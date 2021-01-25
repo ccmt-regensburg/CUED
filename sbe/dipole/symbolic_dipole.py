@@ -1,96 +1,10 @@
 import sympy as sp
 import numpy as np
 import matplotlib.pyplot as plt
-
-import sbe.check.symbolic_checks as symbolic_checks
-from sbe.utility import matrix_to_njit_functions, to_numpy_function, evaluate_njit_matrix
+from sbe.utility import evaluate_njit_matrix, matrix_to_njit_functions
 
 plt.rcParams['figure.figsize'] = [150, 15]
 plt.rcParams['text.usetex'] = True
-
-
-class SymbolicParameterDipole():
-    """
-    This class constructs dipole like symbolic expressions using a given
-    parameter. This could for example be a magnetic field.
-    """
-
-    def __init__(self, h, wf, p):
-        """
-        Diagonal and off-diagonal (band index) elements
-        I * <n (p)| d/dp |m (p)>
-        Can also calculate off-diagonal k entries i.e.
-
-
-        Parameters
-        ----------
-        h : Symbol
-            Hamiltonian of the system
-        e : np.ndarray of Symbol
-            Band energies of the system
-        wf : np.ndarray of Symbol
-            Wave functions, columns: bands, rows: wf and complex conjugate
-        p : Symbol
-            Parameter to perform the derivative with
-       """
-
-        self.p = p
-
-        self.h = h
-        # We want to use all the free symbols inside the Hamiltonian, even if
-        # some drop out during derivatives
-        self.hsymbols = h.free_symbols
-
-        self.Ap = self.__field(wf[0], wf[1])
-
-        self.Apfjit = matrix_to_njit_functions(self.Ap, self.hsymbols)
-
-    def __field(self, U, U_h):
-        dUp = sp.diff(U, self.p)
-        return sp.I*U_h * dUp
-
-
-class SymbolicZeemanDipole():
-
-    def __init__(self, h, wf):
-        """
-        Diagonal and off-diagonal (band index) elements
-        <n m_zee| d/dm_zee |m m_zee>
-
-
-        Parameters
-        ----------
-        h : Symbol
-            Hamiltonian of the system
-        e : np.ndarray of Symbol
-            Band energies of the system
-        wf : np.ndarray of Symbol
-            Wave functions, columns: bands, rows: wf and complex conjugate
-        """
-
-        self.m_zee_x = sp.Symbol("m_zee_x", real=True)
-        self.m_zee_y = sp.Symbol("m_zee_y", real=True)
-        self.m_zee_z = sp.Symbol("m_zee_z", real=True)
-
-        self.h = h
-        # We want to use all the free symbols inside the Hamiltonian, even if
-        # some drop out during derivatives
-        self.hsymbols = h.free_symbols
-        # self.e = e
-
-        self.Mx, self.My, self.Mz = self.__fields(wf[0], wf[1])
-
-        # Numpy function and function arguments
-        self.Mxfjit = matrix_to_njit_functions(self.Mx, self.hsymbols)
-        self.Myfjit = matrix_to_njit_functions(self.My, self.hsymbols)
-        self.Mzfjit = matrix_to_njit_functions(self.Mz, self.hsymbols)
-
-    def __fields(self, U, U_h):
-        dUmx = sp.diff(U, self.m_zee_x)
-        dUmy = sp.diff(U, self.m_zee_y)
-        dUmz = sp.diff(U, self.m_zee_z)
-        return sp.I*U_h * dUmx, sp.I*U_h * dUmy, sp.I*U_h * dUmz
-
 
 class SymbolicDipole():
     """
@@ -124,10 +38,6 @@ class SymbolicDipole():
             kdotp = d_nn'(k=0) * (ev(k=0) - ec(k=0)). Dipoles will just be inverse
             energy difference times constant.
         """
-
-        if (test):
-            symbolic_checks.eigensystem(h, e, wf)
-
         self.kx = sp.Symbol('kx', real=True)
         self.ky = sp.Symbol('ky', real=True)
 
@@ -144,7 +54,7 @@ class SymbolicDipole():
         else:
             self.Ax, self.Ay = self.__kdotp_fields(kdotp, e[0], e[1])
 
-        # Numpy function and function arguments
+        # Njit function and function arguments
         self.Axfjit = matrix_to_njit_functions(self.Ax, self.hsymbols)
         self.Ayfjit = matrix_to_njit_functions(self.Ay, self.hsymbols)
 
@@ -159,7 +69,7 @@ class SymbolicDipole():
         self.Axfjit_offk = None
         self.Ayfjit_offk = None
 
-        if (offdiagonal_k):
+        if offdiagonal_k:
             self.offdiagonal_k(wf)
 
     def __fields(self, U, U_h):

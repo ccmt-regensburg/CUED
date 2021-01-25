@@ -1,4 +1,4 @@
-class conversion_factors:
+class ConversionFactors:
     fs_to_au = 41.34137335               # (1fs = 41.341473335 a.u.)
     au_to_fs = 1/fs_to_au
 

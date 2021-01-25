@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from sbe.utility import conversion_factors as co
+from sbe.utility import ConversionFactors as co
 
 
 def time_grid(time, kpath, electric_field, current, band_structure,

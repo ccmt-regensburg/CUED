@@ -29,6 +29,8 @@ def cep_plot(freqw, phaselist, intensity,
     intensity = intensity[:, lidx:ridx]
 
     imax = np.max(intensity)
+    intensity /= imax
+    imax = 1
     imin = np.min(intensity)
     imax_log = np.log10(imax)
 
@@ -40,7 +42,7 @@ def cep_plot(freqw, phaselist, intensity,
     cont = ax.contourf(F, P, intensity, levels=logspace,
                        locator=ticker.LogLocator(),
                        cmap=whitedarkjet,
-                       norm=colors.LogNorm(vmin=imin, vmax=imax))
+                       norm=colors.LogNorm(vmin=1e-2, vmax=imax))
 
     int_imin_log = int(imin_log)
     int_imax_log = int(imax_log)

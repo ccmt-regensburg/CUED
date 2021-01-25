@@ -1,18 +1,14 @@
-import os
-import numpy as np
-import importlib
 from params import params
 
 import sbe.dipole
-import sbe.example
-from sbe.solver.runloops import mkdir_chdir
+import sbe.hamiltonian
 from sbe.solver import sbe_solver
 
 def dirac():
     A  = 0.1974      # Fermi velocity
     mz = 0.01837     # prefactor of sigma_z in Hamiltonian
 
-    dirac_system = sbe.example.BiTe(C0=0, C2=0, A=A, R=0, mz=mz)
+    dirac_system = sbe.hamiltonian.BiTe(C0=0, C2=0, A=A, R=0, mz=mz)
     h_sym, ef_sym, wf_sym, _ediff_sym = dirac_system.eigensystem(gidx=1)
     dirac_dipole = sbe.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
     dirac_curvature = sbe.dipole.SymbolicCurvature(h_sym, dirac_dipole.Ax, dirac_dipole.Ay)

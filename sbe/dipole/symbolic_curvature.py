@@ -2,7 +2,7 @@ import numpy as np
 import sympy as sp
 import matplotlib.pyplot as plt
 
-from sbe.utility import matrix_to_njit_functions, to_numpy_function
+from sbe.utility import evaluate_njit_matrix, matrix_to_njit_functions
 
 plt.rcParams['figure.figsize'] = [12, 15]
 plt.rcParams['text.usetex'] = True
@@ -33,20 +33,14 @@ class SymbolicCurvature():
         hsymbols = h.free_symbols
         self.Bfjit = matrix_to_njit_functions(self.B, hsymbols)
 
-        self.Bf = to_numpy_function(self.B)
-
         self.B_eval = None
 
     def evaluate(self, kx, ky, **fkwargs):
         # Evaluate all kpoints without BZ
 
-        self.B_eval = self.Bf(kx=kx, ky=ky, **fkwargs)
+        self.B_eval = evaluate_njit_matrix(self.Bfjit, kx, ky, **fkwargs)
 
         return self.B_eval
-
-
-    def plot_curvcature_3d(self, kx, ky, title="Curvature field"):
-        print("Not Implemented")
 
 
     def plot_curvature_contour(self, kx, ky, vidx=0, cidx=1,
@@ -67,22 +61,22 @@ class SymbolicCurvature():
         xlabel, ylabel, clabel: string
             Label of x, y- axis and colorbar
         """
-        if (title is None):
+        if title is None:
             title = "Berry curvature"
-        if (vname is None):
+        if vname is None:
             vname = vidx
-        if (cname is None):
+        if cname is None:
             cname = cidx
-        if (xlabel is None):
+        if xlabel is None:
             xlabel = r'$k_x [\mathrm{a.u.}]$'
-        if (ylabel is None):
+        if ylabel is None:
             ylabel = r'$k_y [\mathrm{a.u.}]$'
-        if (clabel is None):
+        if clabel is None:
             clabel = r'Berry curvature $[\mathrm{a.u.}]$'
 
         Be = self.B_eval
 
-        if (Be is None):
+        if Be is None:
             raise RuntimeError("Error: The curvature fields first need to"
                                " be evaluated on a kgrid to plot them. "
                                " Call evaluate before plotting.")
