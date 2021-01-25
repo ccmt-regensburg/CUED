@@ -2,7 +2,7 @@ from params import params
 
 import sbe.dipole
 import sbe.hamiltonian
-from sbe.solver import sbe_solver_n_bands
+from sbe.solver_n_bands import sbe_solver_n_bands
 
 def dirac():
     A = 0.1974      # Fermi velocity
