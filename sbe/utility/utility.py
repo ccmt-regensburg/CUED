@@ -97,3 +97,36 @@ def evaluate_njit_matrix(mjit, kx=np.empty(1), ky=np.empty(1),
             numpy_matrix[r, c] = mjit[r][c](kx=kx, ky=ky, **fkwargs)
 
     return numpy_matrix
+
+def to_numpy_function(sf):
+    """
+    Converts a simple sympy function/matrix to a function/matrix
+    callable by numpy
+    !! Warning this can be buggy with zeros or constants in matrix elements
+    """
+    kx = sp.Symbol('kx', real=True)
+    ky = sp.Symbol('ky', real=True)
+    symbols = sf.free_symbols
+
+    # This is to read kx and ky if they got removed in the
+    # simplification process. The variable will just return 0's
+    # if used.
+    if kx in symbols and ky in symbols:
+        return lambdify(symbols, sf, "numpy")
+
+    if (kx not in symbols and ky in symbols):
+        symbols.add(kx)
+        return lambdify(symbols, sf, "numpy")
+    if (kx in symbols and ky not in symbols):
+        symbols.add(ky)
+        return lambdify(symbols, sf, "numpy")
+
+    symbols.update([kx, ky])
+    func = lambdify(symbols, sf, "numpy")
+
+    def __func(kx=kx, ky=ky, **fkwargs):
+        dim = kx.size
+        out = func(kx, ky, **fkwargs)
+        return np.zeros(np.shape(out) + (dim,))
+
+    return __func

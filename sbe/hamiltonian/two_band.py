@@ -3,7 +3,7 @@ import sympy as sp
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # NOQA
 
-from sbe.utility import list_to_njit_functions, matrix_to_njit_functions
+from sbe.utility import list_to_njit_functions, matrix_to_njit_functions, to_numpy_function
 
 plt.rcParams['figure.figsize'] = [12, 15]
 plt.rcParams['text.usetex'] = True
@@ -181,6 +181,9 @@ class TwoBandSystem():
         for ederivf in self.ederivfjit:
             self.ederiv_eval.append(ederivf(kx=kx, ky=ky, **fkwargs))
         return self.ederiv_eval
+
+    def numpy_hamiltonian(self):
+        return to_numpy_function(self.h)
 
     def plot_bands_3d(self, kx, ky, title="Energies"):
         fig = plt.figure()

@@ -17,7 +17,7 @@ def diagonalize(params, hamiltonian, paths):
         n : integer
             Number of bands
         paths : np.ndarray
-            three dimensional array of all paths in 
+            three dimensional array of all paths in
             the k-mesh (1st component: paths,
             2nd and 3rd component: x- and y- value of
             the k-points in the current path)
@@ -43,10 +43,8 @@ def diagonalize(params, hamiltonian, paths):
     num_paths = params.Nk2
     epsilon = params.epsilon
     gidx = params.gidx
-    
     e = np.empty([Nk_in_path, num_paths, n], dtype=np.float64)
     wf = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
-    
     for j in range(num_paths):
         for i in range(Nk_in_path):
             kx_in_path = paths[j, i, 0]
@@ -133,7 +131,7 @@ def derivative(params, hamiltonian, paths):
     return xderivative, yderivative
 
 
-def dipole_elements(params, hamiltonian, paths):    
+def dipole_elements(params, hamiltonian, paths):
     """
     Calculate the dipole elements
 
@@ -158,20 +156,20 @@ def dipole_elements(params, hamiltonian, paths):
     Returns
     -------
     dx, dy : np.ndarray
-        x and y component of the Dipole-field d_nn'(k) (Eq. (37)) for each k-point    
+        x and y component of the Dipole-field d_nn'(k) (Eq. (37)) for each k-point
     """
     n = params.n
     Nk_in_path = params.Nk1
     num_paths = params.Nk2
     epsilon = params.epsilon
     gidx = params.gidx
-    
+
     e, wf = diagonalize(params, hamiltonian, paths)
     dwfkx, dwfky = derivative(params, hamiltonian, paths)
 
     dx = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
     dy = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
-    
+
     for j in range(num_paths):
         for i in range(Nk_in_path):
             dx[i, j, :, :] = -1j*np.conjugate(wf[i, j, :, :]).T.dot(dwfkx[i, j, :, :])
