@@ -11,7 +11,7 @@ def read_datasets(subpaths):
     Iexactdata_container = []
     Iapproxdata_container = []
 
-    for i, subpath in enumerate(subpaths):
+    for subpath in subpaths:
         print("Evaluating " + subpath + " data", end='\n\n')
         Iexactdata, Iapproxdata, Soldata = read_dataset(subpath)
         Iexactdata_container.append(Iexactdata)
