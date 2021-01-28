@@ -26,7 +26,7 @@ def parse_params(user_params):
     if hasattr(UP, 'save_approx'):
         P.save_approx = UP.save_approx
 
-    P.save_txt = False                      # Save data as human readable text file
+    P.save_txt = True                       # Save data as human readable text file
     if hasattr(UP, 'save_txt'):
         P.save_txt = UP.save_txt
 
