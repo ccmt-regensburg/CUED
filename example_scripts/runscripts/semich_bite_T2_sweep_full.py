@@ -3,9 +3,9 @@ import numpy as np
 from params import params
 
 import sbe.dipole
-import sbe.example
-from sbe.solver.runloops import mkdir_chdir, chirp_phasesweep
-from sbe.utility import conversion_factors as co
+import sbe.hamiltonian
+from sbe.parameter_loops.parallel import mkdir_chdir, chirp_phasesweep
+from sbe.utility.constants import ConversionFactors as co
 
 
 def semich_bite():
@@ -16,7 +16,7 @@ def semich_bite():
     mx = 0.05*co.eV_to_au
     muz = 0.033
 
-    semich_bite_system = sbe.example.Semiconductor(A=A, mz=muz, mx=mx,
+    semich_bite_system = sbe.hamiltonian.Semiconductor(A=A, mz=muz, mx=mx,
                                                      a=params.a, align=True)
     h_sym, ef_sym, wf_sym, _ediff_sym = semich_bite_system.eigensystem(gidx=1)
     semich_bite_dipole = sbe.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)

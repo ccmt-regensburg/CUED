@@ -3,8 +3,8 @@ import numpy as np
 from params import params
 
 import sbe.dipole
-import sbe.example
-from sbe.solver.runloops import mkdir_chdir, chirp_phasesweep
+import sbe.hamiltonian
+from sbe.parameter_loops.parallel import mkdir_chdir, chirp_phasesweep
 
 
 def dirac():
@@ -15,7 +15,7 @@ def dirac():
     # For testing purposes against Jans code
     A = 0.1974
 
-    dirac_system = sbe.example.BiTe(C0=0, C2=0, A=A, R=0, mz=0)
+    dirac_system = sbe.hamiltonian.BiTe(C0=0, C2=0, A=A, R=0, mz=0)
     h_sym, ef_sym, wf_sym, _ediff_sym = dirac_system.eigensystem(gidx=1)
     dirac_dipole = sbe.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
     dirac_curvature = sbe.dipole.SymbolicCurvature(h_sym, dirac_dipole.Ax, dirac_dipole.Ay)
@@ -25,7 +25,7 @@ def dirac():
 def run(system, dipole, curvature):
 
     params.gauge = 'length'
-    params.BZ_type = '2line'
+    params.BZ_type = 'rectangle'
     params.Nk_in_path = 1600
 
     # For testing purposes against Jans code
@@ -47,7 +47,7 @@ def run(system, dipole, curvature):
 
     # Double time for broader pulses
     params.t0 *= stretch_t0
-    params.Nt *= stretch_t0
+    #params.Nt *= stretch_t0
 
     params.length_path_in_BZ = 1600*0.00306
     params.num_paths = 100
