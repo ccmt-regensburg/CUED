@@ -20,12 +20,10 @@ def check_test(testdir):
     filename_run     = testdir + '/runscript.py'
 
     for filename in os.listdir(testdir):
-        if filename.startswith('reference_Iapprox'):
+        if filename.startswith('reference_Iapprox') and filename.endswith('.npy'):
             filename_Iapprox         = testdir + '/' + filename
-        if filename.startswith('reference_Iexact'):
+        if filename.startswith('reference_Iexact') and filename.endswith('.npy'):
             filename_Iexact         = testdir + '/' + filename
-        if filename.startswith('Iexact'):
-            filename_Iexact_printed = testdir + '/' + filename
 
     assert os.path.isfile(filename_params),  'params.py is missing.'
     assert os.path.isfile(filename_run),     'runscript.py is missing.'
@@ -37,9 +35,9 @@ def check_test(testdir):
     os.system('python3 runscript.py')
 
     for filename in os.listdir(testdir):
-        if filename.startswith('Iapprox'):
+        if filename.startswith('Iapprox') and filename.endswith('.npy'):
             filename_Iapprox_printed = testdir + '/' + filename
-        if filename.startswith('Iexact'):
+        if filename.startswith('Iexact') and filename.endswith('.npy'):
             filename_Iexact_printed = testdir + '/' + filename
 
     assert os.path.isfile(filename_Iexact_printed),  "Iexact is not printed from the code"
@@ -67,7 +65,7 @@ def check_test(testdir):
     Iapprox_E_dir_printed = Iapprox_printed[6][freq_idx]
     Iapprox_ortho_printed = Iapprox_printed[7][freq_idx]
 
-    print("\n\nMaxima of the emission spectra: ", 
+    print("\n\nMaxima of the emission spectra: ",
           "\nexact  E_dir: ", np.amax(np.abs(Iexact_E_dir_reference))  ,
           "\nexact  ortho: ", np.amax(np.abs(Iexact_ortho_reference))  ,
           "\napprox E_dir: ", np.amax(np.abs(Iapprox_E_dir_reference)) ,
@@ -81,13 +79,13 @@ def check_test(testdir):
     Iexact_max_relerror  = np.amax(np.abs(Iexact_relerror))
     Iapprox_max_relerror = np.amax(np.abs(Iapprox_relerror))
 
-    print("\n\nTesting the exact emission spectrum I(omega):", 
+    print("\n\nTesting the exact emission spectrum I(omega):",
       "\n\nThe maximum relative deviation between the computed and the reference spectrum is:", Iexact_max_relerror,
         "\nThe threshold is:                                                                 ", threshold_rel_error, "\n")
 
     assert Iexact_max_relerror < threshold_rel_error, "The exact emission spectrum is not matching."
 
-    print("Testing the approx. emission spectrum I(omega):", 
+    print("Testing the approx. emission spectrum I(omega):",
       "\n\nThe maximum relative deviation between the computed and the reference spectrum is:", Iapprox_max_relerror,
         "\nThe threshold is:                                                                 ", threshold_rel_error, "\n")
 
