@@ -1,7 +1,7 @@
 import time
 from math import ceil, modf
 import numpy as np
-from numpy.fft import fft, ifft, fftshift, ifftshift, fftfreq
+from numpy.fft import *
 from numba import njit
 import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
@@ -9,10 +9,11 @@ from scipy.integrate import ode
 
 from sbe.kpoint_mesh import hex_mesh, rect_mesh
 from sbe.utility import ConversionFactors as co
+from sbe.utility import conditional_njit
 from sbe.utility import parse_params
 from sbe.fields import make_electric_field
 from sbe.dipole import diagonalize, dipole_elements
-from sbe.observables_n_bands import make_matrix_elements_dipoles, make_matrix_elements_hderiv, current_per_path
+from sbe.observables_n_bands import make_current_exact_path_hderiv, make_polarization_inter_path, make_intraband_current_path
 from sbe.observables import make_current_path
 
 def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=None):
@@ -107,30 +108,28 @@ def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=N
     else:
         electric_field = electric_field_function
 
-    fnumba = make_fnumba(P.n, E_dir, P.gamma1, P.gamma2, electric_field, P.dk_order)
-    solver = ode(fnumba, jac=None)\
-        .set_integrator('zvode', method=P.solver_method, max_step=P.dt)
+    fnumba = make_fnumba(P.n, E_dir, P.gamma1, P.gamma2, electric_field, P.dk_order, P.type_complex_np)
 
-    t, A_field, E_field, solution, solution_y_vec, I_exact_E_dir, I_exact_ortho, \
-        J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho = solution_container(P)
-    emission_exact_E_dir = np.zeros(P.Nt, dtype=np.complex128)
-    emission_intraband_E_dir = np.zeros(P.Nt, dtype=np.complex128)
-    emission_exact_ortho = np.zeros(P.Nt, dtype=np.complex128)
-    emission_intraband_ortho = np.zeros(P.Nt, dtype=np.complex128)
+    if P.solver_method in ('bdf', 'adams'):    
+        solver = ode(fnumba, jac=None)\
+            .set_integrator('zvode', method=P.solver_method, max_step=P.dt)
 
-    dipole_in_path = np.empty([P.Nk1, P.n, P.n], dtype=np.complex128)
-    dipole_ortho = np.empty([P.Nk1, P.n, P.n], dtype=np.complex128)
-    e_in_path = np.empty([P.Nk1, P.n], dtype=np.complex128)
+    t, A_field, E_field, solution, solution_y_vec, J_exact_E_dir, J_exact_ortho, \
+        J_intra_E_dir, J_intra_ortho, P_inter_E_dir, P_inter_ortho, J_anom_ortho = solution_container(P)
 
-    hnp = sys.numpy_hamiltonian()
-    e, wf = diagonalize(P, hnp, paths)
+    dipole_in_path = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
+    dipole_ortho = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
+    e_in_path = np.zeros([P.Nk1, P.n], dtype=P.type_real_np)  
+
+    hnp = sys.numpy_hamiltonian()  
 
     if P.dipole_numerics:
     # Calculate the dipole elements on the full k-mesh
-        if P.user_out:
+        if P.user_out: 
             print("Calculating dipoles...")
-
+              
         dipole_x, dipole_y = dipole_elements(P, hnp, paths)
+        e, wf = diagonalize(P, hnp, paths)
 
     # Only define full density matrix solution if save_full is True
     if P.save_full:
@@ -150,19 +149,18 @@ def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=N
         kx_in_path = path[:, 0]
         ky_in_path = path[:, 1]
 
-#############################################################################
-        if P.dipole_numerics:
+        if P.dipole_numerics:    
         # Evaluate the dipole components along the path
 
             # Calculate the dot products E_dir.d_nm(k).
-            # To be multiplied by E-field magnitude later.
+            # To be multiplied by E-field magnitude later.            
             dipole_in_path = (E_dir[0]*dipole_x[:, Nk2_idx, :, :] + \
                 E_dir[1]*dipole_y[:, Nk2_idx, :, :])
             dipole_ortho = (E_ort[0]*dipole_x[:, Nk2_idx, :, :] + \
                 E_ort[1]*dipole_y[:, Nk2_idx, :, :])
             e_in_path = e[:, Nk2_idx, :]
+            wf_in_path = wf[:, Nk2_idx, :, :]   #not in E-dir!
 
-#############################################################################
         else:
             # Calculate the dipole components along the path
             di_00x = dipole.Axfjit[0][0](kx=kx_in_path, ky=ky_in_path)
@@ -181,13 +179,29 @@ def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=N
             dipole_in_path[:, 1, 1] = E_dir[0]*di_11x + E_dir[1]*di_11y
 
             dipole_ortho[:, 0, 1] = E_ort[0]*di_01x + E_ort[1]*di_01y
-            dipole_ortho[:, 1, 0] = dipole_in_path[:, 0, 1].conjugate()
+            dipole_ortho[:, 1, 0] = dipole_ortho[:, 0, 1].conjugate()
             dipole_ortho[:, 0, 0] = E_ort[0]*di_00x + E_ort[1]*di_00y
             dipole_ortho[:, 1, 1] = E_ort[0]*di_11x + E_ort[1]*di_11y
 
             e_in_path[:, 0] = sys.efjit[0](kx=kx_in_path, ky=ky_in_path)
             e_in_path[:, 1] = sys.efjit[1](kx=kx_in_path, ky=ky_in_path)
-#############################################################################
+
+            wf_in_path = np.empty([P.Nk1, 2, 2], dtype=P.type_complex_np)   #not in E-dir!
+            Ujit = sys.Ujit
+            U_00 = Ujit[0][0]
+            U_01 = Ujit[0][1]
+            U_10 = Ujit[1][0]
+            U_11 = Ujit[1][1]
+            wf_in_path[:, 0, 0] = U_00(kx=kx_in_path, ky=ky_in_path)
+            wf_in_path[:, 0, 1] = U_01(kx=kx_in_path, ky=ky_in_path)
+            wf_in_path[:, 1, 0] = U_10(kx=kx_in_path, ky=ky_in_path)
+            wf_in_path[:, 1, 1] = U_11(kx=kx_in_path, ky=ky_in_path)
+
+        #make matrix element for the current calculation from eq. (67 / 68)
+        current_exact_path = make_current_exact_path_hderiv(P, hnp, paths, wf_in_path, E_dir, Nk2_idx)
+        if P.save_approx:
+            polarization_inter_path = make_polarization_inter_path(P, dipole_in_path, dipole_ortho) #sth wrong here for anal. dip.
+            current_intra_path = make_intraband_current_path(P, hnp, E_dir, paths, Nk2_idx)
 
         # Initialize the values of of each k point vector
         # (rho_nn(k), rho_nm(k), rho_mn(k), rho_mm(k))
@@ -214,7 +228,7 @@ def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=N
 
             if P.solver_method in ('bdf', 'adams'):
                 # Do not append the last element (A_field)
-                solution[:, ti, :, :] = solver.y[:-1].reshape(P.Nk1, P.n, P.n)
+                solution = solver.y[:-1].reshape(P.Nk1, P.n, P.n)
 
                 # Construct time array only once
                 if Nk2_idx == 0 or P.Nk2_idx_ext > 0:
@@ -225,7 +239,7 @@ def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=N
 
             elif P.solver_method == 'rk4':
                 # Do not append the last element (A_field)
-                solution[:, ti, : :] = solution_y_vec[:-1].reshape(P.Nk1, P.n, P.n)
+                solution = solution_y_vec[:-1].reshape(P.Nk1, P.n, P.n)
 
                 # Construct time array only once
                 if Nk2_idx == 0 or P.Nk2_idx_ext > 0:
@@ -233,11 +247,24 @@ def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=N
                     t[ti] = ti*P.dt + P.t0
                     A_field[ti] = solution_y_vec[-1].real
                     E_field[ti] = electric_field(t[ti])
-
+       
             # Only write full density matrix solution if save_full is True
             if P.save_full:
                 solution_full[:, Nk2_idx, ti, :, :] = solution
 
+            J_exact_E_dir_buf, J_exact_ortho_buf = current_exact_path(solution)
+            J_exact_E_dir[ti] += J_exact_E_dir_buf
+            J_exact_ortho[ti] += J_exact_ortho_buf
+
+            if P.save_approx:
+                P_inter_E_dir_buf, P_inter_ortho_buf = polarization_inter_path(solution)
+                P_inter_E_dir[ti] += P_inter_E_dir_buf
+                P_inter_ortho[ti] += P_inter_ortho_buf
+                J_intra_E_dir_buf, J_intra_ortho_buf, J_anom_ortho_buf = current_intra_path(solution)
+                J_intra_E_dir[ti] += J_intra_E_dir_buf
+                J_intra_ortho[ti] += J_intra_ortho_buf
+                J_anom_ortho[ti] += J_anom_ortho_buf
+            
             if P.solver_method in ('bdf', 'adams'):
                 # Integrate one integration time step
                 solver.integrate(solver.t + P.dt)
@@ -250,25 +277,6 @@ def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=N
             # Increment time counter
             ti += 1
 
-        # Compute per path observables
-        if P.user_out:
-            print("Calculating emission of the current path...")
-
-        #calculate current for each path
-        mel_in_path, mel_ortho = make_matrix_elements_dipoles(P, hnp, paths, dipole_in_path, dipole_ortho, e_in_path, E_dir, Nk2_idx)
-        #mel_in_path, mel_ortho = make_matrix_elements_hderiv(params, hnp, paths, wf, E_dir, Nk2_idx)     # NOT ACCURATE (YET!)
-        current_in_path, current_in_path_intraband, current_ortho, current_ortho_intraband = current_per_path(P, mel_in_path, mel_ortho, solution)
-
-        emission_exact_E_dir += current_in_path
-        emission_exact_ortho += current_ortho
-        if P.save_approx:
-            emission_intraband_E_dir += current_in_path_intraband
-            emission_intraband_ortho += current_ortho_intraband
-    I_exact_E_dir = emission_exact_E_dir
-    I_exact_orth = emission_exact_ortho
-    J_E_dir = emission_intraband_E_dir
-    J_ortho = emission_intraband_ortho
-
     # End time of solver loop
     end_time = time.perf_counter()
 
@@ -277,8 +285,8 @@ def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=N
     tail = 'E_{:.4f}_w_{:.1f}_a_{:.1f}_{}_t0_{:.1f}_dt_{:.6f}_NK1-{}_NK2-{}_T1_{:.1f}_T2_{:.1f}_chirp_{:.3f}_ph_{:.2f}_solver_{:s}_dk_order{}'\
         .format(P.E0_MVpcm, P.w_THz, P.alpha_fs, P.gauge, P.t0_fs, P.dt_fs, P.Nk1, P.Nk2, P.T1_fs, P.T2_fs, P.chirp_THz, P.phase, P.solver_method, P.dk_order)
 
-    write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
-                           J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho, P)
+    write_current_emission(tail, kweight, t, J_exact_E_dir, J_exact_ortho,
+                           J_intra_E_dir, J_intra_ortho, P_inter_E_dir, P_inter_ortho, J_anom_ortho, P)
 
 
     # Save the parameters of the calculation
@@ -294,16 +302,16 @@ def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=N
         np.savez(S_name, t=t, solution_full=solution_full, paths=paths,
                  electric_field=electric_field(t), A_field=A_field)
 
-def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, dk_order):
+def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, dk_order, type_complex_np):
     """
         Initialization of the solver for the SBE ( eq. (39/40(80) in https://arxiv.org/abs/2008.03177)
-
+        
         Author: Adrian Seith (adrian.seith@ur.de)
         Additional Contact: Jan Wilhelm (jan.wilhelm@ur.de)
 
         Parameters:
-        -----------
-            n : integer
+        ----------- 
+            n : integer 
                 Number of bands of the system
             E_dir : np.ndarray
                 x and y component of the direction of the electric field
@@ -315,23 +323,23 @@ def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, dk_order):
                 returns the instantaneous driving field
             gauge : str
                 length or velocity gauge (only v. implemented)
-
+        
         Returns:
         --------
             freturn : function that is the right hand side of the ode
     """
 
-    @njit
+    @conditional_njit(type_complex_np)
     def fnumba(t, y, kpath, dipole_in_path, e_in_path, y0, dk):
         """
             function that multiplies the block-structure of the matrices of the RHS
             of the SBE with the solution vector
         """
         # x != y(t+dt)
-        x = np.zeros(np.shape(y), dtype=np.complex128)
+        x = np.zeros(np.shape(y), dtype=type_complex_np)
         # Gradient term coefficient
         electric_f = electric_field(t)
-
+        
         D = electric_f/dk
 
         Nk_path = kpath.shape[0]
@@ -347,17 +355,17 @@ def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, dk_order):
             if k == 0:
                 left   = (Nk_path-1)
                 left2  = (Nk_path-2)
-                left3  = (Nk_path-3)
-                left4  = (Nk_path-4)
+                left3  = (Nk_path-3)           
+                left4  = (Nk_path-4)           
             elif k == 1 and dk_order >= 4:
                 left2  = (Nk_path-1)
-                left3  = (Nk_path-2)
-                left4  = (Nk_path-3)
+                left3  = (Nk_path-2)            
+                left4  = (Nk_path-3)          
             elif k == 2 and dk_order >= 6:
-                left3  = (Nk_path-1)
-                left4  = (Nk_path-2)
+                left3  = (Nk_path-1)          
+                left4  = (Nk_path-2) 
             elif k == 3 and dk_order >= 8:
-                left4  = (Nk_path-1)
+                left4  = (Nk_path-1) 
             elif k == Nk_path-1:
                 right4 = 3
                 right3 = 2
@@ -372,10 +380,14 @@ def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, dk_order):
                 right3 = 0
             elif k == Nk_path-4 and dk_order >= 8:
                 right4 = 0
+
+            wr = dipole_in_path[k, :, :]*electric_f        
+
             for i in range(n):
                 for j in range(n):
-                    x[k*(n**2) + i*n + j] += -1j * ( e_in_path[k, i] - e_in_path[k, j] ) * y[k*(n**2) + i*n + j]
-
+                    if i != j:
+                        x[k*(n**2) + i*n + j] += -1j * ( e_in_path[k, i] - e_in_path[k, j] ) * y[k*(n**2) + i*n + j]
+                    
                     if dk_order ==2:
                         x[k*(n**2) + i*n + j] += D * (  y[right*(n**2) + i*n + j]/2 - y[left*(n**2) + i*n + j]/2 )
                     elif dk_order ==4:
@@ -392,13 +404,13 @@ def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, dk_order):
 
                     if i == j:
                         x[k*(n**2) + i*n + j] += - gamma1 * (y[k*(n**2) + i*n + j] - y0[k*(n**2) + i*n + j])
-                    else:
+                    else: 
                         x[k*(n**2) + i*n + j] += - gamma2 * y[k*(n**2) + i*n + j]
                     for nbar in range(n):
                         if i == j:
-                            x[k*(n**2) + i*n + j] += 2 * np.imag( electric_f * y[k*(n**2) + i*n + nbar] * dipole_in_path[k, nbar, i] )
+                            x[k*(n**2) + i*n + j] += 2 * np.imag( y[k*(n**2) + i*n + nbar] * wr[nbar, i] )
                         else:
-                            x[k*(n**2) + i*n + j] += -1j * electric_f * ( y[k*(n**2) + i*n + nbar] * dipole_in_path[k, nbar, j] - dipole_in_path[k, i, nbar] * y[k*(n**2) + nbar*n + j])
+                            x[k*(n**2) + i*n + j] += -1j * ( y[k*(n**2) + i*n + nbar] * wr[nbar, j] - wr[i, nbar] * y[k*(n**2) + nbar*n + j])
 
         x[-1] = -electric_f
 
@@ -430,7 +442,7 @@ def solution_container(P, zeeman=False):
 
     # The solution array is structred as: first index is Nk1-index,
     # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
-    solution = np.zeros((P.Nk1, P.Nt, P.n, P.n), dtype=P.type_complex_np)
+    solution = np.zeros((P.Nk1, P.n, P.n), dtype=P.type_complex_np)
 
     # For hand-made Runge-Kutta method, we need the solution as array with
     # a single index
@@ -439,30 +451,30 @@ def solution_container(P, zeeman=False):
     A_field = np.zeros(P.Nt, dtype=P.type_real_np)
     E_field = np.zeros(P.Nt, dtype=P.type_real_np)
 
-    I_exact_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
-    I_exact_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
+    J_exact_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
+    J_exact_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
     if P.save_approx:
         J_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
         J_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
-        P_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
-        P_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
+        P_inter_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
+        P_inter_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
         J_anom_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
     else:
         J_E_dir = None
         J_ortho = None
-        P_E_dir = None
-        P_ortho = None
+        P_inter_E_dir = None
+        P_inter_ortho = None
         J_anom_ortho = None
 
     if zeeman:
         Zee_field = np.zeros((P.Nt, 3), dtype=P.type_real_np)
-        return t, A_field, E_field, solution, I_exact_E_dir, I_exact_ortho, J_E_dir, J_ortho, \
-            P_E_dir, P_ortho, Zee_field
+        return t, A_field, E_field, solution, J_exact_E_dir, J_exact_ortho, J_E_dir, J_ortho, \
+            P_inter_E_dir, P_inter_ortho, Zee_field
 
-    return t, A_field, E_field, solution, solution_y_vec, I_exact_E_dir, I_exact_ortho, \
-        J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho
+    return t, A_field, E_field, solution, solution_y_vec, J_exact_E_dir, J_exact_ortho, \
+        J_E_dir, J_ortho, P_inter_E_dir, P_inter_ortho, J_anom_ortho
 
 
 def initial_condition(P, e_in_path): # Check if this does what it should!

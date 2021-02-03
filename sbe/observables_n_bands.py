@@ -1,121 +1,22 @@
 import numpy as np
 from sbe.utility import ConversionFactors as co
 from sbe.dipole import diagonalize, derivative, dipole_elements
+from sbe.utility import conditional_njit
 
-# def current_in_path_hderiv(Nk_in_path, num_paths, Nt, density_matrix, n, paths, gidx, epsilon, path_idx):
-
-#     """
-#         Calculates the full and intraband current for a given path from eq. (67) in sbe_p01
-
-#         Parameters
-#         ----------
-#         Nk_in_path : int
-#             number of k-points in x-direction (in the path)
-#         num_paths : int
-#             number of k-points in y-direction (number of paths)
-#         Nt : int
-#             number of time-steps
-#         density_matrix : np.ndarray
-#             solution of the semiconductor bloch equation (eq. 51 in sbe_p01)
-#         n : int
-#             number of bands
-#         paths : np.ndarray
-#             k-paths in the mesh
-#         gidx : int
-#             gauge index for the wf-gauge
-#         epsilon : float
-#             parameter for the derivative
-#         path_idx : int
-#             index of the current path
-
-#         Returns
-#         -------
-#         current_in_path : np.ndarray
-#             full current of the path with idx path_idx
-
-#     """
-
-#     # derivative dh/dk
-
-#     epsilon = 0.15
-
-#     hgridplusx = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
-#     hgridminusx = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
-#     hgridplusy = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
-#     hgridminusy = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
-
-#     dhdkx = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
-#     dhdky = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
-
-#     for i in range(Nk_in_path):
-#         for j in range(num_paths):
-#             kx = paths[j, i, 0]
-#             ky = paths[j, i, 1]
-#             hgridplusx[i, j, :, :] = hamiltonian(kx + epsilon, ky)
-#             hgridminusx[i, j, :, :] = hamiltonian(kx - epsilon, ky)
-#             hgridplusy[i, j, :, :] = hamiltonian(kx, ky + epsilon)
-#             hgridminusy[i, j, :, :] = hamiltonian(kx, ky - epsilon)
-
-
-#     dhdkx = ( hgridplusx -  hgridminusx )/(2*epsilon)
-#     dhdky = ( hgridplusy -  hgridminusy )/(2*epsilon)
-
-#     # matrix elements <n k | dh/dk | n' k>
-
-#     matrix_element_x = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
-#     matrix_element_y = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
-
-#     for i in range(Nk_in_path):
-#         for j in range(num_paths):
-#             buff = dhdkx[i,j,:,:] @ wf[i,j,:,:]
-#             matrix_element_x[i, j, :, :] = np.conjugate(wf[i, j, :, :].T) @ buff
-
-#             buff = dhdky[i,j,:,:] @ wf[i,j,:,:]
-#             matrix_element_y[i, j, :, :] = np.conjugate(wf[i, j, :, :].T) @ buff
-
-#     # full and intraband current via eq. (67) in sbe_p01
-
-#     current_in_path = np.zeros([Nt, 2], dtype=np.complex128)
-#     current_in_path_intraband = np.zeros([Nt, 2], dtype=np.complex128)
-#     melx = matrix_element_x[:, path_idx, :, :].reshape(Nk_in_path, n**2)
-#     mely = matrix_element_y[:, path_idx, :, :].reshape(Nk_in_path, n**2)
-
-#         # n = 2
-
-#     for i_t in range(Nt):
-#         #for j in range(n**2):
-#         current_in_path[i_t, 0] += - np.sum(melx[:, 0] * density_matrix[:, path_idx, i_t, 0].real)
-#         current_in_path[i_t, 1] += - np.sum(mely[:, 0] * density_matrix[:, path_idx, i_t, 0].real)
-
-#         current_in_path[i_t, 0] += - np.sum(melx[:, 3] * density_matrix[:, path_idx, i_t, 3].real)
-#         current_in_path[i_t, 1] += - np.sum(mely[:, 3] * density_matrix[:, path_idx, i_t, 3].real)
-
-#         current_in_path_intraband[i_t, :] += current_in_path[i_t, :]
-
-#     for i_t in range(Nt):
-#         current_in_path[i_t, 0] += -2*np.sum(np.real(melx[:, 1] * density_matrix[:, path_idx, i_t, 2]))
-#         current_in_path[i_t, 1] += -2*np.sum(np.real(mely[:, 1] * density_matrix[:, path_idx, i_t, 2]))
-
-#         # general n
-
-#     #for i_t in range(Nt):           #np.sum(?)
-#     #    for j in range(n**2):
-#     #        current_in_path[i_t, 0] += np.dot( melx[:, j], density_matrix[:, path_idx, i_t, j])
-#     #        current_in_path[i_t, 1] += np.dot( mely[:, j], density_matrix[:, path_idx, i_t, j])
-
-#     return current_in_path, current_in_path_intraband
-
-def make_matrix_elements_hderiv(params, hamiltonian, paths, wf, E_dir, path_idx):
-
+def make_current_exact_path_hderiv(params, hamiltonian, paths, wf, E_dir, path_idx):
+    """
+        Function that calculates the exact current via eq. (79)
+    """
     Nk_in_path = params.Nk1
     num_paths = params.Nk2
     n = params.n
     epsilon = 0.15
+    type_complex_np = params.type_complex_np
 
-    hgridplusx = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
-    hgridminusx = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
-    hgridplusy = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
-    hgridminusy = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
+    hgridplusx = np.empty([Nk_in_path, num_paths, n, n], dtype=type_complex_np)
+    hgridminusx = np.empty([Nk_in_path, num_paths, n, n], dtype=type_complex_np)
+    hgridplusy = np.empty([Nk_in_path, num_paths, n, n], dtype=type_complex_np)
+    hgridminusy = np.empty([Nk_in_path, num_paths, n, n], dtype=type_complex_np)
 
     for i in range(Nk_in_path):
         for j in range(num_paths):
@@ -128,31 +29,76 @@ def make_matrix_elements_hderiv(params, hamiltonian, paths, wf, E_dir, path_idx)
     dhdkx = ( hgridplusx -  hgridminusx )/(2*epsilon)
     dhdky = ( hgridplusy -  hgridminusy )/(2*epsilon)
 
-    matrix_element_x = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
-    matrix_element_y = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
-
+    matrix_element_x = np.empty([Nk_in_path, n, n], dtype=type_complex_np)
+    matrix_element_y = np.empty([Nk_in_path, n, n], dtype=type_complex_np)
+    
     for i in range(Nk_in_path):
-        for j in range(num_paths):
-            buff = dhdkx[i,j,:,:] @ wf[i,j,:,:]
-            matrix_element_x[i, j, :, :] = np.conjugate(wf[i, j, :, :].T) @ buff
+            buff = dhdkx[i, path_idx, :, :] @ wf[i, :, :]
+            matrix_element_x[i, :, :] = np.conjugate(wf[i, :, :].T) @ buff
 
-            buff = dhdky[i,j,:,:] @ wf[i,j,:,:]
-            matrix_element_y[i, j, :, :] = np.conjugate(wf[i, j, :, :].T) @ buff
+            buff = dhdky[i,path_idx,:,:] @ wf[i,:,:]
+            matrix_element_y[i, :, :] = np.conjugate(wf[i, :, :].T) @ buff
 
     E_ort = np.array([E_dir[1], -E_dir[0]])
 
-    mel_in_path = matrix_element_x[:, path_idx, :, :] * E_dir[0] + matrix_element_y[:, path_idx, :, :] * E_dir[1]
-    mel_ortho = matrix_element_x[:, path_idx, :, :] * E_ort[0] + matrix_element_y[:, path_idx, :, :] * E_ort[1]
+    mel_in_path = matrix_element_x[:, :, :] * E_dir[0] + matrix_element_y[:, :, :] * E_dir[1]
+    mel_ortho = matrix_element_x[:, :, :] * E_ort[0] + matrix_element_y[:, :, :] * E_ort[1]
+    
+    @conditional_njit(type_complex_np)
+    def current_exact_path_hderiv(solution):
 
-    return mel_in_path.reshape(Nk_in_path, n, n), mel_ortho.reshape(Nk_in_path, n, n)
+        J_exact_E_dir = 0
+        J_exact_ortho = 0
 
-def make_matrix_elements_dipoles(params, hamiltonian, paths, dipole_in_path, dipole_ortho, e_in_path, E_dir, path_idx):
+        for i_k in range(Nk_in_path):
+            for i in range(n):
+                J_exact_E_dir += - ( mel_in_path[i_k, i, i].real * solution[i_k, i, i].real )
+                J_exact_ortho += - ( mel_ortho[i_k, i, i].real * solution[i_k, i, i].real )
+                for j in range(n):
+                    if i != j:
+                        J_exact_E_dir += - np.real( mel_in_path[i_k, i, j] * solution[i_k, j, i] )
+                        J_exact_ortho += - np.real( mel_ortho[i_k, i, j] * solution[i_k, j, i] )
 
-    Nk_in_path = params.Nk1
-    num_paths = params.Nk2
+        return J_exact_E_dir, J_exact_ortho
+    return current_exact_path_hderiv
+
+
+
+def make_polarization_inter_path(params, dipole_in_path, dipole_ortho):
+    """
+        Function that calculates the interband polarization from eq. (74)
+    """
     n = params.n
-    gidx = params.gidx
+    Nk1 = params.Nk1
+    type_complex_np = params.type_complex_np
+
+    @conditional_njit(type_complex_np)
+    def polarization_inter_path(solution):
+
+        P_inter_E_dir = 0
+        P_inter_ortho = 0
+
+        for k in range(Nk1):
+            for i in range(n):
+                for j in range(n):
+                    if i > j:
+                        P_inter_E_dir += 2*np.real(dipole_in_path[k, i, j]*solution[k, j, i])    
+                        P_inter_ortho += 2*np.real(dipole_ortho[k, i, j]*solution[k, j, i])   
+        return P_inter_E_dir, P_inter_ortho
+    return polarization_inter_path
+
+
+def make_intraband_current_path(params, hamiltonian, E_dir, paths, path_idx):
+    """
+        Function that calculates the intraband current from eq. (76 and 77) with or without the
+        anomalous contribution via the Berry curvature
+    """
+
+    Nk1 = params.Nk1
+    n = params.n
     epsilon = params.epsilon
+    type_complex_np = params.type_complex_np
+    save_anom = params.save_anom
 
     # derivative of band structure
 
@@ -190,42 +136,24 @@ def make_matrix_elements_dipoles(params, hamiltonian, paths, dipole_in_path, dip
     # In path direction and orthogonal
 
     E_ort = np.array([E_dir[1], -E_dir[0]])
-    ederiv_in_path = E_dir[0] * ederivx + E_dir[1] * ederivy
-    ederiv_ortho = E_ort[0] * ederivx + E_ort[1] * ederivy
-    # matrix elements
+    ederiv_in_path = E_dir[0] * ederivx[:, path_idx, :] + E_dir[1] * ederivy[:, path_idx, :]
+    ederiv_ortho = E_ort[0] * ederivx[:, path_idx, :] + E_ort[1] * ederivy[:, path_idx, :]
 
-    mel_in_path = np.zeros([Nk_in_path, n, n], dtype=np.complex128)
-    mel_ortho = np.zeros([Nk_in_path, n, n], dtype=np.complex128)
+    @conditional_njit(type_complex_np)
+    def current_intra_path(solution):
 
-    for i in range(n):
-        mel_in_path[:, i, i] += ederiv_in_path[:, path_idx, i]
-        mel_ortho[:, i, i] += ederiv_ortho[:, path_idx, i]
-        for j in range(n):
-            if i != j:
-                mel_in_path[:, i, j] += 1j*dipole_in_path[:, i, j] * (e_in_path[:, j]-e_in_path[:, i])
-                mel_ortho[:, i, j] += 1j*dipole_ortho[:, i, j] * (e_in_path[:, j]-e_in_path[:, i])
+        J_intra_E_dir = 0
+        J_intra_ortho = 0
+        J_anom_ortho = 0
 
-    return mel_in_path.reshape(Nk_in_path, n, n), mel_ortho.reshape(Nk_in_path, n, n)
+        for k in range(Nk1):
+            for i in range(n):
+                J_intra_E_dir += - ederiv_in_path[k, i] * solution[k, i, i].real
+                J_intra_ortho += - ederiv_ortho[k, i] * solution[k, i, i].real
 
-def current_per_path(params, mel_in_path, mel_ortho, density_matrix):
+                if save_anom:
+                    J_anom_ortho += 0
+                    print('J_anom not implemented')
 
-    n = params.n
-    Nt = params.Nt
-    current_in_path = np.zeros(Nt, dtype=np.complex128)
-    current_in_path_intraband = np.zeros(Nt, dtype=np.complex128)
-    current_ortho = np.zeros(Nt, dtype=np.complex128)
-    current_ortho_intraband = np.zeros(Nt, dtype=np.complex128)
-
-
-    for i_t in range(Nt):
-        for i in range(n):
-            current_in_path[i_t] += - np.sum(mel_in_path[:, i, i] * density_matrix[:, i_t, i, i].real)
-            current_in_path_intraband[i_t] += - np.sum(mel_in_path[:, i, i] * density_matrix[:, i_t, i, i].real)
-            current_ortho[i_t] += - np.sum(mel_ortho[:, i, i] * density_matrix[:, i_t, i, i].real)
-            current_ortho_intraband[i_t] += - np.sum(mel_ortho[:, i, i] * density_matrix[:, i_t, i, i].real)
-            for j in range(n):
-                if i != j:
-                    current_in_path[i_t] += - np.sum(np.real(mel_in_path[:, i, j] * density_matrix[:,  i_t, j, i]))
-                    current_ortho[i_t] += - np.sum(np.real(mel_ortho[:, i, j] * density_matrix[:,  i_t, j, i]))
-
-    return current_in_path, current_in_path_intraband, current_ortho, current_ortho_intraband
+        return J_intra_E_dir, J_intra_ortho, J_anom_ortho
+    return current_intra_path
