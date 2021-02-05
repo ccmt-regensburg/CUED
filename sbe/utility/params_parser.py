@@ -115,6 +115,9 @@ def parse_params(user_params):
     # +1 assures the inclusion of tf in the calculation
     P.Nt = Nf + 1
 
+    P.factor_freq_resolution = 1
+    if hasattr(UP, 'factor_freq_resolution'):
+        P.factor_freq_resolution = UP.factor_freq_resolution
 
     # Brillouin zone type
     P.BZ_type = UP.BZ_type                      # Type of Brillouin zone
