@@ -14,7 +14,7 @@ def dft():
     dft_system = sbe.hamiltonian.BiTeResummed(C0=C0, c2=c2, A=A, r=r, ksym=ksym, kasym=kasym)
 
     return dft_system
-def run(system, dipole, curvat):
+def run(system):
 
     sbe_solver(system, params)
 
