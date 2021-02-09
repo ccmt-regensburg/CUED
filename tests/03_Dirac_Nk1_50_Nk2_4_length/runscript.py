@@ -7,7 +7,6 @@ def dirac():
     A = 0.1974      # Fermi velocity
 
     dirac_system = sbe.hamiltonian.BiTe(C0=0, C2=0, A=A, R=0, mz=0)
-e.Ax, dirac_dipole.Ay)
 
     return dirac_system
 
