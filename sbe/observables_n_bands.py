@@ -96,6 +96,7 @@ def make_intraband_current_path(params, hamiltonian, E_dir, paths, path_idx):
 
     Nk1 = params.Nk1
     n = params.n
+    gidx = params.gidx
     epsilon = params.epsilon
     type_complex_np = params.type_complex_np
     save_anom = params.save_anom
@@ -120,15 +121,15 @@ def make_intraband_current_path(params, hamiltonian, E_dir, paths, path_idx):
     pathsminus2y = np.copy(paths)
     pathsminus2y[:, :, 1] -= 2*epsilon
 
-    eplusx, wfplusx = diagonalize(params, hamiltonian, pathsplusx)
-    eminusx, wfminusx = diagonalize(params, hamiltonian, pathsminusx)
-    eplusy, wfplusy = diagonalize(params, hamiltonian, pathsplusy)
-    eminusy, wfminusy = diagonalize(params, hamiltonian, pathsminusy)
+    eplusx, wfplusx = diagonalize(params, n, hamiltonian, pathsplusx, gidx)
+    eminusx, wfminusx = diagonalize(params, n, hamiltonian, pathsminusx, gidx)
+    eplusy, wfplusy = diagonalize(params, n, hamiltonian, pathsplusy, gidx)
+    eminusy, wfminusy = diagonalize(params, n, hamiltonian, pathsminusy, gidx)
 
-    eplus2x, wfplus2x = diagonalize(params, hamiltonian, pathsplus2x)
-    eminus2x, wfminus2x = diagonalize(params, hamiltonian, pathsminus2x)
-    eplus2y, wfplus2y = diagonalize(params, hamiltonian, pathsplus2y)
-    eminus2y, wfminus2y = diagonalize(params, hamiltonian, pathsminus2y)
+    eplus2x, wfplus2x = diagonalize(params, n, hamiltonian, pathsplus2x, gidx)
+    eminus2x, wfminus2x = diagonalize(params, n, hamiltonian, pathsminus2x, gidx)
+    eplus2y, wfplus2y = diagonalize(params, n, hamiltonian, pathsplus2y, gidx)
+    eminus2y, wfminus2y = diagonalize(params, n, hamiltonian, pathsminus2y, gidx)
 
     ederivx = ( - eplus2x + 8 * eplusx - 8 * eminusx + eminus2x)/(12*epsilon)
     ederivy = ( - eplus2y + 8 * eplusy - 8 * eminusy + eminus2y)/(12*epsilon)
