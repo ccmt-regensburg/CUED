@@ -15,13 +15,10 @@ def dirac():
     A = 0.1974      # Fermi velocity
 
     dirac_system = sbe.hamiltonian.BiTe(C0=0, C2=0, A=A, R=0, mz=0)
-    h_sym, ef_sym, wf_sym, _ediff_sym = dirac_system.eigensystem(gidx=1)
-    dirac_dipole = sbe.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
-    dirac_curvature = sbe.dipole.SymbolicCurvature(h_sym, dirac_dipole.Ax, dirac_dipole.Ay)
 
-    return dirac_system, dirac_dipole, dirac_curvature
+    return dirac_system
 
-def run(system, dipole, curvat):
+def run(system):
 
     ncpus = min( multiprocessing.cpu_count() - 1, params.Nk2)
 
@@ -37,7 +34,7 @@ def run(system, dipole, curvat):
 
         mkdir_chdir("PATH_"+str(Nk2_idx_ext+1))
 
-        p = multiprocessing.Process(target=sbe_solver, args=(system, dipole, params, curvat, ))
+        p = multiprocessing.Process(target=sbe_solver, args=(system, params, ))
         jobs.append(p)
         p.start()
         if (Nk2_idx_ext+1) % ncpus == 0 or Nk2_idx_ext+1 == params.Nk2:
@@ -87,4 +84,4 @@ def run(system, dipole, curvat):
                            Int_exact_E_dir, Int_exact_ortho])
 
 if __name__ == "__main__":
-    run(*dirac())
+    run(dirac())

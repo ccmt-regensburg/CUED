@@ -38,6 +38,18 @@ def parse_params(user_params):
     if hasattr(UP, 'gauge'):
         P.gauge = UP.gauge
 
+    P.system = 'num'                        # numerical or analytical calculation of eigensystem and dipoles
+    if hasattr(UP, 'system'):
+        P.system = UP.system
+
+    P.solver = 'nband'                      # 2 or n band solver
+    if hasattr(UP, 'solver'):
+        P.solver = UP.solver
+
+    P.epsilon = 2e-5                        # step size for num. derivatives
+    if hasattr(UP, 'epsilon'):
+        P.epsilon = UP.epsilon
+
     P.save_anom = False
     if hasattr(UP, 'save_anom'):
         P.save_anom = UP.save_anom
@@ -146,14 +158,5 @@ def parse_params(user_params):
     P.Nk2_idx_ext = -1
     if hasattr(UP, 'Nk2_idx_ext'):        # For parallelization: only do calculation
         P.Nk2_idx_ext = UP.Nk2_idx_ext    # for path Nk2_idx_ext (in total Nk2 paths)
-
-    # params for n-band solver
-
-    P.dipole_numerics = False
-    if hasattr(UP, 'dipole_numerics'):
-        P.dipole_numerics = UP.dipole_numerics
-        P.n = UP.n
-        P.epsilon = UP.epsilon
-        P.gidx = UP.gidx
 
     return P

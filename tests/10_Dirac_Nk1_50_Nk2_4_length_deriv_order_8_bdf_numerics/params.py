@@ -40,15 +40,10 @@ class params:
     # Flags for testing and features
     ##########################################################################
     gauge         = 'length'   # Gauge of the system
+    system        = 'num'
+    solver        = 'nband'
     do_semicl     = False      # Turn all dipoles to 0 and use Berry curvature in emission
     user_out      = True       # Set to True to get user plotting and progress output
     save_approx   = True
     save_full     = False
     save_txt      = False
-
-    # Parameters for numerical n band solver
-    dipole_numerics = False
-
-    n = 2                       # number of bands
-    epsilon = 2e-5             # Parameter for numerical derivative
-    gidx = 1                    # gauge index of wavefunction
