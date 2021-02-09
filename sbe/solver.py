@@ -507,7 +507,8 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
     # 1/(3c^3) in atomic units
     prefac_emission = 1/(3*(137.036**3))
     dt_out = t[1] - t[0]
-    freq = fftshift(fftfreq(t.size, d=dt_out))
+    ndt_fft = (t.size-1)*P.factor_freq_resolution + 1
+    freq = fftshift(fftfreq(ndt_fft, d=dt_out))
     gaussian_envelope = gaussian(t, P.alpha)
 
     if P.save_approx:
@@ -597,7 +598,8 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
         np.save(I_exact_name, [t, I_exact_E_dir, I_exact_ortho,
                             freq/P.w, Iw_exact_E_dir, Iw_exact_ortho,
                             Int_exact_E_dir, Int_exact_ortho])
-        if P.save_txt:
+
+        if P.save_txt and P.factor_freq_resolution == 1:
             np.savetxt(I_exact_name + '.dat',
                     np.column_stack([t.real, I_exact_E_dir.real, I_exact_ortho.real,
                                         (freq/P.w).real, Iw_exact_E_dir.real, Iw_exact_E_dir.imag,
@@ -609,8 +611,18 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
 
 def fourier_current_intensity(I_E_dir, I_ortho, gaussian_envelope, dt_out, prefac_emission, freq):
 
-    Iw_E_dir = fourier(dt_out, I_E_dir*gaussian_envelope)
-    Iw_ortho = fourier(dt_out, I_ortho*gaussian_envelope)
+    ndt     = np.size(I_E_dir)
+    ndt_fft = np.size(freq)
+
+    I_E_dir_for_fft = np.zeros(ndt_fft)
+    I_ortho_for_fft = np.zeros(ndt_fft)
+
+    I_E_dir_for_fft[ (ndt_fft-ndt)//2 : (ndt_fft+ndt)//2 ] = I_E_dir[:]*gaussian_envelope[:]
+    I_ortho_for_fft[ (ndt_fft-ndt)//2 : (ndt_fft+ndt)//2 ] = I_ortho[:]*gaussian_envelope[:]
+
+    Iw_E_dir = fourier(dt_out, I_E_dir_for_fft)
+    Iw_ortho = fourier(dt_out, I_ortho_for_fft)
+
     Int_E_dir = prefac_emission*(freq**2)*np.abs(Iw_E_dir)**2
     Int_ortho = prefac_emission*(freq**2)*np.abs(Iw_ortho)**2
 
