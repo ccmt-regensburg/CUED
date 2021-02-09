@@ -11,7 +11,7 @@ def dirac():
     dirac_system = sbe.hamiltonian.BiTe(C0=0, C2=0, A=A, R=0, mz=0)
 
     return dirac_system
-def run(system, dipole, curvature):
+def run(system):
 
     sbe_solver(system, params)
 
