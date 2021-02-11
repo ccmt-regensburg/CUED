@@ -330,7 +330,7 @@ def sbe_solver(sys, params, electric_field_function=None):
         .format(P.E0_MVpcm, P.w_THz, P.alpha_fs, P.gauge, P.t0_fs, P.dt_fs, P.Nk1, P.Nk2, P.T1_fs, P.T2_fs, P.chirp_THz, P.phase, P.solver_method, P.dk_order)
 
     write_current_emission(tail, kweight, t, J_exact_E_dir, J_exact_ortho,
-                           J_intra_E_dir, J_intra_ortho, P_inter_E_dir, P_inter_ortho, J_anom_ortho, E_field, P)
+                           J_intra_E_dir, J_intra_ortho, P_inter_E_dir, P_inter_ortho, J_anom_ortho, E_field, A_field, P)
 
 
     # Save the parameters of the calculation
@@ -463,7 +463,7 @@ def gaussian(t, alpha):
 
 
 def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
-                           J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho, E_field, P):
+                           J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho, E_field, A_field, P):
     """
         Calculates the Emission Intensity I(omega) (eq. 51 in https://arxiv.org/abs/2008.03177)
 
@@ -609,9 +609,9 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
                     fmt='%+.18e')
 
     if P.save_latex_pdf:
-        time_fs = t*co.au_to_fs
+        t_fs = t*co.au_to_fs
 
-        t_plot_start, t_plot_end, t_idx = get_plot_limits_time(E_field, time_fs, P.factor_t_plot_end)
+        t_idx = get_plot_limits_time(E_field, t_fs, P.factor_t_plot_end)
 
         latex_dir = "latex_pdf_files"
 
@@ -620,21 +620,8 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
 
         os.mkdir(latex_dir)
 
-        xlabel = r'Time in fs'
-        ylabel = r'Electric field $E(t)$ in MV/cm'
-
-        _fig, (ax1) = plt.subplots(1)
-        _lines_exact_E_dir  = ax1.plot(time_fs[t_idx], E_field[t_idx]*co.au_to_MVpcm, marker='')
-        
-        t_lims = (t_plot_start, t_plot_end)
-        
-        ax1.grid(True, axis='both', ls='--')
-        ax1.set_xlim(t_lims)
-        ax1.set_xlabel(xlabel)
-        ax1.set_ylabel(ylabel)
-        ax1.legend(loc='upper right')
-
-        tikzplotlib.save(latex_dir+"/Efield.tikz")
+        tikz_time(E_field*co.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield", latex_dir)
+        tikz_time(A_field*co.au_to_MVpcm*co.au_to_fs, t_fs, t_idx, r'A-field $A(t)$ in MV*fs/cm', "Afield", latex_dir)
 
         code_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -643,7 +630,38 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
 
         os.chdir(latex_dir)
 
-        replace("PLACEHOLDER-EFIELD-DIRECTION", "$\\\\hat{e}_\\\\phi = \\\\hat{e}_x$")
+        if P.BZ_type == 'rectangle':
+            if P.angle_inc_E_field == 0:
+                replace("PH-EFIELD-DIRECTION", "$\\\\hat{e}_\\\\phi = \\\\hat{e}_x$")
+            elif P.angle_inc_E_field == 90:
+                replace("PH-EFIELD-DIRECTION", "$\\\\hat{e}_\\\\phi = \\\\hat{e}_y$")
+            else:
+                replace("PH-EFIELD-DIRECTION", "$\\\\phi = "+str(P.angle_inc_E_field)+"^\\\\circ$")
+        elif P.BZ_type == 'hexagon':
+            if P.align == 'K':
+                replace("PH-EFIELD-DIRECTION", "$\\\\Gamma-K$ direction")
+            elif P.align == 'M':
+                replace("PH-EFIELD-DIRECTION", "$\\\\Gamma-M$ direction")
+
+        replace("PH-FREQ",  str(P.w_THz))
+        replace("PH-CHIRP", str(P.chirp_THz))
+        eps = 1.0E-6
+        print("P.phase =", P.phase, "np.pi/2 =", np.pi/2, P.phase > np.pi/2-eps, P.phase < np.pi/2+eps)
+        if P.phase == 0:
+             replace("PH-CEP", 0)
+        elif P.phase > np.pi/2-eps and P.phase < np.pi/2+eps:
+             replace("PH-CEP", "\\\\pi\/2")
+        elif P.phase > np.pi-eps and P.phase < np.pi+eps:
+             replace("PH-CEP", "\\\\pi")
+        elif P.phase > 3*np.pi/2-eps and P.phase < 3*np.pi/2+eps:
+             replace("PH-CEP", "3\\\\pi\/2")
+        elif P.phase > 2*np.pi-eps and P.phase < 2*np.pi+eps:
+             replace("PH-CEP", "2\\\\pi")
+        else:
+             replace("PH-CEP", str(P.phase))
+
+        replace("PH-ALPHA", str(P.alpha_fs))
+        replace("PH-FWHM", '{:.3f}'.format(P.alpha_fs*4*np.sqrt(np.log(2))))
 
         os.system("pdflatex CUED_summary.tex")
 
@@ -652,10 +670,29 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
         os.chdir("..")
 
 
-def replace(old, new):
+def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename, latex_dir):
 
+        xlabel = r'Time in fs'
+
+        _fig, (ax1) = plt.subplots(1)
+        _lines_exact_E_dir  = ax1.plot(time_fs[t_idx], func_of_t[t_idx], marker='')
+
+        t_lims = (time_fs[t_idx[0]], time_fs[t_idx[-1]])
+        
+        ax1.grid(True, axis='both', ls='--')
+        ax1.set_xlim(t_lims)
+        ax1.set_xlabel(xlabel)
+        ax1.set_ylabel(ylabel)
+        ax1.legend(loc='upper right')
+
+        tikzplotlib.save(latex_dir+"/"+filename+".tikz", 
+                         axis_height='\\figureheight', 
+                         axis_width ='\\figurewidth' )
+
+
+def replace(old, new):
     os.system("sed -i -e \'s/"+old+"/"+new+"/g\' CUED_summary.tex")
-    print("sed -i -e \'s/"+old+"/"+new+"/g\' CUED_summary.tex")
+
 
 def get_plot_limits_time(E_field, time_fs, factor_t_plot_end): 
 
@@ -665,7 +702,6 @@ def get_plot_limits_time(E_field, time_fs, factor_t_plot_end):
 
     for i_counter, E_i in enumerate(E_field):
         if np.abs(E_i) > threshold*E_max: 
-            t_plot_start       = time_fs[i_counter]
             index_t_plot_start = i_counter
             break
 
@@ -683,7 +719,7 @@ def get_plot_limits_time(E_field, time_fs, factor_t_plot_end):
 
     t_idx = range(index_t_plot_start, index_t_plot_end)
 
-    return t_plot_start, t_plot_end, t_idx
+    return t_idx
 
 def fourier_current_intensity(I_E_dir, I_ortho, gaussian_envelope, dt_out, prefac_emission, freq):
 

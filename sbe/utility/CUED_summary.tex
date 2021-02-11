@@ -113,6 +113,10 @@ in \printfield{booktitle}.
 
 
 \newcommand{\bE}{\mathbf{E}}
+\newcommand{\bA}{\mathbf{A}}
+\newcommand{\eqt}{\,{=}\,}
+
+
 
 \begin{document}
 
@@ -185,18 +189,31 @@ The following electric driving field is employed in the simulation:
     E(t) = E_0\,    \sin\Big(2\pi f_0\,(1+f_\text{chirp} t) + \varphi\Big)\, e^{-t^2/(2\alpha)^2}\,.
     \label{e1}
 \end{align}
-With parameters:
-\begin{itemize}
-    \item PLACEHOLDER-EFIELD-DIRECTION
-\end{itemize}
-\begin{figure}[h!]
-   \centering
-%\setlength\figureheight{9cm} 
-%\setlength\figurewidth{12cm}
-\input{Efield.tikz}
-\caption{Electric driving field .}
+\begin{figure}[b!]
+\centering
+\setlength\figureheight{8cm} 
+\setlength\figurewidth{8cm}
+\input{Efield.tikz}\hfill\input{Afield.tikz}
+\caption{Left: Electric driving field~$E(t)$ from Eq.~\eqref{e1}, right: Gauge field~$A(t)$ from Eq.~\eqref{e2}.}
     \label{fig:Efield}
 \end{figure}
+The pulse is sketched in Fig.~\ref{fig:Efield}. 
+%
+The following parameters are used in the simulation:
+\begin{itemize}
+    \item PH-EFIELD-DIRECTION
+    \item Pulse frequency: $f_0 = PH-FREQ$\,THz
+    \item Chirp: $f_\text{chirp} = PH-CHIRP$\,THz
+    \item Carrier-envelope phase: $\phi = PH-CEP$
+    \item $\alpha = PH-ALPHA$\,fs, full width at half maximum (FWHM) = PH-FWHM\,fs
+\end{itemize}
+The gauge field~$\bA(t)\eqt A(t)\,\hat{e}_\phi$ follows from~$\dot\bA(t)\eqt -\bE(t)$ such that we have 
+\begin{align}
+    \dot A(t) = -E(t) \hspace{2em}\Rightarrow\hspace{2em}
+    A(t) = -\int\limits_{-\infty}^t E(t')\,dt'\,. \label{e2}
+\end{align}
+The gauge field is sketched in Fig.~\ref{fig:Efield}. 
+
 
 \section{Brillouin zone and \textit{k}-point grid}
 REPLACEMENTBZ
