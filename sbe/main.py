@@ -1,3 +1,5 @@
+import os
+import shutil
 import time
 from math import ceil, modf
 import numpy as np
@@ -5,6 +7,7 @@ from numpy.fft import *
 from numba import njit
 import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
+import tikzplotlib
 from scipy.integrate import ode
 import sbe.dipole
 
@@ -327,7 +330,7 @@ def sbe_solver(sys, params, electric_field_function=None):
         .format(P.E0_MVpcm, P.w_THz, P.alpha_fs, P.gauge, P.t0_fs, P.dt_fs, P.Nk1, P.Nk2, P.T1_fs, P.T2_fs, P.chirp_THz, P.phase, P.solver_method, P.dk_order)
 
     write_current_emission(tail, kweight, t, J_exact_E_dir, J_exact_ortho,
-                           J_intra_E_dir, J_intra_ortho, P_inter_E_dir, P_inter_ortho, J_anom_ortho, P)
+                           J_intra_E_dir, J_intra_ortho, P_inter_E_dir, P_inter_ortho, J_anom_ortho, E_field, P)
 
 
     # Save the parameters of the calculation
@@ -460,7 +463,7 @@ def gaussian(t, alpha):
 
 
 def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
-                           J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho, P):
+                           J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho, E_field, P):
     """
         Calculates the Emission Intensity I(omega) (eq. 51 in https://arxiv.org/abs/2008.03177)
 
@@ -605,6 +608,74 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
                     header="t, I_exact_E_dir, I_exact_ortho, freqw/w, Re(Iw_exact_E_dir), Im(Iw_exact_E_dir), Re(Iw_exact_ortho), Im(Iw_exact_ortho), Int_exact_E_dir, Int_exact_ortho",
                     fmt='%+.18e')
 
+    if P.save_latex_pdf:
+        time_fs = t*co.au_to_fs
+
+        t_plot_start, t_plot_end, t_idx = get_plot_limits_time(E_field, time_fs, P.factor_t_plot_end)
+
+        latex_dir = "latex_pdf_files"
+
+        if os.path.exists(latex_dir) and os.path.isdir(latex_dir):
+            shutil.rmtree(latex_dir)
+
+        os.mkdir(latex_dir)
+
+        xlabel = r'Time in fs'
+        ylabel = r'Electric field $E(t)$ in MV/cm'
+
+        _fig, (ax1) = plt.subplots(1)
+        _lines_exact_E_dir  = ax1.plot(time_fs[t_idx], E_field[t_idx]*co.au_to_MVpcm, marker='')
+        
+        t_lims = (t_plot_start, t_plot_end)
+        
+        ax1.grid(True, axis='both', ls='--')
+        ax1.set_xlim(t_lims)
+        ax1.set_xlabel(xlabel)
+        ax1.set_ylabel(ylabel)
+        ax1.legend(loc='upper right')
+
+        tikzplotlib.save(latex_dir+"/Efield.tikz")
+
+        code_path = os.path.dirname(os.path.realpath(__file__))
+
+        shutil.copy(code_path+"/utility/CUED_summary.tex", latex_dir)
+
+        os.chdir(latex_dir)
+
+        os.system("pdflatex CUED_summary.tex")
+
+        os.system("pdflatex CUED_summary.tex")
+
+        os.chdir("..")
+
+
+def get_plot_limits_time(E_field, time_fs, factor_t_plot_end): 
+
+    E_max = np.amax(np.abs(E_field))
+
+    threshold = 1.0E-12
+
+    for i_counter, E_i in enumerate(E_field):
+        if np.abs(E_i) > threshold*E_max: 
+            t_plot_start       = time_fs[i_counter]
+            index_t_plot_start = i_counter
+            break
+
+    for i_counter, E_i in reversed(list(enumerate(E_field))):
+        if np.abs(E_i) > threshold*E_max: 
+            t_plot_end       = time_fs[i_counter]
+            break
+
+    t_plot_end *= factor_t_plot_end
+
+    for i_counter, t_i in enumerate(time_fs):
+        if t_i > t_plot_end: 
+            index_t_plot_end = i_counter
+            break
+
+    t_idx = range(index_t_plot_start, index_t_plot_end)
+
+    return t_plot_start, t_plot_end, t_idx
 
 def fourier_current_intensity(I_E_dir, I_ortho, gaussian_envelope, dt_out, prefac_emission, freq):
 

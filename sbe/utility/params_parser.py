@@ -163,4 +163,12 @@ def parse_params(user_params):
     if hasattr(UP, 'Nk2_idx_ext'):        # For parallelization: only do calculation
         P.Nk2_idx_ext = UP.Nk2_idx_ext    # for path Nk2_idx_ext (in total Nk2 paths)
 
+    P.save_latex_pdf = False              # Save data as human readable PDF file
+    if hasattr(UP, 'save_latex_pdf'):
+        P.save_latex_pdf = UP.save_latex_pdf
+
+    P.factor_t_plot_end = 2
+    if hasattr(UP, 'factor_t_plot_end'):
+        P.factor_t_plot_end = UP.factor_t_plot_end
+
     return P

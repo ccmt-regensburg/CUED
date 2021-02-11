@@ -1,0 +1,218 @@
+\documentclass[11pt, a4paper, openany]{scrartcl}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,allcolors=blue,pdfborder={0 0 0},pdfstartview={FitV},breaklinks,linktocpage]{hyperref}
+\usepackage{color,amsmath,amsfonts,amssymb}
+\usepackage[utf8]{inputenc}
+\usepackage{enumitem}%für mehrspaltige Aufzählungen
+\usepackage[ngerman, english]{babel}
+\usepackage{epsfig}
+\usepackage{pstricks}
+\usepackage{graphics}
+\graphicspath{{Figures/}}
+\usepackage{bbm}
+%\usepackage{showlabels}
+\usepackage[labelfont=bf]{caption}
+%\usepackage{nonfloat}
+\usepackage{booktabs}%für Tabellen
+\usepackage{pgfplots} %für Plots
+\pgfplotsset{
+compat=1.5,
+tick label style={font=\small},
+every axis/.append style={line width=0.8pt, tick style={line width=0.7pt}}
+} %für richtigen Abstand der labels
+\usetikzlibrary{shapes,arrows,fit,calc,positioning,arrows}
+\usepackage[
+  textheight=25cm,
+left=2.3cm,
+right=2.3cm,
+headheight=25pt,
+  includehead,includefoot,
+  heightrounded,
+]{geometry}
+\makeatletter
+\def\input@path{{./Figures/}}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyfoot{}
+\fancyhead{}
+% \renewcommand{\chaptermark}[1]
+% {\markboth{{\chaptername\ \thechapter:\  #1}}{}}
+% \renewcommand{\sectionmark}[1]
+% {{\markright{ \thesection\ #1}}} 
+%\renewcommand{\sectionmark}[1]{\markboth{#1}{}}
+
+%\renewcommand\sectionmark[1]{\markright{#1}}
+%\renewcommand{\thesection}{\arabic{section}.}
+\fancyhead[L]{}
+\fancyhead[R]{\thepage}
+\fancyhead[C]{\nouppercase{\leftmark}}
+%\fancyhead[C]{\nouppercase{\rightmark}}
+
+
+%\usepackage{sectsty}
+\usepackage{url}
+%\usepackage{breakurl}
+\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{tikzpagenodes}
+
+\definecolor{darkgreen}{rgb}{0.0,0.6,0.0}
+\definecolor{shadedgreen}{rgb}{0.8,0.95,0.8}
+\definecolor{shadedblue}{rgb}{0.85,0.85,1.0}
+\newlength\figureheight 
+\newlength\figurewidth
+
+
+\usepackage[varg]{txfonts} %font/Schrift
+\usepackage{csquotes}
+\usepackage[minnames=3,maxnames=30,backend=biber,natbib=true,sorting=none,citestyle=numeric-comp,giveninits=true]{biblatex}
+\addbibresource{Literature.bib}
+%\setlength\bibitemsep{0.5em}
+\setlength{\biblabelsep}{0.4em}
+
+\DeclareFieldFormat{pages}{#1}
+\DeclareFieldFormat{journaltitle}{#1}
+\DeclareFieldFormat{eprint}{#1}
+\DeclareFieldFormat[article]{title}{\it#1\isdot}
+
+\DeclareBibliographyDriver{article}{
+\printnames{author}, \printfield{title},
+\href{http://dx.doi.org/\thefield{doi}}
+{\printfield{journaltitle} 
+\textbf{\printfield{volume}}, \printfield{pages} 
+(\printfield{year})}.}
+
+\DeclareBibliographyDriver{misc}{
+\printnames{author}, \printfield{title},
+\href{https://arxiv.org/abs/\thefield{eprint}}{
+arXiv preprint, arXiv:\printfield{eprint}  (\printfield{year})}.}
+
+\DeclareBibliographyDriver{inbook}{\hspace{-0.1cm}
+\printnames{author},
+\printfield{title},
+in \printfield{booktitle}.
+\printlist{publisher}
+(\printfield{year}).
+}
+
+
+\renewbibmacro*{name:andothers}{% Based on name:andothers from biblatex.def
+  \ifboolexpr{
+    test {\ifnumequal{\value{listcount}}{\value{liststop}}}
+    and
+    test \ifmorenames
+  }
+    {\ifnumgreater{\value{liststop}}{1}
+       {\finalandcomma}
+       {}%
+     \andothersdelim\bibstring[\emph]{andothers}}
+    {}}
+
+\setenumerate[1]{label=[\arabic*],ref=\arabic*}
+\newcommand{\paper}[4]{\item #1, \,\textit{#2}, \,\href{#3}{#4}.\\[-1.4em]}
+
+
+\begin{document}
+
+\pagenumbering{Roman}
+
+\begin{titlepage}\pdfbookmark[0]{Title}{Title}
+  \sffamily
+  \begin{center}
+{
+%\includegraphics[width=9cm]{CUED_logo.pdf}
+%\\[10em]
+\Huge \bfseries Output summary of the CUED program}
+\\[5em]\large
+The CUED program is developed and maintained by:
+\\[5em]
+Computational Condensed Matter Theory Group
+\\[0.5em]
+Head: Ferdinand Evers
+  \\[0.5em]
+Institute of Theoretical Physics
+  \\[0.5em]
+University of Regensburg
+  \\[0.5em]
+Universitätsstraße 31
+  \\[0.5em]
+D\,-\,93053 Regensburg
+  \\[0.5em]
+Germany
+\\[5em]
+Version: Git commit GITCOMMITNUMBER, \today
+\\[5em]
+  \end{center}{\large
+  With contributions from (in alphabetic order): 
+  \\[1em]
+  Jack Crewse
+  \\[0.5em]
+  Patrick Grössing
+  \\[0.5em]
+  Maximilian Nitsch
+  \\[0.5em]
+  Adrian Seith
+  \\[0.5em]
+  Jan Wilhelm
+  }
+\end{titlepage}
+
+
+
+
+
+
+
+\pagenumbering{arabic}
+\pagestyle{plain}
+
+
+
+
+\pdfbookmark[0]{Contents}{Contents}
+\tableofcontents
+
+
+\pagestyle{fancy}
+
+\section{Electric-field pulse}
+REPLACEMENTEFIELD
+
+\begin{figure}[h!]
+   \centering
+%\setlength\figureheight{9cm} 
+%\setlength\figurewidth{12cm}
+\input{Efield.tikz}
+\caption{Some plot that is a vector graphic (scalable) and has the latex fonts.}
+    \label{fig:Efield}
+\end{figure}
+
+\section{Brillouin zone and \textit{k}-point grid}
+REPLACEMENTBZ
+
+
+\section{Hamiltonian, bandstructure and dipoles}
+REPLACEMENTHAMILTONIAN
+
+
+\section{Time evolution of the density matrix}
+
+\section{Time-dependent currents}
+
+\section{Frequency-resolved emission spectrum}
+
+\section{Summary of input parameters}
+
+\section{Timings}
+
+
+\section{References}
+\begin{enumerate}[leftmargin=*]
+
+\paper{J.~Wilhelm, P.~Grössing, A.~Seith, J.~Crewse, M.~Nitsch, L.~Weigl, C.~Schmid, and F.~Evers}{Semi\-conductor-Bloch Formalism: Derivation and Application to High-Harmonic Generation from Dirac Fermions}{TOBEFILLED}{ 
+Phys.~Rev.~B~\,\textbf{x}, y (2021)}
+\label{Wilhelm2021}
+
+\end{enumerate}
+
+\end{document}
