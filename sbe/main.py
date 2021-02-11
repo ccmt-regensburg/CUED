@@ -619,16 +619,15 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
             shutil.rmtree(latex_dir)
 
         os.mkdir(latex_dir)
+        os.chdir(latex_dir)
 
-        tikz_time(E_field*co.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield", latex_dir)
-        tikz_time(A_field*co.au_to_MVpcm*co.au_to_fs, t_fs, t_idx, r'A-field $A(t)$ in MV*fs/cm', "Afield", latex_dir)
+        tikz_time(E_field*co.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield")
+        tikz_time(A_field*co.au_to_MVpcm*co.au_to_fs, t_fs, t_idx, r'A-field $A(t)$ in MV*fs/cm', "Afield")
 
         code_path = os.path.dirname(os.path.realpath(__file__))
 
-        shutil.copy(code_path+"/utility/CUED_summary.tex", latex_dir)
-        shutil.copy(code_path+"/utility/logo.pdf", latex_dir)
-
-        os.chdir(latex_dir)
+        shutil.copy(code_path+"/utility/CUED_summary.tex", ".")
+        shutil.copy(code_path+"/utility/logo.pdf", ".")
 
         if P.BZ_type == 'rectangle':
             if P.angle_inc_E_field == 0:
@@ -670,7 +669,7 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
         os.chdir("..")
 
 
-def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename, latex_dir):
+def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
 
         xlabel = r'Time in fs'
 
@@ -685,7 +684,7 @@ def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename, latex_dir):
         ax1.set_ylabel(ylabel)
         ax1.legend(loc='upper right')
 
-        tikzplotlib.save(latex_dir+"/"+filename+".tikz", 
+        tikzplotlib.save(filename+".tikz",
                          axis_height='\\figureheight', 
                          axis_width ='\\figurewidth' )
 
