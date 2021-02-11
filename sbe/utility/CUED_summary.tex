@@ -112,6 +112,8 @@ in \printfield{booktitle}.
 \newcommand{\paper}[4]{\item #1, \,\textit{#2}, \,\href{#3}{#4}.\\[-1.4em]}
 
 
+\newcommand{\bE}{\mathbf{E}}
+
 \begin{document}
 
 \pagenumbering{Roman}
@@ -120,8 +122,8 @@ in \printfield{booktitle}.
   \sffamily
   \begin{center}
 {
-%\includegraphics[width=9cm]{CUED_logo.pdf}
-%\\[10em]
+\includegraphics[width=9cm]{logo.pdf}
+\\[10em]
 \Huge \bfseries Output summary of the CUED program}
 \\[5em]\large
 The CUED program is developed and maintained by:
@@ -176,14 +178,23 @@ Version: Git commit GITCOMMITNUMBER, \today
 \pagestyle{fancy}
 
 \section{Electric-field pulse}
-REPLACEMENTEFIELD
-
+The following electric driving field is employed in the simulation:
+\begin{align}
+    \bE(t)  = E(t)\,\hat{e}_\phi
+    \,,\hspace{2em}
+    E(t) = E_0\,    \sin\Big(2\pi f_0\,(1+f_\text{chirp} t) + \varphi\Big)\, e^{-t^2/(2\alpha)^2}\,.
+    \label{e1}
+\end{align}
+With parameters:
+\begin{itemize}
+    \item PLACEHOLDER-EFIELD-DIRECTION
+\end{itemize}
 \begin{figure}[h!]
    \centering
 %\setlength\figureheight{9cm} 
 %\setlength\figurewidth{12cm}
 \input{Efield.tikz}
-\caption{Some plot that is a vector graphic (scalable) and has the latex fonts.}
+\caption{Electric driving field .}
     \label{fig:Efield}
 \end{figure}
 
@@ -209,7 +220,7 @@ REPLACEMENTHAMILTONIAN
 \section{References}
 \begin{enumerate}[leftmargin=*]
 
-\paper{J.~Wilhelm, P.~Grössing, A.~Seith, J.~Crewse, M.~Nitsch, L.~Weigl, C.~Schmid, and F.~Evers}{Semi\-conductor-Bloch Formalism: Derivation and Application to High-Harmonic Generation from Dirac Fermions}{TOBEFILLED}{ 
+\paper{J.~Wilhelm, P.~Grössing, A.~Seith, J.~Crewse, M.~Nitsch, L.~Weigl, C.~Schmid, and F.~Evers}{Semi\-con\-duc\-tor-Bloch Formalism: Derivation and Application to High-Harmonic Generation from Dirac Fermions}{TOBEFILLED}{ 
 Phys.~Rev.~B~\,\textbf{x}, y (2021)}
 \label{Wilhelm2021}
 

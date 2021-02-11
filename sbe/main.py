@@ -639,8 +639,11 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
         code_path = os.path.dirname(os.path.realpath(__file__))
 
         shutil.copy(code_path+"/utility/CUED_summary.tex", latex_dir)
+        shutil.copy(code_path+"/utility/logo.pdf", latex_dir)
 
         os.chdir(latex_dir)
+
+        replace("PLACEHOLDER-EFIELD-DIRECTION", "$\\\\hat{e}_\\\\phi = \\\\hat{e}_x$")
 
         os.system("pdflatex CUED_summary.tex")
 
@@ -648,6 +651,11 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
 
         os.chdir("..")
 
+
+def replace(old, new):
+
+    os.system("sed -i -e \'s/"+old+"/"+new+"/g\' CUED_summary.tex")
+    print("sed -i -e \'s/"+old+"/"+new+"/g\' CUED_summary.tex")
 
 def get_plot_limits_time(E_field, time_fs, factor_t_plot_end): 
 
