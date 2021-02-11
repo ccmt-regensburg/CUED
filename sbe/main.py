@@ -622,45 +622,14 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
         os.chdir(latex_dir)
 
         tikz_time(E_field*co.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield")
-        tikz_time(A_field*co.au_to_MVpcm*co.au_to_fs, t_fs, t_idx, r'A-field $A(t)$ in MV*fs/cm', "Afield")
+        tikz_time(A_field*co.au_to_MVpcm*co.au_to_fs, t_fs, t_idx, r"A-field $A(t)$ in MV*fs/cm", "Afield")
 
         code_path = os.path.dirname(os.path.realpath(__file__))
 
         shutil.copy(code_path+"/utility/CUED_summary.tex", ".")
         shutil.copy(code_path+"/utility/logo.pdf", ".")
 
-        if P.BZ_type == 'rectangle':
-            if P.angle_inc_E_field == 0:
-                replace("PH-EFIELD-DIRECTION", "$\\\\hat{e}_\\\\phi = \\\\hat{e}_x$")
-            elif P.angle_inc_E_field == 90:
-                replace("PH-EFIELD-DIRECTION", "$\\\\hat{e}_\\\\phi = \\\\hat{e}_y$")
-            else:
-                replace("PH-EFIELD-DIRECTION", "$\\\\phi = "+str(P.angle_inc_E_field)+"^\\\\circ$")
-        elif P.BZ_type == 'hexagon':
-            if P.align == 'K':
-                replace("PH-EFIELD-DIRECTION", "$\\\\Gamma-K$ direction")
-            elif P.align == 'M':
-                replace("PH-EFIELD-DIRECTION", "$\\\\Gamma-M$ direction")
-
-        replace("PH-FREQ",  str(P.w_THz))
-        replace("PH-CHIRP", str(P.chirp_THz))
-        eps = 1.0E-6
-        print("P.phase =", P.phase, "np.pi/2 =", np.pi/2, P.phase > np.pi/2-eps, P.phase < np.pi/2+eps)
-        if P.phase == 0:
-             replace("PH-CEP", 0)
-        elif P.phase > np.pi/2-eps and P.phase < np.pi/2+eps:
-             replace("PH-CEP", "\\\\pi\/2")
-        elif P.phase > np.pi-eps and P.phase < np.pi+eps:
-             replace("PH-CEP", "\\\\pi")
-        elif P.phase > 3*np.pi/2-eps and P.phase < 3*np.pi/2+eps:
-             replace("PH-CEP", "3\\\\pi\/2")
-        elif P.phase > 2*np.pi-eps and P.phase < 2*np.pi+eps:
-             replace("PH-CEP", "2\\\\pi")
-        else:
-             replace("PH-CEP", str(P.phase))
-
-        replace("PH-ALPHA", str(P.alpha_fs))
-        replace("PH-FWHM", '{:.3f}'.format(P.alpha_fs*4*np.sqrt(np.log(2))))
+        write_parameter(P)
 
         os.system("pdflatex CUED_summary.tex")
 
@@ -669,27 +638,64 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
         os.chdir("..")
 
 
+def write_parameter(P):
+
+    if P.BZ_type == 'rectangle':
+        if P.angle_inc_E_field == 0:
+            replace("PH-EFIELD-DIRECTION", "$\\\\hat{e}_\\\\phi = \\\\hat{e}_x$")
+        elif P.angle_inc_E_field == 90:
+            replace("PH-EFIELD-DIRECTION", "$\\\\hat{e}_\\\\phi = \\\\hat{e}_y$")
+        else:
+            replace("PH-EFIELD-DIRECTION", "$\\\\phi = "+str(P.angle_inc_E_field)+"^\\\\circ$")
+    elif P.BZ_type == 'hexagon':
+        if P.align == 'K':
+            replace("PH-EFIELD-DIRECTION", "$\\\\Gamma-K$ direction")
+        elif P.align == 'M':
+            replace("PH-EFIELD-DIRECTION", "$\\\\Gamma-M$ direction")
+
+    replace("PH-FREQ",  str(P.w_THz))
+    replace("PH-CHIRP", str(P.chirp_THz))
+    eps = 1.0E-13
+    print("P.phase =", P.phase, "np.pi/2 =", np.pi/2, P.phase > np.pi/2-eps, P.phase < np.pi/2+eps)
+    if P.phase == 0:
+         replace("PH-CEP", 0)
+    elif P.phase > np.pi/2-eps and P.phase < np.pi/2+eps:
+         replace("PH-CEP", "\\\\pi\/2")
+    elif P.phase > np.pi-eps and P.phase < np.pi+eps:
+         replace("PH-CEP", "\\\\pi")
+    elif P.phase > 3*np.pi/2-eps and P.phase < 3*np.pi/2+eps:
+         replace("PH-CEP", "3\\\\pi\/2")
+    elif P.phase > 2*np.pi-eps and P.phase < 2*np.pi+eps:
+         replace("PH-CEP", "2\\\\pi")
+    else:
+         replace("PH-CEP", str(P.phase))
+
+    replace("PH-ALPHA", str(P.alpha_fs))
+    replace("PH-FWHM", '{:.3f}'.format(P.alpha_fs*4*np.sqrt(np.log(2))))
+
+
 def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
 
-        xlabel = r'Time in fs'
+    xlabel = r'Time in fs'
 
-        _fig, (ax1) = plt.subplots(1)
-        _lines_exact_E_dir  = ax1.plot(time_fs[t_idx], func_of_t[t_idx], marker='')
+    _fig, (ax1) = plt.subplots(1)
+    _lines_exact_E_dir  = ax1.plot(time_fs[t_idx], func_of_t[t_idx], marker='')
 
-        t_lims = (time_fs[t_idx[0]], time_fs[t_idx[-1]])
-        
-        ax1.grid(True, axis='both', ls='--')
-        ax1.set_xlim(t_lims)
-        ax1.set_xlabel(xlabel)
-        ax1.set_ylabel(ylabel)
-        ax1.legend(loc='upper right')
+    t_lims = (time_fs[t_idx[0]], time_fs[t_idx[-1]])
+    
+    ax1.grid(True, axis='both', ls='--')
+    ax1.set_xlim(t_lims)
+    ax1.set_xlabel(xlabel)
+    ax1.set_ylabel(ylabel)
+    ax1.legend(loc='upper right')
 
-        tikzplotlib.save(filename+".tikz",
-                         axis_height='\\figureheight', 
-                         axis_width ='\\figurewidth' )
+    tikzplotlib.save(filename+".tikz",
+                     axis_height='\\figureheight', 
+                     axis_width ='\\figurewidth' )
 
 
 def replace(old, new):
+
     os.system("sed -i -e \'s/"+old+"/"+new+"/g\' CUED_summary.tex")
 
 
