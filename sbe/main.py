@@ -97,12 +97,10 @@ def sbe_solver(sys, params, electric_field_function=None):
         elif P.align == 'M':
             E_dir = np.array([np.cos(np.radians(-30)),
                               np.sin(np.radians(-30))])
-        # BZ_plot(paths, P)
     elif P.BZ_type == 'rectangle':
         E_dir = np.array([np.cos(np.radians(P.angle_inc_E_field)),
                           np.sin(np.radians(P.angle_inc_E_field))])
         dk, kweight, _kpnts, paths = rect_mesh(P, E_dir, P.type_real_np)
-        # BZ_plot(_kpnts, a, b1, b2, paths)
 
     E_ort = np.array([E_dir[1], -E_dir[0]])
 
@@ -331,7 +329,7 @@ def sbe_solver(sys, params, electric_field_function=None):
 
     write_current_emission(tail, kweight, t, J_exact_E_dir, J_exact_ortho,
                            J_intra_E_dir, J_intra_ortho, P_inter_E_dir, P_inter_ortho, J_anom_ortho, 
-                           E_field, A_field, paths, P)
+                           E_field, A_field, paths, E_dir, P)
 
 
     # Save the parameters of the calculation
@@ -465,7 +463,7 @@ def gaussian(t, alpha):
 
 def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
                            J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho, 
-                           E_field, A_field, paths, P):
+                           E_field, A_field, paths, E_dir, P):
     """
         Calculates the Emission Intensity I(omega) (eq. 51 in https://arxiv.org/abs/2008.03177)
 
@@ -625,7 +623,8 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
 
         tikz_time(E_field*co.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield")
         tikz_time(A_field*co.au_to_MVpcm*co.au_to_fs, t_fs, t_idx, r"A-field $A(t)$ in MV*fs/cm", "Afield")
-        BZ_plot(paths, P)
+
+        BZ_plot(paths, P, A_field, E_dir)
 
 
 
@@ -677,6 +676,9 @@ def write_parameter(P):
 
     replace("PH-ALPHA", str(P.alpha_fs))
     replace("PH-FWHM", '{:.3f}'.format(P.alpha_fs*4*np.sqrt(np.log(2))))
+    replace("PH-BZ", P.BZ_type)
+    replace("PH-NK1", str(P.Nk1))
+    replace("PH-NK2", str(P.Nk2))
 
 
 def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
@@ -700,6 +702,8 @@ def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
 
 
 def replace(old, new, filename="CUED_summary.tex"):
+
+    print("sed -i -e \'s/"+old+"/"+new+"/g\' "+filename)
 
     os.system("sed -i -e \'s/"+old+"/"+new+"/g\' "+filename)
 
@@ -730,6 +734,7 @@ def get_plot_limits_time(E_field, time_fs, factor_t_plot_end):
     t_idx = range(index_t_plot_start, index_t_plot_end)
 
     return t_idx
+
 
 def fourier_current_intensity(I_E_dir, I_ortho, gaussian_envelope, dt_out, prefac_emission, freq):
 
@@ -799,26 +804,40 @@ def print_user_info(P, B0=None, mu=None, incident_angle=None):
           + "[" + '{:.6f}'.format(P.dt) + "]")
 
 
-def BZ_plot(paths, P):
+def BZ_plot(paths, P, A_field, E_dir):
     """
-        Function that plots the brillouin zone
+        Function that plots the Brillouin zone
     """
-    R = 4.0*np.pi/(3*P.a_angs)
-    r = 2.0*np.pi/(np.sqrt(3)*P.a_angs)
     BZ_fig = plt.figure(figsize=(10, 10))
     plt.plot(np.array([0.0]), np.array([0.0]), color='black', marker="o", linestyle='None')
     plt.text(0.01, 0.01, r'$\Gamma$')
-    plt.plot(np.array([r*np.cos(-np.pi/6)]), np.array([r*np.sin(-np.pi/6)]), color='black', marker="o", linestyle='None')
-    plt.text(r*np.cos(-np.pi/6)+0.01, r*np.sin(-np.pi/6)-0.05, r'M')
-    plt.plot(np.array([R]), np.array([0.0]), color='black', marker="o", linestyle='None')
-    plt.text(R, 0.02, r'K')
-    hexagon_x = R*np.array([1,2,1,0.5,1,    0.5,-0.5,-1,   -0.5,-1,-2,-1,-0.5,-1,    -0.5,0.5, 1,     0.5,  1])
-    tmp = np.sqrt(3)/2
-    hexagon_y = R*np.array([0,0,0,tmp,2*tmp,tmp,tmp, 2*tmp,tmp, 0, 0, 0, -tmp,-2*tmp,-tmp,-tmp,-2*tmp,-tmp,0])
-    plt.plot(hexagon_x, hexagon_y, color='black' )
-    size = 5.0
-    plt.xlim(-size/P.a_angs, size/P.a_angs)
-    plt.ylim(-size/P.a_angs, size/P.a_angs)
+
+    if P.BZ_type == 'hexagon':
+        R = 4.0*np.pi/(3*P.a_angs)
+        r = 2.0*np.pi/(np.sqrt(3)*P.a_angs)
+        plt.plot(np.array([r*np.cos(-np.pi/6)]), np.array([r*np.sin(-np.pi/6)]), color='black', marker="o", linestyle='None')
+        plt.text(r*np.cos(-np.pi/6)+0.01, r*np.sin(-np.pi/6)-0.05, r'M')
+        plt.plot(np.array([R]), np.array([0.0]), color='black', marker="o", linestyle='None')
+        plt.text(R, 0.02, r'K')
+        hexagon_x = R*np.array([1,2,1,0.5,1,    0.5,-0.5,-1,   -0.5,-1,-2,-1,-0.5,-1,    -0.5,0.5, 1,     0.5,  1])
+        tmp = np.sqrt(3)/2
+        hexagon_y = R*np.array([0,0,0,tmp,2*tmp,tmp,tmp, 2*tmp,tmp, 0, 0, 0, -tmp,-2*tmp,-tmp,-tmp,-2*tmp,-tmp,0])
+        plt.plot(hexagon_x, hexagon_y, color='black' )
+        length = 5.0/P.a_angs
+
+    elif P.BZ_type == 'rectangle':
+        # polar angle of upper right point of a rectangle that is horizontally aligned
+        alpha = np.arctan(P.length_BZ_ortho/P.length_BZ_E_dir)
+        beta  = P.angle_inc_E_field/360*2*np.pi
+        dist_edge_to_Gamma = np.sqrt(P.length_BZ_E_dir**2+P.length_BZ_ortho**2)
+        rectangle_x = dist_edge_to_Gamma*np.array([np.cos(alpha+beta),np.cos(np.pi-alpha+beta),np.cos(alpha+beta+np.pi),np.cos(2*np.pi-alpha+beta),np.cos(alpha+beta)])
+        rectangle_y = dist_edge_to_Gamma*np.array([np.sin(alpha+beta),np.sin(np.pi-alpha+beta),np.sin(alpha+beta+np.pi),np.sin(2*np.pi-alpha+beta),np.sin(alpha+beta)])
+        plt.plot(rectangle_x, rectangle_y, color='black' )
+        max_length = max(P.length_BZ_E_dir, P.length_BZ_ortho)
+        length = 1.3*max_length
+
+    plt.xlim(-length, length)
+    plt.ylim(-length, length)
 
     plt.xlabel(r'$k_x$ in 1/Angstroem')
     plt.ylabel(r'$k_y$ in 1/Angstroem')
@@ -832,15 +851,29 @@ def BZ_plot(paths, P):
         plot_path_y[0:num_k] = co.as_to_au*path[0:num_k, 1]
         plot_path_y[num_k]   = co.as_to_au*path[0, 1]
 
-
         plt.plot(plot_path_x, plot_path_y)
         plt.plot(plot_path_x, plot_path_y, color='gray', marker="o", linestyle='None')
+
+    A_min = np.amin(A_field)*co.as_to_au
+    A_max = np.amax(A_field)*co.as_to_au
+    A_diff = A_max - A_min
+
+    neg_A_x = np.array([-length,-length-E_dir[0]*A_min])
+    neg_A_y = np.array([length-E_dir[1]*A_diff, length+A_min*E_dir[1]])
+
+    print("neg_A_x =", neg_A_x, "neg_A_y =", neg_A_y)
+
+    pos_A_x = np.array([-length-E_dir[0]*A_min, -length+E_dir[0]*A_diff])
+    pos_A_y = np.array([length+A_min*E_dir[1], length])
+
+    print("pos_A_x =", neg_A_x, "pos_A_y =", neg_A_y)
+
+    plt.plot(neg_A_x, neg_A_y, color="blue")
+    plt.plot(neg_A_x, neg_A_y, color="orange")
 
     tikzplotlib.save("BZ.tikz", axis_height='\\figureheight', axis_width ='\\figurewidth' )
 
     replace("scale=0.5",   "scale=1",     filename="BZ.tikz")
     replace("mark size=3", "mark size=1", filename="BZ.tikz")
-
-
 
 #    plt.show()

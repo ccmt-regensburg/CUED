@@ -1,4 +1,4 @@
-\documentclass[11pt, a4paper, openany]{scrartcl}
+\documentclass[11pt, a4paper]{scrartcl}
 \usepackage{xcolor}
 \usepackage[colorlinks=true,allcolors=blue,pdfborder={0 0 0},pdfstartview={FitV},breaklinks,linktocpage]{hyperref}
 \usepackage{color,amsmath,amsfonts,amssymb}
@@ -113,6 +113,7 @@ in \printfield{booktitle}.
 
 
 \newcommand{\bE}{\mathbf{E}}
+\newcommand{\bk}{\mathbf{k}}
 \newcommand{\bA}{\mathbf{A}}
 \newcommand{\eqt}{\,{=}\,}
 
@@ -146,11 +147,7 @@ D\,-\,93053 Regensburg
   \\[0.5em]
 Germany
 \\[3em]
-Version: Git commit GITCOMMITNUMBER, \today
-\\[3em]
-The calculation has been executed in the directory: 
-\\[0.5em]
-PH-DIRECTORY
+Date of execution: \today
 \\[3em]
   \end{center}{\large
   With contributions from (in alphabetic order): 
@@ -220,18 +217,23 @@ The gauge field is sketched in Fig.~\ref{fig:Efield}.
 
 
 \section{Brillouin zone and \textit{k}-point grid}
-REPLACEMENTBZ
+You are using a PH-BZ Brillouin zone with a mesh size of PH-NK1\,$\times$\,PH-NK2. 
+%
+The mesh is sketched in Fig.~\ref{fig:kp}.
+%
+Gray points indicate $k$-points, colored lines indicate $k$-points that are coupled via  the term $\bE(t)\cdot \nabla_\bk$.
 \begin{figure}[b!]
 \centering
-\setlength\figureheight{16cm} 
-\setlength\figurewidth{16cm}
+\setlength\figureheight{\textwidth} 
+\setlength\figurewidth{\textwidth}
 \input{BZ.tikz}
+\vspace{-1em}
 \caption{Brillouin zone.}
-    \label{fig:Efield}
+    \label{fig:kp}
 \end{figure}
 
 
-
+\newpage
 \section{Hamiltonian, bandstructure and dipoles}
 REPLACEMENTHAMILTONIAN
 
