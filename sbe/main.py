@@ -137,7 +137,7 @@ def sbe_solver(sys, params, electric_field_function=None):
             if P.gauge == 'velocity':
                 raise AttributeError('numerical evaluation of the system not compatible with velocity gauge')
     elif P.solver == 'nband':
-        rhs_ode = make_rhs_ode_n_band(n, E_dir, electric_field, P)
+        rhs_ode = make_rhs_ode_n_band(E_dir, electric_field, P)
 
     if P.solver_method in ('bdf', 'adams'):    
         solver = ode(rhs_ode, jac=None)\
