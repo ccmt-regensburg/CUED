@@ -1,7 +1,7 @@
 from params import params
 
 import sbe.hamiltonian
-from sbe.solver import sbe_solver
+from sbe.main import sbe_solver
 
 def dirac():
     A = 0.1974      # Fermi velocity

@@ -16,7 +16,7 @@ from sbe.fields import make_electric_field
 from sbe.dipole import diagonalize, dipole_elements
 from sbe.observables_n_bands import *
 from sbe.observables import *
-from sbe.fnumba import *
+from sbe.rhs_ode import *
 
 def sbe_solver(sys, params, electric_field_function=None, gidx=1):
     """
@@ -120,7 +120,7 @@ def sbe_solver(sys, params, electric_field_function=None, gidx=1):
         curvature = 0   
     P.gidx = gidx
 
-    # Initialize electric_field, create fnumba and initialize solver
+    # Initialize electric_field, create rhs of ode and initialize solver
 
     if electric_field_function is None:
         electric_field = make_electric_field(P.E0, P.w, P.alpha, P.chirp, P.phase, \
@@ -128,22 +128,22 @@ def sbe_solver(sys, params, electric_field_function=None, gidx=1):
     else:
         electric_field = electric_field_function
     
-    # Make fnumba for 2band or nband solver
+    # Make rhs of ode for 2band or nband solver
     if P.solver == '2band':
         if n != 2: 
             raise AttributeError('2-band solver works for 2-band systems only')
         if P.system == 'ana':
-           fnumba = make_fnumba_2_band(sys, dipole, E_dir, electric_field, P)
+           rhs_ode = make_rhs_ode_2_band(sys, dipole, E_dir, electric_field, P)
         elif P.system == 'num':
             if P.gauge == 'length':
-                fnumba = make_fnumba_2_band(0, 0, E_dir, electric_field, P)
+                rhs_ode = make_rhs_ode_2_band(0, 0, E_dir, electric_field, P)
             if P.gauge == 'velocity':
                 raise AttributeError('numerical evaluation of the system not compatible with velocity gauge')
     elif P.solver == 'nband':
-        fnumba = make_fnumba_n_band(n, E_dir, electric_field, P)
+        rhs_ode = make_rhs_ode_n_band(n, E_dir, electric_field, P)
 
     if P.solver_method in ('bdf', 'adams'):    
-        solver = ode(fnumba, jac=None)\
+        solver = ode(rhs_ode, jac=None)\
             .set_integrator('zvode', method=P.solver_method, max_step=P.dt)
 
     # Make containers used in solver
@@ -316,7 +316,7 @@ def sbe_solver(sys, params, electric_field_function=None, gidx=1):
 
             elif P.solver_method == 'rk4':
                 solution_y_vec = rk_integrate(t[ti], solution_y_vec, path, dipole_in_path, e_in_path, \
-                                              y0, dk, P.dt, fnumba)
+                                              y0, dk, P.dt, rhs_ode)
 
             # Increment time counter
             ti += 1
@@ -348,12 +348,12 @@ def sbe_solver(sys, params, electric_field_function=None, gidx=1):
 
 
 def rk_integrate(t, y, kpath, dipole_in_path, e_in_path, y0, dk, \
-                 dt, fnumba):
+                 dt, rhs_ode):
 
-    k1 = fnumba(t,          y,          kpath, dipole_in_path, e_in_path, y0, dk)
-    k2 = fnumba(t + 0.5*dt, y + 0.5*k1, kpath, dipole_in_path, e_in_path, y0, dk)
-    k3 = fnumba(t + 0.5*dt, y + 0.5*k2, kpath, dipole_in_path, e_in_path, y0, dk)
-    k4 = fnumba(t +     dt, y +     k3, kpath, dipole_in_path, e_in_path, y0, dk)
+    k1 = rhs_ode(t,          y,          kpath, dipole_in_path, e_in_path, y0, dk)
+    k2 = rhs_ode(t + 0.5*dt, y + 0.5*k1, kpath, dipole_in_path, e_in_path, y0, dk)
+    k3 = rhs_ode(t + 0.5*dt, y + 0.5*k2, kpath, dipole_in_path, e_in_path, y0, dk)
+    k4 = rhs_ode(t +     dt, y +     k3, kpath, dipole_in_path, e_in_path, y0, dk)
 
     ynew = y + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
 

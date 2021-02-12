@@ -2,7 +2,7 @@ import numpy as np
 from sbe.utility import conditional_njit
 
 
-def make_fnumba_2_band(sys, dipole, E_dir, electric_field, P):
+def make_rhs_ode_2_band(sys, dipole, E_dir, electric_field, P):
     """
         Initialization of the solver for the sbe ( eq. (39/47/80) in https://arxiv.org/abs/2008.03177)
 
@@ -253,7 +253,7 @@ def make_fnumba_2_band(sys, dipole, E_dir, electric_field, P):
 
     return f
 
-def make_fnumba_n_band(n, E_dir, electric_field, P):
+def make_rhs_ode_n_band(n, E_dir, electric_field, P):
     """
         Initialization of the solver for the SBE ( eq. (39/40(80) in https://arxiv.org/abs/2008.03177)
         

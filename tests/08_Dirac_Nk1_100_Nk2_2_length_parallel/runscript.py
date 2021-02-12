@@ -6,7 +6,7 @@ import sbe.hamiltonian
 import sbe.dipole
 from sbe.utility import ConversionFactors as co
 from sbe.utility import mkdir_chdir
-from sbe.solver import sbe_solver, fourier_current_intensity, gaussian
+from sbe.main import sbe_solver, fourier_current_intensity, gaussian
 from sbe.plotting import read_dataset
 
 from params import params
