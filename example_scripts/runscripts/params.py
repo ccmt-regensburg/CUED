@@ -20,6 +20,11 @@ class params:
     length_BZ_ortho     = 0.1         # length of BZ orthogonal to E-field direction
     angle_inc_E_field   = 0           # incoming angle of the E-field in degree
 
+    # Rec.iprocal lattice vectors
+    a  = 8.308
+    b1 = (2*np.pi/(a*np.sqrt(3)))*np.array([np.sqrt(3), -1])
+    b2 = (4*np.pi/(a*np.sqrt(3)))*np.array([0, 1])
+
     # Driving field parameters
     ##########################################################################
     align               = 'K'         # E-field direction (gamma-'K' or gamma-'M')
@@ -39,16 +44,10 @@ class params:
     # Flags for testing and features
     ##########################################################################
     gauge         = 'length'   # Gauge of the system
+    system        = 'ana'      
+    solver        = '2band'    
     do_semicl     = False      # Turn all dipoles to 0 and use Berry curvature in emission
     user_out      = True       # Set to True to get user plotting and progress output
     save_approx   = True
     save_full     = False
     save_txt      = False
-
-
-    # Parameters for numerical n band solver
-    dipole_numerics = True
-
-    n = 2                       # number of bands
-    epsilon = 2e-5              # Parameter for numerical derivative
-    gidx = 1                    # gauge index of wavefunction

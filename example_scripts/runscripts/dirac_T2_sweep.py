@@ -16,13 +16,10 @@ def dirac():
     A = 0.1974
 
     dirac_system = sbe.hamiltonian.BiTe(C0=0, C2=0, A=A, R=0, mz=0)
-    h_sym, ef_sym, wf_sym, _ediff_sym = dirac_system.eigensystem(gidx=1)
-    dirac_dipole = sbe.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
-    dirac_curvature = sbe.dipole.SymbolicCurvature(h_sym, dirac_dipole.Ax, dirac_dipole.Ay)
 
-    return dirac_system, dirac_dipole, dirac_curvature
+    return dirac_system
 
-def run(system, dipole, curvature):
+def run(system):
 
     params.gauge = 'length'
     params.BZ_type = 'rectangle'
@@ -67,10 +64,10 @@ def run(system, dipole, curvature):
             dirname_T = 'T1_' + str(params.T1) + '_T2_' + str(params.T2)
             mkdir_chdir(dirname_T)
 
-            chirp_phasesweep(chirplist, phaselist, system, dipole, curvature, params)
+            chirp_phasesweep(chirplist, phaselist, system, params)
 
             os.chdir('..')
         os.chdir('..')
 
 if __name__ == "__main__":
-    run(*dirac())
+    run(dirac())

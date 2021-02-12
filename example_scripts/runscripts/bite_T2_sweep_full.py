@@ -17,13 +17,10 @@ def bite():
     k_cut = 0.05
 
     bite_system = BiTe(C0=0, C2=C2, A=A, R=R, kcut=k_cut, mz=0)
-    h_sym, ef_sym, wf_sym, _ediff_sym = bite_system.eigensystem(gidx=1)
-    bite_dipole = sbe.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
-    bite_curvature = sbe.dipole.SymbolicCurvature(h_sym, bite_dipole.Ax, bite_dipole.Ay)
 
-    return bite_system, bite_dipole, bite_curvature
+    return bite_system
 
-def run(system, dipole, curvature):
+def run(system):
 
     params.gauge = 'length'
     params.BZ_type = 'hexagon'
@@ -63,10 +60,10 @@ def run(system, dipole, curvature):
             dirname_T = 'T1_' + str(params.T1) + '_T2_' + str(params.T2)
             mkdir_chdir(dirname_T)
 
-            chirp_phasesweep(chirplist, phaselist, system, dipole, curvature, params)
+            chirp_phasesweep(chirplist, phaselist, system, params)
 
             os.chdir('..')
         os.chdir('..')
 
 if __name__ == "__main__":
-    run(*bite())
+    run(bite())

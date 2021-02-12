@@ -18,13 +18,9 @@ def semich_bite():
 
     semich_bite_system = sbe.hamiltonian.Semiconductor(A=A, mz=muz, mx=mx,
                                                      a=params.a, align=True)
-    h_sym, ef_sym, wf_sym, _ediff_sym = semich_bite_system.eigensystem(gidx=1)
-    semich_bite_dipole = sbe.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
-    semich_bite_curvature = sbe.dipole.SymbolicCurvature(h_sym, semich_bite_dipole.Ax, semich_bite_dipole.Ay)
 
-    return semich_bite_system, semich_bite_dipole, semich_bite_curvature
-
-def run(system, dipole, curvature):
+    return semich_bite_system
+def run(system):
 
     params.gauge = 'length'
     params.BZ_type = 'full'
@@ -67,4 +63,4 @@ def run(system, dipole, curvature):
             return 0
 
 if __name__ == "__main__":
-    run(*semich_bite())
+    run(semich_bite())

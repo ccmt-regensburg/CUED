@@ -16,13 +16,10 @@ def dft():
     kasym = 0.113773                  # k^3 coeffcient dampening
 
     dft_system = BiTeResummed(C0=C0, c2=c2, A=A, r=r, ksym=ksym, kasym=kasym)
-    h_sym, ef_sym, wf_sym, _ediff_sym = dft_system.eigensystem(gidx=1)
-    dft_dipole = sbe.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
-    dft_curvat = sbe.dipole.SymbolicCurvature(h_sym, dft_dipole.Ax, dft_dipole.Ay)
 
-    return dft_system, dft_dipole, dft_curvat
+    return dft_system
 
-def run(system, dipole, curvature):
+def run(system):
 
     params.gauge = 'length'
     params.BZ_type = 'hexagon'
@@ -64,8 +61,8 @@ def run(system, dipole, curvature):
             dirname_T = 'T1_' + str(params.T1) + '_T2_' + str(params.T2)
             mkdir_chdir(dirname_T)
 
-            chirp_phasesweep(chirplist, phaselist, system, dipole, curvature, params)
+            chirp_phasesweep(chirplist, phaselist, system, params)
             return 0
 
 if __name__ == "__main__":
-    run(*dft())
+    run(dft())
