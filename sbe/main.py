@@ -97,7 +97,7 @@ def sbe_solver(sys, params, electric_field_function=None):
         elif P.align == 'M':
             E_dir = np.array([np.cos(np.radians(-30)),
                               np.sin(np.radians(-30))])
-        # BZ_plot(_kpnts, paths, P)
+        BZ_plot(_kpnts, paths, P)
     elif P.BZ_type == 'rectangle':
         E_dir = np.array([np.cos(np.radians(P.angle_inc_E_field)),
                           np.sin(np.radians(P.angle_inc_E_field))])
@@ -794,28 +794,23 @@ def print_user_info(P, B0=None, mu=None, incident_angle=None):
           + "[" + '{:.6f}'.format(P.dt) + "]")
 
 
-def BZ_plot(kpnts, a, b1, b2, paths, si_units=True):
+def BZ_plot(kpnts, paths, P):
     """
         Function that plots the brillouin zone
     """
-    if si_units:
-        a *= co.au_to_as
-        kpnts *= co.as_to_au
-        b1 *= co.as_to_au
-        b2 *= co.as_to_au
+    kpnts_plot = kpnts*co.as_to_au
+    b1_plot    = P.b1*co.as_to_au
+    b2_plot    = P.b2*co.as_to_au
 
-    R = 4.0*np.pi/(3*a)
-    r = 2.0*np.pi/(np.sqrt(3)*a)
+    R = 4.0*np.pi/(3*P.a_angs)
+    r = 2.0*np.pi/(np.sqrt(3)*P.a_angs)
 
     BZ_fig = plt.figure(figsize=(10, 10))
     ax = BZ_fig.add_subplot(111, aspect='equal')
 
-    for b in ((0, 0), b1, -b1, b2, -b2, b1+b2, -b1-b2):
+    for b in ((0, 0), b1_plot, -b1_plot, b2_plot, -b2_plot, b1_plot+b2_plot, -b1_plot-b2_plot):
         poly = RegularPolygon(b, 6, radius=R, orientation=np.pi/6, fill=False)
         ax.add_patch(poly)
-
-#    ax.arrow(-0.5*E_dir[0], -0.5*E_dir[1], E_dir[0], E_dir[1],
-#             width=0.005, alpha=0.5, label='E-field')
 
     plt.scatter(0, 0, s=15, c='black')
     plt.text(0.01, 0.01, r'$\Gamma$')
@@ -823,21 +818,17 @@ def BZ_plot(kpnts, a, b1, b2, paths, si_units=True):
     plt.text(r*np.cos(-np.pi/6)+0.01, r*np.sin(-np.pi/6)-0.05, r'$M$')
     plt.scatter(R, 0, s=15, c='black')
     plt.text(R, 0.02, r'$K$')
-    plt.scatter(kpnts[:, 0], kpnts[:, 1], s=10)
-    plt.xlim(-7.0/a, 7.0/a)
-    plt.ylim(-7.0/a, 7.0/a)
+    plt.scatter(kpnts_plot[:, 0], kpnts_plot[:, 1], s=10)
+    size = 5.0
+    plt.xlim(-size/P.a_angs, size/P.a_angs)
+    plt.ylim(-size/P.a_angs, size/P.a_angs)
 
-    if si_units:
-        plt.xlabel(r'$k_x \text{ in } 1/\si{\angstrom}$')
-        plt.ylabel(r'$k_y \text{ in } 1/\si{\angstrom}$')
-    else:
-        plt.xlabel(r'$k_x \text{ in } 1/a_0$')
-        plt.ylabel(r'$k_y \text{ in } 1/a_0$')
+    plt.xlabel(r'$k_x$ in 1/Angstroem')
+    plt.ylabel(r'$k_y$ in 1/Angstroem')
 
     for path in paths:
-        if si_units:
-            plt.plot(co.as_to_au*path[:, 0], co.as_to_au*path[:, 1])
-        else:
-            plt.plot(path[:, 0], path[:, 1])
+        plt.plot(co.as_to_au*path[:, 0], co.as_to_au*path[:, 1])
+
+    tikzplotlib.save("BZ.tikz", axis_height='\\figureheight', axis_width ='\\figurewidth' )
 
     plt.show()
