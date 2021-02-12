@@ -1,5 +1,5 @@
 import os
-from sbe.solver import sbe_solver
+from sbe.main import sbe_solver
 
 
 def mkdir(dirname):
@@ -12,7 +12,7 @@ def mkdir_chdir(dirname):
     os.chdir(dirname)
 
 
-def chirp_phasesweep(chirplist, phaselist, system, dipole, curvat, params):
+def chirp_phasesweep(chirplist, phaselist, system, params):
 
     for chirp in chirplist:
         params.chirp = chirp
@@ -25,13 +25,13 @@ def chirp_phasesweep(chirplist, phaselist, system, dipole, curvat, params):
             print("Current phase: ", params.phase)
             dirname_phase = 'phase_{:1.2f}'.format(params.phase)
             mkdir_chdir(dirname_phase)
-            sbe_solver(system, dipole, params, curvat)
+            sbe_solver(system, params)
             os.chdir('..')
 
         os.chdir('..')
 
 
-def phasesweep_parallel(phaselist, system, dipole, curvat, params):
+def phasesweep_parallel(phaselist, system, params):
     for phase in phaselist:
         pid = os.fork()
 
@@ -40,7 +40,7 @@ def phasesweep_parallel(phaselist, system, dipole, curvat, params):
             print("Current phase: ", params.phase)
             dirname_phase = 'phase_{:1.2f}'.format(params.phase)
             mkdir_chdir(dirname_phase)
-            sbe_solver(system, dipole, params, curvat)
+            sbe_solver(system, params)
 
             return 0
 
