@@ -11,7 +11,7 @@ def dirac():
     return dirac_system
 def run(system):
 
-    sbe_solver(system, params, gidx=0.4)
+    sbe_solver(system, params)
 
     return 0
 

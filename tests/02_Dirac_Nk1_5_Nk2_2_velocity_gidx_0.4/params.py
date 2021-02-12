@@ -37,6 +37,7 @@ class params:
     # Flags for testing and features
     ##########################################################################
     gauge         = 'velocity'   # Gauge of the system
+    gidx          = 0.4
     system        = 'ana'
     solver        = '2band'
     do_semicl     = False      # Turn all dipoles to 0 and use Berry curvature in emission

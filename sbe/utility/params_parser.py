@@ -50,6 +50,10 @@ def parse_params(user_params):
     if hasattr(UP, 'epsilon'):
         P.epsilon = UP.epsilon
 
+    P.gidx = 1
+    if hasattr(UP, 'gidx'):
+        P.gidx = UP.gidx
+
     P.save_anom = False
     if hasattr(UP, 'save_anom'):
         P.save_anom = UP.save_anom

@@ -2,7 +2,7 @@ import numpy as np
 import numpy.linalg as lin
 import math
 
-def diagonalize(params, n, hamiltonian, paths, gidx):
+def diagonalize(params, hamiltonian, paths):
     """
         Diagonalize the n-dimensional Hamiltonian matrix on a 2-dimensional
         square k-grid with m*m k-points.
@@ -38,6 +38,8 @@ def diagonalize(params, n, hamiltonian, paths, gidx):
             third index: component of wf
             fourth index: band index
     """
+    n = params.n 
+    gidx = params.gidx
     Nk_in_path = params.Nk1
     num_paths = params.Nk2
     epsilon = params.epsilon
@@ -56,11 +58,13 @@ def diagonalize(params, n, hamiltonian, paths, gidx):
     return e, wf
 
 
-def derivative(params, n, hamiltonian, paths, gidx):
+def derivative(params, hamiltonian, paths):
 
     Nk_in_path = params.Nk1
     num_paths = params.Nk2
     epsilon = params.epsilon
+    n = params.n
+    gidx = params.gidx
 
     xderivative = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
     yderivative = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
@@ -101,25 +105,25 @@ def derivative(params, n, hamiltonian, paths, gidx):
     pathsminus4y = np.copy(paths)
     pathsminus4y[:, :, 1] -= 4*epsilon
 
-    eplusx, wfplusx = diagonalize(params, n, hamiltonian, pathsplusx, gidx)
-    eminusx, wfminusx = diagonalize(params, n, hamiltonian, pathsminusx, gidx)
-    eplusy, wfplusy = diagonalize(params, n, hamiltonian, pathsplusy, gidx)
-    eminusy, wfminusy = diagonalize(params, n, hamiltonian, pathsminusy, gidx)
+    eplusx, wfplusx = diagonalize(params, hamiltonian, pathsplusx)
+    eminusx, wfminusx = diagonalize(params, hamiltonian, pathsminusx)
+    eplusy, wfplusy = diagonalize(params, hamiltonian, pathsplusy)
+    eminusy, wfminusy = diagonalize(params, hamiltonian, pathsminusy)
 
-    eplus2x, wfplus2x = diagonalize(params, n, hamiltonian, pathsplus2x, gidx)
-    eminus2x, wfminus2x = diagonalize(params, n, hamiltonian, pathsminus2x, gidx)
-    eplus2y, wfplus2y = diagonalize(params, n, hamiltonian, pathsplus2y, gidx)
-    eminus2y, wfminus2y = diagonalize(params, n, hamiltonian, pathsminus2y, gidx)
+    eplus2x, wfplus2x = diagonalize(params, hamiltonian, pathsplus2x)
+    eminus2x, wfminus2x = diagonalize(params, hamiltonian, pathsminus2x)
+    eplus2y, wfplus2y = diagonalize(params, hamiltonian, pathsplus2y)
+    eminus2y, wfminus2y = diagonalize(params, hamiltonian, pathsminus2y)
 
-    eplus3x, wfplus3x = diagonalize(params, n, hamiltonian, pathsplus3x, gidx)
-    eminus3x, wfminus3x = diagonalize(params, n, hamiltonian, pathsminus3x, gidx)
-    eplus3y, wfplus3y = diagonalize(params, n, hamiltonian, pathsplus3y, gidx)
-    eminus3y, wfminus3y = diagonalize(params, n, hamiltonian, pathsminus3y, gidx)
+    eplus3x, wfplus3x = diagonalize(params, hamiltonian, pathsplus3x)
+    eminus3x, wfminus3x = diagonalize(params, hamiltonian, pathsminus3x)
+    eplus3y, wfplus3y = diagonalize(params, hamiltonian, pathsplus3y)
+    eminus3y, wfminus3y = diagonalize(params, hamiltonian, pathsminus3y)
 
-    eplus4x, wfplus4x = diagonalize(params, n, hamiltonian, pathsplus4x, gidx)
-    eminus4x, wfminus4x = diagonalize(params, n, hamiltonian, pathsminus4x, gidx)
-    eplus4y, wfplus4y = diagonalize(params, n, hamiltonian, pathsplus4y, gidx)
-    eminus4y, wfminus4y = diagonalize(params, n, hamiltonian, pathsminus4y, gidx)
+    eplus4x, wfplus4x = diagonalize(params, hamiltonian, pathsplus4x)
+    eminus4x, wfminus4x = diagonalize(params, hamiltonian, pathsminus4x)
+    eplus4y, wfplus4y = diagonalize(params, hamiltonian, pathsplus4y)
+    eminus4y, wfminus4y = diagonalize(params, hamiltonian, pathsminus4y)
 
     xderivative = (1/280*(wfminus4x - wfplus4x) + 4/105*( wfplus3x - wfminus3x ) + 1/5*( wfminus2x - wfplus2x ) + 4/5*(wfplusx - wfminusx) )/epsilon
     yderivative = (1/280*(wfminus4y - wfplus4y) + 4/105*( wfplus3y - wfminus3y ) + 1/5*( wfminus2y - wfplus2y ) + 4/5*( wfplusy - wfminusy ) )/epsilon
@@ -127,7 +131,7 @@ def derivative(params, n, hamiltonian, paths, gidx):
     return xderivative, yderivative
 
 
-def dipole_elements(params, n, hamiltonian, paths, gidx):
+def dipole_elements(params, hamiltonian, paths):
     """
     Calculate the dipole elements
 
@@ -158,9 +162,11 @@ def dipole_elements(params, n, hamiltonian, paths, gidx):
     Nk_in_path = params.Nk1
     num_paths = params.Nk2
     epsilon = params.epsilon
+    gidx = params.gidx
+    n = params.n
 
-    e, wf = diagonalize(params, n, hamiltonian, paths, gidx)
-    dwfkx, dwfky = derivative(params, n, hamiltonian, paths, gidx)
+    e, wf = diagonalize(params, hamiltonian, paths)
+    dwfkx, dwfky = derivative(params, hamiltonian, paths)
 
     dx = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)
     dy = np.empty([Nk_in_path, num_paths, n, n], dtype=np.complex128)

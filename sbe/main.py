@@ -18,7 +18,7 @@ from sbe.observables_n_bands import *
 from sbe.observables import *
 from sbe.rhs_ode import *
 
-def sbe_solver(sys, params, electric_field_function=None, gidx=1):
+def sbe_solver(sys, params, electric_field_function=None):
     """
         Solver for the semiconductor bloch equation ( eq. (39) or (47) in https://arxiv.org/abs/2008.03177)
         for a n band system with numerical calculation of the dipole elements (unfinished - analytical dipoles
@@ -105,20 +105,17 @@ def sbe_solver(sys, params, electric_field_function=None, gidx=1):
 
     # Calculate the systems properties (hamiltonian, eigensystem, dipoles, berry curvature)
     if P.system == 'ana':
-        h_sym, ef_sym, wf_sym, _ediff_sym = sys.eigensystem(gidx=gidx)
+        h_sym, ef_sym, wf_sym, _ediff_sym = sys.eigensystem(gidx=P.gidx)
         dipole = sbe.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
         curvature = sbe.dipole.SymbolicCurvature(h_sym, dipole.Ax, dipole.Ay)
-        n = 2
         P.n = 2
 
     if P.system == 'num':
         hnp = sys.numpy_hamiltonian()  
-        n = np.size(hnp(kx=0, ky=0)[:, 0])
-        P.n = n
-        dipole_x, dipole_y = dipole_elements(P, n, hnp, paths, gidx=gidx)
-        e, wf = diagonalize(P, n, hnp, paths, gidx=gidx)
+        P.n = np.size(hnp(kx=0, ky=0)[:, 0])
+        dipole_x, dipole_y = dipole_elements(P, hnp, paths)
+        e, wf = diagonalize(P, hnp, paths)
         curvature = 0   
-    P.gidx = gidx
 
     # Initialize electric_field, create rhs of ode and initialize solver
 
@@ -130,7 +127,7 @@ def sbe_solver(sys, params, electric_field_function=None, gidx=1):
     
     # Make rhs of ode for 2band or nband solver
     if P.solver == '2band':
-        if n != 2: 
+        if P.n != 2: 
             raise AttributeError('2-band solver works for 2-band systems only')
         if P.system == 'ana':
            rhs_ode = make_rhs_ode_2_band(sys, dipole, E_dir, electric_field, P)
@@ -148,15 +145,15 @@ def sbe_solver(sys, params, electric_field_function=None, gidx=1):
 
     # Make containers used in solver
     t, A_field, E_field, solution, solution_y_vec, J_exact_E_dir, J_exact_ortho, \
-        J_intra_E_dir, J_intra_ortho, P_inter_E_dir, P_inter_ortho, J_anom_ortho = solution_container(P, n)
+        J_intra_E_dir, J_intra_ortho, P_inter_E_dir, P_inter_ortho, J_anom_ortho = solution_container(P)
 
-    dipole_in_path = np.zeros([P.Nk1, n, n], dtype=P.type_complex_np)
-    dipole_ortho = np.zeros([P.Nk1, n, n], dtype=P.type_complex_np)
-    e_in_path = np.zeros([P.Nk1, n], dtype=P.type_real_np)  
+    dipole_in_path = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
+    dipole_ortho = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
+    e_in_path = np.zeros([P.Nk1, P.n], dtype=P.type_real_np)  
 
     # Only define full density matrix solution if save_full is True
     if P.save_full:
-        solution_full = np.empty((P.Nk1, P.Nk2, P.Nt, n, n), dtype=P.type_complex_np)
+        solution_full = np.empty((P.Nk1, P.Nk2, P.Nt, P.n, P.n), dtype=P.type_complex_np)
     ###########################################################################
     # SOLVING
     ###########################################################################
@@ -263,7 +260,7 @@ def sbe_solver(sys, params, electric_field_function=None, gidx=1):
 
             if P.solver_method in ('bdf', 'adams'):
                 # Do not append the last element (A_field)
-                solution = solver.y[:-1].reshape(P.Nk1, n, n)
+                solution = solver.y[:-1].reshape(P.Nk1, P.n, P.n)
 
                 # Construct time array only once
                 if Nk2_idx == 0 or P.Nk2_idx_ext > 0:
@@ -274,7 +271,7 @@ def sbe_solver(sys, params, electric_field_function=None, gidx=1):
 
             elif P.solver_method == 'rk4':
                 # Do not append the last element (A_field)
-                solution = solution_y_vec[:-1].reshape(P.Nk1, n, n)
+                solution = solution_y_vec[:-1].reshape(P.Nk1, P.n, P.n)
 
                 # Construct time array only once
                 if Nk2_idx == 0 or P.Nk2_idx_ext > 0:
@@ -359,7 +356,7 @@ def rk_integrate(t, y, kpath, dipole_in_path, e_in_path, y0, dk, \
 
     return ynew
 
-def solution_container(P, n, zeeman=False):
+def solution_container(P, zeeman=False):
     """
         Function that builds the containers on which the solutions of the SBE,
         as well as the currents will be written
@@ -369,11 +366,11 @@ def solution_container(P, n, zeeman=False):
 
     # The solution array is structred as: first index is Nk1-index,
     # second is Nk2-index, third is timestep, fourth is f_h, p_he, p_eh, f_e
-    solution = np.zeros((P.Nk1, n, n), dtype=P.type_complex_np)
+    solution = np.zeros((P.Nk1, P.n, P.n), dtype=P.type_complex_np)
 
     # For hand-made Runge-Kutta method, we need the solution as array with
     # a single index
-    solution_y_vec = np.zeros((((n)**2)*(P.Nk1)+1), dtype=P.type_complex_np)
+    solution_y_vec = np.zeros((((P.n)**2)*(P.Nk1)+1), dtype=P.type_complex_np)
 
     A_field = np.zeros(P.Nt, dtype=P.type_real_np)
     E_field = np.zeros(P.Nt, dtype=P.type_real_np)

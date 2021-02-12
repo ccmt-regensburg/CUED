@@ -1,6 +1,6 @@
 import numpy as np
 from sbe.utility import ConversionFactors as co
-from sbe.dipole import diagonalize, derivative, dipole_elements
+from sbe.dipole import diagonalize, derivative
 from sbe.utility import conditional_njit
 
 def make_current_exact_path_hderiv(params, hamiltonian, paths, wf, E_dir, path_idx):
@@ -121,15 +121,15 @@ def make_intraband_current_path(params, hamiltonian, E_dir, paths, path_idx):
     pathsminus2y = np.copy(paths)
     pathsminus2y[:, :, 1] -= 2*epsilon
 
-    eplusx, wfplusx = diagonalize(params, n, hamiltonian, pathsplusx, gidx)
-    eminusx, wfminusx = diagonalize(params, n, hamiltonian, pathsminusx, gidx)
-    eplusy, wfplusy = diagonalize(params, n, hamiltonian, pathsplusy, gidx)
-    eminusy, wfminusy = diagonalize(params, n, hamiltonian, pathsminusy, gidx)
+    eplusx, wfplusx = diagonalize(params, hamiltonian, pathsplusx)
+    eminusx, wfminusx = diagonalize(params, hamiltonian, pathsminusx)
+    eplusy, wfplusy = diagonalize(params, hamiltonian, pathsplusy)
+    eminusy, wfminusy = diagonalize(params, hamiltonian, pathsminusy)
 
-    eplus2x, wfplus2x = diagonalize(params, n, hamiltonian, pathsplus2x, gidx)
-    eminus2x, wfminus2x = diagonalize(params, n, hamiltonian, pathsminus2x, gidx)
-    eplus2y, wfplus2y = diagonalize(params, n, hamiltonian, pathsplus2y, gidx)
-    eminus2y, wfminus2y = diagonalize(params, n, hamiltonian, pathsminus2y, gidx)
+    eplus2x, wfplus2x = diagonalize(params, hamiltonian, pathsplus2x)
+    eminus2x, wfminus2x = diagonalize(params, hamiltonian, pathsminus2x)
+    eplus2y, wfplus2y = diagonalize(params, hamiltonian, pathsplus2y)
+    eminus2y, wfminus2y = diagonalize(params, hamiltonian, pathsminus2y)
 
     ederivx = ( - eplus2x + 8 * eplusx - 8 * eminusx + eminus2x)/(12*epsilon)
     ederivy = ( - eplus2y + 8 * eplusy - 8 * eminusy + eminus2y)/(12*epsilon)
