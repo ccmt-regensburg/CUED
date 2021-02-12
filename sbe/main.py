@@ -799,26 +799,26 @@ def BZ_plot(kpnts, paths, P):
         Function that plots the brillouin zone
     """
     kpnts_plot = kpnts*co.as_to_au
-    b1_plot    = P.b1*co.as_to_au
-    b2_plot    = P.b2*co.as_to_au
-
+#    b1_plot    = P.b1*co.as_to_au
+#    b2_plot    = P.b2*co.as_to_au
+#
     R = 4.0*np.pi/(3*P.a_angs)
     r = 2.0*np.pi/(np.sqrt(3)*P.a_angs)
-
+#
     BZ_fig = plt.figure(figsize=(10, 10))
-    ax = BZ_fig.add_subplot(111, aspect='equal')
+#    ax = BZ_fig.add_subplot(111, aspect='equal')
+#
+#    for b in ((0, 0), b1_plot, -b1_plot, b2_plot, -b2_plot, b1_plot+b2_plot, -b1_plot-b2_plot):
+#        poly = RegularPolygon(b, 6, radius=R, orientation=np.pi/6, fill=False)
+#        ax.add_patch(poly)
 
-    for b in ((0, 0), b1_plot, -b1_plot, b2_plot, -b2_plot, b1_plot+b2_plot, -b1_plot-b2_plot):
-        poly = RegularPolygon(b, 6, radius=R, orientation=np.pi/6, fill=False)
-        ax.add_patch(poly)
-
-    plt.scatter(0, 0, s=15, c='black')
+#    plt.scatter(0, 0, s=15, c='black')
     plt.text(0.01, 0.01, r'$\Gamma$')
-    plt.scatter(r*np.cos(-np.pi/6), r*np.sin(-np.pi/6), s=15, c='black')
+#    plt.scatter(r*np.cos(-np.pi/6), r*np.sin(-np.pi/6), s=15, c='black')
     plt.text(r*np.cos(-np.pi/6)+0.01, r*np.sin(-np.pi/6)-0.05, r'$M$')
-    plt.scatter(R, 0, s=15, c='black')
+#    plt.scatter(R, 0, s=15, c='black')
     plt.text(R, 0.02, r'$K$')
-    plt.scatter(kpnts_plot[:, 0], kpnts_plot[:, 1], s=10)
+#    plt.scatter(kpnts_plot[:, 0], kpnts_plot[:, 1], s=10)
     size = 5.0
     plt.xlim(-size/P.a_angs, size/P.a_angs)
     plt.ylim(-size/P.a_angs, size/P.a_angs)
