@@ -97,7 +97,7 @@ def sbe_solver(sys, params, electric_field_function=None):
         elif P.align == 'M':
             E_dir = np.array([np.cos(np.radians(-30)),
                               np.sin(np.radians(-30))])
-        BZ_plot(_kpnts, paths, P)
+        # BZ_plot(paths, P)
     elif P.BZ_type == 'rectangle':
         E_dir = np.array([np.cos(np.radians(P.angle_inc_E_field)),
                           np.sin(np.radians(P.angle_inc_E_field))])
@@ -330,7 +330,8 @@ def sbe_solver(sys, params, electric_field_function=None):
         .format(P.E0_MVpcm, P.w_THz, P.alpha_fs, P.gauge, P.t0_fs, P.dt_fs, P.Nk1, P.Nk2, P.T1_fs, P.T2_fs, P.chirp_THz, P.phase, P.solver_method, P.dk_order)
 
     write_current_emission(tail, kweight, t, J_exact_E_dir, J_exact_ortho,
-                           J_intra_E_dir, J_intra_ortho, P_inter_E_dir, P_inter_ortho, J_anom_ortho, E_field, A_field, P)
+                           J_intra_E_dir, J_intra_ortho, P_inter_E_dir, P_inter_ortho, J_anom_ortho, 
+                           E_field, A_field, paths, P)
 
 
     # Save the parameters of the calculation
@@ -463,7 +464,8 @@ def gaussian(t, alpha):
 
 
 def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
-                           J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho, E_field, A_field, P):
+                           J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho, 
+                           E_field, A_field, paths, P):
     """
         Calculates the Emission Intensity I(omega) (eq. 51 in https://arxiv.org/abs/2008.03177)
 
@@ -623,6 +625,9 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
 
         tikz_time(E_field*co.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield")
         tikz_time(A_field*co.au_to_MVpcm*co.au_to_fs, t_fs, t_idx, r"A-field $A(t)$ in MV*fs/cm", "Afield")
+        BZ_plot(paths, P)
+
+
 
         code_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -649,9 +654,9 @@ def write_parameter(P):
             replace("PH-EFIELD-DIRECTION", "$\\\\phi = "+str(P.angle_inc_E_field)+"^\\\\circ$")
     elif P.BZ_type == 'hexagon':
         if P.align == 'K':
-            replace("PH-EFIELD-DIRECTION", "$\\\\Gamma-K$ direction")
+            replace("PH-EFIELD-DIRECTION", "$\\\\Gamma$-K direction")
         elif P.align == 'M':
-            replace("PH-EFIELD-DIRECTION", "$\\\\Gamma-M$ direction")
+            replace("PH-EFIELD-DIRECTION", "$\\\\Gamma$-M direction")
 
     replace("PH-FREQ",  str(P.w_THz))
     replace("PH-CHIRP", str(P.chirp_THz))
@@ -694,9 +699,9 @@ def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
                      axis_width ='\\figurewidth' )
 
 
-def replace(old, new):
+def replace(old, new, filename="CUED_summary.tex"):
 
-    os.system("sed -i -e \'s/"+old+"/"+new+"/g\' CUED_summary.tex")
+    os.system("sed -i -e \'s/"+old+"/"+new+"/g\' "+filename)
 
 
 def get_plot_limits_time(E_field, time_fs, factor_t_plot_end): 
@@ -794,31 +799,23 @@ def print_user_info(P, B0=None, mu=None, incident_angle=None):
           + "[" + '{:.6f}'.format(P.dt) + "]")
 
 
-def BZ_plot(kpnts, paths, P):
+def BZ_plot(paths, P):
     """
         Function that plots the brillouin zone
     """
-    kpnts_plot = kpnts*co.as_to_au
-#    b1_plot    = P.b1*co.as_to_au
-#    b2_plot    = P.b2*co.as_to_au
-#
     R = 4.0*np.pi/(3*P.a_angs)
     r = 2.0*np.pi/(np.sqrt(3)*P.a_angs)
-#
     BZ_fig = plt.figure(figsize=(10, 10))
-#    ax = BZ_fig.add_subplot(111, aspect='equal')
-#
-#    for b in ((0, 0), b1_plot, -b1_plot, b2_plot, -b2_plot, b1_plot+b2_plot, -b1_plot-b2_plot):
-#        poly = RegularPolygon(b, 6, radius=R, orientation=np.pi/6, fill=False)
-#        ax.add_patch(poly)
-
-#    plt.scatter(0, 0, s=15, c='black')
+    plt.plot(np.array([0.0]), np.array([0.0]), color='black', marker="o", linestyle='None')
     plt.text(0.01, 0.01, r'$\Gamma$')
-#    plt.scatter(r*np.cos(-np.pi/6), r*np.sin(-np.pi/6), s=15, c='black')
-    plt.text(r*np.cos(-np.pi/6)+0.01, r*np.sin(-np.pi/6)-0.05, r'$M$')
-#    plt.scatter(R, 0, s=15, c='black')
-    plt.text(R, 0.02, r'$K$')
-#    plt.scatter(kpnts_plot[:, 0], kpnts_plot[:, 1], s=10)
+    plt.plot(np.array([r*np.cos(-np.pi/6)]), np.array([r*np.sin(-np.pi/6)]), color='black', marker="o", linestyle='None')
+    plt.text(r*np.cos(-np.pi/6)+0.01, r*np.sin(-np.pi/6)-0.05, r'M')
+    plt.plot(np.array([R]), np.array([0.0]), color='black', marker="o", linestyle='None')
+    plt.text(R, 0.02, r'K')
+    hexagon_x = R*np.array([1,2,1,0.5,1,    0.5,-0.5,-1,   -0.5,-1,-2,-1,-0.5,-1,    -0.5,0.5, 1,     0.5,  1])
+    tmp = np.sqrt(3)/2
+    hexagon_y = R*np.array([0,0,0,tmp,2*tmp,tmp,tmp, 2*tmp,tmp, 0, 0, 0, -tmp,-2*tmp,-tmp,-tmp,-2*tmp,-tmp,0])
+    plt.plot(hexagon_x, hexagon_y, color='black' )
     size = 5.0
     plt.xlim(-size/P.a_angs, size/P.a_angs)
     plt.ylim(-size/P.a_angs, size/P.a_angs)
@@ -827,8 +824,23 @@ def BZ_plot(kpnts, paths, P):
     plt.ylabel(r'$k_y$ in 1/Angstroem')
 
     for path in paths:
-        plt.plot(co.as_to_au*path[:, 0], co.as_to_au*path[:, 1])
+        num_k                = np.size(path[:,0])
+        plot_path_x          = np.zeros(num_k+1)
+        plot_path_y          = np.zeros(num_k+1)
+        plot_path_x[0:num_k] = co.as_to_au*path[0:num_k, 0]
+        plot_path_x[num_k]   = co.as_to_au*path[0, 0]
+        plot_path_y[0:num_k] = co.as_to_au*path[0:num_k, 1]
+        plot_path_y[num_k]   = co.as_to_au*path[0, 1]
+
+
+        plt.plot(plot_path_x, plot_path_y)
+        plt.plot(plot_path_x, plot_path_y, color='gray', marker="o", linestyle='None')
 
     tikzplotlib.save("BZ.tikz", axis_height='\\figureheight', axis_width ='\\figurewidth' )
 
-    plt.show()
+    replace("scale=0.5",   "scale=1",     filename="BZ.tikz")
+    replace("mark size=3", "mark size=1", filename="BZ.tikz")
+
+
+
+#    plt.show()

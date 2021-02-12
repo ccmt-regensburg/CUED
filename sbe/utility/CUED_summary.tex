@@ -127,11 +127,11 @@ in \printfield{booktitle}.
   \begin{center}
 {
 \includegraphics[width=9cm]{logo.pdf}
-\\[10em]
-\Huge \bfseries Output summary of the CUED program}
-\\[5em]\large
-The CUED program is developed and maintained by:
 \\[5em]
+\Huge \bfseries Output summary of the CUED program}
+\\[3em]\large
+The CUED program is developed and maintained by:
+\\[3em]
 Computational Condensed Matter Theory Group
 \\[0.5em]
 Head: Ferdinand Evers
@@ -145,9 +145,13 @@ Universitätsstraße 31
 D\,-\,93053 Regensburg
   \\[0.5em]
 Germany
-\\[5em]
+\\[3em]
 Version: Git commit GITCOMMITNUMBER, \today
-\\[5em]
+\\[3em]
+The calculation has been executed in the directory: 
+\\[0.5em]
+PH-DIRECTORY
+\\[3em]
   \end{center}{\large
   With contributions from (in alphabetic order): 
   \\[1em]
@@ -217,6 +221,15 @@ The gauge field is sketched in Fig.~\ref{fig:Efield}.
 
 \section{Brillouin zone and \textit{k}-point grid}
 REPLACEMENTBZ
+\begin{figure}[b!]
+\centering
+\setlength\figureheight{16cm} 
+\setlength\figurewidth{16cm}
+\input{BZ.tikz}
+\caption{Brillouin zone.}
+    \label{fig:Efield}
+\end{figure}
+
 
 
 \section{Hamiltonian, bandstructure and dipoles}
