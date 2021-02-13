@@ -611,7 +611,7 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
     if P.save_latex_pdf:
         t_fs = t*co.au_to_fs
 
-        t_idx = get_plot_limits_time(E_field, t_fs, P.factor_t_plot_end)
+        t_idx = get_plot_limits_time(E_field, t_fs, factor_t_plot_end=1.5)
 
         latex_dir = "latex_pdf_files"
 
@@ -711,7 +711,7 @@ def get_plot_limits_time(E_field, time_fs, factor_t_plot_end):
 
     E_max = np.amax(np.abs(E_field))
 
-    threshold = 1.0E-4
+    threshold = 1.0E-3
 
     for i_counter, E_i in enumerate(E_field):
         if np.abs(E_i) > threshold*E_max: 
