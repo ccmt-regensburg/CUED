@@ -116,7 +116,9 @@ in \printfield{booktitle}.
 \newcommand{\bk}{\mathbf{k}}
 \newcommand{\bA}{\mathbf{A}}
 \newcommand{\eqt}{\,{=}\,}
+\newcommand{\coloneqqt}{\,{\coloneqq}\,}
 
+\definecolor{darkgreen}{rgb}{0.0,0.5,0.0}
 
 
 \begin{document}
@@ -192,8 +194,8 @@ The following electric driving field is employed in the simulation:
 \end{align}
 \begin{figure}[b!]
 \centering
-\setlength\figureheight{8cm} 
-\setlength\figurewidth{8cm}
+\setlength\figureheight{7.5cm} 
+\setlength\figurewidth{7.5cm}
 \input{Efield.tikz}\hfill\input{Afield.tikz}
 \caption{Left: Electric driving field~$E(t)$ from Eq.~\eqref{e1}, right: Gauge field~$A(t)$ from Eq.~\eqref{e2}.}
     \label{fig:Efield}
@@ -208,12 +210,11 @@ The following parameters are used in the simulation:
     \item Carrier-envelope phase: $\phi = PH-CEP$
     \item $\alpha = PH-ALPHA$\,fs, full width at half maximum (FWHM) = PH-FWHM\,fs
 \end{itemize}
-The gauge field~$\bA(t)\eqt A(t)\,\hat{e}_\phi$ follows from~$\dot\bA(t)\eqt -\bE(t)$ such that we have 
+The gauge field~$\bA(t)\eqt A(t)\,\hat{e}_\phi$ follows from~$\dot\bA(t)\eqt -\bE(t)$. We compute $A(t)$ for the sketch in Fig.~\ref{fig:Efield} as
 \begin{align}
     \dot A(t) = -E(t) \hspace{2em}\Rightarrow\hspace{2em}
     A(t) = -\int\limits_{-\infty}^t E(t')\,dt'\,. \label{e2}
 \end{align}
-The gauge field is sketched in Fig.~\ref{fig:Efield}. 
 
 
 \section{Brillouin zone and \textit{k}-point grid}
@@ -228,7 +229,12 @@ Gray points indicate $k$-points, colored lines indicate $k$-points that are coup
 \setlength\figurewidth{\textwidth}
 \input{BZ.tikz}
 \vspace{-1em}
-\caption{Brillouin zone.}
+\caption{Brillouin zone (BZ). 
+%
+Gray points indicate $k$-points, colored lines indicate $k$-points that are coupled via  the term $\bE(t)\cdot \nabla_\bk$.
+%
+The green and red line at the top left corner sketch ${\color{darkgreen}\bA_\text{max}}\coloneqqt\hat{e}_\phi\max (-qA(t)/\hbar)$ and ${\color{red}\bA_\text{min}}\coloneqqt\hat{e}_\phi\min (-qA(t)/\hbar)$ indicating the maximum excursion of  electrons in the BZ.  
+}
     \label{fig:kp}
 \end{figure}
 

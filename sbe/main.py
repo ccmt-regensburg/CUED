@@ -660,7 +660,6 @@ def write_parameter(P):
     replace("PH-FREQ",  str(P.w_THz))
     replace("PH-CHIRP", str(P.chirp_THz))
     eps = 1.0E-13
-    print("P.phase =", P.phase, "np.pi/2 =", np.pi/2, P.phase > np.pi/2-eps, P.phase < np.pi/2+eps)
     if P.phase == 0:
          replace("PH-CEP", 0)
     elif P.phase > np.pi/2-eps and P.phase < np.pi/2+eps:
@@ -712,7 +711,7 @@ def get_plot_limits_time(E_field, time_fs, factor_t_plot_end):
 
     E_max = np.amax(np.abs(E_field))
 
-    threshold = 1.0E-12
+    threshold = 1.0E-4
 
     for i_counter, E_i in enumerate(E_field):
         if np.abs(E_i) > threshold*E_max: 
@@ -858,18 +857,21 @@ def BZ_plot(paths, P, A_field, E_dir):
     A_max = np.amax(A_field)*co.as_to_au
     A_diff = A_max - A_min
 
-    neg_A_x = np.array([-length,-length-E_dir[0]*A_min])
-    neg_A_y = np.array([length-E_dir[1]*A_diff, length+A_min*E_dir[1]])
+    dist_to_border = 0.05*length
+    adjusted_length = length - dist_to_border
 
-    print("neg_A_x =", neg_A_x, "neg_A_y =", neg_A_y)
+    neg_A_x = np.array([-adjusted_length,-adjusted_length-E_dir[0]*A_min])
+    neg_A_y = np.array([adjusted_length-E_dir[1]*A_diff, adjusted_length-A_max*E_dir[1]])
 
-    pos_A_x = np.array([-length-E_dir[0]*A_min, -length+E_dir[0]*A_diff])
-    pos_A_y = np.array([length+A_min*E_dir[1], length])
+    pos_A_x = np.array([-adjusted_length-E_dir[0]*A_min, -adjusted_length+E_dir[0]*A_diff])
+    pos_A_y = np.array([adjusted_length-A_max*E_dir[1], adjusted_length])
 
-    print("pos_A_x =", neg_A_x, "pos_A_y =", neg_A_y)
+    anchor_A_x = np.array([-adjusted_length-E_dir[0]*A_min])
+    anchor_A_y = np.array([adjusted_length-A_max*E_dir[1]])
 
-    plt.plot(neg_A_x, neg_A_y, color="blue")
-    plt.plot(neg_A_x, neg_A_y, color="orange")
+    plt.plot(pos_A_x, pos_A_y, color="green")
+    plt.plot(neg_A_x, neg_A_y, color="red")
+    plt.plot(anchor_A_x, anchor_A_y, color='black', marker="o", linestyle='None')
 
     tikzplotlib.save("BZ.tikz", axis_height='\\figureheight', axis_width ='\\figurewidth' )
 
