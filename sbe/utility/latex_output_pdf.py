@@ -74,9 +74,7 @@ def write_parameter(P, run_time):
     replace("PH-FREQ",  str(P.w_THz))
     replace("PH-CHIRP", str(P.chirp_THz))
     eps = 1.0E-13
-    if P.phase == 0:
-         replace("PH-CEP", 0)
-    elif P.phase > np.pi/2-eps and P.phase < np.pi/2+eps:
+    if P.phase > np.pi/2-eps and P.phase < np.pi/2+eps:
          replace("PH-CEP", "\\\\pi\/2")
     elif P.phase > np.pi-eps and P.phase < np.pi+eps:
          replace("PH-CEP", "\\\\pi")
@@ -233,8 +231,7 @@ def BZ_plot(paths, P, A_field, E_dir):
         rectangle_x = dist_edge_to_Gamma*np.array([np.cos(alpha+beta),np.cos(np.pi-alpha+beta),np.cos(alpha+beta+np.pi),np.cos(2*np.pi-alpha+beta),np.cos(alpha+beta)])
         rectangle_y = dist_edge_to_Gamma*np.array([np.sin(alpha+beta),np.sin(np.pi-alpha+beta),np.sin(alpha+beta+np.pi),np.sin(2*np.pi-alpha+beta),np.sin(alpha+beta)])
         plt.plot(rectangle_x, rectangle_y, color='black' )
-        max_length = max(P.length_BZ_E_dir, P.length_BZ_ortho)
-        length = 1.3*max_length
+        length = 1.1*max(np.amax(rectangle_x), np.amax(rectangle_y))
 
     Nk1_max = 24
     Nk2_max = 12
@@ -278,7 +275,7 @@ def BZ_plot(paths, P, A_field, E_dir):
     A_max = np.amax(A_field)*co.as_to_au
     A_diff = A_max - A_min
 
-    dist_to_border = 0.05*length
+    dist_to_border = 0.025*length
     adjusted_length = length - dist_to_border
 
     neg_A_x = np.array([-adjusted_length,-adjusted_length-E_dir[0]*A_min])
