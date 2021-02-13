@@ -87,9 +87,7 @@ def sbe_solver(sys, params, electric_field_function=None):
 
     # Form the Brillouin zone in consideration
     if P.BZ_type == 'hexagon':
-        _kpnts, paths, area = hex_mesh(P)
-        kweight = area/P.Nk
-        dk = 1/P.Nk1
+        dk, kweight, paths = hex_mesh(P)
         if P.align == 'K':
             E_dir = np.array([1, 0])
         elif P.align == 'M':
@@ -98,7 +96,7 @@ def sbe_solver(sys, params, electric_field_function=None):
     elif P.BZ_type == 'rectangle':
         E_dir = np.array([np.cos(np.radians(P.angle_inc_E_field)),
                           np.sin(np.radians(P.angle_inc_E_field))])
-        dk, kweight, _kpnts, paths = rect_mesh(P, E_dir, P.type_real_np)
+        dk, kweight, paths = rect_mesh(P, E_dir, P.type_real_np)
 
     E_ort = np.array([E_dir[1], -E_dir[0]])
 

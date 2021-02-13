@@ -232,7 +232,7 @@ The gauge field~$\bA(t)\eqt A(t)\,\hat{e}_\phi$ follows from~$\dot\bA(t)\eqt -\b
 \section{Brillouin zone and \textit{k}-point grid}
 You are using a PH-BZ as Brillouin zone (BZ) with a mesh size of PH-NK1\,$\times$\,PH-NK2. 
 %
-The BZ and the $k$-point mesh is sketched in Fig.~\ref{fig:kp}.
+The BZ and a smaller PH-SMALLNK1\,$\times$\,PH-SMALLNK2 $k$-point mesh is sketched in Fig.~\ref{fig:kp}.
 %
 \begin{figure}[h!]\vspace{2em}
 \centering
@@ -240,7 +240,7 @@ The BZ and the $k$-point mesh is sketched in Fig.~\ref{fig:kp}.
 \setlength\figurewidth{\textwidth}
 \input{BZ.tikz}
 \vspace{-1em}
-\caption{Brillouin zone (BZ) and $k$-point mesh.
+\caption{Brillouin zone (BZ) and PH-NK1SMALL\,$\times$\,PH-NK2SMALL $k$-point mesh.
 %
 The BZ is indicated by the black PH-BZ.
 %
@@ -254,8 +254,9 @@ The green and red line at the top left corner sketch ${\color{darkgreen}\bA_\tex
 
 \newpage
 \section{Hamiltonian, bandstructure and dipoles}
-This still needs to be filled.
-
+{\color{red}
+This still needs to be filled; Gauge; how to print the Hamiltonian properly? (e.g.~Dirac or Bi$_2$Te$_3$?) Printing of band structure for rectangle along $k_x, k_y=0$, $k_y,k_x=0$, for hexagon along K-$\Gamma$-M. Plotting of dipoles as in Patricks plot with 4 diagrams (dvv, dcc, Re(dvc), Im(dvc)), additionally along K-$\Gamma$-M (also absolute value of dvc).
+}
 
 \section{Time evolution of the density matrix}
 We solve semiconductor Bloch equations in the length gauge, Eq.~(50) in Ref.~[\ref{Wilhelm2021}]:
@@ -268,7 +269,7 @@ We solve semiconductor Bloch equations in the length gauge, Eq.~(50) in Ref.~[\r
    \sd {-}1/T_2\big]\,\rhonnprime
     -i\sd \bE(t){\sum_{\un}}
     \big(\rho_{n\un}(\bk;t) \mathbf{d}_{\un n'}(\bk)
-    -  \mathbf{d}_{n\un}(\bk)\rho_{\un n}(\bk;t)
+    -  \mathbf{d}_{n\un}(\bk)\rho_{\un n'}(\bk;t)
     \big)
 \end{align}
 with a dephasing time $T_2\eqt PH-T2$\,fs. {\color{red}TODO: Plots of initial vv and cc density matrix elements, plot of time evolution at a k-point, snapshot of density matrix at 3 time points for whole BZ.}
@@ -352,7 +353,7 @@ We recover $I(\omega)\eqt I_\parallel(\omega)\,{+}\sd I_\bot(\omega)$.
 
 
 \section{References}
-When using the CUED software package, please reference to CUED via the following publication:
+When using the CUED software package, please reference to CUED by citing the following publication:
 \begin{enumerate}[leftmargin=*]
 
 \paper{J.~Wilhelm, P.~Grössing, A.~Seith, J.~Crewse, M.~Nitsch, L.~Weigl, C.~Schmid, and F.~Evers}{Semi\-con\-duc\-tor-Bloch Formalism: Derivation and Application to High-Harmonic Generation from Dirac Fermions}{TOBEFILLED}{ 

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import tikzplotlib
 
 from sbe.utility import ConversionFactors as co
+from sbe.kpoint_mesh import hex_mesh, rect_mesh
 
 def write_and_compile_latex_PDF(t, freq, E_field, A_field, I_exact_E_dir, I_exact_ortho, \
         Int_exact_E_dir, Int_exact_ortho, E_dir, paths, run_time, P):
@@ -21,6 +22,13 @@ def write_and_compile_latex_PDF(t, freq, E_field, A_field, I_exact_E_dir, I_exac
 
         os.mkdir(latex_dir)
         os.chdir(latex_dir)
+
+        code_path = os.path.dirname(os.path.realpath(__file__))
+
+        shutil.copy(code_path+"/CUED_summary.tex", ".")
+        shutil.copy(code_path+"/logo.pdf", ".")
+
+        write_parameter(P, run_time)
 
         tikz_time(E_field*co.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield")
         tikz_time(A_field*co.au_to_MVpcm*co.au_to_fs, t_fs, t_idx, r"A-field $A(t)$ in MV*fs/cm", "Afield")
@@ -40,13 +48,6 @@ def write_and_compile_latex_PDF(t, freq, E_field, A_field, I_exact_E_dir, I_exac
         replace("semithick", "thick", "*")
 
 
-
-        code_path = os.path.dirname(os.path.realpath(__file__))
-
-        shutil.copy(code_path+"/CUED_summary.tex", ".")
-        shutil.copy(code_path+"/logo.pdf", ".")
-
-        write_parameter(P, run_time)
 
         os.system("pdflatex CUED_summary.tex")
 
@@ -235,13 +236,33 @@ def BZ_plot(paths, P, A_field, E_dir):
         max_length = max(P.length_BZ_E_dir, P.length_BZ_ortho)
         length = 1.3*max_length
 
+    Nk1_max = 24
+    Nk2_max = 12
+    if P.Nk1 <= Nk1_max and P.Nk2 <= Nk2_max:
+        printed_paths = paths
+    else:
+        Nk1_safe = P.Nk1
+        Nk2_safe = P.Nk2
+        P.Nk1 = min(P.Nk1, Nk1_max)
+        P.Nk2 = min(P.Nk2, Nk2_max)
+        Nk1_plot = P.Nk1
+        Nk2_plot = P.Nk2
+        P.Nk = P.Nk1*P.Nk2
+        if P.BZ_type == 'hexagon':
+            dk, kweight, printed_paths = hex_mesh(P)
+        elif P.BZ_type == 'rectangle':
+            dk, kweight, printed_paths = rect_mesh(P, E_dir, P.type_real_np)
+        P.Nk1 = Nk1_safe 
+        P.Nk2 = Nk2_safe
+        P.Nk = P.Nk1*P.Nk2
+
     plt.xlim(-length, length)
     plt.ylim(-length, length)
 
     plt.xlabel(r'$k_x$ in 1/Angstroem')
     plt.ylabel(r'$k_y$ in 1/Angstroem')
 
-    for path in paths:
+    for path in printed_paths:
         num_k                = np.size(path[:,0])
         plot_path_x          = np.zeros(num_k+1)
         plot_path_y          = np.zeros(num_k+1)
@@ -277,6 +298,8 @@ def BZ_plot(paths, P, A_field, E_dir):
 
     replace("scale=0.5",   "scale=1",     filename="BZ.tikz")
     replace("mark size=3", "mark size=1", filename="BZ.tikz")
+    replace("PH-SMALLNK1", str(Nk1_plot))
+    replace("PH-SMALLNK2", str(Nk2_plot))
 
 #    plt.show()
 
