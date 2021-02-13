@@ -6,11 +6,13 @@ import tikzplotlib
 
 from sbe.utility import ConversionFactors as co
 
-def write_and_compile_latex_PDF(t, E_field, A_field, E_dir, paths, P):
+def write_and_compile_latex_PDF(t, freq, E_field, A_field, I_exact_E_dir, I_exact_ortho, \
+        Int_exact_E_dir, Int_exact_ortho, E_dir, paths, P):
 
         t_fs = t*co.au_to_fs
-
-        t_idx = get_plot_limits_time(E_field, t_fs, factor_t_plot_end=1.5)
+        num_points_max_for_plotting = 1000
+        t_idx = get_time_indices_for_plotting(E_field, t_fs, num_points_max_for_plotting, factor_t_end=1.5)
+        f_idx = get_freq_indices_for_plotting(freq/P.w, num_points_max_for_plotting, freq_max=30)
 
         latex_dir = "latex_pdf_files"
 
@@ -25,6 +27,9 @@ def write_and_compile_latex_PDF(t, E_field, A_field, E_dir, paths, P):
 
         BZ_plot(paths, P, A_field, E_dir)
 
+        tikz_time(I_exact_E_dir, t_fs, t_idx, r'Current $j_{\parallel \bE}(t)$ parallel to $\bE$ in atomic units', "j_E_dir")
+        tikz_time(I_exact_ortho, t_fs, t_idx, r'Current $j_{\bot \bE}(t)$ orthogonal to $\bE$ in atomic units', "j_ortho")
+        tikz_freq(Int_exact_E_dir, Int_exact_ortho, freq/P.w, f_idx, r'Emission intensity in atomic units', "Emission_total")
 
 
         code_path = os.path.dirname(os.path.realpath(__file__))
@@ -39,7 +44,6 @@ def write_and_compile_latex_PDF(t, E_field, A_field, E_dir, paths, P):
         os.system("pdflatex CUED_summary.tex")
 
         os.chdir("..")
-
 
 
 def write_parameter(P):
@@ -100,21 +104,43 @@ def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
                      axis_width ='\\figurewidth' )
 
 
-def replace(old, new, filename="CUED_summary.tex"):
+def tikz_freq(Int_exact_E_dir, Int_exact_ortho, freq_normalized, f_idx, ylabel, filename):
 
-    print("sed -i -e \'s/"+old+"/"+new+"/g\' "+filename)
+    xlabel = r'Harmonic order = (frequency $f$)/(pulse frequency $f_0$)'
+
+    _fig, (ax1) = plt.subplots(1)
+    _lines_exact_E_dir = ax1.semilogy(freq_normalized[f_idx], Int_exact_E_dir[f_idx], marker='')
+    _lines_exact_E_dir = ax1.semilogy(freq_normalized[f_idx], Int_exact_ortho[f_idx], marker='')
+
+    f_lims = (freq_normalized[f_idx[0]], freq_normalized[f_idx[-1]])
+    
+    ax1.grid(True, axis='both', ls='--')
+    ax1.set_xlim(f_lims)
+    ax1.set_xlabel(xlabel)
+    ax1.set_ylabel(ylabel)
+    ax1.legend(loc='upper right')
+    ax1.set_xticks(np.arange(f_lims[1]+1))
+
+    tikzplotlib.save(filename+".tikz",
+                     axis_height='\\figureheight', 
+                     axis_width ='\\figurewidth' )
+ 
+    replace("xmax=30,", "xmax=30, xtick={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"+\
+            ",21,22,23,24,25,26,27,28,29,30}, xticklabels={,1,,,,5,,,,,10,,,,,15,,,,,20,,,,,25,,,,,30},", \
+            filename=filename+".tikz")
+
+
+def replace(old, new, filename="CUED_summary.tex"):
 
     os.system("sed -i -e \'s/"+old+"/"+new+"/g\' "+filename)
 
 
-def get_plot_limits_time(E_field, time_fs, factor_t_plot_end): 
+def get_time_indices_for_plotting(E_field, time_fs, num_t_points_max, factor_t_end): 
 
     E_max = np.amax(np.abs(E_field))
 
     threshold = 1.0E-3
   
-    num_t_points_max = 200
-
     for i_counter, E_i in enumerate(E_field):
         if np.abs(E_i) > threshold*E_max: 
             index_t_plot_start = i_counter
@@ -125,7 +151,7 @@ def get_plot_limits_time(E_field, time_fs, factor_t_plot_end):
             t_plot_end       = time_fs[i_counter]
             break
 
-    t_plot_end *= factor_t_plot_end
+    t_plot_end *= factor_t_end
 
     for i_counter, t_i in enumerate(time_fs):
         if t_i > t_plot_end: 
@@ -140,6 +166,28 @@ def get_plot_limits_time(E_field, time_fs, factor_t_plot_end):
     t_idx = range(index_t_plot_start, index_t_plot_end, step)
 
     return t_idx
+
+
+def get_freq_indices_for_plotting(freq_normalized, num_points_max_for_plotting, freq_max):
+
+    for i_counter, f_i in enumerate(freq_normalized):
+        if f_i.real > -1.0E-8: 
+            index_f_plot_start = i_counter
+            break
+
+    for i_counter, f_i in enumerate(freq_normalized):
+        if f_i.real > freq_max:
+            index_f_plot_end = i_counter
+            break
+
+    if index_f_plot_end - index_f_plot_start < num_points_max_for_plotting:
+        step = 1
+    else:
+        step = (index_f_plot_end - index_f_plot_start)//num_points_max_for_plotting
+
+    f_idx = range(index_f_plot_start, index_f_plot_end, step)
+
+    return f_idx
 
 
 def BZ_plot(paths, P, A_field, E_dir):

@@ -64,49 +64,49 @@ headheight=25pt,
 
 
 \usepackage[varg]{txfonts} %font/Schrift
-\usepackage{csquotes}
-\usepackage[minnames=3,maxnames=30,backend=biber,natbib=true,sorting=none,citestyle=numeric-comp,giveninits=true]{biblatex}
-\addbibresource{Literature.bib}
-%\setlength\bibitemsep{0.5em}
-\setlength{\biblabelsep}{0.4em}
+%\usepackage{csquotes}
+% \usepackage[minnames=3,maxnames=30,backend=biber,natbib=true,sorting=none,citestyle=numeric-comp,giveninits=true]{biblatex}
+% \addbibresource{Literature.bib}
+% %\setlength\bibitemsep{0.5em}
+% \setlength{\biblabelsep}{0.4em}
 
-\DeclareFieldFormat{pages}{#1}
-\DeclareFieldFormat{journaltitle}{#1}
-\DeclareFieldFormat{eprint}{#1}
-\DeclareFieldFormat[article]{title}{\it#1\isdot}
+% \DeclareFieldFormat{pages}{#1}
+% \DeclareFieldFormat{journaltitle}{#1}
+% \DeclareFieldFormat{eprint}{#1}
+% \DeclareFieldFormat[article]{title}{\it#1\isdot}
 
-\DeclareBibliographyDriver{article}{
-\printnames{author}, \printfield{title},
-\href{http://dx.doi.org/\thefield{doi}}
-{\printfield{journaltitle} 
-\textbf{\printfield{volume}}, \printfield{pages} 
-(\printfield{year})}.}
+% \DeclareBibliographyDriver{article}{
+% \printnames{author}, \printfield{title},
+% \href{http://dx.doi.org/\thefield{doi}}
+% {\printfield{journaltitle} 
+% \textbf{\printfield{volume}}, \printfield{pages} 
+% (\printfield{year})}.}
 
-\DeclareBibliographyDriver{misc}{
-\printnames{author}, \printfield{title},
-\href{https://arxiv.org/abs/\thefield{eprint}}{
-arXiv preprint, arXiv:\printfield{eprint}  (\printfield{year})}.}
+% \DeclareBibliographyDriver{misc}{
+% \printnames{author}, \printfield{title},
+% \href{https://arxiv.org/abs/\thefield{eprint}}{
+% arXiv preprint, arXiv:\printfield{eprint}  (\printfield{year})}.}
 
-\DeclareBibliographyDriver{inbook}{\hspace{-0.1cm}
-\printnames{author},
-\printfield{title},
-in \printfield{booktitle}.
-\printlist{publisher}
-(\printfield{year}).
-}
+% \DeclareBibliographyDriver{inbook}{\hspace{-0.1cm}
+% \printnames{author},
+% \printfield{title},
+% in \printfield{booktitle}.
+% \printlist{publisher}
+% (\printfield{year}).
+% }
 
 
-\renewbibmacro*{name:andothers}{% Based on name:andothers from biblatex.def
-  \ifboolexpr{
-    test {\ifnumequal{\value{listcount}}{\value{liststop}}}
-    and
-    test \ifmorenames
-  }
-    {\ifnumgreater{\value{liststop}}{1}
-       {\finalandcomma}
-       {}%
-     \andothersdelim\bibstring[\emph]{andothers}}
-    {}}
+% \renewbibmacro*{name:andothers}{% Based on name:andothers from biblatex.def
+%   \ifboolexpr{
+%     test {\ifnumequal{\value{listcount}}{\value{liststop}}}
+%     and
+%     test \ifmorenames
+%   }
+%     {\ifnumgreater{\value{liststop}}{1}
+%       {\finalandcomma}
+%       {}%
+%      \andothersdelim\bibstring[\emph]{andothers}}
+%     {}}
 
 \setenumerate[1]{label=[\arabic*],ref=\arabic*}
 \newcommand{\paper}[4]{\item #1, \,\textit{#2}, \,\href{#3}{#4}.\\[-1.4em]}
@@ -115,8 +115,12 @@ in \printfield{booktitle}.
 \newcommand{\bE}{\mathbf{E}}
 \newcommand{\bk}{\mathbf{k}}
 \newcommand{\bA}{\mathbf{A}}
+\newcommand{\bj}{\mathbf{j}}
+\newcommand{\bd}{\mathbf{d}}
 \newcommand{\eqt}{\,{=}\,}
+\newcommand{\pt}{\,{+}\,}
 \newcommand{\coloneqqt}{\,{\coloneqq}\,}
+\newcommand{\intbzdkpi}{\int\limits_\text{BZ}\frac{d\bk}{(2\pi)^d}}
 
 \definecolor{darkgreen}{rgb}{0.0,0.5,0.0}
 
@@ -208,7 +212,7 @@ The following parameters are used in the simulation:
     \item Pulse frequency: $f_0 = PH-FREQ$\,THz
     \item Chirp: $f_\text{chirp} = PH-CHIRP$\,THz
     \item Carrier-envelope phase: $\phi = PH-CEP$
-    \item $\alpha = PH-ALPHA$\,fs, full width at half maximum (FWHM) = PH-FWHM\,fs
+    \item $\alpha = PH-ALPHA$\,fs, full width at half maximum (FWHM) of the Gaussian envelope = PH-FWHM\,fs
 \end{itemize}
 The gauge field~$\bA(t)\eqt A(t)\,\hat{e}_\phi$ follows from~$\dot\bA(t)\eqt -\bE(t)$. We compute $A(t)$ for the sketch in Fig.~\ref{fig:Efield} as
 \begin{align}
@@ -218,18 +222,19 @@ The gauge field~$\bA(t)\eqt A(t)\,\hat{e}_\phi$ follows from~$\dot\bA(t)\eqt -\b
 
 
 \section{Brillouin zone and \textit{k}-point grid}
-You are using a PH-BZ Brillouin zone with a mesh size of PH-NK1\,$\times$\,PH-NK2. 
+You are using a PH-BZ as Brillouin zone (BZ) with a mesh size of PH-NK1\,$\times$\,PH-NK2. 
 %
-The mesh is sketched in Fig.~\ref{fig:kp}.
+The BZ and the $k$-point mesh is sketched in Fig.~\ref{fig:kp}.
 %
-Gray points indicate $k$-points, colored lines indicate $k$-points that are coupled via  the term $\bE(t)\cdot \nabla_\bk$.
 \begin{figure}[b!]
 \centering
 \setlength\figureheight{\textwidth} 
 \setlength\figurewidth{\textwidth}
 \input{BZ.tikz}
 \vspace{-1em}
-\caption{Brillouin zone (BZ). 
+\caption{Brillouin zone (BZ) and $k$-point mesh.
+%
+The BZ is indicated by the black PH-BZ.
 %
 Gray points indicate $k$-points, colored lines indicate $k$-points that are coupled via  the term $\bE(t)\cdot \nabla_\bk$.
 %
@@ -246,16 +251,53 @@ REPLACEMENTHAMILTONIAN
 
 \section{Time evolution of the density matrix}
 
-\section{Time-dependent currents}
+\section{Time-dependent current}
+\begin{figure}[b!]
+\centering
+\setlength\figureheight{7.5cm} 
+\setlength\figurewidth{7.5cm}
+\input{j_E_dir.tikz}\hfill\input{j_ortho.tikz}
+\caption{Components of the time-dependent current~$\bj(t)$: left: parallel to the driving field, right: orthogonal to the driving field, see Eq.~\eqref{currentcomp}.}
+    \label{fig:current}
+\end{figure}
+The current is computed from Eq.~(67) in Ref.~[\ref{Wilhelm2021}] as
+\begin{align}
+ \bj(t)  =
+q\sum_{nn'} \intbzdkpi
+\ \langle u_{n\bk} |  (\partial_\bk h(\bk)) | u_{n'\bk}\rangle \ \rho_{nn'}(\bk,t)\,.\label{current}
+\end{align} 
+The matrix element $ \langle u_{n\bk} |  (\partial_\bk h(\bk)) | u_{n'\bk}\rangle$ can be computed from Eq.~(68) in Ref.~[\ref{Wilhelm2021}] as
+\begin{align}
+   \langle u_{n\bk} |  (\partial_\bk h(\bk)) | u_{n'\bk}\rangle  = \delta_{nn'}\partial_\bk\epsilon_n(\bk) 
+   -\frac{i}{q}\, \bd_{nn'}(\bk)\,\epsilon_{n'n}(\bk) \,.
+\end{align}
+%
+In our case, the current is a two-dimensional vector. 
+%
+We generating meaningful plots, we project the current onto the axis~$\hat{e}_\phi$ of the incoming E-field and its orthogonal direction $\hat{e}_{\phi+\pi/2}$:
+\begin{align}
+    j_{\parallel\bE}(t) = \hat{e}_\phi\;\bj(t)\,,\hspace{2em}
+    j_{\bot\bE}(t) = \hat{e}_{\phi+\pi/2}\;\bj(t)\,, 
+    \label{currentcomp}
+\end{align}
+such that we recover $\bj(t)\eqt\hat{e}_\phi\, j_{\parallel\bE}(t)\pt\hat{e}_{\phi+\pi/2}\,j_{\bot\bE}(t)$.
 
 \section{Frequency-resolved emission spectrum}
-
+\begin{figure}[b!]
+\centering
+\setlength\figureheight{9cm} 
+\setlength\figurewidth{\textwidth}
+\input{Emission_total.tikz}
+\caption{Components of the time-dependent current~$\bj(t)$: left: parallel to the driving field, right: orthogonal to the driving field, see Eq.~\eqref{currentcomp}.}
+    \label{fig:current}
+\end{figure}
 \section{Summary of input parameters}
 
 \section{Timings}
 
 
 \section{References}
+When using the CUED software package, please reference to it via the following publications:
 \begin{enumerate}[leftmargin=*]
 
 \paper{J.~Wilhelm, P.~Grössing, A.~Seith, J.~Crewse, M.~Nitsch, L.~Weigl, C.~Schmid, and F.~Evers}{Semi\-con\-duc\-tor-Bloch Formalism: Derivation and Application to High-Harmonic Generation from Dirac Fermions}{TOBEFILLED}{ 

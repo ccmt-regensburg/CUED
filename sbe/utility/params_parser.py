@@ -167,4 +167,7 @@ def parse_params(user_params):
     if hasattr(UP, 'save_latex_pdf'):
         P.save_latex_pdf = UP.save_latex_pdf
 
+    if P.save_latex_pdf and P.gauge == 'velocity':
+        sys.exit("Printing a Latex PDF is only implemented for the length gauge.")
+
     return P
