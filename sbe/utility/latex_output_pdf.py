@@ -112,6 +112,8 @@ def get_plot_limits_time(E_field, time_fs, factor_t_plot_end):
     E_max = np.amax(np.abs(E_field))
 
     threshold = 1.0E-3
+  
+    num_t_points_max = 200
 
     for i_counter, E_i in enumerate(E_field):
         if np.abs(E_i) > threshold*E_max: 
@@ -130,7 +132,12 @@ def get_plot_limits_time(E_field, time_fs, factor_t_plot_end):
             index_t_plot_end = i_counter
             break
 
-    t_idx = range(index_t_plot_start, index_t_plot_end)
+    if index_t_plot_end - index_t_plot_start < num_t_points_max:
+        step = 1
+    else:
+        step = (index_t_plot_end - index_t_plot_start)//num_t_points_max
+
+    t_idx = range(index_t_plot_start, index_t_plot_end, step)
 
     return t_idx
 
