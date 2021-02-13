@@ -319,6 +319,7 @@ def sbe_solver(sys, params, electric_field_function=None):
 
     # End time of solver loop
     end_time = time.perf_counter()
+    run_time = end_time - start_time
 
     # Write solutions
     # Filename tail
@@ -327,11 +328,9 @@ def sbe_solver(sys, params, electric_field_function=None):
 
     write_current_emission(tail, kweight, t, J_exact_E_dir, J_exact_ortho,
                            J_intra_E_dir, J_intra_ortho, P_inter_E_dir, P_inter_ortho, J_anom_ortho, 
-                           E_field, A_field, paths, E_dir, P)
-
+                           E_field, A_field, paths, E_dir, run_time, P)
 
     # Save the parameters of the calculation
-    run_time = end_time - start_time
     params_name = 'params_' + tail + '.txt'
     paramsfile = open(params_name, 'w')
     paramsfile.write(str(P.__dict__) + "\n\n")
@@ -461,7 +460,7 @@ def gaussian(t, alpha):
 
 def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
                            J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho, 
-                           E_field, A_field, paths, E_dir, P):
+                           E_field, A_field, paths, E_dir, run_time, P):
     """
         Calculates the Emission Intensity I(omega) (eq. 51 in https://arxiv.org/abs/2008.03177)
 
@@ -608,7 +607,7 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
 
     if P.save_latex_pdf:
         write_and_compile_latex_PDF(t, freq, E_field, A_field, I_exact_E_dir, I_exact_ortho, \
-                Int_exact_E_dir, Int_exact_ortho, E_dir, paths, P)
+                Int_exact_E_dir, Int_exact_ortho, E_dir, paths, run_time, P)
 
 
 def fourier_current_intensity(I_E_dir, I_ortho, gaussian_envelope, dt_out, prefac_emission, freq):

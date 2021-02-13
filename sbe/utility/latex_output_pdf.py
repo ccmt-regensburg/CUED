@@ -7,7 +7,7 @@ import tikzplotlib
 from sbe.utility import ConversionFactors as co
 
 def write_and_compile_latex_PDF(t, freq, E_field, A_field, I_exact_E_dir, I_exact_ortho, \
-        Int_exact_E_dir, Int_exact_ortho, E_dir, paths, P):
+        Int_exact_E_dir, Int_exact_ortho, E_dir, paths, run_time, P):
 
         t_fs = t*co.au_to_fs
         num_points_max_for_plotting = 1000
@@ -46,7 +46,7 @@ def write_and_compile_latex_PDF(t, freq, E_field, A_field, I_exact_E_dir, I_exac
         shutil.copy(code_path+"/CUED_summary.tex", ".")
         shutil.copy(code_path+"/logo.pdf", ".")
 
-        write_parameter(P)
+        write_parameter(P, run_time)
 
         os.system("pdflatex CUED_summary.tex")
 
@@ -55,7 +55,7 @@ def write_and_compile_latex_PDF(t, freq, E_field, A_field, I_exact_E_dir, I_exac
         os.chdir("..")
 
 
-def write_parameter(P):
+def write_parameter(P, run_time):
 
     if P.BZ_type == 'rectangle':
         if P.angle_inc_E_field == 0:
@@ -91,6 +91,8 @@ def write_parameter(P):
     replace("PH-BZ", P.BZ_type)
     replace("PH-NK1", str(P.Nk1))
     replace("PH-NK2", str(P.Nk2))
+    replace("PH-T2", str(P.T2_fs))
+    replace("PH-RUN", '{:.1f}'.format(run_time))
 
 
 def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):

@@ -117,10 +117,16 @@ headheight=25pt,
 \newcommand{\bA}{\mathbf{A}}
 \newcommand{\bj}{\mathbf{j}}
 \newcommand{\bd}{\mathbf{d}}
+\newcommand{\sd}{\hspace{0.05em}}
 \newcommand{\eqt}{\,{=}\,}
 \newcommand{\pt}{\,{+}\,}
 \newcommand{\coloneqqt}{\,{\coloneqq}\,}
-\newcommand{\intbzdkpi}{\int\limits_\text{BZ}\frac{d\bk}{(2\pi)^d}}
+\newcommand{\intbzdkpi}{\int\limits_\text{BZ}\frac{d\bk}{(2\pi)^2}}
+\newcommand{\rhonnprime}{\rho_{nn'}(\bk,t)}
+\newcommand{\un}{\underline{n}}
+
+
+
 
 \definecolor{darkgreen}{rgb}{0.0,0.5,0.0}
 
@@ -154,6 +160,8 @@ D\,-\,93053 Regensburg
 Germany
 \\[3em]
 Date of execution: \today
+  \\[0.5em]
+Run time: PH-RUN s
 \\[3em]
   \end{center}{\large
   With contributions from (in alphabetic order): 
@@ -192,8 +200,8 @@ Date of execution: \today
 The following electric driving field is employed in the simulation:
 \begin{align}
     \bE(t)  = E(t)\,\hat{e}_\phi
-    \,,\hspace{2em}
-    E(t) = E_0\,    \sin\Big(2\pi f_0\,(1+f_\text{chirp} t) + \varphi\Big)\, e^{-t^2/(2\alpha)^2}\,.
+    \;,\hspace{2em}
+    E(t) = E_0\,    \sin\Big(2\pi f_0\,(1+f_\text{chirp} t) + \varphi\Big)\, e^{-t^2/(2\alpha)^2}\;.
     \label{e1}
 \end{align}
 \begin{figure}[b!]
@@ -217,7 +225,7 @@ The following parameters are used in the simulation:
 The gauge field~$\bA(t)\eqt A(t)\,\hat{e}_\phi$ follows from~$\dot\bA(t)\eqt -\bE(t)$. We compute $A(t)$ for the sketch in Fig.~\ref{fig:Efield} as
 \begin{align}
     \dot A(t) = -E(t) \hspace{2em}\Rightarrow\hspace{2em}
-    A(t) = -\int\limits_{-\infty}^t E(t')\,dt'\,. \label{e2}
+    A(t) = -\int\limits_{-\infty}^t E(t')\,dt'\;. \label{e2}
 \end{align}
 
 
@@ -226,7 +234,7 @@ You are using a PH-BZ as Brillouin zone (BZ) with a mesh size of PH-NK1\,$\times
 %
 The BZ and the $k$-point mesh is sketched in Fig.~\ref{fig:kp}.
 %
-\begin{figure}[b!]
+\begin{figure}[h!]\vspace{2em}
 \centering
 \setlength\figureheight{\textwidth} 
 \setlength\figurewidth{\textwidth}
@@ -246,10 +254,24 @@ The green and red line at the top left corner sketch ${\color{darkgreen}\bA_\tex
 
 \newpage
 \section{Hamiltonian, bandstructure and dipoles}
-REPLACEMENTHAMILTONIAN
+This still needs to be filled.
 
 
 \section{Time evolution of the density matrix}
+We solve semiconductor Bloch equations in the length gauge, Eq.~(50) in Ref.~[\ref{Wilhelm2021}]:
+\begin{align}
+    \left[
+    \frac{\partial}{\partial t}
+    +q\bE(t)\frac{\partial}{\partial \bk}
+    \right]\rhonnprime = 
+    \big[i\sd(\epsilon_{n'}(\bk)-\epsilon_{n}(\bk))
+   \sd {-}1/T_2\big]\,\rhonnprime
+    -i\sd \bE(t){\sum_{\un}}
+    \big(\rho_{n\un}(\bk;t) \mathbf{d}_{\un n'}(\bk)
+    -  \mathbf{d}_{n\un}(\bk)\rho_{\un n}(\bk;t)
+    \big)
+\end{align}
+with a dephasing time $T_2\eqt PH-T2$\,fs. {\color{red}TODO: Plots of initial vv and cc density matrix elements, plot of time evolution at a k-point, snapshot of density matrix at 3 time points for whole BZ.}
 
 \section{Time-dependent current}
 \begin{figure}[b!]
@@ -264,23 +286,27 @@ The current is computed from Eq.~(67) in Ref.~[\ref{Wilhelm2021}] as
 \begin{align}
  \bj(t)  =
 q\sum_{nn'} \intbzdkpi
-\ \langle u_{n\bk} |  (\partial_\bk h(\bk)) | u_{n'\bk}\rangle \ \rho_{nn'}(\bk,t)\,.\label{current}
+\ \langle u_{n\bk} |  \frac{\partial h(\bk)}{\partial \bk} | u_{n'\bk}\rangle \ \rhonnprime\;.\label{current}
 \end{align} 
 The matrix element $ \langle u_{n\bk} |  (\partial_\bk h(\bk)) | u_{n'\bk}\rangle$ can be computed from Eq.~(68) in Ref.~[\ref{Wilhelm2021}] as
 \begin{align}
-   \langle u_{n\bk} |  (\partial_\bk h(\bk)) | u_{n'\bk}\rangle  = \delta_{nn'}\partial_\bk\epsilon_n(\bk) 
-   -\frac{i}{q}\, \bd_{nn'}(\bk)\,\epsilon_{n'n}(\bk) \,.
+   \langle u_{n\bk} |  \frac{\partial h(\bk)}{\partial \bk} | u_{n'\bk}\rangle  = \delta_{nn'}\partial_\bk\epsilon_n(\bk) 
+   +\frac{i}{q}\, \bd_{nn'}(\bk)\,(\epsilon_n(\bk)-\epsilon_{n'}(\bk)) \;.
 \end{align}
 %
 In our case, the current is a two-dimensional vector. 
 %
-We generating meaningful plots, we project the current onto the axis~$\hat{e}_\phi$ of the incoming E-field and its orthogonal direction $\hat{e}_{\phi+\pi/2}$:
+For generating meaningful plots, we project the current onto the axis~$\hat{e}_\phi$ of the incoming E-field and its orthogonal direction $\hat{e}_{\phi+\pi/2}$:
 \begin{align}
-    j_{\parallel}(t) = \hat{e}_\phi\;\bj(t)\,,\hspace{2em}
-    j_{\bot}(t) = \hat{e}_{\phi+\pi/2}\;\bj(t)\,, 
+    j_{\parallel}(t) = \hat{e}_\phi\;\bj(t)\;,\hspace{2em}
+    j_{\bot}(t) = \hat{e}_{\phi+\pi/2}\;\bj(t)\;, 
     \label{currentcomp}
 \end{align}
-such that we recover $\bj(t)\eqt\hat{e}_\phi\, j_{\parallel}(t)\pt\hat{e}_{\phi+\pi/2}\,j_{\bot}(t)$.
+and we recover 
+\begin{align}
+\bj(t)\eqt\hat{e}_\phi\, j_{\parallel}(t)\pt\hat{e}_{\phi+\pi/2}\,j_{\bot}(t)\;.
+    \label{currentdecomp}
+\end{align}
 
 \section{Frequency-resolved emission spectrum}
 \begin{figure}[b!]
@@ -290,16 +316,43 @@ such that we recover $\bj(t)\eqt\hat{e}_\phi\, j_{\parallel}(t)\pt\hat{e}_{\phi+
 \input{Emission_total.tikz}
 \\[1.5em]
 \input{Emission_para_ortho.tikz}
-\caption{Components of the time-dependent current~$\bj(t)$: left: parallel to the driving field, right: orthogonal to the driving field, see Eq.~\eqref{currentcomp}.}
-    \label{fig:current}
+\caption{Emission intensity from the irradiated material computed from Eqs.~\eqref{emission} and~\eqref{emissiondecomp2}.
+%
+The frequency is given by $f\eqt\omega/(2\pi)$.
+}
+    \label{fig:emission}
 \end{figure}
-\section{Summary of input parameters}
+Experiments measure the  frequency resolved emission intensity~$I$, which is computed by Eq.~(53) in Ref.~[\ref{Wilhelm2021}]
+\begin{align}
+I(\omega) &=
+\frac{\omega^2}{3c^3}\,|\bj(\omega)|^2\;, \label{emission}
+\end{align}
+where $\bj(\omega)$ is the Fourier transform of $\bj(t)$ and $c$ is the speed of light. 
+%
+The emission is sketched in Fig.~\ref{fig:emission}.
+%
+When inserting Eq.~\eqref{currentdecomp} in the frequency domain, we have
+\begin{align}
+I(\omega) &=
+\frac{\omega^2}{3c^3}\,\Big(\,|\,\bj_\parallel(\omega)\sd|^2
++ |\,\bj_\bot(\omega)\sd|^2 \,\Big)
+\;, \label{emissiondecomp}
+\end{align}
+that motivates the definitions
+\begin{align}
+I_\parallel(\omega) =
+\frac{\omega^2}{3c^3}\, |\sd\bj_\parallel(\omega)\sd|^2\;,
+\hspace{2em}
+I_\bot(\omega) =
+\frac{\omega^2}{3c^3}\, |\sd\bj_\bot(\omega)\sd|^2\;. \label{emissiondecomp2}
+\end{align}
+We recover $I(\omega)\eqt I_\parallel(\omega)\,{+}\sd I_\bot(\omega)$.
 
-\section{Timings}
+
 
 
 \section{References}
-When using the CUED software package, please reference to it via the following publications:
+When using the CUED software package, please reference to CUED via the following publication:
 \begin{enumerate}[leftmargin=*]
 
 \paper{J.~Wilhelm, P.~Grössing, A.~Seith, J.~Crewse, M.~Nitsch, L.~Weigl, C.~Schmid, and F.~Evers}{Semi\-con\-duc\-tor-Bloch Formalism: Derivation and Application to High-Harmonic Generation from Dirac Fermions}{TOBEFILLED}{ 
