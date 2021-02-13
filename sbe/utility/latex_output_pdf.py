@@ -11,7 +11,7 @@ def write_and_compile_latex_PDF(t, freq, E_field, A_field, I_exact_E_dir, I_exac
 
         t_fs = t*co.au_to_fs
         num_points_max_for_plotting = 1000
-        t_idx = get_time_indices_for_plotting(E_field, t_fs, num_points_max_for_plotting, factor_t_end=1.5)
+        t_idx = get_time_indices_for_plotting(E_field, t_fs, num_points_max_for_plotting, factor_t_end=1.0)
         f_idx = get_freq_indices_for_plotting(freq/P.w, num_points_max_for_plotting, freq_max=30)
 
         latex_dir = "latex_pdf_files"
@@ -27,9 +27,18 @@ def write_and_compile_latex_PDF(t, freq, E_field, A_field, I_exact_E_dir, I_exac
 
         BZ_plot(paths, P, A_field, E_dir)
 
-        tikz_time(I_exact_E_dir, t_fs, t_idx, r'Current $j_{\parallel \bE}(t)$ parallel to $\bE$ in atomic units', "j_E_dir")
-        tikz_time(I_exact_ortho, t_fs, t_idx, r'Current $j_{\bot \bE}(t)$ orthogonal to $\bE$ in atomic units', "j_ortho")
-        tikz_freq(Int_exact_E_dir, Int_exact_ortho, freq/P.w, f_idx, r'Emission intensity in atomic units', "Emission_total")
+        tikz_time(I_exact_E_dir, t_fs, t_idx, \
+                  r'Current $j_{\parallel}(t)$ parallel to $\bE$ in atomic units', "j_E_dir")
+        tikz_time(I_exact_ortho, t_fs, t_idx, \
+                  r'Current $j_{\bot}(t)$ orthogonal to $\bE$ in atomic units', "j_ortho")
+        tikz_freq(Int_exact_E_dir, Int_exact_ortho, freq/P.w, f_idx, \
+                  r'Emission intensity in atomic units', "Emission_total", two_func=True, \
+                  label_1="$\;I_{\parallel}(\omega)$", label_2="$\;I_{\\bot}(\omega)$")
+        tikz_freq(Int_exact_E_dir+Int_exact_ortho, None, freq/P.w, f_idx, \
+                  r'Emission intensity in atomic units', "Emission_para_ortho", two_func=False, \
+                  label_1="$\;I(\omega) = I_{\parallel}(\omega) + I_{\\bot}(\omega)$")
+        replace("semithick", "thick", "*")
+
 
 
         code_path = os.path.dirname(os.path.realpath(__file__))
@@ -104,13 +113,15 @@ def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
                      axis_width ='\\figurewidth' )
 
 
-def tikz_freq(Int_exact_E_dir, Int_exact_ortho, freq_normalized, f_idx, ylabel, filename):
+def tikz_freq(func_of_f_1, func_of_f_2, freq_normalized, f_idx, ylabel, filename, two_func, \
+              label_1=None, label_2=None):
 
     xlabel = r'Harmonic order = (frequency $f$)/(pulse frequency $f_0$)'
 
     _fig, (ax1) = plt.subplots(1)
-    _lines_exact_E_dir = ax1.semilogy(freq_normalized[f_idx], Int_exact_E_dir[f_idx], marker='')
-    _lines_exact_E_dir = ax1.semilogy(freq_normalized[f_idx], Int_exact_ortho[f_idx], marker='')
+    _lines_exact_E_dir = ax1.semilogy(freq_normalized[f_idx], func_of_f_1[f_idx], marker='', label=label_1)
+    if two_func:
+       _lines_exact_E_dir = ax1.semilogy(freq_normalized[f_idx], func_of_f_2[f_idx], marker='', label=label_2)
 
     f_lims = (freq_normalized[f_idx[0]], freq_normalized[f_idx[-1]])
     

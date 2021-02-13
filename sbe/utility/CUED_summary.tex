@@ -276,18 +276,20 @@ In our case, the current is a two-dimensional vector.
 %
 We generating meaningful plots, we project the current onto the axis~$\hat{e}_\phi$ of the incoming E-field and its orthogonal direction $\hat{e}_{\phi+\pi/2}$:
 \begin{align}
-    j_{\parallel\bE}(t) = \hat{e}_\phi\;\bj(t)\,,\hspace{2em}
-    j_{\bot\bE}(t) = \hat{e}_{\phi+\pi/2}\;\bj(t)\,, 
+    j_{\parallel}(t) = \hat{e}_\phi\;\bj(t)\,,\hspace{2em}
+    j_{\bot}(t) = \hat{e}_{\phi+\pi/2}\;\bj(t)\,, 
     \label{currentcomp}
 \end{align}
-such that we recover $\bj(t)\eqt\hat{e}_\phi\, j_{\parallel\bE}(t)\pt\hat{e}_{\phi+\pi/2}\,j_{\bot\bE}(t)$.
+such that we recover $\bj(t)\eqt\hat{e}_\phi\, j_{\parallel}(t)\pt\hat{e}_{\phi+\pi/2}\,j_{\bot}(t)$.
 
 \section{Frequency-resolved emission spectrum}
 \begin{figure}[b!]
 \centering
 \setlength\figureheight{9cm} 
-\setlength\figurewidth{\textwidth}
+\setlength\figurewidth{0.95\textwidth}
 \input{Emission_total.tikz}
+\\[1.5em]
+\input{Emission_para_ortho.tikz}
 \caption{Components of the time-dependent current~$\bj(t)$: left: parallel to the driving field, right: orthogonal to the driving field, see Eq.~\eqref{currentcomp}.}
     \label{fig:current}
 \end{figure}
