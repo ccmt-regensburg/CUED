@@ -47,8 +47,6 @@ def write_and_compile_latex_PDF(t, freq, E_field, A_field, I_exact_E_dir, I_exac
                   label_1="$\;I(\omega) = I_{\parallel}(\omega) + I_{\\bot}(\omega)$")
         replace("semithick", "thick", "*")
 
-
-
         os.system("pdflatex CUED_summary.tex")
 
         os.system("pdflatex CUED_summary.tex")
@@ -280,18 +278,21 @@ def BZ_plot(paths, P, A_field, E_dir):
     dist_to_border = 0.025*length
     adjusted_length = length - dist_to_border
 
-    neg_A_x = np.array([-adjusted_length,-adjusted_length-E_dir[0]*A_min])
-    neg_A_y = np.array([adjusted_length-E_dir[1]*A_diff, adjusted_length-A_max*E_dir[1]])
+    anchor_A_x = -adjusted_length+abs(E_dir[0]*A_min)
+    anchor_A_y = adjusted_length-abs(A_max*E_dir[1])
 
-    pos_A_x = np.array([-adjusted_length-E_dir[0]*A_min, -adjusted_length+E_dir[0]*A_diff])
-    pos_A_y = np.array([adjusted_length-A_max*E_dir[1], adjusted_length])
+    neg_A_x = np.array([anchor_A_x + A_min*E_dir[0], anchor_A_x])
+    neg_A_y = np.array([anchor_A_y + A_min*E_dir[1], anchor_A_y])
 
-    anchor_A_x = np.array([-adjusted_length-E_dir[0]*A_min])
-    anchor_A_y = np.array([adjusted_length-A_max*E_dir[1]])
+    pos_A_x = np.array([anchor_A_x + A_max*E_dir[0], anchor_A_x])
+    pos_A_y = np.array([anchor_A_y + A_max*E_dir[1], anchor_A_y])
+
+    anchor_A_x_array = np.array([anchor_A_x])
+    anchor_A_y_array = np.array([anchor_A_y])
 
     plt.plot(pos_A_x, pos_A_y, color="green")
     plt.plot(neg_A_x, neg_A_y, color="red")
-    plt.plot(anchor_A_x, anchor_A_y, color='black', marker="o", linestyle='None')
+    plt.plot(anchor_A_x_array, anchor_A_y_array, color='black', marker="o", linestyle='None')
 
     tikzplotlib.save("BZ.tikz", axis_height='\\figureheight', axis_width ='\\figurewidth' )
 
