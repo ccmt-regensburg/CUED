@@ -40,4 +40,3 @@ class params:
     system         = 'ana'
     solver         = '2band'
     save_approx    = True
-    save_latex_pdf = True

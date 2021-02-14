@@ -234,9 +234,11 @@ def BZ_plot(paths, P, A_field, E_dir):
         length = 1.1*max(np.amax(rectangle_x), np.amax(rectangle_y))
 
     Nk1_max = 24
-    Nk2_max = 12
+    Nk2_max = 6
     if P.Nk1 <= Nk1_max and P.Nk2 <= Nk2_max:
         printed_paths = paths
+        Nk1_plot = P.Nk1
+        Nk2_plot = P.Nk2
     else:
         Nk1_safe = P.Nk1
         Nk2_safe = P.Nk2
