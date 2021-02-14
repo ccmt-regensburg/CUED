@@ -234,12 +234,13 @@ You are using a PH-BZ as Brillouin zone (BZ) with a mesh size of PH-NK1\,$\times
 %
 The BZ and a PH-SMALLNK1\,$\times$\,PH-SMALLNK2 $k$-point mesh is sketched in Fig.~\ref{fig:kp}.
 %
-\begin{figure}[h!]\vspace{2em}
+Please note that in the params.py file, the BZ size (in case of a rectangular BZ) and the lattice parameter~$a$ (in case of a hexagonal BZ) are both given in atomic units, while the output here is in $1/\AA$. 
+%
+\begin{figure}[h!]
 \centering
-\setlength\figureheight{PH-RATIOYX\textwidth} 
-\setlength\figurewidth{\textwidth}
+\setlength\figureheight{1.00000000000000000000\textwidth} 
+\setlength\figurewidth{0.87\textwidth}
 \input{BZ.tikz}
-\vspace{-1em}
 \caption{Brillouin zone (BZ) and PH-SMALLNK1\,$\times$\,PH-SMALLNK2 $k$-point mesh.
 %
 The BZ is indicated by the black PH-BZ.

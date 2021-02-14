@@ -236,7 +236,7 @@ def BZ_plot(paths, P, A_field, E_dir):
         dist_to_border = 0.1*max(np.amax(rectangle_x), np.amax(rectangle_y))
         length_x = np.amax(rectangle_x) + dist_to_border
         length_y = np.amax(rectangle_y) + dist_to_border
-        ratio_yx = length_y/length_x
+        ratio_yx = length_y/length_x*0.87
 
     Nk1_max = 24
     Nk2_max = 6
@@ -307,7 +307,8 @@ def BZ_plot(paths, P, A_field, E_dir):
     replace("mark size=3", "mark size=1", filename="BZ.tikz")
     replace("PH-SMALLNK1", str(Nk1_plot))
     replace("PH-SMALLNK2", str(Nk2_plot))
-    replace("PH-RATIOYX",  str(ratio_yx))
+    replace("1.00000000000000000000",  str(ratio_yx))
+    replace("figureheight,", "figureheight,  scale only axis=true,", filename="BZ.tikz")
 
 
 #    plt.show()
