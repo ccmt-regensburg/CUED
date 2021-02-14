@@ -22,8 +22,6 @@ class params:
 
     # Rec.iprocal lattice vectors
     a  = 8.308
-    b1 = (2*np.pi/(a*np.sqrt(3)))*np.array([np.sqrt(3), -1])
-    b2 = (4*np.pi/(a*np.sqrt(3)))*np.array([0, 1])
 
     # Driving field parameters
     ##########################################################################
@@ -44,8 +42,8 @@ class params:
     # Flags for testing and features
     ##########################################################################
     gauge         = 'length'   # Gauge of the system
-    system        = 'ana'      
-    solver        = '2band'    
+    system        = 'ana'
+    solver        = '2band'
     do_semicl     = False      # Turn all dipoles to 0 and use Berry curvature in emission
     user_out      = True       # Set to True to get user plotting and progress output
     save_approx   = True

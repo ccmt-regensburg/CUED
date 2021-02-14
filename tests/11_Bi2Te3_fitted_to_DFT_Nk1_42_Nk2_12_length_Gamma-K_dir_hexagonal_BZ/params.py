@@ -16,10 +16,6 @@ class params:
     # 'hexagon' for full hexagonal BZ, 'rectangle' for rectangle with adjustable size
     BZ_type = 'hexagon'
 
-    # Reciprocal lattice vectors
-    b1 = (2*np.pi/(a*np.sqrt(3)))*np.array([np.sqrt(3), -1])
-    b2 = (4*np.pi/(a*np.sqrt(3)))*np.array([0, 1])
-
     # hexagonal BZ parameters
     Nk1                 = 42         # Number of kpoints in each of the paths
     Nk2                 = 12         # Number of paths
