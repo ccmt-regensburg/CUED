@@ -52,6 +52,10 @@ def hex_mesh(P):
     '''
     Create a hexagonal mesh
     '''
+
+    b1 = (2*np.pi/(P.a*np.sqrt(3)))*np.array([np.sqrt(3), -1])
+    b2 = (4*np.pi/(P.a*np.sqrt(3)))*np.array([0, 1])
+
     def is_in_hex(p):
         # Returns true if the point is in the hexagonal BZ.
         # Checks if the absolute values of x and y components of p are within
@@ -66,22 +70,22 @@ def hex_mesh(P):
         y = p[1]
         if y > 2*np.pi/(np.sqrt(3)*P.a):
             # Crosses top
-            p -= P.b2
+            p -= b2
         elif y < -2*np.pi/(np.sqrt(3)*P.a):
             # Crosses bottom
-            p += P.b2
+            p += b2
         elif np.sqrt(3)*x + y > 4*np.pi/(np.sqrt(3)*P.a):
             # Crosses top-right
-            p -= P.b1 + P.b2
+            p -= b1 + b2
         elif -np.sqrt(3)*x + y < -4*np.pi/(np.sqrt(3)*P.a):
             # Crosses bot-right
-            p -= P.b1
+            p -= b1
         elif np.sqrt(3)*x + y < -4*np.pi/(np.sqrt(3)*P.a):
             # Crosses bot-left
-            p += P.b1 + P.b2
+            p += b1 + b2
         elif -np.sqrt(3)*x + y > 4*np.pi/(np.sqrt(3)*P.a):
             # Crosses top-left
-            p += P.b1
+            p += b1
         return p
 
     # Containers for the mesh, and BZ directional paths
@@ -101,7 +105,7 @@ def hex_mesh(P):
             path_M = []
             for a1 in alpha1:
                 # Create a k-point
-                kpoint = a1*P.b1 + a2*b_a2
+                kpoint = a1*b1 + a2*b_a2
                 # If current point is in BZ, append it to the mesh and path_M
                 if is_in_hex(kpoint):
                     mesh.append(kpoint)

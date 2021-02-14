@@ -145,10 +145,6 @@ def parse_params(user_params):
     if P.BZ_type == 'hexagon':
         P.align = UP.align                      # E-field alignment
         P.angle_inc_E_field = None
-        P.b1 = UP.b1                                # Reciprocal lattice vectors
-        P.b1_dangs = P.b1*co.as_to_au
-        P.b2 = UP.b2
-        P.b2_dangs = P.b2*co.as_to_au
         P.a = UP.a                                  # Lattice spacing
         P.a_angs = P.a*co.au_to_as
     elif P.BZ_type == 'rectangle':
