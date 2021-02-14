@@ -219,7 +219,11 @@ def BZ_plot(paths, P, A_field, E_dir):
         tmp = np.sqrt(3)/2
         hexagon_y = R*np.array([0,0,0,tmp,2*tmp,tmp,tmp, 2*tmp,tmp, 0, 0, 0, -tmp,-2*tmp,-tmp,-tmp,-2*tmp,-tmp,0])
         plt.plot(hexagon_x, hexagon_y, color='black' )
-        length = 5.0/P.a_angs
+        length         = 5.0/P.a_angs
+        length_x       = length
+        length_y       = length
+        ratio_yx       = 1.0
+        dist_to_border = 0.1*length
 
     elif P.BZ_type == 'rectangle':
         # polar angle of upper right point of a rectangle that is horizontally aligned
@@ -229,7 +233,10 @@ def BZ_plot(paths, P, A_field, E_dir):
         rectangle_x = dist_edge_to_Gamma*np.array([np.cos(alpha+beta),np.cos(np.pi-alpha+beta),np.cos(alpha+beta+np.pi),np.cos(2*np.pi-alpha+beta),np.cos(alpha+beta)])
         rectangle_y = dist_edge_to_Gamma*np.array([np.sin(alpha+beta),np.sin(np.pi-alpha+beta),np.sin(alpha+beta+np.pi),np.sin(2*np.pi-alpha+beta),np.sin(alpha+beta)])
         plt.plot(rectangle_x, rectangle_y, color='black' )
-        length = 1.1*max(np.amax(rectangle_x), np.amax(rectangle_y))
+        dist_to_border = 0.1*max(np.amax(rectangle_x), np.amax(rectangle_y))
+        length_x = np.amax(rectangle_x) + dist_to_border
+        length_y = np.amax(rectangle_y) + dist_to_border
+        ratio_yx = length_y/length_x
 
     Nk1_max = 24
     Nk2_max = 6
@@ -253,8 +260,8 @@ def BZ_plot(paths, P, A_field, E_dir):
         P.Nk2 = Nk2_safe
         P.Nk = P.Nk1*P.Nk2
 
-    plt.xlim(-length, length)
-    plt.ylim(-length, length)
+    plt.xlim(-length_x, length_x)
+    plt.ylim(-length_y, length_y)
 
     plt.xlabel(r'$k_x$ in 1/Angstroem')
     plt.ylabel(r'$k_y$ in 1/Angstroem')
@@ -275,11 +282,11 @@ def BZ_plot(paths, P, A_field, E_dir):
     A_max = np.amax(A_field)*co.as_to_au
     A_diff = A_max - A_min
 
-    dist_to_border = 0.025*length
-    adjusted_length = length - dist_to_border
+    adjusted_length_x = length_x - dist_to_border/2
+    adjusted_length_y = length_y - dist_to_border/2
 
-    anchor_A_x = -adjusted_length+abs(E_dir[0]*A_min)
-    anchor_A_y = adjusted_length-abs(A_max*E_dir[1])
+    anchor_A_x = -adjusted_length_x + abs(E_dir[0]*A_min)
+    anchor_A_y =  adjusted_length_y - abs(A_max*E_dir[1])
 
     neg_A_x = np.array([anchor_A_x + A_min*E_dir[0], anchor_A_x])
     neg_A_y = np.array([anchor_A_y + A_min*E_dir[1], anchor_A_y])
@@ -300,6 +307,8 @@ def BZ_plot(paths, P, A_field, E_dir):
     replace("mark size=3", "mark size=1", filename="BZ.tikz")
     replace("PH-SMALLNK1", str(Nk1_plot))
     replace("PH-SMALLNK2", str(Nk2_plot))
+    replace("PH-RATIOYX",  str(ratio_yx))
+
 
 #    plt.show()
 
