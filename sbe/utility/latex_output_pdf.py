@@ -229,7 +229,7 @@ def BZ_plot(paths, P, A_field, E_dir):
         # polar angle of upper right point of a rectangle that is horizontally aligned
         alpha = np.arctan(P.length_BZ_ortho/P.length_BZ_E_dir)
         beta  = P.angle_inc_E_field/360*2*np.pi
-        dist_edge_to_Gamma = np.sqrt(P.length_BZ_E_dir**2+P.length_BZ_ortho**2)
+        dist_edge_to_Gamma = np.sqrt(P.length_BZ_E_dir**2+P.length_BZ_ortho**2)/2/co.au_to_as
         rectangle_x = dist_edge_to_Gamma*np.array([np.cos(alpha+beta),np.cos(np.pi-alpha+beta),np.cos(alpha+beta+np.pi),np.cos(2*np.pi-alpha+beta),np.cos(alpha+beta)])
         rectangle_y = dist_edge_to_Gamma*np.array([np.sin(alpha+beta),np.sin(np.pi-alpha+beta),np.sin(alpha+beta+np.pi),np.sin(2*np.pi-alpha+beta),np.sin(alpha+beta)])
         plt.plot(rectangle_x, rectangle_y, color='black' )
@@ -270,16 +270,16 @@ def BZ_plot(paths, P, A_field, E_dir):
         num_k                = np.size(path[:,0])
         plot_path_x          = np.zeros(num_k+1)
         plot_path_y          = np.zeros(num_k+1)
-        plot_path_x[0:num_k] = co.as_to_au*path[0:num_k, 0]
-        plot_path_x[num_k]   = co.as_to_au*path[0, 0]
-        plot_path_y[0:num_k] = co.as_to_au*path[0:num_k, 1]
-        plot_path_y[num_k]   = co.as_to_au*path[0, 1]
+        plot_path_x[0:num_k] = 1/co.au_to_as*path[0:num_k, 0]
+        plot_path_x[num_k]   = 1/co.au_to_as*path[0, 0]
+        plot_path_y[0:num_k] = 1/co.au_to_as*path[0:num_k, 1]
+        plot_path_y[num_k]   = 1/co.au_to_as*path[0, 1]
 
         plt.plot(plot_path_x, plot_path_y)
         plt.plot(plot_path_x, plot_path_y, color='gray', marker="o", linestyle='None')
 
-    A_min = np.amin(A_field)*co.as_to_au
-    A_max = np.amax(A_field)*co.as_to_au
+    A_min = np.amin(A_field)/co.au_to_as
+    A_max = np.amax(A_field)/co.au_to_as
     A_diff = A_max - A_min
 
     adjusted_length_x = length_x - dist_to_border/2

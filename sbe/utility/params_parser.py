@@ -154,8 +154,8 @@ def parse_params(user_params):
     elif P.BZ_type == 'rectangle':
         P.align = None
         P.angle_inc_E_field = UP.angle_inc_E_field
-        P.length_BZ_ortho = UP.length_BZ_ortho
-        P.length_BZ_E_dir = UP.length_BZ_E_dir
+        P.length_BZ_ortho = UP.length_BZ_ortho     # Size of the Brillouin zone in atomic units
+        P.length_BZ_E_dir = UP.length_BZ_E_dir     # -"-
     else:
         sys.exit("BZ_type needs to be either hexagon or rectangle.")
 
