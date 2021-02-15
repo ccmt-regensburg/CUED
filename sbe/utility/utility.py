@@ -67,11 +67,11 @@ def __to_njit_function_k(sf, hsymbols, kx, ky):
     contains_k = bool(sf.free_symbols.intersection(kset))
     if contains_k:
         # All free Hamiltonian symbols get function parameters
-        return njit(lambdify(hsymbols, sf, "numpy"))
+        return njit(lambdify(list(hsymbols), sf, "numpy"))
 
     # Here we have non k variables in sf. Expand sf by 0*kx*ky
     sf = sf + kx*ky*sp.UnevaluatedExpr(0)
-    return njit(lambdify(hsymbols, sf, "numpy"))
+    return njit(lambdify(list(hsymbols), sf, "numpy"))
 
 
 def __to_njit_function_kp(sf, hsymbols, kx, ky, kxp, kyp):
@@ -81,10 +81,10 @@ def __to_njit_function_kp(sf, hsymbols, kx, ky, kxp, kyp):
     contains_k = bool(sf.free_symbols.intersection(kset))
     if contains_k:
         # All free Hamiltonian symbols get function parameters
-        return njit(lambdify(hsymbols, sf, "numpy"))
+        return njit(lambdify(list(hsymbols), sf, "numpy"))
 
     sf = sf + kx*ky*kxp*kyp*sp.UnevaluatedExpr(0)
-    return njit(lambdify(hsymbols, sf, "numpy"))
+    return njit(lambdify(list(hsymbols), sf, "numpy"))
 
 
 def evaluate_njit_matrix(mjit, kx=np.empty(1), ky=np.empty(1),

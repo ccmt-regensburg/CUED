@@ -12,7 +12,7 @@ def cep_plot(freqw, phaselist, intensity,
              xlabel=r'Frequency $\text{ in } \omega/\omega_0$',
              ylabel=r'phase $\phi$',
              yticks=None,
-             supertitle=None, title=None, savename=None):
+             supertitle=None, title=None, savename=None, normalize_to_one=None):
 
     freqw = freqw.real
     intensity = intensity.real
@@ -29,9 +29,11 @@ def cep_plot(freqw, phaselist, intensity,
     intensity = intensity[:, lidx:ridx]
 
     imax = np.max(intensity)
-    intensity /= imax
-    imax = 1
     imin = np.min(intensity)
+    if normalize_to_one is not None:
+        intensity /= imax
+        imax = 1
+        imin = normalize_to_one
     imax_log = np.log10(imax)
 
     imin_log = np.log10(imin)
@@ -42,7 +44,7 @@ def cep_plot(freqw, phaselist, intensity,
     cont = ax.contourf(F, P, intensity, levels=logspace,
                        locator=ticker.LogLocator(),
                        cmap=whitedarkjet,
-                       norm=colors.LogNorm(vmin=1e-2, vmax=imax))
+                       norm=colors.LogNorm(vmin=imin, vmax=imax))
 
     int_imin_log = int(imin_log)
     int_imax_log = int(imax_log)
