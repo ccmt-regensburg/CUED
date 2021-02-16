@@ -11,7 +11,7 @@ import sbe.dipole
 from sbe.kpoint_mesh import hex_mesh, rect_mesh
 from sbe.utility import ConversionFactors as co
 from sbe.utility import conditional_njit
-from sbe.utility import parse_params
+from sbe.utility import parse_params, time_containers
 from sbe.utility import write_and_compile_latex_PDF
 from sbe.fields import make_electric_field
 from sbe.dipole import diagonalize, dipole_elements
@@ -141,16 +141,18 @@ def sbe_solver(sys, params, electric_field_function=None):
             .set_integrator('zvode', method=P.solver_method, max_step=P.dt)
 
     # Make containers used in solver
-    t, A_field, E_field, solution, solution_y_vec, J_exact_E_dir, J_exact_ortho, \
-        J_intra_E_dir, J_intra_ortho, P_inter_E_dir, P_inter_ortho, J_anom_ortho = solution_container(P)
+    #t, A_field, E_field, solution, solution_y_vec, J_exact_E_dir, J_exact_ortho, \
+    #    J_intra_E_dir, J_intra_ortho, P_inter_E_dir, P_inter_ortho, J_anom_ortho = solution_container(P)
+
+    T = time_containers(P)
 
     dipole_in_path = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
     dipole_ortho = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
     e_in_path = np.zeros([P.Nk1, P.n], dtype=P.type_real_np)  
 
     # Only define full density matrix solution if save_full is True
-    if P.save_full:
-        solution_full = np.empty((P.Nk1, P.Nk2, P.Nt, P.n, P.n), dtype=P.type_complex_np)
+    #if P.save_full:
+    #    solution_full = np.empty((P.Nk1, P.Nk2, P.Nt, P.n, P.n), dtype=P.type_complex_np)
     ###########################################################################
     # SOLVING
     ###########################################################################
@@ -243,7 +245,7 @@ def sbe_solver(sys, params, electric_field_function=None):
             solver.set_initial_value(y0, P.t0)\
             .set_f_params(path, dipole_in_path, e_in_path, y0, dk)
         elif P.solver_method == 'rk4':
-            solution_y_vec[:] = y0
+            T.solution_y_vec[:] = y0
 
         # Propagate through time
         # Index of current integration time step
@@ -257,51 +259,51 @@ def sbe_solver(sys, params, electric_field_function=None):
 
             if P.solver_method in ('bdf', 'adams'):
                 # Do not append the last element (A_field)
-                solution = solver.y[:-1].reshape(P.Nk1, P.n, P.n)
+                T.solution = solver.y[:-1].reshape(P.Nk1, P.n, P.n)
 
                 # Construct time array only once
                 if Nk2_idx == 0 or P.Nk2_idx_ext > 0:
                     # Construct time and A_field only in first round
-                    t[ti] = solver.t
-                    A_field[ti] = solver.y[-1].real
-                    E_field[ti] = electric_field(t[ti])
+                    T.t[ti] = solver.t
+                    T.A_field[ti] = solver.y[-1].real
+                    T.E_field[ti] = electric_field(T.t[ti])
 
             elif P.solver_method == 'rk4':
                 # Do not append the last element (A_field)
-                solution = solution_y_vec[:-1].reshape(P.Nk1, P.n, P.n)
+                T.solution = T.solution_y_vec[:-1].reshape(P.Nk1, P.n, P.n)
 
                 # Construct time array only once
                 if Nk2_idx == 0 or P.Nk2_idx_ext > 0:
                     # Construct time and A_field only in first round
-                    t[ti] = ti*P.dt + P.t0
-                    A_field[ti] = solution_y_vec[-1].real
-                    E_field[ti] = electric_field(t[ti])
+                    T.t[ti] = ti*P.dt + P.t0
+                    T.A_field[ti] = T.solution_y_vec[-1].real
+                    T.E_field[ti] = electric_field(T.t[ti])
        
             # Only write full density matrix solution if save_full is True
             if P.save_full:
-                solution_full[:, Nk2_idx, ti, :, :] = solution
+                T.solution_full[:, Nk2_idx, ti, :, :] = T.solution
 
             # Calculate the currents at the timestep ti
             if P.system == 'ana':
-                J_exact_E_dir_buf, J_exact_ortho_buf = current_exact_path(solution.reshape(P.Nk1, 4), E_field[ti], A_field[ti])
+                J_exact_E_dir_buf, J_exact_ortho_buf = current_exact_path(T.solution.reshape(P.Nk1, 4), T.E_field[ti], T.A_field[ti])
             elif P.system == 'num':
-                J_exact_E_dir_buf, J_exact_ortho_buf = current_exact_path(solution)
-            J_exact_E_dir[ti] += J_exact_E_dir_buf
-            J_exact_ortho[ti] += J_exact_ortho_buf
+                J_exact_E_dir_buf, J_exact_ortho_buf = current_exact_path(T.solution)
+            T.J_exact_E_dir[ti] += J_exact_E_dir_buf
+            T.J_exact_ortho[ti] += J_exact_ortho_buf
 
             if P.save_approx:
                 if P.system == 'ana':
-                    P_inter_E_dir_buf, P_inter_ortho_buf = polarization_inter_path(solution[:, 1, 0], A_field[ti])
-                    J_intra_E_dir_buf, J_intra_ortho_buf, J_anom_ortho_buf = current_intra_path(solution[:,0,0], solution[:, 1, 1], A_field[ti], E_field[ti])
+                    P_inter_E_dir_buf, P_inter_ortho_buf = polarization_inter_path(T.solution[:, 1, 0], T.A_field[ti])
+                    J_intra_E_dir_buf, J_intra_ortho_buf, J_anom_ortho_buf = current_intra_path(T.solution[:,0,0], T.solution[:, 1, 1], T.A_field[ti], T.E_field[ti])
                 elif P.system == 'num':
-                    P_inter_E_dir_buf, P_inter_ortho_buf = polarization_inter_path(solution)
-                    J_intra_E_dir_buf, J_intra_ortho_buf, J_anom_ortho_buf = current_intra_path(solution)
+                    P_inter_E_dir_buf, P_inter_ortho_buf = polarization_inter_path(T.solution)
+                    J_intra_E_dir_buf, J_intra_ortho_buf, J_anom_ortho_buf = current_intra_path(T.solution)
 
-                P_inter_E_dir[ti] += P_inter_E_dir_buf
-                P_inter_ortho[ti] += P_inter_ortho_buf
-                J_intra_E_dir[ti] += J_intra_E_dir_buf
-                J_intra_ortho[ti] += J_intra_ortho_buf
-                J_anom_ortho[ti] += J_anom_ortho_buf
+                T.P_inter_E_dir[ti] += P_inter_E_dir_buf
+                T.P_inter_ortho[ti] += P_inter_ortho_buf
+                T.J_intra_E_dir[ti] += J_intra_E_dir_buf
+                T.J_intra_ortho[ti] += J_intra_ortho_buf
+                T.J_anom_ortho[ti] += J_anom_ortho_buf
             
             # Integrate one integration time step
             if P.solver_method in ('bdf', 'adams'):
@@ -309,7 +311,7 @@ def sbe_solver(sys, params, electric_field_function=None):
                 solver_successful = solver.successful()
 
             elif P.solver_method == 'rk4':
-                solution_y_vec = rk_integrate(t[ti], solution_y_vec, path, dipole_in_path, e_in_path, \
+                T.solution_y_vec = rk_integrate(T.t[ti], T.solution_y_vec, path, dipole_in_path, e_in_path, \
                                               y0, dk, P.dt, rhs_ode)
 
             # Increment time counter
@@ -324,9 +326,7 @@ def sbe_solver(sys, params, electric_field_function=None):
     tail = 'E_{:.4f}_w_{:.1f}_a_{:.1f}_{}_t0_{:.1f}_dt_{:.6f}_NK1-{}_NK2-{}_T1_{:.1f}_T2_{:.1f}_chirp_{:.3f}_ph_{:.2f}_solver_{:s}_dk_order{}'\
         .format(P.E0_MVpcm, P.w_THz, P.alpha_fs, P.gauge, P.t0_fs, P.dt_fs, P.Nk1, P.Nk2, P.T1_fs, P.T2_fs, P.chirp_THz, P.phase, P.solver_method, P.dk_order)
 
-    write_current_emission(tail, kweight, t, J_exact_E_dir, J_exact_ortho,
-                           J_intra_E_dir, J_intra_ortho, P_inter_E_dir, P_inter_ortho, J_anom_ortho, 
-                           E_field, A_field, paths, E_dir, run_time, P)
+    write_current_emission(tail, kweight, T, paths, E_dir, run_time, P)
 
     # Save the parameters of the calculation
     params_name = 'params_' + tail + '.txt'
@@ -337,8 +337,8 @@ def sbe_solver(sys, params, electric_field_function=None):
 
     if P.save_full:
         S_name = 'Sol_' + tail
-        np.savez(S_name, t=t, solution_full=solution_full, paths=paths,
-                 electric_field=electric_field(t), A_field=A_field)
+        np.savez(S_name, t=T.t, solution_full=T.solution_full, paths=paths,
+                 electric_field=electric_field(T.t), A_field=T.A_field)
 
 
 def rk_integrate(t, y, kpath, dipole_in_path, e_in_path, y0, dk, \
@@ -456,9 +456,7 @@ def gaussian(t, alpha):
     return np.exp(-t**2/(2*alpha)**2)
 
 
-def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
-                           J_E_dir, J_ortho, P_E_dir, P_ortho, J_anom_ortho, 
-                           E_field, A_field, paths, E_dir, run_time, P):
+def write_current_emission(tail, kweight, T, paths, E_dir, run_time, P):
     """
         Calculates the Emission Intensity I(omega) (eq. 51 in https://arxiv.org/abs/2008.03177)
 
@@ -501,31 +499,31 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
     # Fourier transforms
     # 1/(3c^3) in atomic units
     prefac_emission = 1/(3*(137.036**3))
-    dt_out = t[1] - t[0]
-    ndt_fft = (t.size-1)*P.factor_freq_resolution + 1
+    dt_out = T.t[1] - T.t[0]
+    ndt_fft = (T.t.size-1)*P.factor_freq_resolution + 1
     freq = fftshift(fftfreq(ndt_fft, d=dt_out))
-    gaussian_envelope = gaussian(t, P.alpha)
+    gaussian_envelope = gaussian(T.t, P.alpha)
 
     if P.save_approx:
-        I_intra_E_dir = J_E_dir*kweight
-        I_intra_ortho = J_ortho*kweight
+        I_intra_E_dir = T.J_intra_E_dir*kweight
+        I_intra_ortho = T.J_intra_ortho*kweight
 
-        I_inter_E_dir = diff(t, P_E_dir)*kweight
-        I_inter_ortho = diff(t, P_ortho)*kweight
+        I_inter_E_dir = diff(T.t, T.P_inter_E_dir)*kweight
+        I_inter_ortho = diff(T.t, T.P_inter_ortho)*kweight
 
-        I_anom_ortho  = J_anom_ortho*kweight
+        I_anom_ortho  = T.J_anom_ortho*kweight
 
         # Eq. (81( SBE formalism paper
-        I_deph_E_dir = 1/P.T2*P_E_dir*kweight
-        I_deph_ortho = 1/P.T2*P_ortho*kweight
+        I_deph_E_dir = 1/P.T2*T.P_inter_E_dir*kweight
+        I_deph_ortho = 1/P.T2*T.P_inter_ortho*kweight
 
         I_E_dir = I_intra_E_dir + I_inter_E_dir
         I_ortho = I_intra_ortho + I_inter_ortho
 
         I_intra_plus_anom_ortho = I_intra_ortho + I_anom_ortho
 
-        I_without_deph_E_dir = I_exact_E_dir - I_deph_E_dir
-        I_without_deph_ortho = I_exact_ortho - I_deph_ortho
+        I_without_deph_E_dir = T.J_exact_E_dir - I_deph_E_dir
+        I_without_deph_ortho = T.J_exact_ortho - I_deph_ortho
 
         I_intra_plus_deph_E_dir = I_intra_E_dir + I_deph_E_dir
         I_intra_plus_deph_ortho = I_intra_ortho + I_deph_ortho
@@ -557,7 +555,7 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
 
         I_approx_name = 'Iapprox_' + tail
 
-        np.save(I_approx_name, [t, I_E_dir, I_ortho,
+        np.save(I_approx_name, [T.t, I_E_dir, I_ortho,
                                 freq/P.w, Iw_E_dir, Iw_ortho,
                                 Int_E_dir, Int_ortho,
                                 I_intra_E_dir, I_intra_ortho,
@@ -571,7 +569,7 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
 
         if P.save_txt:
             np.savetxt(I_approx_name + '.dat',
-                       np.column_stack([t.real, I_E_dir.real, I_ortho.real,
+                       np.column_stack([T.t.real, I_E_dir.real, I_ortho.real,
                                         (freq/P.w).real, Iw_E_dir.real, Iw_E_dir.imag,
                                         Iw_ortho.real, Iw_ortho.imag,
                                         Int_E_dir.real, Int_ortho.real]),
@@ -583,20 +581,20 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
     ##############################################################
     # kweight is different for rectangle and hexagon
     if P.save_exact:
-        I_exact_E_dir *= kweight
-        I_exact_ortho *= kweight
+        I_exact_E_dir = T.J_exact_E_dir*kweight
+        I_exact_ortho = T.J_exact_ortho*kweight
 
         Int_exact_E_dir, Int_exact_ortho, Iw_exact_E_dir, Iw_exact_ortho = fourier_current_intensity(
                 I_exact_E_dir, I_exact_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
 
         I_exact_name = 'Iexact_' + tail
-        np.save(I_exact_name, [t, I_exact_E_dir, I_exact_ortho,
+        np.save(I_exact_name, [T.t, I_exact_E_dir, I_exact_ortho,
                             freq/P.w, Iw_exact_E_dir, Iw_exact_ortho,
                             Int_exact_E_dir, Int_exact_ortho])
 
         if P.save_txt and P.factor_freq_resolution == 1:
             np.savetxt(I_exact_name + '.dat',
-                    np.column_stack([t.real, I_exact_E_dir.real, I_exact_ortho.real,
+                    np.column_stack([T.t.real, I_exact_E_dir.real, I_exact_ortho.real,
                                         (freq/P.w).real, Iw_exact_E_dir.real, Iw_exact_E_dir.imag,
                                         Iw_exact_ortho.real, Iw_exact_ortho.imag,
                                         Int_exact_E_dir.real, Int_exact_ortho.real]),
@@ -604,7 +602,7 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
                     fmt='%+.18e')
 
     if P.save_latex_pdf:
-        write_and_compile_latex_PDF(t, freq, E_field, A_field, I_exact_E_dir, I_exact_ortho, \
+        write_and_compile_latex_PDF(T.t, freq, T.E_field, T.A_field, I_exact_E_dir, I_exact_ortho, \
                 Int_exact_E_dir, Int_exact_ortho, E_dir, paths, run_time, P)
 
 
