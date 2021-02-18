@@ -112,23 +112,7 @@ def sbe_solver(sys, params, electric_field_function=None):
         electric_field = electric_field_function
     
     # Make rhs of ode for 2band or nband solver
-
-    if P.solver == '2band':
-        if P.n != 2: 
-            raise AttributeError('2-band solver works for 2-band systems only')
-        if P.system == 'ana':
-           rhs_ode = make_rhs_ode_2_band(sys, S.dipole, E_dir, electric_field, P)
-        elif P.system == 'num':
-            if P.gauge == 'length':
-                rhs_ode = make_rhs_ode_2_band(0, 0, E_dir, electric_field, P)
-            if P.gauge == 'velocity':
-                raise AttributeError('numerical evaluation of the system not compatible with velocity gauge')
-    elif P.solver == 'nband':
-        rhs_ode = make_rhs_ode_n_band(E_dir, electric_field, P)
-
-    if P.solver_method in ('bdf', 'adams'):    
-        solver = ode(rhs_ode, jac=None)\
-            .set_integrator('zvode', method=P.solver_method, max_step=P.dt)
+    rhs_ode, solver = make_rhs_ode(sys, E_dir, electric_field, P, S)
 
     # Make containers used in solver
 
@@ -148,78 +132,16 @@ def sbe_solver(sys, params, electric_field_function=None):
         if P.Nk2_idx_ext != Nk2_idx and P.Nk2_idx_ext >= 0: 
             continue
 
-        # Retrieve the set of k-points for the current path
-        kx_in_path = path[:, 0]
-        ky_in_path = path[:, 1]
-
         # Evaluate the dipole components along the path
+        
+        calculate_system_in_path(sys, path, Nk2_idx, E_dir, E_ort, P, S)
 
-        if P.system == 'num':    
-            if P.do_semicl:
-                0
-            # Calculate the dot products E_dir.d_nm(k).
-            # To be multiplied by E-field magnitude later.            
-            else:
-                S.dipole_in_path = (E_dir[0]*S.dipole_x[:, Nk2_idx, :, :] + \
-                    E_dir[1]*S.dipole_y[:, Nk2_idx, :, :])
-                S.dipole_ortho = (E_ort[0]*S.dipole_x[:, Nk2_idx, :, :] + \
-                    E_ort[1]*S.dipole_y[:, Nk2_idx, :, :])
-                S.e_in_path = S.e[:, Nk2_idx, :]
-                S.wf_in_path = S.wf[:, Nk2_idx, :, :]   #not in E-dir!
+        # Prepare calculations of observables
 
-        elif P.system == 'ana':
-            if P.do_semicl:
-                0
-            else:
-                # Calculate the dipole components along the path
-                di_00x = S.dipole.Axfjit[0][0](kx=kx_in_path, ky=ky_in_path)
-                di_01x = S.dipole.Axfjit[0][1](kx=kx_in_path, ky=ky_in_path)
-                di_11x = S.dipole.Axfjit[1][1](kx=kx_in_path, ky=ky_in_path)
-                di_00y = S.dipole.Ayfjit[0][0](kx=kx_in_path, ky=ky_in_path)
-                di_01y = S.dipole.Ayfjit[0][1](kx=kx_in_path, ky=ky_in_path)
-                di_11y = S.dipole.Ayfjit[1][1](kx=kx_in_path, ky=ky_in_path)
+        current_exact_path, polarization_inter_path, current_intra_path = prepare_current_calculations(sys, path, paths, Nk2_idx, E_dir, S, P)
 
-                # Calculate the dot products E_dir.d_nm(k).
-                # To be multiplied by E-field magnitude later.
-                S.dipole_in_path[:, 0, 1] = E_dir[0]*di_01x + E_dir[1]*di_01y
-                S.dipole_in_path[:, 1, 0] = S.dipole_in_path[:, 0, 1].conjugate()
-                S.dipole_in_path[:, 0, 0] = E_dir[0]*di_00x + E_dir[1]*di_00y
-                S.dipole_in_path[:, 1, 1] = E_dir[0]*di_11x + E_dir[1]*di_11y
+        # Initialize the values of of each k point vector
 
-                S.dipole_ortho[:, 0, 1] = E_ort[0]*di_01x + E_ort[1]*di_01y
-                S.dipole_ortho[:, 1, 0] = S.dipole_ortho[:, 0, 1].conjugate()
-                S.dipole_ortho[:, 0, 0] = E_ort[0]*di_00x + E_ort[1]*di_00y
-                S.dipole_ortho[:, 1, 1] = E_ort[0]*di_11x + E_ort[1]*di_11y
-
-            S.e_in_path[:, 0] = sys.efjit[0](kx=kx_in_path, ky=ky_in_path)
-            S.e_in_path[:, 1] = sys.efjit[1](kx=kx_in_path, ky=ky_in_path)
-
-            Ujit = sys.Ujit
-            S.wf_in_path[:, 0, 0] = Ujit[0][0](kx=kx_in_path, ky=ky_in_path)
-            S.wf_in_path[:, 0, 1] = Ujit[0][1](kx=kx_in_path, ky=ky_in_path)
-            S.wf_in_path[:, 1, 0] = Ujit[1][0](kx=kx_in_path, ky=ky_in_path)
-            S.wf_in_path[:, 1, 1] = Ujit[1][1](kx=kx_in_path, ky=ky_in_path)
-
-            # Prepare calculations of observables
-
-        if P.system == 'ana':
-            if P.gauge == 'length':
-                current_exact_path = make_emission_exact_path_length(sys, path, E_dir, S, P)
-            if P.gauge == 'velocity':
-                current_exact_path = make_emission_exact_path_velocity(sys, path, E_dir, S, P)
-            if P.save_approx:
-                polarization_inter_path = make_polarization_path(path, E_dir, S, P)
-                current_intra_path = make_current_path(sys, path, E_dir, S, P)
-
-        if P.system == 'num':
-            current_exact_path = make_current_exact_path_hderiv(paths, Nk2_idx, E_dir, S, P)
-            if P.save_approx:
-                polarization_inter_path = make_polarization_inter_path(S, P)
-                current_intra_path = make_intraband_current_path(paths, Nk2_idx, E_dir, S, P)
-
-
-            # Initialize the values of of each k point vector
-            # (rho_nn(k), rho_nm(k), rho_mn(k), rho_mm(k))
         y0 = initial_condition(P, S.e_in_path)
         y0 = np.append(y0, [0.0])
 
@@ -240,53 +162,11 @@ def sbe_solver(sys, params, electric_field_function=None):
             if (ti % (P.Nt//20) == 0 and P.user_out):
                 print('{:5.2f}%'.format((ti/P.Nt)*100))
 
-            if P.solver_method in ('bdf', 'adams'):
-                # Do not append the last element (A_field)
-                T.solution = solver.y[:-1].reshape(P.Nk1, P.n, P.n)
-
-                # Construct time array only once
-                if Nk2_idx == 0 or P.Nk2_idx_ext > 0:
-                    # Construct time and A_field only in first round
-                    T.t[ti] = solver.t
-                    T.A_field[ti] = solver.y[-1].real
-                    T.E_field[ti] = electric_field(T.t[ti])
-
-            elif P.solver_method == 'rk4':
-                # Do not append the last element (A_field)
-                T.solution = T.solution_y_vec[:-1].reshape(P.Nk1, P.n, P.n)
-
-                # Construct time array only once
-                if Nk2_idx == 0 or P.Nk2_idx_ext > 0:
-                    # Construct time and A_field only in first round
-                    T.t[ti] = ti*P.dt + P.t0
-                    T.A_field[ti] = T.solution_y_vec[-1].real
-                    T.E_field[ti] = electric_field(T.t[ti])
-
-            # Only write full density matrix solution if save_full is True
-            if P.save_full:
-                T.solution_full[:, Nk2_idx, ti, :, :] = T.solution
+            calculate_solution_at_timestep(solver, Nk2_idx, ti, electric_field, T, P)
 
             # Calculate the currents at the timestep ti
-            if P.system == 'ana':
-                J_exact_E_dir_buf, J_exact_ortho_buf = current_exact_path(T.solution.reshape(P.Nk1, 4), T.E_field[ti], T.A_field[ti])
-            elif P.system == 'num':
-                J_exact_E_dir_buf, J_exact_ortho_buf = current_exact_path(T.solution)
-            T.J_exact_E_dir[ti] += J_exact_E_dir_buf
-            T.J_exact_ortho[ti] += J_exact_ortho_buf
 
-            if P.save_approx:
-                if P.system == 'ana':
-                    P_inter_E_dir_buf, P_inter_ortho_buf = polarization_inter_path(T.solution[:, 1, 0], T.A_field[ti])
-                    J_intra_E_dir_buf, J_intra_ortho_buf, J_anom_ortho_buf = current_intra_path(T.solution[:,0,0], T.solution[:, 1, 1], T.A_field[ti], T.E_field[ti])
-                elif P.system == 'num':
-                    P_inter_E_dir_buf, P_inter_ortho_buf = polarization_inter_path(T.solution)
-                    J_intra_E_dir_buf, J_intra_ortho_buf, J_anom_ortho_buf = current_intra_path(T.solution)
-
-                T.P_inter_E_dir[ti] += P_inter_E_dir_buf
-                T.P_inter_ortho[ti] += P_inter_ortho_buf
-                T.J_intra_E_dir[ti] += J_intra_E_dir_buf
-                T.J_intra_ortho[ti] += J_intra_ortho_buf
-                T.J_anom_ortho[ti] += J_anom_ortho_buf
+            calculate_currents(ti, current_exact_path, polarization_inter_path, current_intra_path, T, P)
 
             # Integrate one integration time step
             if P.solver_method in ('bdf', 'adams'):
@@ -323,6 +203,150 @@ def sbe_solver(sys, params, electric_field_function=None):
         np.savez(S_name, t=T.t, solution_full=T.solution_full, paths=paths,
                  electric_field=electric_field(T.t), A_field=T.A_field)
 
+
+
+def make_rhs_ode(sys, E_dir, electric_field, P, S):
+    if P.solver == '2band':
+        if P.n != 2: 
+            raise AttributeError('2-band solver works for 2-band systems only')
+        if P.system == 'ana':
+           rhs_ode = make_rhs_ode_2_band(sys, S.dipole, E_dir, electric_field, P)
+        elif P.system == 'num':
+            if P.gauge == 'length':
+                rhs_ode = make_rhs_ode_2_band(0, 0, E_dir, electric_field, P)
+            if P.gauge == 'velocity':
+                raise AttributeError('numerical evaluation of the system not compatible with velocity gauge')
+    elif P.solver == 'nband':
+        rhs_ode = make_rhs_ode_n_band(E_dir, electric_field, P)
+
+    if P.solver_method in ('bdf', 'adams'):    
+        solver = ode(rhs_ode, jac=None)\
+            .set_integrator('zvode', method=P.solver_method, max_step=P.dt)
+    elif P.solver_method == 'rk4':
+        solver = 0
+        
+    return rhs_ode, solver
+
+def calculate_system_in_path(sys, path, Nk2_idx, E_dir, E_ort, P, S):
+    
+    # Retrieve the set of k-points for the current path
+    kx_in_path = path[:, 0]
+    ky_in_path = path[:, 1]
+
+    if P.system == 'num':    
+        if P.do_semicl:
+            0
+        # Calculate the dot products E_dir.d_nm(k).
+        # To be multiplied by E-field magnitude later.            
+        else:
+            S.dipole_in_path = (E_dir[0]*S.dipole_x[:, Nk2_idx, :, :] + \
+                E_dir[1]*S.dipole_y[:, Nk2_idx, :, :])
+            S.dipole_ortho = (E_ort[0]*S.dipole_x[:, Nk2_idx, :, :] + \
+                E_ort[1]*S.dipole_y[:, Nk2_idx, :, :])
+            S.e_in_path = S.e[:, Nk2_idx, :]
+            S.wf_in_path = S.wf[:, Nk2_idx, :, :]   #not in E-dir!
+
+    elif P.system == 'ana':
+        if P.do_semicl:
+            0
+        else:
+            # Calculate the dipole components along the path
+            di_00x = S.dipole.Axfjit[0][0](kx=kx_in_path, ky=ky_in_path)
+            di_01x = S.dipole.Axfjit[0][1](kx=kx_in_path, ky=ky_in_path)
+            di_11x = S.dipole.Axfjit[1][1](kx=kx_in_path, ky=ky_in_path)
+            di_00y = S.dipole.Ayfjit[0][0](kx=kx_in_path, ky=ky_in_path)
+            di_01y = S.dipole.Ayfjit[0][1](kx=kx_in_path, ky=ky_in_path)
+            di_11y = S.dipole.Ayfjit[1][1](kx=kx_in_path, ky=ky_in_path)
+
+            # Calculate the dot products E_dir.d_nm(k).
+            # To be multiplied by E-field magnitude later.
+            S.dipole_in_path[:, 0, 1] = E_dir[0]*di_01x + E_dir[1]*di_01y
+            S.dipole_in_path[:, 1, 0] = S.dipole_in_path[:, 0, 1].conjugate()
+            S.dipole_in_path[:, 0, 0] = E_dir[0]*di_00x + E_dir[1]*di_00y
+            S.dipole_in_path[:, 1, 1] = E_dir[0]*di_11x + E_dir[1]*di_11y
+
+            S.dipole_ortho[:, 0, 1] = E_ort[0]*di_01x + E_ort[1]*di_01y
+            S.dipole_ortho[:, 1, 0] = S.dipole_ortho[:, 0, 1].conjugate()
+            S.dipole_ortho[:, 0, 0] = E_ort[0]*di_00x + E_ort[1]*di_00y
+            S.dipole_ortho[:, 1, 1] = E_ort[0]*di_11x + E_ort[1]*di_11y
+
+        S.e_in_path[:, 0] = sys.efjit[0](kx=kx_in_path, ky=ky_in_path)
+        S.e_in_path[:, 1] = sys.efjit[1](kx=kx_in_path, ky=ky_in_path)
+
+        Ujit = sys.Ujit
+        S.wf_in_path[:, 0, 0] = Ujit[0][0](kx=kx_in_path, ky=ky_in_path)
+        S.wf_in_path[:, 0, 1] = Ujit[0][1](kx=kx_in_path, ky=ky_in_path)
+        S.wf_in_path[:, 1, 0] = Ujit[1][0](kx=kx_in_path, ky=ky_in_path)
+        S.wf_in_path[:, 1, 1] = Ujit[1][1](kx=kx_in_path, ky=ky_in_path)
+
+def prepare_current_calculations(sys, path, paths, Nk2_idx, E_dir, S, P):
+
+    if P.system == 'ana':
+        if P.gauge == 'length':
+            current_exact_path = make_emission_exact_path_length(sys, path, E_dir, S, P)
+        if P.gauge == 'velocity':
+            current_exact_path = make_emission_exact_path_velocity(sys, path, E_dir, S, P)
+        if P.save_approx:
+            polarization_inter_path = make_polarization_path(path, E_dir, S, P)
+            current_intra_path = make_current_path(sys, path, E_dir, S, P)
+
+    if P.system == 'num':
+        current_exact_path = make_current_exact_path_hderiv(paths, Nk2_idx, E_dir, S, P)
+        if P.save_approx:
+            polarization_inter_path = make_polarization_inter_path(S, P)
+            current_intra_path = make_intraband_current_path(paths, Nk2_idx, E_dir, S, P)
+
+    return current_exact_path, polarization_inter_path, current_intra_path
+        
+def calculate_solution_at_timestep(solver, Nk2_idx, ti, electric_field, T, P):
+
+    if P.solver_method in ('bdf', 'adams'):
+        # Do not append the last element (A_field)
+        T.solution = solver.y[:-1].reshape(P.Nk1, P.n, P.n)
+
+        # Construct time array only once
+        if Nk2_idx == 0 or P.Nk2_idx_ext > 0:
+            # Construct time and A_field only in first round
+            T.t[ti] = solver.t
+            T.A_field[ti] = solver.y[-1].real
+            T.E_field[ti] = electric_field(T.t[ti])
+
+    elif P.solver_method == 'rk4':
+        # Do not append the last element (A_field)
+        T.solution = T.solution_y_vec[:-1].reshape(P.Nk1, P.n, P.n)
+
+        # Construct time array only once
+        if Nk2_idx == 0 or P.Nk2_idx_ext > 0:
+            # Construct time and A_field only in first round
+            T.t[ti] = ti*P.dt + P.t0
+            T.A_field[ti] = T.solution_y_vec[-1].real
+            T.E_field[ti] = electric_field(T.t[ti])
+
+    # Only write full density matrix solution if save_full is True
+    if P.save_full:
+        T.solution_full[:, Nk2_idx, ti, :, :] = T.solution
+
+def calculate_currents(ti, current_exact_path, polarization_inter_path, current_intra_path, T, P):
+    if P.system == 'ana':
+        J_exact_E_dir_buf, J_exact_ortho_buf = current_exact_path(T.solution.reshape(P.Nk1, 4), T.E_field[ti], T.A_field[ti])
+    elif P.system == 'num':
+        J_exact_E_dir_buf, J_exact_ortho_buf = current_exact_path(T.solution)
+    T.J_exact_E_dir[ti] += J_exact_E_dir_buf
+    T.J_exact_ortho[ti] += J_exact_ortho_buf
+
+    if P.save_approx:
+        if P.system == 'ana':
+            P_inter_E_dir_buf, P_inter_ortho_buf = polarization_inter_path(T.solution[:, 1, 0], T.A_field[ti])
+            J_intra_E_dir_buf, J_intra_ortho_buf, J_anom_ortho_buf = current_intra_path(T.solution[:,0,0], T.solution[:, 1, 1], T.A_field[ti], T.E_field[ti])
+        elif P.system == 'num':
+            P_inter_E_dir_buf, P_inter_ortho_buf = polarization_inter_path(T.solution)
+            J_intra_E_dir_buf, J_intra_ortho_buf, J_anom_ortho_buf = current_intra_path(T.solution)
+
+        T.P_inter_E_dir[ti] += P_inter_E_dir_buf
+        T.P_inter_ortho[ti] += P_inter_ortho_buf
+        T.J_intra_E_dir[ti] += J_intra_E_dir_buf
+        T.J_intra_ortho[ti] += J_intra_ortho_buf
+        T.J_anom_ortho[ti] += J_anom_ortho_buf
 
 def rk_integrate(t, y, kpath, S, y0, dk, \
                  dt, rhs_ode):
