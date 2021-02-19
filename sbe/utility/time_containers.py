@@ -1,6 +1,7 @@
 import numpy as np
+from sbe.fields import make_electric_field
 
-def time_containers(P):
+def time_containers(P, electric_field_function):
     class Time():
         pass
 
@@ -32,5 +33,12 @@ def time_containers(P):
 
     #if P.zeeman:
     #    T.Zee_field = np.zeros((P.Nt, 3), dtype=P.type_real_np)
+
+    # Initialize electric_field, create rhs of ode and initialize solver
+
+    if electric_field_function is None:
+        T.electric_field = make_electric_field(P)
+    else:
+        T.electric_field = electric_field_function
 
     return T

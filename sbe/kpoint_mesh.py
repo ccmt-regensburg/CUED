@@ -2,19 +2,20 @@ import numpy as np
 ###############################################################################
 # K-Point meshes
 ###############################################################################
-def rect_mesh(P, E_dir, type_real_np):
+def rect_mesh(P, S):
     '''
     Create a rectangular mesh
     '''
     # Number of kpoints in E-field direction and orthogonal to the E-field
+    E_dir = S.E_dir
     Nk_E_dir_integer = P.Nk1
-    Nk_E_dir         = type_real_np(Nk_E_dir_integer)
+    Nk_E_dir         = P.type_real_np(Nk_E_dir_integer)
     Nk_ortho_integer = P.Nk2
-    Nk_ortho         = type_real_np(Nk_ortho_integer)
+    Nk_ortho         = P.type_real_np(Nk_ortho_integer)
 
     # length of the rectangle in E-field direction and orthogonal to it
-    length_BZ_E_dir = type_real_np(P.length_BZ_E_dir)
-    length_BZ_ortho = type_real_np(P.length_BZ_ortho)
+    length_BZ_E_dir = P.type_real_np(P.length_BZ_E_dir)
+    length_BZ_ortho = P.type_real_np(P.length_BZ_ortho)
 
     alpha_array = np.linspace(-0.5 + (1/(2*Nk_E_dir)),
                                0.5 - (1/(2*Nk_E_dir)), num=Nk_E_dir_integer)

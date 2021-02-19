@@ -1,11 +1,17 @@
 import numpy as np
 from sbe.utility import conditional_njit
 
-def make_electric_field(E0, w, alpha, chirp, phase, type_real_np):
+def make_electric_field(P):
     """
     Creates a jitted version of the electric field for fast use inside a solver
     """
-    @conditional_njit(type_real_np)
+    E0 = P.E0
+    w = P.w
+    alpha = P.alpha
+    chirp = P.chirp
+    phase = P.phase
+
+    @conditional_njit(P.type_real_np)
     def electric_field(t):
         '''
         Returns the instantaneous driving pulse field
