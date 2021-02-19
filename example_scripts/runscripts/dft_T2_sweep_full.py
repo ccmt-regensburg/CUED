@@ -2,10 +2,10 @@ import os
 import numpy as np
 from params import params
 
-import sbe.dipole
-from sbe.hamiltonian import BiTeResummed
-from sbe.parameter_loops.sequential import chirp_phasesweep
-from sbe.utility import mkdir_chdir
+import cued.dipole
+from cued.hamiltonian import BiTeResummed
+from cued.parameter_loops.sequential import chirp_phasesweep
+from cued.utility import mkdir_chdir
 
 def dft():
     C0 = -0.00647156                  # C0

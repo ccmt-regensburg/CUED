@@ -1,7 +1,7 @@
 from params import params
 
-import sbe.hamiltonian
-from sbe.main import sbe_solver
+import cued.hamiltonian
+from cued.main import sbe_solver
 
 def dft():
     C0 = -0.00647156                  # C0
@@ -11,7 +11,7 @@ def dft():
     ksym = 0.0635012                  # k^2 coefficent dampening
     kasym = 0.113773                  # k^3 coeffcient dampening
 
-    dft_system = sbe.hamiltonian.BiTeResummed(C0=C0, c2=c2, A=A, r=r, ksym=ksym, kasym=kasym)
+    dft_system = cued.hamiltonian.BiTeResummed(C0=C0, c2=c2, A=A, r=r, ksym=ksym, kasym=kasym)
 
     return dft_system
 def run(system):

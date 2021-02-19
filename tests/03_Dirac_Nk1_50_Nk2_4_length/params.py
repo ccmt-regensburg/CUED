@@ -36,7 +36,7 @@ class params:
 
     # Flags for testing and features
     ##########################################################################
-    gauge          = 'length'   # Gauge of the system
-    system         = 'ana'
-    solver         = '2band'
-    save_approx    = True
+    gauge                   = 'length'   # Gauge of the system
+    hamiltonian_evaluation  = 'ana'
+    solver                  = '2band'
+    save_approx             = True

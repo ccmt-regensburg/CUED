@@ -2,9 +2,9 @@ import os
 import numpy as np
 from params import params
 
-import sbe.dipole
-import sbe.hamiltonian
-from sbe.parameter_loops.parallel import mkdir_chdir, chirp_phasesweep
+import cued.dipole
+import cued.hamiltonian
+from cued.parameter_loops.parallel import mkdir_chdir, chirp_phasesweep
 
 
 def dirac():
@@ -15,7 +15,7 @@ def dirac():
     # For testing purposes against Jans code
     A = 0.1974
 
-    dirac_system = sbe.hamiltonian.BiTe(C0=0, C2=0, A=A, R=0, mz=0)
+    dirac_system = cued.hamiltonian.BiTe(C0=0, C2=0, A=A, R=0, mz=0)
 
     return dirac_system
 

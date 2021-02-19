@@ -2,10 +2,10 @@ import os
 import numpy as np
 from params import params
 
-import sbe.dipole
-from sbe.hamiltonian import BiTe
-from sbe.utility import mkdir_chdir
-from sbe.parameter_loops.sequential import chirp_phasesweep
+import cued.dipole
+from cued.hamiltonian import BiTe
+from cued.utility import mkdir_chdir
+from cued.parameter_loops.sequential import chirp_phasesweep
 
 
 def bite():

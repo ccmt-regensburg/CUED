@@ -2,19 +2,19 @@ import os
 import numpy as np
 from numpy.fft import fftshift, fftfreq
 import multiprocessing
-import sbe.hamiltonian
-import sbe.dipole
-from sbe.utility import ConversionFactors as co
-from sbe.utility import mkdir_chdir
-from sbe.main import sbe_solver, fourier_current_intensity, gaussian
-from sbe.plotting import read_dataset
+import cued.hamiltonian
+import cued.dipole
+from cued.utility import ConversionFactors as co
+from cued.utility import mkdir_chdir
+from cued.main import sbe_solver, fourier_current_intensity, gaussian
+from cued.plotting import read_dataset
 
 from params import params
 
 def dirac():
     A = 0.1974      # Fermi velocity
 
-    dirac_system = sbe.hamiltonian.BiTe(C0=0, C2=0, A=A, R=0, mz=0)
+    dirac_system = cued.hamiltonian.BiTe(C0=0, C2=0, A=A, R=0, mz=0)
 
     return dirac_system
 

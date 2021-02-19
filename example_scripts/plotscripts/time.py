@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-import sbe.plotting as splt
+import cued.plotting as splt
 
 plt.rcParams['text.usetex'] = True
 plt.rcParams['figure.figsize'] = (16, 9)

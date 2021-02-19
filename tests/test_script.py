@@ -3,7 +3,7 @@ import glob
 import argparse
 import numpy as np
 import shutil
-import sbe.plotting as splt
+import cued.plotting as splt
 
 ####################################################################################################
 #THIS SCRIPT NEEDS TO BE EXECUTED IN THE MAIN GIT DIRECTORY BY CALLING python3 tests/test_script.py#

@@ -2,10 +2,10 @@ import os
 import numpy as np
 from params import params
 
-import sbe.dipole
-import sbe.hamiltonian
-from sbe.parameter_loops.parallel import mkdir_chdir, chirp_phasesweep
-from sbe.utility.constants import ConversionFactors as co
+import cued.dipole
+import cued.hamiltonian
+from cued.parameter_loops.parallel import mkdir_chdir, chirp_phasesweep
+from cued.utility.constants import ConversionFactors as co
 
 
 def semich_bite():
@@ -16,7 +16,7 @@ def semich_bite():
     mx = 0.05*co.eV_to_au
     muz = 0.033
 
-    semich_bite_system = sbe.hamiltonian.Semiconductor(A=A, mz=muz, mx=mx,
+    semich_bite_system = cued.hamiltonian.Semiconductor(A=A, mz=muz, mx=mx,
                                                      a=params.a, align=True)
 
     return semich_bite_system
