@@ -1,1 +1,1 @@
-Package for density matrix dynamics in solids exposed to ultrafast light pulses implementing the Semiconductor Bloch equations (SBE). Includes computation of analytical k-dependent bandstructures and dipole moments, computation of currents and emission intensity. 
+Package for computing the density matrix dynamics in solids exposed to ultrafast light pulses implementing the Semiconductor Bloch equations (SBE). Includes computation of analytical k-dependent bandstructures and dipole moments, computation of currents and emission intensity. 
