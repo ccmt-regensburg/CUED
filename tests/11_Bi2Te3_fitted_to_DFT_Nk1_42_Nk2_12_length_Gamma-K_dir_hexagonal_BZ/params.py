@@ -44,6 +44,5 @@ class params:
     solver                  = '2band'
     user_out                = True       # Set to True to get user plotting and progress output
     save_approx             = True
-    save_txt                = False
+    save_text               = True
 
-    save_latex_pdf = True

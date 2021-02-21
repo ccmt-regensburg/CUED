@@ -44,3 +44,4 @@ class params:
     user_out                = True       # Set to True to get user plotting and progress output
     save_approx             = True
     save_txt                = False
+
