@@ -4,20 +4,34 @@ import argparse
 import numpy as np
 import shutil
 import cued.plotting as splt
+import importlib.util
 
-####################################################################################################
-#THIS SCRIPT NEEDS TO BE EXECUTED IN THE MAIN GIT DIRECTORY BY CALLING python3 tests/test_script.py#
-####################################################################################################
+######################################################################################################
+# THIS SCRIPT NEEDS TO BE EXECUTED IN THE MAIN GIT DIRECTORY BY CALLING python3 tests/test_script.py #
+######################################################################################################
 
 def check_test(testdir):
+
+    #################################
+    # PARAMETERS OF THE TEST SCRIPT #
+    #################################
+    print_latex_pdf       = True
+    threshold_rel_error   = 0.1
 
     print('\n\n=====================================================\n\nStart with test:'
           '\n\n' + testdir + '\n\n')
 
-    threshold_rel_error = 0.1
+    filename_params     = testdir + '/params.py'
+    filename_run        = testdir + '/runscript.py'
+    filename_pdf        = testdir + '/latex_pdf_files/CUED_summary.pdf'
+    filename_pdf_final  = testdir + '/CUED_summary_current_version.pdf'
 
-    filename_params  = testdir + '/params.py'
-    filename_run     = testdir + '/runscript.py'
+    params = import_params(filename_params)
+
+    print_latex_pdf_really = check_params_for_print_latex_pdf(print_latex_pdf, params)
+
+    if print_latex_pdf_really:
+        os.system("echo '    save_latex_pdf = True' >> "+filename_params)
 
     for filename in os.listdir(testdir):
         if filename.startswith('reference_Iapprox') and filename.endswith('.npy'):
@@ -42,7 +56,6 @@ def check_test(testdir):
 
     assert os.path.isfile(filename_Iexact_printed),  "Iexact is not printed from the code"
     assert os.path.isfile(filename_Iapprox_printed), "Iapprox is not printed from the code"
-
 
     # Load all relevant files and restrict data to max 10th order
     Iexact_reference     = np.array(np.load(filename_Iexact))
@@ -99,72 +112,41 @@ def check_test(testdir):
     os.remove(testdir + '/' + glob.glob("Iapprox_*")[0])
     for params_output in glob.glob(testdir + '/params_*'): os.remove(params_output)
 
+    if print_latex_pdf_really:
+        assert os.path.isfile(filename_pdf),  "The latex PDF is not there."
+        os.system("sed -i '$ d' "+filename_params)
+        shutil.move(filename_pdf, filename_pdf_final)
+        shutil.rmtree(testdir + '/latex_pdf_files')
+
     print('Test passed successfully.'
           '\n\n=====================================================\n\n')
 
     os.chdir("..")
 
-    # reset mode of the script
-    #if args.reset:
-    #    os.system('sed -n -i \'1p\' ' + filename_reference)
-    #    os.system('cat ' + filename + " >> " + filename_reference)
 
-    # # normal test mode if the script
-    # else:
-    #   with open(filename) as f:
-    #       count = 0
-    #       for line in f:
-    #           count += 1
-    #           fields = line.split()
-    #           value_test = float(fields[1])
+def import_params(filename_params):
 
-    #           with open(filename_reference) as f_reference:
+    spec = importlib.util.spec_from_file_location("params", filename_params)
+    params = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(params)
 
-    #               count_reference = 0
-    #               for line_reference in f_reference:
-    #                   count_reference += 1
-    #                   fields_reference = line_reference.split()
+    return params.params()
 
-    #                   # we have the -1 because there is the header with executing command
-    #                   # in the reference file
-    #                   if count == count_reference-1:
-    #                       value_reference = float(fields_reference[1])
 
-    #                       abs_error = np.abs(value_test - value_reference)
-    #                       rel_error = abs_error/np.abs(value_reference)
+def check_params_for_print_latex_pdf(print_latex_pdf, params):
 
-    #                       check_abs = abs_error < threshold_abs_error
-    #                       check_rel = rel_error < threshold_rel_error
+    if print_latex_pdf == True: 
+        if hasattr(params, 'save_latex_pdf'):
+            print_latex_pdf_really = params.save_latex_pdf
+        else:
+            print_latex_pdf_really = True
+    else:
+        print_latex_pdf_really = False
 
-    #                       print('{:<15} {:>25} {:>25} {:>25} {:>25}'.format(fields_reference[0], \
-    #                             value_reference, value_test, rel_error, abs_error))
+    return print_latex_pdf_really
 
-    #                       assert check_abs or check_rel, \
-    #                              "\n\nAbsolute and relative error of variable number "+str(count)+\
-    #                              " compared to reference too big:"\
-    #                              "\n\nRelative error: "+str(rel_error)+" and treshold: "+str(threshold_rel_error)+\
-    #                              "\n\nAbsolute error: "+str(abs_error)+" and treshold: "+str(threshold_abs_error)
-
-    #           f_reference.close()
-
-    #   print("\n\nTest passed successfully.\n\n")
-
-    #   f.close()
 
 def main():
-
-#    parser = argparse.ArgumentParser(description='Test script')
-#    parser.add_argument('-reset', default=False, action='store_true',
-#                        help=('Flag to reset all *.reference files in ./' + testdir +
-#                              '. Needed: Put all .reference files you want to reset/update'
-#                              'in ./' + testdir  + 'and insert the command to execute the'
-#                              ' main script in the first line of'
-#                              'the .reference file. The reset mode of this script'
-#                              'will insert the lines of the test file after the first'
-#                              'line (which contains the command to execute the main'
-#                              'script).'))
-#    args = parser.parse_args()
-
 
     dirpath = os.getcwd()
 
