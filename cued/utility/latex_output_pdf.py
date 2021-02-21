@@ -264,8 +264,8 @@ def BZ_plot(paths, P, A_field, S):
     plt.xlim(-length_x, length_x)
     plt.ylim(-length_y, length_y)
 
-    plt.xlabel(r'$k_x$ in 1/Angstroem')
-    plt.ylabel(r'$k_y$ in 1/Angstroem')
+    plt.xlabel(r'$k_x$ in 1/$\AA$')
+    plt.ylabel(r'$k_y$ in 1/$\AA$')
 
     for path in printed_paths:
         num_k                = np.size(path[:,0])
