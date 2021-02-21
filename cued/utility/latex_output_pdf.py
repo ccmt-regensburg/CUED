@@ -207,6 +207,7 @@ def BZ_plot(paths, P, A_field, S):
     BZ_fig = plt.figure(figsize=(10, 10))
     plt.plot(np.array([0.0]), np.array([0.0]), color='black', marker="o", linestyle='None')
     plt.text(0.01, 0.01, r'$\Gamma$')
+    default_width = 0.87
 
     if P.BZ_type == 'hexagon':
         R = 4.0*np.pi/(3*P.a_angs)
@@ -222,7 +223,7 @@ def BZ_plot(paths, P, A_field, S):
         length         = 5.0/P.a_angs
         length_x       = length
         length_y       = length
-        ratio_yx       = 1.0
+        ratio_yx       = default_width
         dist_to_border = 0.1*length
 
     elif P.BZ_type == 'rectangle':
@@ -236,7 +237,7 @@ def BZ_plot(paths, P, A_field, S):
         dist_to_border = 0.1*max(np.amax(rectangle_x), np.amax(rectangle_y))
         length_x = np.amax(rectangle_x) + dist_to_border
         length_y = np.amax(rectangle_y) + dist_to_border
-        ratio_yx = length_y/length_x*0.87
+        ratio_yx = length_y/length_x*default_width
 
     Nk1_max = 24
     Nk2_max = 6

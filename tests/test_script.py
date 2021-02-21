@@ -24,7 +24,6 @@ def check_test(testdir):
     filename_params     = testdir + '/params.py'
     filename_run        = testdir + '/runscript.py'
     filename_pdf        = testdir + '/latex_pdf_files/CUED_summary.pdf'
-    filename_pdf_final  = testdir + '/CUED_summary_current_version.pdf'
 
     params = import_params(filename_params)
 
@@ -115,7 +114,8 @@ def check_test(testdir):
     if print_latex_pdf_really:
         assert os.path.isfile(filename_pdf),  "The latex PDF is not there."
         os.system("sed -i '$ d' "+filename_params)
-        shutil.move(filename_pdf, filename_pdf_final)
+#        filename_pdf_final  = testdir + '/CUED_summary_current_version.pdf'
+#        shutil.move(filename_pdf, filename_pdf_final)
         shutil.rmtree(testdir + '/latex_pdf_files')
 
     print('Test passed successfully.'
