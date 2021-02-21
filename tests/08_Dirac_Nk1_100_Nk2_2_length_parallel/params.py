@@ -44,4 +44,4 @@ class params:
     save_approx             = True
     save_full               = False
     save_txt                = False
-
+    save_latex_pdf          = False
