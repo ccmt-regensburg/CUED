@@ -146,9 +146,7 @@ headheight=25pt,
 \\[3em]\large
 The CUED program is developed and maintained by:
 \\[3em]
-Computational Condensed Matter Theory Group
-\\[0.5em]
-Head: Ferdinand Evers
+Chair of Computational Condensed Matter Theory
   \\[0.5em]
 Institute of Theoretical Physics
   \\[0.5em]
@@ -165,17 +163,19 @@ Date of execution: \today
 Run time: PH-RUN s
 \\[3em]
   \end{center}{\large
-  With contributions from (in alphabetic order): 
+  Responsible scientists:
+  \\[1em]
+    Jan Wilhelm
+      \\[0.5em]
+    Ferdinand Evers
+  \\[3em]
+  Contributors (in alphabetic order): 
   \\[1em]
   Jack Crewse
   \\[0.5em]
   Patrick Grössing
   \\[0.5em]
-  Maximilian Nitsch
-  \\[0.5em]
   Adrian Seith
-  \\[0.5em]
-  Jan Wilhelm
   }
 \end{titlepage}
 
@@ -202,7 +202,7 @@ The following electric driving field is employed in the simulation:
 \begin{align}
     \bE(t)  = E(t)\,\hat{e}_\phi
     \;,\hspace{2em}
-    E(t) = E_0\,    \sin\Big(2\pi f_0\,(1+f_\text{chirp} t) + \varphi\Big)\, e^{-t^2/(2\alpha)^2}\;.
+    E(t) = E_0\,    \sin\Big(2\pi f_0\,(1+f_\text{chirp} t)\,t + \varphi\Big)\, e^{-t^2/(2\alpha)^2}\;.
     \label{e1}
 \end{align}
 \begin{figure}[b!]
@@ -260,7 +260,7 @@ This still needs to be filled; Gauge; how to print the Hamiltonian properly? (e.
 }
 
 \section{Time evolution of the density matrix}
-We solve semiconductor Bloch equations in the length gauge, Eq.~(50) in Ref.~[\ref{Wilhelm2021}]:
+In case you choose the length gauge (\texttt{gauge = 'length'}, that is also the default), we solve semiconductor Bloch equations in the length gauge, Eq.~(50) in Ref.~[\ref{Wilhelm2021}]:
 \begin{align}
     \left[
     \frac{\partial}{\partial t}
@@ -284,7 +284,7 @@ with a dephasing time $T_2\eqt PH-T2$\,fs. {\color{red}TODO: Plots of initial vv
 \caption{Components of the time-dependent current~$\bj(t)$: left: parallel to the driving field, right: orthogonal to the driving field, see Eq.~\eqref{currentcomp}.}
     \label{fig:current}
 \end{figure}
-The current is computed from Eq.~(67) in Ref.~[\ref{Wilhelm2021}] as
+In case you choose the length gauge (\texttt{gauge = 'length'}, that is also the default), the current is computed from Eq.~(67) in Ref.~[\ref{Wilhelm2021}] as
 \begin{align}
  \bj(t)  =
 q\sum_{nn'} \intbzdkpi

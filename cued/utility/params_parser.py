@@ -163,9 +163,6 @@ def parse_params(user_params):
     if hasattr(UP, 'save_latex_pdf'):
         P.save_latex_pdf = UP.save_latex_pdf
 
-    if P.save_latex_pdf and P.gauge == 'velocity':
-        sys.exit("Printing a Latex PDF is only implemented for the length gauge.")
-
     # Filename tail
     P.tail = 'E_{:.4f}_w_{:.1f}_a_{:.1f}_{}_t0_{:.1f}_dt_{:.6f}_NK1-{}_NK2-{}_T1_{:.1f}_T2_{:.1f}_chirp_{:.3f}_ph_{:.2f}_solver_{:s}_dk_order{}'\
         .format(P.E0_MVpcm, P.w_THz, P.alpha_fs, P.gauge, P.t0_fs, P.dt_fs, P.Nk1, P.Nk2, P.T1_fs, P.T2_fs, P.chirp_THz, P.phase, P.solver_method, P.dk_order)
