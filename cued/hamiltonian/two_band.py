@@ -407,9 +407,9 @@ class two_site_semiconductor(TwoBandSystem):
                  hopping=sp.Symbol('hopping', real=True),
                  onsite_energy_difference=sp.Symbol('onsite_energy_difference', real=True)) :
 
-        ho = 0.000001*self.ky
+        ho = 1.0E-30*self.ky
         hx = hopping * (1 + sp.cos (self.kx * lattice_const))
-        hy = - hopping * sp.sin (self.kx * lattice_const)
+        hy = 0
         hz = onsite_energy_difference/2
 
         super().__init__(ho, hx, hy, hz)
