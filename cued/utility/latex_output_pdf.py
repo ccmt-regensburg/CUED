@@ -69,6 +69,7 @@ def write_parameter(P, run_time):
         elif P.align == 'M':
             replace("PH-EFIELD-DIRECTION", "$\\\\Gamma$-M direction")
 
+    replace("PH-E0",    str(P.E0_MVpcm))
     replace("PH-FREQ",  str(P.w_THz))
     replace("PH-CHIRP", str(P.chirp_THz))
     eps = 1.0E-13
