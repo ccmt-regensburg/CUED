@@ -1,7 +1,7 @@
 import numpy as np
 from cued.utility import ConversionFactors as co
 from cued.dipole import diagonalize, derivative
-from cued.utility import conditional_njit
+from cued.utility import conditional_njit, evaluate_njit_matrix
 
 
 ##########################################################################################
@@ -401,47 +401,21 @@ def make_emission_exact_path_length(path, S, P):
     pathlen = kx_in_path.size
 
     ##########################################################
-    # H derivative container
-    ##########################################################
-    h_deriv_x = np.empty((pathlen, 2, 2), dtype=P.type_complex_np)
-    h_deriv_y = np.empty((pathlen, 2, 2), dtype=P.type_complex_np)
-    h_deriv_E_dir = np.empty((pathlen, 2, 2), dtype=P.type_complex_np)
-    h_deriv_ortho = np.empty((pathlen, 2, 2), dtype=P.type_complex_np)
-
-    ##########################################################
-    # Wave function container
-    ##########################################################
-    U = np.empty((pathlen, 2, 2), dtype=P.type_complex_np)
-    U_h = np.empty((pathlen, 2, 2), dtype=P.type_complex_np)
-
-    ##########################################################
     # Berry curvature container
     ##########################################################
     if P.do_semicl:
         Bcurv = np.empty((pathlen, 2), dtype=P.type_complex_np)
 
-    h_deriv_x[:, 0, 0] = sys.hderivfjit[0][0][0](kx=kx_in_path, ky=ky_in_path)
-    h_deriv_x[:, 0, 1] = sys.hderivfjit[0][0][1](kx=kx_in_path, ky=ky_in_path)
-    h_deriv_x[:, 1, 0] = sys.hderivfjit[0][1][0](kx=kx_in_path, ky=ky_in_path)
-    h_deriv_x[:, 1, 1] = sys.hderivfjit[0][1][1](kx=kx_in_path, ky=ky_in_path)
+    h_deriv_x = evaluate_njit_matrix(sys.hderivfjit[0], kx=kx_in_path, ky=ky_in_path,
+                                     dtype=P.type_complex_np)
+    h_deriv_y = evaluate_njit_matrix(sys.hderivfjit[1], kx=kx_in_path, ky=ky_in_path,
+                                     dtype=P.type_complex_np)
 
-    h_deriv_y[:, 0, 0] = sys.hderivfjit[1][0][0](kx=kx_in_path, ky=ky_in_path)
-    h_deriv_y[:, 0, 1] = sys.hderivfjit[1][0][1](kx=kx_in_path, ky=ky_in_path)
-    h_deriv_y[:, 1, 0] = sys.hderivfjit[1][1][0](kx=kx_in_path, ky=ky_in_path)
-    h_deriv_y[:, 1, 1] = sys.hderivfjit[1][1][1](kx=kx_in_path, ky=ky_in_path)
+    h_deriv_E_dir= h_deriv_x*E_dir[0] + h_deriv_y*E_dir[1]
+    h_deriv_ortho = h_deriv_x*E_ort[0] + h_deriv_y*E_ort[1]
 
-    h_deriv_E_dir[:, :, :] = h_deriv_x*E_dir[0] + h_deriv_y*E_dir[1]
-    h_deriv_ortho[:, :, :] = h_deriv_x*E_ort[0] + h_deriv_y*E_ort[1]
-
-    U[:, 0, 0] = sys.Ujit[0][0](kx=kx_in_path, ky=ky_in_path)
-    U[:, 0, 1] = sys.Ujit[0][1](kx=kx_in_path, ky=ky_in_path)
-    U[:, 1, 0] = sys.Ujit[1][0](kx=kx_in_path, ky=ky_in_path)
-    U[:, 1, 1] = sys.Ujit[1][1](kx=kx_in_path, ky=ky_in_path)
-
-    U_h[:, 0, 0] = sys.Ujit_h[0][0](kx=kx_in_path, ky=ky_in_path)
-    U_h[:, 0, 1] = sys.Ujit_h[0][1](kx=kx_in_path, ky=ky_in_path)
-    U_h[:, 1, 0] = sys.Ujit_h[1][0](kx=kx_in_path, ky=ky_in_path)
-    U_h[:, 1, 1] = sys.Ujit_h[1][1](kx=kx_in_path, ky=ky_in_path)
+    U = evaluate_njit_matrix(sys.Ujit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
+    U_h = evaluate_njit_matrix(sys.Ujit_h, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
 
     if P.do_semicl:
         Bcurv[:, 0] = curvature.Bfjit[0][0](kx=kx_in_path, ky=ky_in_path)
@@ -520,41 +494,33 @@ def make_current_exact_path_hderiv(path_idx, S, P):
     E_ort = S.E_ort
 
     Nk1 = P.Nk1
-    Nk2 = P.Nk2
     n = P.n
     epsilon = 0.15
     type_complex_np = P.type_complex_np
 
+    kx = paths[path_idx, :, 0]
+    ky = paths[path_idx, :, 1]
+    hgridplusx = evaluate_njit_matrix(hamiltonian, kx=kx+epsilon, ky=ky, dtype=type_complex_np)
+    hgridminusx = evaluate_njit_matrix(hamiltonian, kx=kx-epsilon, ky=ky, dtype=type_complex_np)
+    hgridplusy = evaluate_njit_matrix(hamiltonian, kx=kx, ky=ky+epsilon, dtype=type_complex_np)
+    hgridminusy = evaluate_njit_matrix(hamiltonian, kx=kx, ky=ky-epsilon, dtype=type_complex_np)
 
-    hgridplusx = np.empty([Nk1, Nk2, n, n], dtype=type_complex_np)
-    hgridminusx = np.empty([Nk1, Nk2, n, n], dtype=type_complex_np)
-    hgridplusy = np.empty([Nk1, Nk2, n, n], dtype=type_complex_np)
-    hgridminusy = np.empty([Nk1, Nk2, n, n], dtype=type_complex_np)
-
-    for i in range(Nk1):
-        for j in range(Nk2):
-            kx = paths[j, i, 0]
-            ky = paths[j, i, 1]
-            hgridplusx[i, j, :, :] = hamiltonian(kx=kx+epsilon, ky=ky)
-            hgridminusx[i, j, :, :] = hamiltonian(kx=kx-epsilon, ky=ky)
-            hgridplusy[i, j, :, :] = hamiltonian(kx=kx, ky=ky+epsilon)
-            hgridminusy[i, j, :, :] = hamiltonian(kx=kx, ky=ky-epsilon)
-    dhdkx = ( hgridplusx -  hgridminusx )/(2*epsilon)
-    dhdky = ( hgridplusy -  hgridminusy )/(2*epsilon)
+    dhdkx = (hgridplusx - hgridminusx)/(2*epsilon)
+    dhdky = (hgridplusy - hgridminusy)/(2*epsilon)
 
     matrix_element_x = np.empty([Nk1, n, n], dtype=type_complex_np)
     matrix_element_y = np.empty([Nk1, n, n], dtype=type_complex_np)
-    
+
     for i in range(Nk1):
-            buff = dhdkx[i, path_idx, :, :] @ wf[i, :, :]
+            buff = dhdkx[i, :, :] @ wf[i, :, :]
             matrix_element_x[i, :, :] = np.conjugate(wf[i, :, :].T) @ buff
 
-            buff = dhdky[i,path_idx,:,:] @ wf[i,:,:]
+            buff = dhdky[i, :, :] @ wf[i,:,:]
             matrix_element_y[i, :, :] = np.conjugate(wf[i, :, :].T) @ buff
 
     mel_in_path = matrix_element_x[:, :, :] * E_dir[0] + matrix_element_y[:, :, :] * E_dir[1]
     mel_ortho = matrix_element_x[:, :, :] * E_ort[0] + matrix_element_y[:, :, :] * E_ort[1]
-    
+
     @conditional_njit(type_complex_np)
     def current_exact_path_hderiv(solution):
 
@@ -594,8 +560,8 @@ def make_polarization_inter_path(S, P):
             for i in range(n):
                 for j in range(n):
                     if i > j:
-                        P_inter_E_dir += 2*np.real(dipole_in_path[k, i, j]*solution[k, j, i])    
-                        P_inter_ortho += 2*np.real(dipole_ortho[k, i, j]*solution[k, j, i])   
+                        P_inter_E_dir += 2*np.real(dipole_in_path[k, i, j]*solution[k, j, i])
+                        P_inter_ortho += 2*np.real(dipole_ortho[k, i, j]*solution[k, j, i])
         return P_inter_E_dir, P_inter_ortho
     return polarization_inter_path
 
@@ -606,11 +572,10 @@ def make_intraband_current_path(path_idx, S, P):
         Function that calculates the intraband current from eq. (76 and 77) with or without the
         anomalous contribution via the Berry curvature
     """
-    hamiltonian = S.hnp
     paths = S.paths
     E_dir = S.E_dir
     E_ort = S.E_ort
-    
+
     Nk1 = P.Nk1
     n = P.n
     gidx = P.gidx

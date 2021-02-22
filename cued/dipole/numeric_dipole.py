@@ -2,6 +2,8 @@ import numpy as np
 import numpy.linalg as lin
 import math
 
+from cued.utility import evaluate_njit_matrix
+
 def diagonalize(P, S):
     """
         Diagonalize the n-dimensional Hamiltonian matrix on a 2-dimensional
@@ -38,7 +40,7 @@ def diagonalize(P, S):
             third index: component of wf
             fourth index: band index
     """
-    n = P.n 
+    n = P.n
     gidx = P.gidx
     Nk1 = P.Nk1
     Nk2 = P.Nk2
@@ -49,10 +51,11 @@ def diagonalize(P, S):
     e = np.empty([Nk1, Nk2, n], dtype=np.float64)
     wf = np.empty([Nk1, Nk2, n, n], dtype=np.complex128)
     for j in range(Nk2):
+        kx_in_path = paths[j, :, 0]
+        ky_in_path = paths[j, :, 1]
+        h_in_path = evaluate_njit_matrix(hamiltonian, kx_in_path, ky_in_path)
         for i in range(Nk1):
-            kx_in_path = paths[j, i, 0]
-            ky_in_path = paths[j, i, 1]
-            e[i, j], wf_buff = lin.eigh(hamiltonian(kx=kx_in_path, ky=ky_in_path))
+            e[i, j], wf_buff = lin.eigh(h_in_path[i, :, :])
             wf_gauged_entry = np.copy(wf_buff[gidx, :])
             wf_buff[gidx, :] = np.abs(wf_gauged_entry)
             wf_buff[~(np.arange(np.size(wf_buff, axis=0)) == gidx)] *= np.exp(1j*np.angle(wf_gauged_entry.conj()))
@@ -69,7 +72,6 @@ def derivative(P, S):
     n = P.n
     gidx = P.gidx
     paths = S.paths
-    hamiltonian = S.hnp
 
     xderivative = np.empty([Nk1, Nk2, n, n], dtype=np.complex128)
     yderivative = np.empty([Nk1, Nk2, n, n], dtype=np.complex128)
@@ -146,7 +148,7 @@ def derivative(P, S):
     S.paths = pathsminus2y
     eminus4y, wfminus4y = diagonalize(P, S)
 
-    S.paths = paths # reset to original path   
+    S.paths = paths # reset to original path
 
     xderivative = (1/280*(wfminus4x - wfplus4x) + 4/105*( wfplus3x - wfminus3x ) + 1/5*( wfminus2x - wfplus2x ) + 4/5*(wfplusx - wfminusx) )/epsilon
     yderivative = (1/280*(wfminus4y - wfplus4y) + 4/105*( wfplus3y - wfminus3y ) + 1/5*( wfminus2y - wfplus2y ) + 4/5*( wfplusy - wfminusy ) )/epsilon

@@ -2,6 +2,7 @@ import numpy as np
 import cued.dipole
 from cued.dipole import diagonalize, dipole_elements
 from cued.kpoint_mesh import hex_mesh, rect_mesh
+from cued.utility import evaluate_njit_matrix
 
 
 def system_properties(P, sys):
@@ -30,30 +31,26 @@ def system_properties(P, sys):
 
     # Calculate Eigensystem and Dipoles
 
-    S.hnp = sys.numpy_hamiltonian()
+    S.hnp = sys.hfjit
 
     if P.hamiltonian_evaluation == 'ana':
-
         h_sym, ef_sym, wf_sym, _ediff_sym = sys.eigensystem(gidx=P.gidx)
         S.dipole = cued.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
         S.curvature = cued.dipole.SymbolicCurvature(h_sym, S.dipole.Ax, S.dipole.Ay)
         P.n = 2
 
     if P.hamiltonian_evaluation == 'num':
-        P.n = np.size(S.hnp(kx=0, ky=0)[:, 0])
+        P.n = np.size(evaluate_njit_matrix(S.hnp, kx=0, ky=0)[0, :, :], axis=0)
         S.dipole_x, S.dipole_y = dipole_elements(P, S)
         S.e, S.wf = diagonalize(P, S)
-        S.curvature = 0   
+        S.curvature = 0
         S.dipole = 0
 
     # Make in path containers
 
     S.dipole_in_path = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
-    
     S.dipole_ortho = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
-    
-    S.e_in_path = np.zeros([P.Nk1, P.n], dtype=P.type_real_np)  
-
+    S.e_in_path = np.zeros([P.Nk1, P.n], dtype=P.type_real_np)
     S.wf_in_path = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
-    
+
     return S

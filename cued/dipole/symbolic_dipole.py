@@ -171,18 +171,18 @@ class SymbolicDipole():
             fig.suptitle(title, fontsize=16)
 
         if nolog:
-            valence_c = norm_r[vidx, vidx]
-            conduct_c = norm_r[cidx, cidx]
-            condval_c_r = norm_r[cidx, vidx]
-            condval_c_i = norm_i[cidx, vidx]
+            valence_c = norm_r[:, vidx, vidx]
+            conduct_c = norm_r[:, cidx, cidx]
+            condval_c_r = norm_r[:, cidx, vidx]
+            condval_c_i = norm_i[:, cidx, vidx]
         else:
-            valence_c = np.log10(norm_r[vidx, vidx])
-            conduct_c = np.log10(norm_r[cidx, cidx])
-            condval_c_r = np.log10(norm_r[cidx, vidx])
-            condval_c_i = np.log10(norm_i[cidx, vidx])
+            valence_c = np.log10(norm_r[:, vidx, vidx])
+            conduct_c = np.log10(norm_r[:, cidx, cidx])
+            condval_c_r = np.log10(norm_r[:, cidx, vidx])
+            condval_c_i = np.log10(norm_i[:, cidx, vidx])
 
         valence = ax[0, 0].quiver(kx, ky,
-                                  Axe_rn[vidx, vidx], Aye_rn[vidx, vidx],
+                                  Axe_rn[:, vidx, vidx], Aye_rn[:, vidx, vidx],
                                   valence_c, angles='xy', cmap='cool', width=0.007)
         current_name = r"$\mathrm{Re}(\mathbf{d}_{" + str(vname) + str(vname) + "})$"
         current_abs_name = r'$|$' + current_name + r'$|$'
@@ -193,7 +193,7 @@ class SymbolicDipole():
         plt.colorbar(valence, ax=ax[0, 0], label=current_abs_name + clabel)
 
         conduct = ax[0, 1].quiver(kx, ky,
-                                  Axe_rn[cidx, cidx], Aye_rn[cidx, cidx],
+                                  Axe_rn[:, cidx, cidx], Aye_rn[:, cidx, cidx],
                                   conduct_c, angles='xy', cmap='cool', width=0.007)
         current_name = r"$\mathrm{Re}(\mathbf{d}_{" + str(cname) + str(cname) + "})$"
         current_abs_name = r'$|$' + current_name + r'$|$'
@@ -204,7 +204,7 @@ class SymbolicDipole():
         plt.colorbar(conduct, ax=ax[0, 1], label=current_abs_name + clabel)
 
         dipreal = ax[1, 0].quiver(kx, ky,
-                                  Axe_rn[cidx, vidx], Aye_rn[cidx, vidx],
+                                  Axe_rn[:, cidx, vidx], Aye_rn[:, cidx, vidx],
                                   condval_c_r, angles='xy', cmap='cool', width=0.007)
         current_name = r"$\mathrm{Re}(\mathbf{d}_{" + str(cname) + str(vname) + "})$"
         current_abs_name = r'$|$' + current_name + r'$|$'
@@ -215,7 +215,7 @@ class SymbolicDipole():
         plt.colorbar(dipreal, ax=ax[1, 0], label=current_abs_name + clabel)
 
         dipimag = ax[1, 1].quiver(kx, ky,
-                                  Axe_in[cidx, vidx], Aye_in[cidx, vidx],
+                                  Axe_in[:, cidx, vidx], Aye_in[:, cidx, vidx],
                                   condval_c_i, angles='xy', cmap='cool', width=0.007)
         current_name = r"$\mathrm{Im}(\mathbf{d}_{" + str(cname) + str(vname) + "})$"
         current_abs_name = r'$|$' + current_name + r'$|$'

@@ -86,14 +86,14 @@ class SymbolicCurvature():
         fig, ax = plt.subplots(1, 2)
         fig.suptitle(title, fontsize=16)
 
-        valence = ax[0].scatter(kx, ky, s=2, c=Be[vidx, vidx], cmap="cool")
+        valence = ax[0].scatter(kx, ky, s=2, c=Be[:, vidx, vidx], cmap="cool")
         ax[0].set_title(r"$\Omega_{" + str(vname) + str(vname) + "}$")
         ax[0].axis('equal')
         ax[0].set_xlabel(xlabel)
         ax[0].set_ylabel(ylabel)
         plt.colorbar(valence, ax=ax[0], label=clabel)
 
-        conduct = ax[1].scatter(kx, ky, s=2, c=Be[cidx, cidx], cmap="cool")
+        conduct = ax[1].scatter(kx, ky, s=2, c=Be[:, cidx, cidx], cmap="cool")
         ax[1].set_title(r"$\Omega_{" + str(cname) + str(cname) + "}$")
         ax[1].axis('equal')
         ax[1].set_xlabel(xlabel)
