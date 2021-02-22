@@ -26,8 +26,6 @@ def bite_resummed_num(kx, ky):
     mb = 0.0003
     bite = BiTeResummed(C0=C0, c2=c2, A=A, r=r, ksym=ksym, kasym=kasym)
     h_sym, e_sym, wf_sym, ediff_sym = bite.eigensystem(gidx=1)
-    # test = sp.lambdify(ediff_sym[1].free_symbols, ediff_sym[1], "numpy")
-    # print(test(kx=kx, ky=ky, mb=mb))
 
     print("Hamiltonian")
     print(evmat(bite.hfjit, kx=kx, ky=ky, mb=mb))
