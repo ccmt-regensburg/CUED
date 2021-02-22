@@ -40,3 +40,4 @@ class params:
     hamiltonian_evaluation  = 'ana'
     solver                  = '2band'
     save_approx             = True
+    user_out                = False

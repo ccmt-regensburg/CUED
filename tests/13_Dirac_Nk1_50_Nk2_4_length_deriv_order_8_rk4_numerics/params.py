@@ -43,15 +43,9 @@ class params:
     hamiltonian_evaluation  = 'ana'
     solver                  = '2band'
     do_semicl               = False      # Turn all dipoles to 0 and use Berry curvature in emission
-    user_out                = True       # Set to True to get user plotting and progress output
+    user_out                = False       # Set to True to get user plotting and progress output
     save_approx             = True
     save_full               = False
     save_txt                = False
     solver_method           = 'rk4'
-    
-    # Parameters for numerical n band solver
-    dipole_numerics = True
 
-    n = 2                       # number of bands
-    epsilon = 2e-5             # Parameter for numerical derivative
-    gidx = 1                    # gauge index of wavefunction

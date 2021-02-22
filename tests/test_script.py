@@ -15,7 +15,7 @@ def check_test(testdir):
     #################################
     # PARAMETERS OF THE TEST SCRIPT #
     #################################
-    print_latex_pdf       = True
+    print_latex_pdf       = False
     threshold_rel_error   = 0.1
 
     print('\n\n=====================================================\n\nStart with test:'

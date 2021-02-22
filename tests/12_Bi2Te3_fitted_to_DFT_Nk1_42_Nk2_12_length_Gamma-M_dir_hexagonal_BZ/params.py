@@ -41,7 +41,7 @@ class params:
     gauge                   = 'length'   # Gauge of the system
     hamiltonian_evaluation  = 'ana'
     solver                  = '2band'
-    user_out                = True       # Set to True to get user plotting and progress output
+    user_out                = False       # Set to True to get user plotting and progress output
     save_approx             = True
     save_txt                = False
 
