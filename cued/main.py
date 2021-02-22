@@ -537,8 +537,7 @@ def write_current_emission(S, T, P):
                     fmt='%+.18e')
 
     if P.save_latex_pdf:
-        write_and_compile_latex_PDF(T.t, freq, T.E_field, T.A_field, I_exact_E_dir, I_exact_ortho, \
-                Int_exact_E_dir, Int_exact_ortho, S.E_dir, S.paths, S.run_time, P, S)
+        write_and_compile_latex_PDF(T, P, S, freq, I_exact_E_dir, I_exact_ortho, Int_exact_E_dir, Int_exact_ortho)
 
 
 def fourier_current_intensity(I_E_dir, I_ortho, gaussian_envelope, dt_out, prefac_emission, freq):

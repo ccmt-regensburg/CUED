@@ -7,12 +7,11 @@ import tikzplotlib
 from cued.utility import ConversionFactors as co
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 
-def write_and_compile_latex_PDF(t, freq, E_field, A_field, I_exact_E_dir, I_exact_ortho, \
-        Int_exact_E_dir, Int_exact_ortho, E_dir, paths, run_time, P, S):
-
-        t_fs = t*co.au_to_fs
+def write_and_compile_latex_PDF(T, P, S, freq, I_exact_E_dir, I_exact_ortho, Int_exact_E_dir, Int_exact_ortho):
+        
+        t_fs = T.t*co.au_to_fs
         num_points_max_for_plotting = 1000
-        t_idx = get_time_indices_for_plotting(E_field, t_fs, num_points_max_for_plotting, factor_t_end=1.0)
+        t_idx = get_time_indices_for_plotting(T.E_field, t_fs, num_points_max_for_plotting, factor_t_end=1.0)
         f_idx = get_freq_indices_for_plotting(freq/P.w, num_points_max_for_plotting, freq_max=30)
 
         latex_dir = "latex_pdf_files"
@@ -28,12 +27,12 @@ def write_and_compile_latex_PDF(t, freq, E_field, A_field, I_exact_E_dir, I_exac
         shutil.copy(code_path+"/CUED_summary.tex", ".")
         shutil.copy(code_path+"/logo.pdf", ".")
 
-        write_parameter(P, run_time)
+        write_parameter(P, S.run_time)
 
-        tikz_time(E_field*co.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield")
-        tikz_time(A_field*co.au_to_MVpcm*co.au_to_fs, t_fs, t_idx, r"A-field $A(t)$ in MV*fs/cm", "Afield")
+        tikz_time(T.E_field*co.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield")
+        tikz_time(T.A_field*co.au_to_MVpcm*co.au_to_fs, t_fs, t_idx, r"A-field $A(t)$ in MV*fs/cm", "Afield")
 
-        BZ_plot(paths, P, A_field, S)
+        BZ_plot(S.paths, P, T.A_field, S)
 
         tikz_time(I_exact_E_dir, t_fs, t_idx, \
                   r'Current $j_{\parallel}(t)$ parallel to $\bE$ in atomic units', "j_E_dir")
