@@ -15,8 +15,11 @@ class NBandBandstructureDipoleSystem():
         self.e = e
         self.n = n  
         self.flag = flag
+        
+        self.freesymbols = set()
 
-        self.freesymbols = e[0].free_symbols        #alle symbole!!
+        for i in range(self.n):
+            self.freesymbols.update(e[i].free_symbols)
 
         self.dkxe, self.dkye = self.energy_derivative()
         self.dipole_x, self.dipole_y = self.dipole_elements()
