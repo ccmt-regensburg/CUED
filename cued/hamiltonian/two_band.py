@@ -9,7 +9,7 @@ plt.rcParams['figure.figsize'] = [12, 15]
 plt.rcParams['text.usetex'] = True
 
 
-class TwoBandSystem():
+class TwoBandHamiltonianSystem():
     so = sp.Matrix([[1, 0], [0, 1]])
     sx = sp.Matrix([[0, 1], [1, 0]])
     sy = sp.Matrix([[0, -sp.I], [sp.I, 0]])
@@ -369,7 +369,7 @@ class TwoBandSystem():
         plt.show()
 
 
-class Haldane(TwoBandSystem):
+class Haldane(TwoBandHamiltonianSystem):
     """
     Haldane model
     """
@@ -393,7 +393,7 @@ class Haldane(TwoBandSystem):
         super().__init__(ho, hx, hy, hz)
 
 
-class two_site_semiconductor(TwoBandSystem):
+class two_site_semiconductor(TwoBandHamiltonianSystem):
     """
     k-dependent Hamiltonian of 1d tight-binding chain with two sites in the unit cell
     !!! ONLY WORKS TOGETHER WITH gidx = None, REQUIRES 1D BRILLOUIN ZONE OF LENGTH 2*pi/lattice_const !!!
@@ -412,7 +412,7 @@ class two_site_semiconductor(TwoBandSystem):
         super().__init__(ho, hx, hy, hz)
 
 
-class one_site_semiconductor(TwoBandSystem):
+class one_site_semiconductor(TwoBandHamiltonianSystem):
     """
     k-dependent Hamiltonian of 1d tight-binding chain with two sites in the unit cell
     !!! ONLY WORKS TOGETHER WITH gidx = None, REQUIRES 1D BRILLOUIN ZONE OF LENGTH 2*pi/lattice_const !!!
@@ -431,7 +431,7 @@ class one_site_semiconductor(TwoBandSystem):
 
 
 
-class BiTe(TwoBandSystem):
+class BiTe(TwoBandHamiltonianSystem):
     """
     Bismuth Telluride topological insulator model
     """
@@ -455,7 +455,7 @@ class BiTe(TwoBandSystem):
         super().__init__(ho, hx, hy, hz)
 
 
-class BiTePeriodic(TwoBandSystem):
+class BiTePeriodic(TwoBandHamiltonianSystem):
     """
     Bismuth Telluride topological insulator model
     """
@@ -487,7 +487,7 @@ class BiTePeriodic(TwoBandSystem):
         super().__init__(ho, hx, hy, hz)
 
 
-class BiTeResummed(TwoBandSystem):
+class BiTeResummed(TwoBandHamiltonianSystem):
     """
     Bismuth Telluride topological insulator model
     """
@@ -510,7 +510,7 @@ class BiTeResummed(TwoBandSystem):
         super().__init__(ho, hx, hy, hz)
 
 
-class Graphene(TwoBandSystem):
+class Graphene(TwoBandHamiltonianSystem):
     """
     Graphene model
     """
@@ -528,7 +528,7 @@ class Graphene(TwoBandSystem):
         super().__init__(ho, hx, hy, hz)
 
 
-class QWZ(TwoBandSystem):
+class QWZ(TwoBandHamiltonianSystem):
     """
     Qi-Wu-Zhang model of a 2D Chern insulator
     """
@@ -550,7 +550,7 @@ class QWZ(TwoBandSystem):
         super().__init__(t*ho, t*hx, t*hy, t*hz)
 
 
-class Dirac(TwoBandSystem):
+class Dirac(TwoBandHamiltonianSystem):
     """
     Generic Dirac cone Hamiltonian
     """
@@ -566,7 +566,7 @@ class Dirac(TwoBandSystem):
         super().__init__(ho, hx, hy, hz)
 
 
-class Test(TwoBandSystem):
+class Test(TwoBandHamiltonianSystem):
     def __init__(self, A=sp.Symbol('A', real=True),
                  a=sp.Symbol('a', real=True),
                  mx=0, mz=0):
@@ -579,7 +579,7 @@ class Test(TwoBandSystem):
         super().__init__(ho, hx, hy, hz)
 
 
-class Parabolic(TwoBandSystem):
+class Parabolic(TwoBandHamiltonianSystem):
     def __init__(self, A=sp.Symbol('A', real=True),
                  mz=0):
 
@@ -591,7 +591,7 @@ class Parabolic(TwoBandSystem):
         super().__init__(ho, hx, hy, hz)
 
 
-class Semiconductor(TwoBandSystem):
+class Semiconductor(TwoBandHamiltonianSystem):
     """
     Generic Semiconductor Hamiltonian
     """

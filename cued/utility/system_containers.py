@@ -31,8 +31,6 @@ def system_properties(P, sys):
 
     # Calculate Eigensystem and Dipoles
 
-    S.hnp = sys.hfjit
-
     if P.hamiltonian_evaluation == 'ana':
         h_sym, ef_sym, wf_sym, _ediff_sym = sys.eigensystem(gidx=P.gidx)
         S.dipole = cued.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
@@ -40,11 +38,15 @@ def system_properties(P, sys):
         P.n = 2
 
     if P.hamiltonian_evaluation == 'num':
+        S.hnp = sys.hfjit
         P.n = np.size(evaluate_njit_matrix(S.hnp, kx=0, ky=0)[0, :, :], axis=0)
         S.dipole_x, S.dipole_y = dipole_elements(P, S)
         S.e, S.wf = diagonalize(P, S)
         S.curvature = 0
         S.dipole = 0
+
+    if P.hamiltonian_evaluation == 'bandstructure':
+        P.n = sys.n
 
     # Make in path containers
 

@@ -182,7 +182,7 @@ def make_rhs_ode(P, S, T):
             raise AttributeError('2-band solver works for 2-band systems only')
         if P.hamiltonian_evaluation == 'ana':
            rhs_ode = make_rhs_ode_2_band(S.sys, S.dipole, S.E_dir, T.electric_field, P)
-        elif P.hamiltonian_evaluation == 'num':
+        elif P.hamiltonian_evaluation == 'num' or 'bandstructure':
             if P.gauge == 'length':
                 rhs_ode = make_rhs_ode_2_band(0, 0, S.E_dir, T.electric_field, P)
             if P.gauge == 'velocity':
@@ -252,6 +252,20 @@ def calculate_system_in_path(path, Nk2_idx, P, S):
         S.wf_in_path[:, 1, 0] = Ujit[1][0](kx=kx_in_path, ky=ky_in_path)
         S.wf_in_path[:, 1, 1] = Ujit[1][1](kx=kx_in_path, ky=ky_in_path)
 
+    elif P.hamiltonian_evaluation == 'bandstructure':
+        
+        sys = S.sys
+        
+        dipole_x = evaluate_njit_matrix(sys.dipole_xjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
+        dipole_y = evaluate_njit_matrix(sys.dipole_xjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
+        
+        for i in range(P.n):
+            S.e_in_path[:, i] = sys.ejit[i](kx=kx_in_path, ky=ky_in_path)
+
+        S.dipole_in_path = S.E_dir[0]*dipole_x + S.E_dir[1]*dipole_y
+        S.dipole_ortho = S.E_ort[0]*dipole_x + S.E_ort[1]*dipole_y
+
+
 def prepare_current_calculations(path, Nk2_idx, S, P):
 
     if P.hamiltonian_evaluation == 'ana':
@@ -269,6 +283,11 @@ def prepare_current_calculations(path, Nk2_idx, S, P):
             polarization_inter_path = make_polarization_inter_path(S, P)
             current_intra_path = make_intraband_current_path(Nk2_idx, S, P)
 
+    if P.hamiltonian_evaluation == 'bandstructure':
+        current_exact_path = make_current_exact_bandstructure(path, S, P)
+        if P.save_approx:
+            polarization_inter_path = make_polarization_inter_bandstructure(S, P)
+            current_intra_path = make_intraband_current_bandstructure(path, S, P)
     return current_exact_path, polarization_inter_path, current_intra_path
         
 def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P):
@@ -302,7 +321,7 @@ def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P):
 def calculate_currents(ti, current_exact_path, polarization_inter_path, current_intra_path, T, P):
     if P.hamiltonian_evaluation == 'ana':
         J_exact_E_dir_buf, J_exact_ortho_buf = current_exact_path(T.solution.reshape(P.Nk1, 4), T.E_field[ti], T.A_field[ti])
-    elif P.hamiltonian_evaluation == 'num':
+    elif P.hamiltonian_evaluation == 'num' or 'bandstructure':
         J_exact_E_dir_buf, J_exact_ortho_buf = current_exact_path(T.solution)
     T.J_exact_E_dir[ti] += J_exact_E_dir_buf
     T.J_exact_ortho[ti] += J_exact_ortho_buf
@@ -311,7 +330,7 @@ def calculate_currents(ti, current_exact_path, polarization_inter_path, current_
         if P.hamiltonian_evaluation == 'ana':
             P_inter_E_dir_buf, P_inter_ortho_buf = polarization_inter_path(T.solution[:, 1, 0], T.A_field[ti])
             J_intra_E_dir_buf, J_intra_ortho_buf, J_anom_ortho_buf = current_intra_path(T.solution[:,0,0], T.solution[:, 1, 1], T.A_field[ti], T.E_field[ti])
-        elif P.hamiltonian_evaluation == 'num':
+        elif P.hamiltonian_evaluation == 'num' or 'bandstructure':
             P_inter_E_dir_buf, P_inter_ortho_buf = polarization_inter_path(T.solution)
             J_intra_E_dir_buf, J_intra_ortho_buf, J_anom_ortho_buf = current_intra_path(T.solution)
 

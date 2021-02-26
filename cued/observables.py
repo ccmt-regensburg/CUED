@@ -479,6 +479,113 @@ def make_emission_exact_path_length(path, S, P):
     return emission_exact_path_length
 
 ##########################################################################################
+### Observables from new class
+##########################################################################################
+def make_current_exact_bandstructure(path, S, P):
+    
+    sys = S.sys
+    Nk1 = P.Nk1
+    n = P.n 
+
+    kx_in_path = path[:, 0]
+    ky_in_path = path[:, 1]
+
+    mel_x = evaluate_njit_matrix(sys.melxjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
+    mel_y = evaluate_njit_matrix(sys.melyjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
+
+    mel_in_path = S.E_dir[0]*mel_x + S.E_dir[1]*mel_y
+    mel_ortho = S.E_ort[0]*mel_x + S.E_ort[1]*mel_y
+
+    @conditional_njit(P.type_complex_np)
+    def current_exact_path(solution):
+    
+        J_exact_E_dir = 0
+        J_exact_ortho = 0
+
+        for i_k in range(Nk1):
+            for i in range(n):
+                J_exact_E_dir += - ( mel_in_path[i_k, i, i].real * solution[i_k, i, i].real )
+                J_exact_ortho += - ( mel_ortho[i_k, i, i].real * solution[i_k, i, i].real )
+                for j in range(n):
+                    if i != j:
+                        J_exact_E_dir += - np.real( mel_in_path[i_k, i, j] * solution[i_k, j, i] )
+                        J_exact_ortho += - np.real( mel_ortho[i_k, i, j] * solution[i_k, j, i] )
+                        
+        return J_exact_E_dir, J_exact_ortho
+    return current_exact_path
+
+
+def make_intraband_current_bandstructure(path, S, P):
+    #params, hamiltonian, E_dir, paths, path_idx
+    """
+        Function that calculates the intraband current from eq. (76 and 77) with or without the
+        anomalous contribution via the Berry curvature
+    """
+    
+    sys = S.sys
+    Nk1 = P.Nk1
+    n = P.n 
+    save_anom = P.save_anom
+
+    kx_in_path = path[:, 0]
+    ky_in_path = path[:, 1]
+
+    ederivx = np.zeros([P.Nk1, P.n], dtype=P.type_real_np)
+    ederivy = np.zeros([P.Nk1, P.n], dtype=P.type_real_np)
+
+    for i in range(P.n):
+        ederivx[:, i] = sys.dkxejit[i](kx=kx_in_path, ky=ky_in_path)
+        ederivy[:, i] = sys.dkyejit[i](kx=kx_in_path, ky=ky_in_path)
+
+    ederiv_in_path = S.E_dir[0]*ederivx + S.E_dir[1]*ederivy
+    ederiv_ortho = S.E_ort[0]*ederivx + S.E_ort[1]*ederivy
+
+    @conditional_njit(P.type_complex_np)
+    def current_intra_path(solution):
+
+        J_intra_E_dir = 0
+        J_intra_ortho = 0
+        J_anom_ortho = 0
+
+        for k in range(Nk1):
+            for i in range(n):
+                J_intra_E_dir += - ederiv_in_path[k, i] * solution[k, i, i].real
+                J_intra_ortho += - ederiv_ortho[k, i] * solution[k, i, i].real
+
+                if save_anom:
+                    J_anom_ortho += 0
+                    print('J_anom not implemented')
+
+        return J_intra_E_dir, J_intra_ortho, J_anom_ortho
+    return current_intra_path
+
+
+def make_polarization_inter_bandstructure(S, P):
+    """
+        Function that calculates the interband polarization from eq. (74)
+    """
+    dipole_in_path = S.dipole_in_path
+    dipole_ortho = S.dipole_ortho
+    n = P.n
+    Nk1 = P.Nk1
+    type_complex_np = P.type_complex_np
+
+    @conditional_njit(type_complex_np)
+    def polarization_inter_path(solution):
+
+        P_inter_E_dir = 0
+        P_inter_ortho = 0
+
+        for k in range(Nk1):
+            for i in range(n):
+                for j in range(n):
+                    if i > j:
+                        P_inter_E_dir += 2*np.real(dipole_in_path[k, i, j]*solution[k, j, i])
+                        P_inter_ortho += 2*np.real(dipole_ortho[k, i, j]*solution[k, j, i])
+        return P_inter_E_dir, P_inter_ortho
+    return polarization_inter_path
+
+##########################################################################################
 ### Observables for the n-band code
 ##########################################################################################
 
