@@ -10,7 +10,7 @@ import cued.dipole
 
 from cued.utility import ConversionFactors as co
 from cued.utility import conditional_njit
-from cued.utility import parse_params, time_containers, system_properties
+from cued.utility import parse_params, time_containers, system_properties, frequency_containers
 from cued.utility import write_and_compile_latex_PDF
 from cued.fields import make_electric_field
 from cued.dipole import diagonalize, dipole_elements
@@ -87,9 +87,10 @@ def sbe_solver(sys, params, electric_field_function=None):
 
     S = system_properties(P, sys)
     
-    # Make containers used in solver
+    # Make containers for time- and frequency- dependent observables
 
     T = time_containers(P, electric_field_function)
+    W = frequency_containers()
 
     # Make rhs of ode for 2band or nband solver
     rhs_ode, solver = make_rhs_ode(P, S, T)
@@ -160,9 +161,10 @@ def sbe_solver(sys, params, electric_field_function=None):
     end_time = time.perf_counter()
     S.run_time = end_time - start_time
 
-    # Write solutions
-
-    write_current_emission(S, T, P)
+    # calculate and write solutions
+    update_currents_with_kweight(S, T, P)
+    calculate_fourier(S, T, P, W)
+    write_current_emission(S, T, P, W)
 
     # Save the parameters of the calculation
     params_name = 'params_' + P.tail + '.txt'
@@ -320,25 +322,26 @@ def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P):
 
 def calculate_currents(ti, current_exact_path, polarization_inter_path, current_intra_path, T, P):
     if P.hamiltonian_evaluation == 'ana':
-        J_exact_E_dir_buf, J_exact_ortho_buf = current_exact_path(T.solution.reshape(P.Nk1, 4), T.E_field[ti], T.A_field[ti])
+        j_E_dir_buf, j_ortho_buf = current_exact_path(T.solution.reshape(P.Nk1, 4), T.E_field[ti], T.A_field[ti])
     elif P.hamiltonian_evaluation == 'num' or 'bandstructure':
-        J_exact_E_dir_buf, J_exact_ortho_buf = current_exact_path(T.solution)
-    T.J_exact_E_dir[ti] += J_exact_E_dir_buf
-    T.J_exact_ortho[ti] += J_exact_ortho_buf
+        j_E_dir_buf, j_ortho_buf = current_exact_path(T.solution)
+    T.j_E_dir[ti] += j_E_dir_buf
+    T.j_ortho[ti] += j_ortho_buf
 
     if P.save_approx:
         if P.hamiltonian_evaluation == 'ana':
             P_inter_E_dir_buf, P_inter_ortho_buf = polarization_inter_path(T.solution[:, 1, 0], T.A_field[ti])
-            J_intra_E_dir_buf, J_intra_ortho_buf, J_anom_ortho_buf = current_intra_path(T.solution[:,0,0], T.solution[:, 1, 1], T.A_field[ti], T.E_field[ti])
+            j_intra_E_dir_buf, j_intra_ortho_buf, j_anom_ortho_buf = current_intra_path(T.solution[:,0,0], T.solution[:, 1, 1], T.A_field[ti], T.E_field[ti])
         elif P.hamiltonian_evaluation == 'num' or 'bandstructure':
             P_inter_E_dir_buf, P_inter_ortho_buf = polarization_inter_path(T.solution)
-            J_intra_E_dir_buf, J_intra_ortho_buf, J_anom_ortho_buf = current_intra_path(T.solution)
+            j_intra_E_dir_buf, j_intra_ortho_buf, j_anom_ortho_buf = current_intra_path(T.solution)
 
         T.P_inter_E_dir[ti] += P_inter_E_dir_buf
         T.P_inter_ortho[ti] += P_inter_ortho_buf
-        T.J_intra_E_dir[ti] += J_intra_E_dir_buf
-        T.J_intra_ortho[ti] += J_intra_ortho_buf
-        T.J_anom_ortho[ti] += J_anom_ortho_buf
+        T.j_intra_E_dir[ti] += j_intra_E_dir_buf
+        T.j_intra_ortho[ti] += j_intra_ortho_buf
+        T.j_anom_ortho[ti] += j_anom_ortho_buf
+
 
 def rk_integrate(t, y, kpath, S, y0, dk, \
                  dt, rhs_ode):
@@ -409,8 +412,68 @@ def gaussian(t, alpha):
     # # 1/(2*np.sqrt(np.pi)*alpha)*np.exp(-t**2/(2*alpha)**2)
     return np.exp(-t**2/(2*alpha)**2)
 
+def update_currents_with_kweight(S, T, P):
 
-def write_current_emission(S, T, P):
+    T.j_E_dir *= S.kweight
+    T.j_ortho *= S.kweight
+
+    if P.save_approx:
+        T.j_intra_E_dir *= S.kweight
+        T.j_intra_ortho *= S.kweight
+
+        T.dt_P_inter_E_dir = diff(T.t, T.P_inter_E_dir)*S.kweight
+        T.dt_P_inter_ortho = diff(T.t, T.P_inter_ortho)*S.kweight
+
+        T.P_inter_E_dir *= S.kweight
+        T.P_inter_ortho *= S.kweight
+
+        T.j_anom_ortho *= S.kweight
+
+        # Eq. (81( SBE formalism paper
+        T.j_deph_E_dir = 1/P.T2*T.P_inter_E_dir
+        T.j_deph_ortho = 1/P.T2*T.P_inter_ortho
+
+        T.j_intra_plus_dt_P_inter_E_dir = T.j_intra_E_dir + T.dt_P_inter_E_dir
+        T.j_intra_plus_dt_P_inter_ortho = T.j_intra_ortho + T.dt_P_inter_ortho
+
+        T.j_intra_plus_anom_ortho = T.j_intra_ortho + T.j_anom_ortho
+
+def calculate_fourier(S, T, P, W):
+
+    # Fourier transforms
+    # 1/(3c^3) in atomic units
+    prefac_emission = 1/(3*(137.036**3))
+    dt_out = T.t[1] - T.t[0]
+    ndt_fft = (T.t.size-1)*P.factor_freq_resolution + 1
+    W.freq = fftshift(fftfreq(ndt_fft, d=dt_out))
+    gaussian_envelope = gaussian(T.t, P.alpha)
+
+    if P.save_exact:
+
+        W.Int_E_dir, W.Int_ortho, W.j_E_dir, W.j_ortho = fourier_current_intensity(
+                T.j_E_dir, T.j_ortho, gaussian_envelope, dt_out, prefac_emission, W.freq)
+
+    if P.save_approx:
+
+        # Approximate current and emission intensity
+        W.Int_intra_plus_dt_P_inter_E_dir, W.Int_intra_plus_dt_P_inter_ortho, W.j_intra_plus_dt_P_inter_E_dir, W.j_intra_plus_dt_P_inter_ortho = fourier_current_intensity(
+             T.j_intra_plus_dt_P_inter_E_dir, T.j_intra_plus_dt_P_inter_ortho, gaussian_envelope, dt_out, prefac_emission, W.freq)
+
+        # Intraband current and emission intensity
+        W.Int_intra_E_dir, W.Int_intra_ortho, W.j_intra_E_dir, W.j_intra_ortho = fourier_current_intensity(
+             T.j_intra_E_dir, T.j_intra_ortho, gaussian_envelope, dt_out, prefac_emission, W.freq)
+
+        # Polarization-related current and emission intensity
+        W.Int_dt_P_inter_E_dir, W.Int_dt_P_inter_ortho, W.dt_P_inter_E_dir, W.dt_P_inter_ortho = fourier_current_intensity(
+             T.dt_P_inter_E_dir, T.dt_P_inter_E_dir, gaussian_envelope, dt_out, prefac_emission, W.freq)
+
+        # Anomalous current, intraband current (de/dk-related) + anomalous current; and emission int.
+        W.Int_anom_ortho, W.Int_intra_plus_anom_ortho, W.j_anom_ortho, W.j_intra_plus_anom_ortho = \
+             fourier_current_intensity( T.j_anom_ortho, T.j_intra_plus_anom_ortho,
+                                        gaussian_envelope, dt_out, prefac_emission, W.freq)
+
+
+def write_current_emission(S, T, P, W):
     """
         Calculates the Emission Intensity I(omega) (eq. 51 in https://arxiv.org/abs/2008.03177)
 
@@ -450,113 +513,54 @@ def write_current_emission(S, T, P):
 
         savefiles (see documentation of sbe_solver())
     """
-    # Fourier transforms
-    # 1/(3c^3) in atomic units
-    prefac_emission = 1/(3*(137.036**3))
-    dt_out = T.t[1] - T.t[0]
-    ndt_fft = (T.t.size-1)*P.factor_freq_resolution + 1
-    freq = fftshift(fftfreq(ndt_fft, d=dt_out))
-    gaussian_envelope = gaussian(T.t, P.alpha)
+    ##############################################################
+    # Conditional save of approx formula
+    ##############################################################
 
     if P.save_approx:
-        I_intra_E_dir = T.J_intra_E_dir*S.kweight
-        I_intra_ortho = T.J_intra_ortho*S.kweight
-
-        I_inter_E_dir = diff(T.t, T.P_inter_E_dir)*S.kweight
-        I_inter_ortho = diff(T.t, T.P_inter_ortho)*S.kweight
-
-        I_anom_ortho  = T.J_anom_ortho*S.kweight
-
-        # Eq. (81( SBE formalism paper
-        I_deph_E_dir = 1/P.T2*T.P_inter_E_dir*S.kweight
-        I_deph_ortho = 1/P.T2*T.P_inter_ortho*S.kweight
-
-        I_E_dir = I_intra_E_dir + I_inter_E_dir
-        I_ortho = I_intra_ortho + I_inter_ortho
-
-        I_intra_plus_anom_ortho = I_intra_ortho + I_anom_ortho
-
-        I_without_deph_E_dir = T.J_exact_E_dir - I_deph_E_dir
-        I_without_deph_ortho = T.J_exact_ortho - I_deph_ortho
-
-        I_intra_plus_deph_E_dir = I_intra_E_dir + I_deph_E_dir
-        I_intra_plus_deph_ortho = I_intra_ortho + I_deph_ortho
-
-        # Approximate current and emission intensity
-        Int_E_dir, Int_ortho, Iw_E_dir, Iw_ortho = fourier_current_intensity(
-             I_E_dir, I_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
-
-        # Intraband current and emission intensity
-        Int_intra_E_dir, Int_intra_ortho, Iw_intra_E_dir, Iw_intra_ortho = fourier_current_intensity(
-             I_intra_E_dir, I_intra_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
-
-        # Polarization-related current and emission intensity
-        Int_inter_E_dir, Int_inter_ortho, Iw_inter_E_dir, Iw_inter_ortho = fourier_current_intensity(
-             I_inter_E_dir, I_inter_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
-
-        # Anomalous current, intraband current (de/dk-related) + anomalous current; and emission int.
-        Int_anom_ortho, Int_intra_plus_anom_ortho, Iw_anom_ortho, Iw_intra_plus_anom_ortho = \
-             fourier_current_intensity( I_anom_ortho, I_intra_plus_anom_ortho,
-                                        gaussian_envelope, dt_out, prefac_emission, freq)
-
-        # Total current without dephasing current and respectice emission intensity
-        Int_without_deph_E_dir, Int_without_deph_ortho, Iw_without_deph_E_dir, Iw_without_deph_ortho = fourier_current_intensity(
-             I_without_deph_E_dir, I_without_deph_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
-
-        # Total current without dephasing current and respectice emission intensity
-        Int_intra_plus_deph_E_dir, Int_intra_plus_deph_ortho, Iw_intra_plus_deph_E_dir, Iw_intra_plus_deph_ortho = fourier_current_intensity(
-             I_intra_plus_deph_E_dir, I_intra_plus_deph_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
-
         I_approx_name = 'Iapprox_' + P.tail
 
-        np.save(I_approx_name, [T.t, I_E_dir, I_ortho,
-                                freq/P.w, Iw_E_dir, Iw_ortho,
-                                Int_E_dir, Int_ortho,
-                                I_intra_E_dir, I_intra_ortho,
-                                Int_intra_E_dir, Int_intra_ortho,
-                                I_inter_E_dir, I_inter_ortho,
-                                Int_inter_E_dir, Int_inter_ortho,
-                                I_anom_ortho, I_intra_plus_anom_ortho,
-                                Int_anom_ortho, Int_intra_plus_anom_ortho,
-                                Int_without_deph_E_dir, Int_without_deph_ortho,
-                                Int_intra_plus_deph_E_dir, Int_intra_plus_deph_ortho] )
+        np.save(I_approx_name, [T.t, T.j_intra_plus_dt_P_inter_E_dir, T.j_intra_plus_dt_P_inter_ortho,
+                                W.freq/P.w, W.j_intra_plus_dt_P_inter_E_dir, W.j_intra_plus_dt_P_inter_ortho,
+                                W.Int_intra_plus_dt_P_inter_E_dir, W.Int_intra_plus_dt_P_inter_ortho,
+                                T.j_intra_E_dir, T.j_intra_ortho,
+                                W.Int_intra_E_dir, W.Int_intra_ortho,
+                                T.dt_P_inter_E_dir, T.dt_P_inter_ortho,
+                                W.Int_dt_P_inter_E_dir, W.Int_dt_P_inter_ortho,
+                                T.j_anom_ortho, T.j_intra_plus_anom_ortho,
+                                W.Int_anom_ortho, W.Int_intra_plus_anom_ortho] )
 
         if P.save_txt:
             np.savetxt(I_approx_name + '.dat',
-                       np.column_stack([T.t.real, I_E_dir.real, I_ortho.real,
-                                        (freq/P.w).real, Iw_E_dir.real, Iw_E_dir.imag,
-                                        Iw_ortho.real, Iw_ortho.imag,
-                                        Int_E_dir.real, Int_ortho.real]),
+                       np.column_stack([T.t.real, T.j_intra_plus_dt_P_inter_E_dir, T.j_intra_plus_dt_P_inter_ortho,
+                                        (W.freq/P.w).real, W.j_intra_plus_dt_P_inter_E_dir.real, W.j_intra_plus_dt_P_inter_E_dir.imag,
+                                        W.j_intra_plus_dt_P_inter_ortho, W.j_intra_plus_dt_P_inter_ortho,
+                                        W.Int_intra_plus_dt_P_inter_E_dir, W.Int_intra_plus_dt_P_inter_ortho]),
                        header="t, I_E_dir, I_ortho, freqw/w, Re(Iw_E_dir), Im(Iw_E_dir), Re(Iw_ortho), Im(Iw_ortho), Int_E_dir, Int_ortho",
                        fmt='%+.18e')
 
     ##############################################################
     # Conditional save of exact formula
     ##############################################################
-    # kweight is different for rectangle and hexagon
-    if P.save_exact:
-        I_exact_E_dir = T.J_exact_E_dir*S.kweight
-        I_exact_ortho = T.J_exact_ortho*S.kweight
 
-        Int_exact_E_dir, Int_exact_ortho, Iw_exact_E_dir, Iw_exact_ortho = fourier_current_intensity(
-                I_exact_E_dir, I_exact_ortho, gaussian_envelope, dt_out, prefac_emission, freq)
+    if P.save_exact:
 
         I_exact_name = 'Iexact_' + P.tail
-        np.save(I_exact_name, [T.t, I_exact_E_dir, I_exact_ortho,
-                            freq/P.w, Iw_exact_E_dir, Iw_exact_ortho,
-                            Int_exact_E_dir, Int_exact_ortho])
+        np.save(I_exact_name, [T.t, T.j_E_dir, T.j_ortho,
+                            W.freq/P.w, W.j_E_dir, W.j_ortho,
+                            W.Int_E_dir, W.Int_ortho])
 
         if P.save_txt and P.factor_freq_resolution == 1:
             np.savetxt(I_exact_name + '.dat',
-                    np.column_stack([T.t.real, I_exact_E_dir.real, I_exact_ortho.real,
-                                        (freq/P.w).real, Iw_exact_E_dir.real, Iw_exact_E_dir.imag,
-                                        Iw_exact_ortho.real, Iw_exact_ortho.imag,
-                                        Int_exact_E_dir.real, Int_exact_ortho.real]),
+                    np.column_stack([T.t.real, T.j_E_dir.real, T.j_ortho.real,
+                                        (W.freq/P.w).real, W.j_E_dir.real, W.j_E_dir.imag,
+                                        W.j_ortho.real, W.j_ortho.imag,
+                                        W.Int_E_dir.real, W.Int_ortho.real]),
                     header="t, I_exact_E_dir, I_exact_ortho, freqw/w, Re(Iw_exact_E_dir), Im(Iw_exact_E_dir), Re(Iw_exact_ortho), Im(Iw_exact_ortho), Int_exact_E_dir, Int_exact_ortho",
                     fmt='%+.18e')
 
     if P.save_latex_pdf:
-        write_and_compile_latex_PDF(T, P, S, freq, I_exact_E_dir, I_exact_ortho, Int_exact_E_dir, Int_exact_ortho)
+        write_and_compile_latex_PDF(T, P, S, W.freq, T.j_E_dir, T.j_ortho, W.Int_E_dir, W.Int_ortho)
 
 
 def fourier_current_intensity(I_E_dir, I_ortho, gaussian_envelope, dt_out, prefac_emission, freq):

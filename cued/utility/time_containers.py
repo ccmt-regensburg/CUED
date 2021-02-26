@@ -19,17 +19,20 @@ def time_containers(P, electric_field_function):
     T.A_field = np.zeros(P.Nt, dtype=P.type_real_np)
     T.E_field = np.zeros(P.Nt, dtype=P.type_real_np)
 
-    T.J_exact_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
-    T.J_exact_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
+    T.j_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
+    T.j_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
     if P.save_approx:
-        T.J_intra_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
-        T.J_intra_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
+        T.j_intra_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
+        T.j_intra_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
         T.P_inter_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
         T.P_inter_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
-        T.J_anom_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
+        T.dt_P_inter_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
+        T.dt_P_inter_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
+
+        T.j_anom_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
     #if P.zeeman:
     #    T.Zee_field = np.zeros((P.Nt, 3), dtype=P.type_real_np)
