@@ -291,7 +291,8 @@ def prepare_current_calculations(path, Nk2_idx, S, P):
             polarization_inter_path = make_polarization_inter_bandstructure(S, P)
             current_intra_path = make_intraband_current_bandstructure(path, S, P)
     return current_exact_path, polarization_inter_path, current_intra_path
-        
+
+
 def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P):
 
     if P.solver_method in ('bdf', 'adams'):
@@ -319,6 +320,7 @@ def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P):
     # Only write full density matrix solution if save_full is True
     if P.save_full:
         T.solution_full[:, Nk2_idx, ti, :, :] = T.solution
+
 
 def calculate_currents(ti, current_exact_path, polarization_inter_path, current_intra_path, T, P):
     if P.hamiltonian_evaluation == 'ana':
@@ -355,6 +357,7 @@ def rk_integrate(t, y, kpath, S, y0, dk, \
 
     return ynew
 
+
 def initial_condition(P, e_in_path): # Check if this does what it should!
     '''
     Occupy conduction band according to inital Fermi energy and temperature
@@ -373,6 +376,7 @@ def initial_condition(P, e_in_path): # Check if this does what it should!
         initial_condition[k, :, :] = np.diag(distrib_bands[k, :])
     return initial_condition.flatten('C')
 
+
 def diff(x, y):
     '''
     Takes the derivative of y w.r.t. x
@@ -382,12 +386,11 @@ def diff(x, y):
     if len(y) == 1:
         return 0
 
-#    dx = np.gradient(x)
-#    dy = np.gradient(y)
     dx = np.roll(x,-1) - np.roll(x,1)
     dy = np.roll(y,-1) - np.roll(y,1)
 
     return dy/dx
+
 
 def fourier(dt, data):
     '''
@@ -408,8 +411,6 @@ def gaussian(t, alpha):
     Function to multiply a Function f(t) before Fourier transform
     to ensure no step in time between t_final and t_final + delta
     '''
-    # sigma = sqrt(2)*alpha
-    # # 1/(2*np.sqrt(np.pi)*alpha)*np.exp(-t**2/(2*alpha)**2)
     return np.exp(-t**2/(2*alpha)**2)
 
 def update_currents_with_kweight(S, T, P):
@@ -438,39 +439,43 @@ def update_currents_with_kweight(S, T, P):
 
         T.j_intra_plus_anom_ortho = T.j_intra_ortho + T.j_anom_ortho
 
+
 def calculate_fourier(S, T, P, W):
 
     # Fourier transforms
     # 1/(3c^3) in atomic units
     prefac_emission = 1/(3*(137.036**3))
     dt_out = T.t[1] - T.t[0]
-    ndt_fft = (T.t.size-1)*P.factor_freq_resolution + 1
+    factor_freq_resolution = P.factor_freq_resolution
+    if P.fourier_regularization == 'time_reflection':
+        factor_freq_resolution *= 2
+    ndt_fft = (T.t.size-1)*factor_freq_resolution + 1
     W.freq = fftshift(fftfreq(ndt_fft, d=dt_out))
-    gaussian_envelope = gaussian(T.t, P.alpha)
+    gaussian_envelope = gaussian(T.t, P.gaussian_window_width)
 
     if P.save_exact:
 
         W.Int_E_dir, W.Int_ortho, W.j_E_dir, W.j_ortho = fourier_current_intensity(
-                T.j_E_dir, T.j_ortho, gaussian_envelope, dt_out, prefac_emission, W.freq)
+                T.j_E_dir, T.j_ortho, gaussian_envelope, dt_out, prefac_emission, W.freq, P)
 
     if P.save_approx:
 
         # Approximate current and emission intensity
         W.Int_intra_plus_dt_P_inter_E_dir, W.Int_intra_plus_dt_P_inter_ortho, W.j_intra_plus_dt_P_inter_E_dir, W.j_intra_plus_dt_P_inter_ortho = fourier_current_intensity(
-             T.j_intra_plus_dt_P_inter_E_dir, T.j_intra_plus_dt_P_inter_ortho, gaussian_envelope, dt_out, prefac_emission, W.freq)
+             T.j_intra_plus_dt_P_inter_E_dir, T.j_intra_plus_dt_P_inter_ortho, gaussian_envelope, dt_out, prefac_emission, W.freq, P)
 
         # Intraband current and emission intensity
         W.Int_intra_E_dir, W.Int_intra_ortho, W.j_intra_E_dir, W.j_intra_ortho = fourier_current_intensity(
-             T.j_intra_E_dir, T.j_intra_ortho, gaussian_envelope, dt_out, prefac_emission, W.freq)
+             T.j_intra_E_dir, T.j_intra_ortho, gaussian_envelope, dt_out, prefac_emission, W.freq, P)
 
         # Polarization-related current and emission intensity
         W.Int_dt_P_inter_E_dir, W.Int_dt_P_inter_ortho, W.dt_P_inter_E_dir, W.dt_P_inter_ortho = fourier_current_intensity(
-             T.dt_P_inter_E_dir, T.dt_P_inter_E_dir, gaussian_envelope, dt_out, prefac_emission, W.freq)
+             T.dt_P_inter_E_dir, T.dt_P_inter_E_dir, gaussian_envelope, dt_out, prefac_emission, W.freq, P)
 
         # Anomalous current, intraband current (de/dk-related) + anomalous current; and emission int.
         W.Int_anom_ortho, W.Int_intra_plus_anom_ortho, W.j_anom_ortho, W.j_intra_plus_anom_ortho = \
              fourier_current_intensity( T.j_anom_ortho, T.j_intra_plus_anom_ortho,
-                                        gaussian_envelope, dt_out, prefac_emission, W.freq)
+                                        gaussian_envelope, dt_out, prefac_emission, W.freq, P)
 
 
 def write_current_emission(S, T, P, W):
@@ -563,22 +568,50 @@ def write_current_emission(S, T, P, W):
         write_and_compile_latex_PDF(T, P, S, W.freq, T.j_E_dir, T.j_ortho, W.Int_E_dir, W.Int_ortho)
 
 
-def fourier_current_intensity(I_E_dir, I_ortho, gaussian_envelope, dt_out, prefac_emission, freq):
+def fourier_current_intensity(I_E_dir, I_ortho, gaussian_envelope, dt_out, prefac_emission, freq, P):
 
     ndt     = np.size(I_E_dir)
     ndt_fft = np.size(freq)
 
+    print("ndt =", ndt)
+    print("ndt_fft =", ndt_fft)
+
     I_E_dir_for_fft = np.zeros(ndt_fft)
     I_ortho_for_fft = np.zeros(ndt_fft)
 
-    I_E_dir_for_fft[ (ndt_fft-ndt)//2 : (ndt_fft+ndt)//2 ] = I_E_dir[:]*gaussian_envelope[:]
-    I_ortho_for_fft[ (ndt_fft-ndt)//2 : (ndt_fft+ndt)//2 ] = I_ortho[:]*gaussian_envelope[:]
+    if P.fourier_regularization == 'gaussian_window':
+
+        I_E_dir_for_fft[ (ndt_fft-ndt)//2 : (ndt_fft+ndt)//2 ] = I_E_dir[:]*gaussian_envelope[:]
+        I_ortho_for_fft[ (ndt_fft-ndt)//2 : (ndt_fft+ndt)//2 ] = I_ortho[:]*gaussian_envelope[:]
+
+    elif P.fourier_regularization == 'time_reflection':
+
+#        I_E_dir_for_fft[ 0 : ndt ] = I_E_dir[:]
+#        I_ortho_for_fft[ 0 : ndt ] = I_ortho[:]
+#
+#        I_E_dir_for_fft[ ndt-1 : 2*ndt ] = I_E_dir[::-1]
+#        I_ortho_for_fft[ ndt-1 : 2*ndt ] = I_ortho[::-1]
+
+        I_E_dir_for_fft[ 0 : ndt ] = I_E_dir[:]*gaussian_envelope[:]
+        I_ortho_for_fft[ 0 : ndt ] = I_ortho[:]*gaussian_envelope[:]
+
+#        I_E_dir_for_fft[ ndt-1 : 2*ndt ] = I_E_dir[::-1]*gaussian_envelope[:]
+#        I_ortho_for_fft[ ndt-1 : 2*ndt ] = I_ortho[::-1]*gaussian_envelope[:]
+
+
+
+    print("i_t, I_E_dir_value")
+    for i_t, I_E_dir_value in enumerate(I_E_dir_for_fft):
+        print(i_t, I_E_dir_value)
 
     Iw_E_dir = fourier(dt_out, I_E_dir_for_fft)
     Iw_ortho = fourier(dt_out, I_ortho_for_fft)
 
-    Int_E_dir = prefac_emission*(freq**2)*np.abs(Iw_E_dir)**2
-    Int_ortho = prefac_emission*(freq**2)*np.abs(Iw_ortho)**2
+#    Int_E_dir = prefac_emission*(freq**2)*np.abs(Iw_E_dir)**2
+#    Int_ortho = prefac_emission*(freq**2)*np.abs(Iw_ortho)**2
+
+    Int_E_dir = prefac_emission*np.abs(Iw_E_dir)**2
+    Int_ortho = prefac_emission*np.abs(Iw_ortho)**2
 
     return Int_E_dir, Int_ortho, Iw_E_dir, Iw_ortho
 

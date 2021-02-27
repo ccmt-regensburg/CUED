@@ -38,7 +38,7 @@ def parse_params(user_params):
     if hasattr(UP, 'gauge'):
         P.gauge = UP.gauge
 
-    P.hamiltonian_evaluation = 'num'                        # numerical or analytical calculation of eigensystem and dipoles
+    P.hamiltonian_evaluation = 'num'                        # numerical or analytical calculation of eigenstates and dipoles
     if hasattr(UP, 'hamiltonian_evaluation'):
         P.hamiltonian_evaluation = UP.hamiltonian_evaluation
 
@@ -134,6 +134,14 @@ def parse_params(user_params):
     P.factor_freq_resolution = 1
     if hasattr(UP, 'factor_freq_resolution'):
         P.factor_freq_resolution = UP.factor_freq_resolution
+
+    P.fourier_regularization = 'gaussian_window'     # gaussian_window or time_reflection to avoid issues due to non-zero rest current
+    if hasattr(UP, 'fourier_regularization'):
+        P.fourier_regularization = UP.fourier_regularization
+
+    P.gaussian_window_width = P.alpha
+    if hasattr(UP, 'gaussian_window_width'):
+        P.gaussian_window_width = UP.gaussian_window_width
 
     # Brillouin zone type
     P.BZ_type = UP.BZ_type                      # Type of Brillouin zone
