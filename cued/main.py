@@ -270,6 +270,8 @@ def calculate_system_in_path(path, Nk2_idx, P, S):
 
 def prepare_current_calculations(path, Nk2_idx, S, P):
 
+    polarization_inter_path = None
+    current_intra_path = None
     if P.hamiltonian_evaluation == 'ana':
         if P.gauge == 'length':
             current_exact_path = make_emission_exact_path_length(path, S, P)
@@ -543,35 +545,17 @@ def write_current_emission(S, T, P, W):
 
     savefiles (see documentation of sbe_solver())
     """
-    ##############################################################
-    # Conditional save of approx formula
-    ##############################################################
-
-    #     np.save(I_approx_name, [
-    #                             W.freq/P.f, W.j_intra_plus_dtP_inter_E_dir, W.j_intra_plus_dtP_inter_ortho,
-    #                             W.I_intra_plus_dtP_inter_E_dir, W.I_intra_plus_dtP_inter_ortho,
-    #                             W.I_intra_E_dir, W.I_intra_ortho,
-    #                             W.I_dtP_inter_E_dir, W.I_dtP_inter_ortho,
-    #                             W.I_anom_ortho, W.I_intra_plus_anom_ortho] )
-
-        # if P.save_txt:
-        #     np.savetxt(I_approx_name + '.dat',
-        #                np.column_stack([T.t.real, T.j_intra_plus_dtP_inter_E_dir, T.j_intra_plus_dtP_inter_ortho,
-        #                                 (W.freq/P.f).real, W.j_intra_plus_dtP_inter_E_dir.real, W.j_intra_plus_dtP_inter_E_dir.imag,
-        #                                 W.j_intra_plus_dtP_inter_ortho, W.j_intra_plus_dtP_inter_ortho,
-        #                                 W.I_intra_plus_dtP_inter_E_dir, W.I_intra_plus_dtP_inter_ortho]),
-        #                header="t, I_E_dir, I_ortho, freqw/w, Re(Iw_E_dir), Im(Iw_E_dir), Re(Iw_ortho), Im(Iw_ortho), I_E_dir, I_ortho",
-        #                fmt='%+.18e')
     ##################################################
     # Time data save
     ##################################################
     if P.save_approx:
-        time_header = "{:23s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s}"\
-            .format("t", "j_E_dir", "j_ortho",
+        time_header = ("{:23s}" + " {:25s}"*10)\
+            .format("t",
+                    "j_E_dir", "j_ortho",
                     "j_intra_E_dir", "j_intra_ortho",
                     "dtP_E_dir", "dtP_ortho",
-                    "j_intra_plus_dtP_E_dir", "j_intra_plus_dtP_ortho",
-                    "j_anom_ortho", "j_intra_plus_anom_ortho")
+                    "j_intra_+_dtP_E_dir", "j_intra_+_dtP_ortho",
+                    "j_anom_ortho", "j_intra_+_anom_ortho")
         time_output = np.column_stack([T.t.real,
                                        T.j_E_dir.real, T.j_ortho.real,
                                        T.j_intra_E_dir.real, T.j_intra_ortho.real,
@@ -580,12 +564,10 @@ def write_current_emission(S, T, P, W):
                                        T.j_anom_ortho.real, T.j_intra_plus_anom_ortho.real])
 
     else:
-        time_header = "{:23s} {:25s} {:25s}"\
+        time_header = ("{:23s}" + " {:25s}"*2)\
             .format("t", "j_E_dir", "j_ortho")
         time_output = np.column_stack([T.t.real,
-                                       T.j_E_dir.real, T.j_ortho.real]),
-        np.savetxt('time_data.dat',
-                  header=time_header, fmt="%+.18e")
+                                       T.j_E_dir.real, T.j_ortho.real])
 
     # Make the maximum exponent double digits
     time_output[np.abs(time_output) <= 10e-100] = 0
@@ -597,50 +579,50 @@ def write_current_emission(S, T, P, W):
     # Frequency data save
     ##################################################
     if P.save_approx:
-        freq_header = "{:23s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s}"\
-            .format("t", "j_E_dir", "j_ortho",
-                    "j_intra_E_dir", "j_intra_ortho",
-                    "dtP_E_dir", "dtP_ortho",
-                    "j_intra_plus_dtP_E_dir", "j_intra_plus_dtP_ortho",
-                    "j_anom_ortho", "j_intra_plus_anom_ortho")
+        freq_header = ("{:23s}" + " {:25s}"*30)\
+            .format("f/f0",
+                    "Re(j_E_dir)", "Im(j_E_dir)", "Re(j_ortho)", "Im(j_ortho)",
+                    "I_E_dir", "I_ortho",
+                    "Re(j_intra_E_dir)", "Im(j_intra_E_dir)", "Re(j_intra_ortho)", "Im(j_intra_ortho)",
+                    "I_intra_E_dir", "I_intra_ortho",
+                    "Re(dtP_E_dir)", "Im(dtP_E_dir)", "Re(dtP_ortho)", "Im(dtP_ortho)",
+                    "I_dtP_E_dir", "I_dtP_ortho",
+                    "Re(j_intra_+_dtP_E_dir)", "Im(j_intra_+_dtP_E_dir)", "Re(j_intra_+_dtP_ortho)", "Im(j_intra_+_dtP_ortho)",
+                    "I_intra_+_dtP_E_dir", "I_intra_+_dtP_ortho",
+                    "Re(j_anom_ortho)", "Im(j_anom_ortho)", "Re(j_intra_+_anom_ortho)", "Im(j_intra_+_anom_ortho)",
+                    "I_anom_ortho", "I_intra_+_anom_ortho")
+
+        # Current same order as in time output, always real and imaginary part
+        # next column -> corresponding intensities
         freq_output = np.column_stack([(W.freq/P.f).real,
-                                       T.j_E_dir.real, T.j_ortho.real,
-                                       T.j_intra_E_dir.real, T.j_intra_ortho.real,
-                                       T.dtP_E_dir.real, T.dtP_ortho.real,
-                                       T.j_intra_plus_dtP_E_dir.real, T.j_intra_plus_dtP_ortho.real,
-                                       T.j_anom_ortho.real, T.j_intra_plus_anom_ortho.real])
+                                       W.j_E_dir.real, W.j_E_dir.imag, W.j_ortho.real, W.j_ortho.imag,
+                                       W.I_E_dir.real, W.I_ortho.real,
+                                       W.j_intra_E_dir.real, W.j_intra_E_dir.imag, W.j_intra_ortho.real, W.j_intra_ortho.imag,
+                                       W.I_intra_E_dir.real, W.I_intra_ortho.real,
+                                       W.dtP_E_dir.real, W.dtP_E_dir.imag, W.dtP_ortho.real, W.dtP_ortho.imag,
+                                       W.I_dtP_E_dir.real, W.I_dtP_ortho.real,
+                                       W.j_intra_plus_dtP_E_dir.real, W.j_intra_plus_dtP_E_dir.imag, W.j_intra_plus_dtP_ortho.real, W.j_intra_plus_dtP_ortho.imag,
+                                       W.I_intra_plus_dtP_E_dir.real, W.I_intra_plus_dtP_ortho.real,
+                                       W.j_anom_ortho.real, W.j_anom_ortho.imag, W.j_intra_plus_anom_ortho.real, W.j_intra_plus_anom_ortho.imag,
+                                       W.I_anom_ortho.real, W.I_intra_plus_anom_ortho.real])
 
     else:
-        freq_header = "{:23s} {:25s} {:25s}"\
-            .format("freqw", "Re(j_E_dir)", "Im(j_E_dir)", "Re(j_ortho)", "Im(j_ortho)")
-        np.savetxt('frequency_data.dat',
-                   np.column_stack([W.freq/P.f,
-                                    T.j_E_dir.real, T.j_ortho.real]),
-                   header=time_header, fmt="%+.18e")
+        freq_header = ("{:23s}" + " {:25s}"*6)\
+            .format("f/f0",
+                    "Re(j_E_dir)", "Im(j_E_dir)", "Re(j_ortho)", "Im(j_ortho)",
+                    "I_E_dir", "I_ortho")
+        freq_output = np.column_stack([(W.freq/P.f).real,
+                                       W.j_E_dir.real, W.j_E_dir.imag, W.j_ortho.real, W.j_ortho.imag,
+                                       W.I_E_dir.real, W.I_ortho.real])
 
     # Make the maximum exponent double digits
     freq_output[np.abs(freq_output) <= 10e-100] = 0
     freq_output[np.abs(freq_output) >= 1e+100] = np.inf
 
-    np.savetxt('time_data.dat', time_output, header=time_header, fmt="%+.18e")
+    np.savetxt('frequency_data.dat', freq_output, header=freq_header, fmt="%+.18e")
 
-    # np.save(I_exact_name, [T.t,
-    #                        T.j_E_dir, T.j_ortho,
-    #                        W.freq/P.f, W.j_E_dir, W.j_ortho,
-    #                        W.I_E_dir, W.I_ortho])
-
-    # if P.save_txt and P.factor_freq_resolution == 1:
-    #     np.savetxt(I_exact_name + '.dat',
-    #                np.column_stack([T.t.real, T.j_E_dir.real, T.j_ortho.real,
-    #                                 (W.freq/P.f).real, W.j_E_dir.real, W.j_E_dir.imag,
-    #                                 W.j_ortho.real, W.j_ortho.imag,
-    #                                 W.I_E_dir.real, W.I_ortho.real]),
-    #                header="t, I_exact_E_dir, I_exact_ortho, freqw/w, Re(Iw_exact_E_dir), Im(Iw_exact_E_dir), Re(Iw_exact_ortho), Im(Iw_exact_ortho), I_exact_E_dir, I_exact_ortho",
-    #                fmt='%+.18e')
-
-    # np.savetxt('frequency_data.dat')
-    # if P.save_latex_pdf:
-    #     write_and_compile_latex_PDF(T, P, S, W.freq, T.j_E_dir, T.j_ortho, W.I_E_dir, W.I_ortho)
+    if P.save_latex_pdf:
+        write_and_compile_latex_PDF(T, P, S, W.freq, T.j_E_dir, T.j_ortho, W.I_E_dir, W.I_ortho)
 
 
 def fourier_current_intensity(I_E_dir, I_ortho, window_function, dt_out, prefac_emission, freq):
