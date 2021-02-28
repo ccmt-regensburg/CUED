@@ -8,13 +8,11 @@ def time_containers(P, electric_field_function):
     T  = Time()
 
     T.t = np.zeros(P.Nt, dtype=P.type_real_np)
-    
     T.solution = np.zeros((P.Nk1, P.n, P.n), dtype=P.type_real_np)
     T.solution_y_vec = np.zeros((((P.n)**2)*(P.Nk1)+1), dtype=P.type_complex_np)
-    
+
     if P.save_full:
         solution_full = np.empty((P.Nk1, P.Nk2, P.Nt, P.n, P.n), dtype=P.type_complex_np)
-        
 
     T.A_field = np.zeros(P.Nt, dtype=P.type_real_np)
     T.E_field = np.zeros(P.Nt, dtype=P.type_real_np)
@@ -26,11 +24,11 @@ def time_containers(P, electric_field_function):
         T.j_intra_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
         T.j_intra_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
-        T.P_inter_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
-        T.P_inter_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
+        T.P_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
+        T.P_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
-        T.dt_P_inter_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
-        T.dt_P_inter_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
+        T.dtP_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
+        T.dtP_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
         T.j_anom_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 

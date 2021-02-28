@@ -1,15 +1,14 @@
 import time
 from math import ceil, modf
 import numpy as np
-from numpy.fft import *
-from numba import njit
+from numpy.fft import fftshift, fft, ifftshift, ifft, fftfreq
 import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode
-import cued.dipole
 
+import cued.dipole
 from cued.utility import ConversionFactors as co
-from cued.utility import conditional_njit
+from cued.utility import conditional_njit, evaluate_njit_matrix
 from cued.utility import parse_params, time_containers, system_properties, frequency_containers
 from cued.utility import write_and_compile_latex_PDF
 from cued.fields import make_electric_field
@@ -17,55 +16,56 @@ from cued.dipole import diagonalize, dipole_elements
 from cued.observables import *
 from cued.rhs_ode import *
 
+
 def sbe_solver(sys, params, electric_field_function=None):
     """
-        Solver for the semiconductor bloch equation ( eq. (39) or (47) in https://arxiv.org/abs/2008.03177)
-        for a n band system with numerical calculation of the dipole elements (unfinished - analytical dipoles
-        can be used for n=2)
+    Solver for the semiconductor bloch equation ( eq. (39) or (47) in https://arxiv.org/abs/2008.03177)
+    for a n band system with numerical calculation of the dipole elements (unfinished - analytical dipoles
+    can be used for n=2)
 
-        Author: Adrian Seith (adrian.seith@ur.de)
-        Additional Contact: Jan Wilhelm (jan.wilhelm@ur.de)
+    Author: Adrian Seith (adrian.seith@ur.de)
+    Additional Contact: Jan Wilhelm (jan.wilhelm@ur.de)
 
-        Parameters
-        ----------
-        sys : class
-            Symbolic Hamiltonian of the system
-        dipole : class
-            Symbolic expression for the dipole elements (eq. (37/38))
-        params :
-            Parameters from the params.py file
-        curvature : class
-            Symbolic berry curvature (d(Ax)/d(ky) - d(Ay)/d(kx)) with
-            A as the Berry connection (eq. (38))
+    Parameters
+    ----------
+    sys : class
+        Symbolic Hamiltonian of the system
+    dipole : class
+        Symbolic expression for the dipole elements (eq. (37/38))
+    params :
+        Parameters from the params.py file
+    curvature : class
+        Symbolic berry curvature (d(Ax)/d(ky) - d(Ay)/d(kx)) with
+        A as the Berry connection (eq. (38))
 
-        Returns
-        -------
-        params
-        ------
-        saves parameters of the calculation
+    Returns
+    -------
+    params
+    ------
+    saves parameters of the calculation
 
-        Iexact (file, 8 components)
-        ------
-        t : np.ndarray
-            Nt-dimensional array of time-points
-        I_exact_E_dir : np.ndarray
-            Nt-dimensional array of current (eq. (59/64)) in E-field direction
-        I_exact_ortho : np.ndarray
-            Nt-dimensional array of current (eq. (59/64)) orthogonal to E-field
-        freq/w : np.ndarray
-            Nt-dimensional array of time-points in frequency domain
-        Iw_exact_E_dir : np.ndarray
-            Nt-dimensional array of fourier trafo of current in E-field direction
-        Iw_exact_ortho : np.ndarray
-            Nt-dimensional array of fourier trafo of current orthogonal to E-field
-        Int_exact_E_dir : np.ndarray
-            Nt-dimensional array of emission intensity (eq. (51)) in E-field direction
-        Int_exact_ortho : np.ndarray
-            Nt-dimensional array of emission intensity (eq. (51)) orthogonal to E-field
+    Iexact (file, 8 components)
+    ------
+    t : np.ndarray
+        Nt-dimensional array of time-points
+    I_exact_E_dir : np.ndarray
+        Nt-dimensional array of current (eq. (59/64)) in E-field direction
+    I_exact_ortho : np.ndarray
+        Nt-dimensional array of current (eq. (59/64)) orthogonal to E-field
+    freq/w : np.ndarray
+        Nt-dimensional array of time-points in frequency domain
+    Iw_exact_E_dir : np.ndarray
+        Nt-dimensional array of fourier trafo of current in E-field direction
+    Iw_exact_ortho : np.ndarray
+        Nt-dimensional array of fourier trafo of current orthogonal to E-field
+    I_exact_E_dir : np.ndarray
+        Nt-dimensional array of emission intensity (eq. (51)) in E-field direction
+    I_exact_ortho : np.ndarray
+        Nt-dimensional array of emission intensity (eq. (51)) orthogonal to E-field
 
-        Iapprox  (file, 8 components)
-        -------
-        approximate solutions, but same components as Iexact
+    Iapprox  (file, 8 components)
+    -------
+    approximate solutions, but same components as Iexact
     """
     # Start time of sbe_solver
     start_time = time.perf_counter()
@@ -83,10 +83,10 @@ def sbe_solver(sys, params, electric_field_function=None):
     # INITIALIZATIONS
     ###########################################################################
 
-    # Calculate the systems properties (hamiltonian, eigensystem, dipoles, berry curvature, BZ, electric field)
-
+    # Calculate the systems properties (hamiltonian, eigensystem, dipoles,
+    # berry curvature, BZ, electric field)
     S = system_properties(P, sys)
-    
+
     # Make containers for time- and frequency- dependent observables
 
     T = time_containers(P, electric_field_function)
@@ -106,16 +106,15 @@ def sbe_solver(sys, params, electric_field_function=None):
             print('Solving SBE for Path', Nk2_idx+1)
 
         # parallelization if requested in runscript
-        if P.Nk2_idx_ext != Nk2_idx and P.Nk2_idx_ext >= 0: 
+        if P.Nk2_idx_ext != Nk2_idx and P.Nk2_idx_ext >= 0:
             continue
 
         # Evaluate the dipole components along the path
-        
         calculate_system_in_path(path, Nk2_idx, P, S)
 
         # Prepare calculations of observables
-
-        current_exact_path, polarization_inter_path, current_intra_path = prepare_current_calculations(path, Nk2_idx, S, P)
+        current_exact_path, polarization_inter_path, current_intra_path =\
+            prepare_current_calculations(path, Nk2_idx, S, P)
 
         # Initialize the values of of each k point vector
 
@@ -125,7 +124,7 @@ def sbe_solver(sys, params, electric_field_function=None):
         # Set the initual values and function parameters for the current kpath
         if P.solver_method in ('bdf', 'adams'):
             solver.set_initial_value(y0, P.t0)\
-            .set_f_params(path, S.dipole_in_path, S.e_in_path, y0, S.dk)
+                .set_f_params(path, S.dipole_in_path, S.e_in_path, y0, S.dk)
         elif P.solver_method == 'rk4':
             T.solution_y_vec[:] = y0
 
@@ -133,7 +132,7 @@ def sbe_solver(sys, params, electric_field_function=None):
         # Index of current integration time step
         ti = 0
         solver_successful = True
-        
+
         while solver_successful and ti < P.Nt:
             # User output of integration progress
             if (ti % (P.Nt//20) == 0 and P.user_out):
@@ -142,7 +141,6 @@ def sbe_solver(sys, params, electric_field_function=None):
             calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P)
 
             # Calculate the currents at the timestep ti
-
             calculate_currents(ti, current_exact_path, polarization_inter_path, current_intra_path, T, P)
 
             # Integrate one integration time step
@@ -151,8 +149,8 @@ def sbe_solver(sys, params, electric_field_function=None):
                 solver_successful = solver.successful()
 
             elif P.solver_method == 'rk4':
-                T.solution_y_vec = rk_integrate(T.t[ti], T.solution_y_vec, path, S, \
-                                              y0, S.dk, P.dt, rhs_ode)
+                T.solution_y_vec = rk_integrate(T.t[ti], T.solution_y_vec, path, S,
+                                                y0, S.dk, P.dt, rhs_ode)
 
             # Increment time counter
             ti += 1
@@ -178,9 +176,10 @@ def sbe_solver(sys, params, electric_field_function=None):
         np.savez(S_name, t=T.t, solution_full=T.solution_full, paths=S.paths,
                  electric_field=T.electric_field(T.t), A_field=T.A_field)
 
+
 def make_rhs_ode(P, S, T):
     if P.solver == '2band':
-        if P.n != 2: 
+        if P.n != 2:
             raise AttributeError('2-band solver works for 2-band systems only')
         if P.hamiltonian_evaluation == 'ana':
            rhs_ode = make_rhs_ode_2_band(S.sys, S.dipole, S.E_dir, T.electric_field, P)
@@ -192,13 +191,14 @@ def make_rhs_ode(P, S, T):
     elif P.solver == 'nband':
         rhs_ode = make_rhs_ode_n_band(S.E_dir, T.electric_field, P)
 
-    if P.solver_method in ('bdf', 'adams'):    
+    if P.solver_method in ('bdf', 'adams'):
         solver = ode(rhs_ode, jac=None)\
             .set_integrator('zvode', method=P.solver_method, max_step=P.dt)
     elif P.solver_method == 'rk4':
         solver = 0
-        
+
     return rhs_ode, solver
+
 
 def calculate_system_in_path(path, Nk2_idx, P, S):
     
@@ -208,16 +208,16 @@ def calculate_system_in_path(path, Nk2_idx, P, S):
     kx_in_path = path[:, 0]
     ky_in_path = path[:, 1]
 
-    if P.hamiltonian_evaluation == 'num':    
+    if P.hamiltonian_evaluation == 'num':
         if P.do_semicl:
             0
         # Calculate the dot products E_dir.d_nm(k).
-        # To be multiplied by E-field magnitude later.            
+        # To be multiplied by E-field magnitude later.
         else:
-            S.dipole_in_path = (S.E_dir[0]*S.dipole_x[:, Nk2_idx, :, :] + \
-                S.E_dir[1]*S.dipole_y[:, Nk2_idx, :, :])
-            S.dipole_ortho = (S.E_ort[0]*S.dipole_x[:, Nk2_idx, :, :] + \
-                S.E_ort[1]*S.dipole_y[:, Nk2_idx, :, :])
+            S.dipole_in_path = (S.E_dir[0]*S.dipole_x[:, Nk2_idx, :, :] +\
+                                S.E_dir[1]*S.dipole_y[:, Nk2_idx, :, :])
+            S.dipole_ortho = (S.E_ort[0]*S.dipole_x[:, Nk2_idx, :, :] +\
+                              S.E_ort[1]*S.dipole_y[:, Nk2_idx, :, :])
             S.e_in_path = S.e[:, Nk2_idx, :]
             S.wf_in_path = S.wf[:, Nk2_idx, :, :]   #not in E-dir!
 
@@ -257,10 +257,12 @@ def calculate_system_in_path(path, Nk2_idx, P, S):
     elif P.hamiltonian_evaluation == 'bandstructure':
         
         sys = S.sys
-        
-        dipole_x = evaluate_njit_matrix(sys.dipole_xjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
-        dipole_y = evaluate_njit_matrix(sys.dipole_xjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
-        
+
+        dipole_x = evaluate_njit_matrix(sys.dipole_xjit, kx=kx_in_path,
+                                        ky=ky_in_path, dtype=P.type_complex_np)
+        dipole_y = evaluate_njit_matrix(sys.dipole_xjit, kx=kx_in_path,
+                                        ky=ky_in_path, dtype=P.type_complex_np)
+
         for i in range(P.n):
             S.e_in_path[:, i] = sys.ejit[i](kx=kx_in_path, ky=ky_in_path)
 
@@ -332,21 +334,20 @@ def calculate_currents(ti, current_exact_path, polarization_inter_path, current_
 
     if P.save_approx:
         if P.hamiltonian_evaluation == 'ana':
-            P_inter_E_dir_buf, P_inter_ortho_buf = polarization_inter_path(T.solution[:, 1, 0], T.A_field[ti])
+            P_E_dir_buf, P_ortho_buf = polarization_inter_path(T.solution[:, 1, 0], T.A_field[ti])
             j_intra_E_dir_buf, j_intra_ortho_buf, j_anom_ortho_buf = current_intra_path(T.solution[:,0,0], T.solution[:, 1, 1], T.A_field[ti], T.E_field[ti])
         elif P.hamiltonian_evaluation == 'num' or 'bandstructure':
-            P_inter_E_dir_buf, P_inter_ortho_buf = polarization_inter_path(T.solution)
+            P_E_dir_buf, P_ortho_buf = polarization_inter_path(T.solution)
             j_intra_E_dir_buf, j_intra_ortho_buf, j_anom_ortho_buf = current_intra_path(T.solution)
 
-        T.P_inter_E_dir[ti] += P_inter_E_dir_buf
-        T.P_inter_ortho[ti] += P_inter_ortho_buf
+        T.P_E_dir[ti] += P_E_dir_buf
+        T.P_ortho[ti] += P_ortho_buf
         T.j_intra_E_dir[ti] += j_intra_E_dir_buf
         T.j_intra_ortho[ti] += j_intra_ortho_buf
         T.j_anom_ortho[ti] += j_anom_ortho_buf
 
 
-def rk_integrate(t, y, kpath, S, y0, dk, \
-                 dt, rhs_ode):
+def rk_integrate(t, y, kpath, S, y0, dk, dt, rhs_ode):
 
     k1 = rhs_ode(t,          y,          kpath, S.dipole_in_path, S.e_in_path, y0, dk)
     k2 = rhs_ode(t + 0.5*dt, y + 0.5*k1, kpath, S.dipole_in_path, S.e_in_path, y0, dk)
@@ -399,6 +400,7 @@ def fourier(dt, data):
     '''
     return (dt/np.sqrt(2*np.pi))*fftshift(fft(ifftshift(data)))
 
+
 def ifourier(dt, data):
     '''
     Calculate the phase correct inverse fourier transform with proper normalization
@@ -406,11 +408,14 @@ def ifourier(dt, data):
     '''
     return (np.sqrt(2*np.pi)/dt)*fftshift(ifft(ifftshift(data)))
 
+
 def gaussian(t, alpha):
     '''
     Window function to multiply a Function f(t) before Fourier transform
     to ensure no step in time between t_final and t_final + delta
     '''
+    # sigma = sqrt(2)*alpha
+    # # 1/(2*np.sqrt(np.pi)*alpha)*np.exp(-t**2/(2*alpha)**2)
     return np.exp(-t**2/(2*alpha)**2)
 
 def hann(t):
@@ -447,20 +452,20 @@ def update_currents_with_kweight(S, T, P):
         T.j_intra_E_dir *= S.kweight
         T.j_intra_ortho *= S.kweight
 
-        T.dt_P_inter_E_dir = diff(T.t, T.P_inter_E_dir)*S.kweight
-        T.dt_P_inter_ortho = diff(T.t, T.P_inter_ortho)*S.kweight
+        T.dtP_E_dir = diff(T.t, T.P_E_dir)*S.kweight
+        T.dtP_ortho = diff(T.t, T.P_ortho)*S.kweight
 
-        T.P_inter_E_dir *= S.kweight
-        T.P_inter_ortho *= S.kweight
+        T.P_E_dir *= S.kweight
+        T.P_ortho *= S.kweight
 
         T.j_anom_ortho *= S.kweight
 
         # Eq. (81( SBE formalism paper
-        T.j_deph_E_dir = 1/P.T2*T.P_inter_E_dir
-        T.j_deph_ortho = 1/P.T2*T.P_inter_ortho
+        T.j_deph_E_dir = 1/P.T2*T.P_E_dir
+        T.j_deph_ortho = 1/P.T2*T.P_ortho
 
-        T.j_intra_plus_dt_P_inter_E_dir = T.j_intra_E_dir + T.dt_P_inter_E_dir
-        T.j_intra_plus_dt_P_inter_ortho = T.j_intra_ortho + T.dt_P_inter_ortho
+        T.j_intra_plus_dtP_E_dir = T.j_intra_E_dir + T.dtP_E_dir
+        T.j_intra_plus_dtP_ortho = T.j_intra_ortho + T.dtP_ortho
 
         T.j_intra_plus_anom_ortho = T.j_intra_ortho + T.j_anom_ortho
 
@@ -475,128 +480,174 @@ def calculate_fourier(S, T, P, W):
     W.freq = fftshift(fftfreq(ndt_fft, d=dt_out))
 
     if P.fourier_window_function == 'gaussian':
-         window_function = gaussian(T.t, P.gaussian_window_width)
+         T.window_function = gaussian(T.t, P.gaussian_window_width)
     elif P.fourier_window_function == 'hann':
-         window_function = hann(T.t)
+         T.window_function = hann(T.t)
     elif P.fourier_window_function == 'parzen':
-         window_function = parzen(T.t)
+         T.window_function = parzen(T.t)
 
     if P.save_exact:
 
-        W.Int_E_dir, W.Int_ortho, W.j_E_dir, W.j_ortho = fourier_current_intensity(
-                T.j_E_dir, T.j_ortho, window_function, dt_out, prefac_emission, W.freq, P)
+        W.I_E_dir, W.I_ortho, W.j_E_dir, W.j_ortho = fourier_current_intensity(
+                T.j_E_dir, T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
 
     if P.save_approx:
-
         # Approximate current and emission intensity
-        W.Int_intra_plus_dt_P_inter_E_dir, W.Int_intra_plus_dt_P_inter_ortho, W.j_intra_plus_dt_P_inter_E_dir, W.j_intra_plus_dt_P_inter_ortho = fourier_current_intensity(
-             T.j_intra_plus_dt_P_inter_E_dir, T.j_intra_plus_dt_P_inter_ortho, window_function, dt_out, prefac_emission, W.freq, P)
+        W.I_intra_plus_dtP_E_dir, W.I_intra_plus_dtP_ortho, W.j_intra_plus_dtP_E_dir, W.j_intra_plus_dtP_ortho =\
+            fourier_current_intensity(T.j_intra_plus_dtP_E_dir, T.j_intra_plus_dtP_ortho, T.window_function, dt_out, prefac_emission, W.freq)
 
         # Intraband current and emission intensity
-        W.Int_intra_E_dir, W.Int_intra_ortho, W.j_intra_E_dir, W.j_intra_ortho = fourier_current_intensity(
-             T.j_intra_E_dir, T.j_intra_ortho, window_function, dt_out, prefac_emission, W.freq, P)
+        W.I_intra_E_dir, W.I_intra_ortho, W.j_intra_E_dir, W.j_intra_ortho =\
+            fourier_current_intensity(T.j_intra_E_dir, T.j_intra_ortho, T.window_function, dt_out, prefac_emission, W.freq)
 
         # Polarization-related current and emission intensity
-        W.Int_dt_P_inter_E_dir, W.Int_dt_P_inter_ortho, W.dt_P_inter_E_dir, W.dt_P_inter_ortho = fourier_current_intensity(
-             T.dt_P_inter_E_dir, T.dt_P_inter_E_dir, window_function, dt_out, prefac_emission, W.freq, P)
+        W.I_dtP_E_dir, W.I_dtP_ortho, W.dtP_E_dir, W.dtP_ortho =\
+            fourier_current_intensity(T.dtP_E_dir, T.dtP_ortho, T.window_function, dt_out, prefac_emission, W.freq)
 
         # Anomalous current, intraband current (de/dk-related) + anomalous current; and emission int.
-        W.Int_anom_ortho, W.Int_intra_plus_anom_ortho, W.j_anom_ortho, W.j_intra_plus_anom_ortho = \
-             fourier_current_intensity( T.j_anom_ortho, T.j_intra_plus_anom_ortho,
-                                        window_function, dt_out, prefac_emission, W.freq, P)
+        W.I_anom_ortho, W.I_intra_plus_anom_ortho, W.j_anom_ortho, W.j_intra_plus_anom_ortho =\
+            fourier_current_intensity(T.j_anom_ortho, T.j_intra_plus_anom_ortho, T.window_function, dt_out, prefac_emission, W.freq)
 
 
 def write_current_emission(S, T, P, W):
     """
-        Calculates the Emission Intensity I(omega) (eq. 51 in https://arxiv.org/abs/2008.03177)
+    Calculates the Emission Intensity I(omega) (eq. 51 in https://arxiv.org/abs/2008.03177)
 
-        Author:
-        Additional Contact: Jan Wilhelm (jan.wilhelm@ur.de)
+    Author:
+    Additional Contact: Jan Wilhelm (jan.wilhelm@ur.de)
 
-        Parameters
-        ----------
+    Parameters
+    ----------
 
-        tail : str
-        kweight : float
-        w : float
-            driving pulse frequency
-        t : ndarray
-            array of the time points corresponding to a solution of the sbe
-        I_exact_E_dir: ndarray
-            exact emission j(t) in E-field direction
-        I_exact_ortho : ndarray
-            exact emission j(t) orthogonal to E-field
-        J_E_dir : ndarray
-            approximate emission j(t) in E-field direction
-        J_E_ortho : ndarray
-            approximate emission j(t) orthogonal to E-field
-        P_E_dir : ndarray
-            polarization E-field direction
-        P_E_ortho : ndarray
-            polarization orthogonal to E-field
-        window_function : function
-            window function to multiply to a function before Fourier transform
-        save_approx : boolean
-            determines whether approximate solutions should be saved
-        save_txt : boolean
-            determines whether a .txt file with the soluion should be saved
+    tail : str
+    kweight : float
+    w : float
+        driving pulse frequency
+    t : ndarray
+        array of the time points corresponding to a solution of the sbe
+    I_exact_E_dir: ndarray
+        exact emission j(t) in E-field direction
+    I_exact_ortho : ndarray
+        exact emission j(t) orthogonal to E-field
+    J_E_dir : ndarray
+        approximate emission j(t) in E-field direction
+    J_E_ortho : ndarray
+        approximate emission j(t) orthogonal to E-field
+    P_E_dir : ndarray
+        polarization E-field direction
+    P_E_ortho : ndarray
+        polarization orthogonal to E-field
+    window_function : function
+        window function to multiply to a function before Fourier transform
+    save_approx : boolean
+        determines whether approximate solutions should be saved
 
-        Returns:
-        --------
+    Returns:
+    --------
 
-        savefiles (see documentation of sbe_solver())
+    savefiles (see documentation of sbe_solver())
     """
     ##############################################################
     # Conditional save of approx formula
     ##############################################################
 
+    #     np.save(I_approx_name, [
+    #                             W.freq/P.w, W.j_intra_plus_dtP_inter_E_dir, W.j_intra_plus_dtP_inter_ortho,
+    #                             W.I_intra_plus_dtP_inter_E_dir, W.I_intra_plus_dtP_inter_ortho,
+    #                             W.I_intra_E_dir, W.I_intra_ortho,
+    #                             W.I_dtP_inter_E_dir, W.I_dtP_inter_ortho,
+    #                             W.I_anom_ortho, W.I_intra_plus_anom_ortho] )
+
+        # if P.save_txt:
+        #     np.savetxt(I_approx_name + '.dat',
+        #                np.column_stack([T.t.real, T.j_intra_plus_dtP_inter_E_dir, T.j_intra_plus_dtP_inter_ortho,
+        #                                 (W.freq/P.w).real, W.j_intra_plus_dtP_inter_E_dir.real, W.j_intra_plus_dtP_inter_E_dir.imag,
+        #                                 W.j_intra_plus_dtP_inter_ortho, W.j_intra_plus_dtP_inter_ortho,
+        #                                 W.I_intra_plus_dtP_inter_E_dir, W.I_intra_plus_dtP_inter_ortho]),
+        #                header="t, I_E_dir, I_ortho, freqw/w, Re(Iw_E_dir), Im(Iw_E_dir), Re(Iw_ortho), Im(Iw_ortho), I_E_dir, I_ortho",
+        #                fmt='%+.18e')
+    ##################################################
+    # Time data save
+    ##################################################
     if P.save_approx:
-        I_approx_name = 'Iapprox_' + P.tail
+        time_header = "{:23s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s}"\
+            .format("t", "j_E_dir", "j_ortho",
+                    "j_intra_E_dir", "j_intra_ortho",
+                    "dtP_E_dir", "dtP_ortho",
+                    "j_intra_plus_dtP_E_dir", "j_intra_plus_dtP_ortho",
+                    "j_anom_ortho", "j_intra_plus_anom_ortho")
+        time_output = np.column_stack([T.t.real,
+                                       T.j_E_dir.real, T.j_ortho.real,
+                                       T.j_intra_E_dir.real, T.j_intra_ortho.real,
+                                       T.dtP_E_dir.real, T.dtP_ortho.real,
+                                       T.j_intra_plus_dtP_E_dir.real, T.j_intra_plus_dtP_ortho.real,
+                                       T.j_anom_ortho.real, T.j_intra_plus_anom_ortho.real])
 
-        np.save(I_approx_name, [T.t, T.j_intra_plus_dt_P_inter_E_dir, T.j_intra_plus_dt_P_inter_ortho,
-                                W.freq/P.w, W.j_intra_plus_dt_P_inter_E_dir, W.j_intra_plus_dt_P_inter_ortho,
-                                W.Int_intra_plus_dt_P_inter_E_dir, W.Int_intra_plus_dt_P_inter_ortho,
-                                T.j_intra_E_dir, T.j_intra_ortho,
-                                W.Int_intra_E_dir, W.Int_intra_ortho,
-                                T.dt_P_inter_E_dir, T.dt_P_inter_ortho,
-                                W.Int_dt_P_inter_E_dir, W.Int_dt_P_inter_ortho,
-                                T.j_anom_ortho, T.j_intra_plus_anom_ortho,
-                                W.Int_anom_ortho, W.Int_intra_plus_anom_ortho] )
+    else:
+        time_header = "{:23s} {:25s} {:25s}"\
+            .format("t", "j_E_dir", "j_ortho")
+        time_output = np.column_stack([T.t.real,
+                                       T.j_E_dir.real, T.j_ortho.real]),
+        np.savetxt('time_data.dat',
+                  header=time_header, fmt="%+.18e")
 
-        if P.save_txt:
-            np.savetxt(I_approx_name + '.dat',
-                       np.column_stack([T.t.real, T.j_intra_plus_dt_P_inter_E_dir, T.j_intra_plus_dt_P_inter_ortho,
-                                        (W.freq/P.w).real, W.j_intra_plus_dt_P_inter_E_dir.real, W.j_intra_plus_dt_P_inter_E_dir.imag,
-                                        W.j_intra_plus_dt_P_inter_ortho, W.j_intra_plus_dt_P_inter_ortho,
-                                        W.Int_intra_plus_dt_P_inter_E_dir, W.Int_intra_plus_dt_P_inter_ortho]),
-                       header="t, I_E_dir, I_ortho, freqw/w, Re(Iw_E_dir), Im(Iw_E_dir), Re(Iw_ortho), Im(Iw_ortho), Int_E_dir, Int_ortho",
-                       fmt='%+.18e')
+    # Make the maximum exponent double digits
+    time_output[np.abs(time_output) <= 10e-100] = 0
+    time_output[np.abs(time_output) >= 1e+100] = np.inf
 
-    ##############################################################
-    # Conditional save of exact formula
-    ##############################################################
+    np.savetxt('time_data.dat', time_output, header=time_header, fmt="%+.18e")
 
-    if P.save_exact:
+    ##################################################
+    # Frequency data save
+    ##################################################
+    if P.save_approx:
+        freq_header = "{:23s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s} {:25s}"\
+            .format("t", "j_E_dir", "j_ortho",
+                    "j_intra_E_dir", "j_intra_ortho",
+                    "dtP_E_dir", "dtP_ortho",
+                    "j_intra_plus_dtP_E_dir", "j_intra_plus_dtP_ortho",
+                    "j_anom_ortho", "j_intra_plus_anom_ortho")
+        freq_output = np.column_stack([T.t.real,
+                                       T.j_E_dir.real, T.j_ortho.real,
+                                       T.j_intra_E_dir.real, T.j_intra_ortho.real,
+                                       T.dtP_E_dir.real, T.dtP_ortho.real,
+                                       T.j_intra_plus_dtP_E_dir.real, T.j_intra_plus_dtP_ortho.real,
+                                       T.j_anom_ortho.real, T.j_intra_plus_anom_ortho.real])
 
-        I_exact_name = 'Iexact_' + P.tail
-        np.save(I_exact_name, [T.t, T.j_E_dir, T.j_ortho,
-                            W.freq/P.w, W.j_E_dir, W.j_ortho,
-                            W.Int_E_dir, W.Int_ortho])
+    else:
+        freq_header = "{:23s} {:25s} {:25s}"\
+            .format("freqw", "Re(j_E_dir)", "Im(j_E_dir)", "Re(j_ortho)", "Im(j_ortho)")
+        np.savetxt('frequency_data.dat',
+                   np.column_stack([W.freq/P.w,
+                                    T.j_E_dir.real, T.j_ortho.real]),
+                   header=time_header, fmt="%+.18e")
 
-        if P.save_txt and P.factor_freq_resolution == 1:
-            np.savetxt(I_exact_name + '.dat',
-                    np.column_stack([T.t.real, T.j_E_dir.real, T.j_ortho.real,
-                                        (W.freq/P.w).real, W.j_E_dir.real, W.j_E_dir.imag,
-                                        W.j_ortho.real, W.j_ortho.imag,
-                                        W.Int_E_dir.real, W.Int_ortho.real]),
-                    header="t, I_exact_E_dir, I_exact_ortho, freqw/w, Re(Iw_exact_E_dir), Im(Iw_exact_E_dir), Re(Iw_exact_ortho), Im(Iw_exact_ortho), Int_exact_E_dir, Int_exact_ortho",
-                    fmt='%+.18e')
+    # Make the maximum exponent double digits
+    freq_output[np.abs(freq_output) <= 10e-100] = 0
+    freq_output[np.abs(freq_output) >= 1e+100] = np.inf
 
-    if P.save_latex_pdf:
-        write_and_compile_latex_PDF(T, P, S, W.freq, T.j_E_dir, T.j_ortho, W.Int_E_dir, W.Int_ortho)
+    np.savetxt('time_data.dat', time_output, header=time_header, fmt="%+.18e")
+
+    # np.save(I_exact_name, [T.t,
+    #                        T.j_E_dir, T.j_ortho,
+    #                        W.freq/P.w, W.j_E_dir, W.j_ortho,
+    #                        W.I_E_dir, W.I_ortho])
+
+    # if P.save_txt and P.factor_freq_resolution == 1:
+    #     np.savetxt(I_exact_name + '.dat',
+    #                np.column_stack([T.t.real, T.j_E_dir.real, T.j_ortho.real,
+    #                                 (W.freq/P.w).real, W.j_E_dir.real, W.j_E_dir.imag,
+    #                                 W.j_ortho.real, W.j_ortho.imag,
+    #                                 W.I_E_dir.real, W.I_ortho.real]),
+    #                header="t, I_exact_E_dir, I_exact_ortho, freqw/w, Re(Iw_exact_E_dir), Im(Iw_exact_E_dir), Re(Iw_exact_ortho), Im(Iw_exact_ortho), I_exact_E_dir, I_exact_ortho",
+    #                fmt='%+.18e')
+
+    # np.savetxt('frequency_data.dat')
+    # if P.save_latex_pdf:
+    #     write_and_compile_latex_PDF(T, P, S, W.freq, T.j_E_dir, T.j_ortho, W.I_E_dir, W.I_ortho)
 
 
-def fourier_current_intensity(I_E_dir, I_ortho, window_function, dt_out, prefac_emission, freq, P):
+def fourier_current_intensity(I_E_dir, I_ortho, gaussian_envelope, dt_out, prefac_emission, freq):
 
     ndt     = np.size(I_E_dir)
     ndt_fft = np.size(freq)
@@ -607,18 +658,18 @@ def fourier_current_intensity(I_E_dir, I_ortho, window_function, dt_out, prefac_
     I_E_dir_for_fft[ (ndt_fft-ndt)//2 : (ndt_fft+ndt)//2 ] = I_E_dir[:]*window_function[:]
     I_ortho_for_fft[ (ndt_fft-ndt)//2 : (ndt_fft+ndt)//2 ] = I_ortho[:]*window_function[:]
 
-    Iw_E_dir = fourier(dt_out, I_E_dir_for_fft)
-    Iw_ortho = fourier(dt_out, I_ortho_for_fft)
+    jw_E_dir = fourier(dt_out, I_E_dir_for_fft)
+    jw_ortho = fourier(dt_out, I_ortho_for_fft)
 
-    Int_E_dir = prefac_emission*(freq**2)*np.abs(Iw_E_dir)**2
-    Int_ortho = prefac_emission*(freq**2)*np.abs(Iw_ortho)**2
+    I_E_dir = prefac_emission*(freq**2)*np.abs(jw_E_dir)**2
+    I_ortho = prefac_emission*(freq**2)*np.abs(jw_ortho)**2
 
-    return Int_E_dir, Int_ortho, Iw_E_dir, Iw_ortho
+    return I_E_dir, I_ortho, jw_E_dir, jw_ortho
 
 
 def print_user_info(P, B0=None, mu=None, incident_angle=None):
     """
-        Function that prints the input parameters if usr_info = True
+    Function that prints the input parameters if usr_info = True
     """
 
     print("Input parameters:")
