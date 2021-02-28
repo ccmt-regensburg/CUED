@@ -62,7 +62,7 @@ def run(system):
 
     t = Iexactdata[0]
     dt = params.dt*co.fs_to_au
-    w = params.w*co.THz_to_au
+    f = params.f*co.THz_to_au
     alpha = params.alpha*co.fs_to_au
 
     prefac_emission = 1/(3*(137.036**3))

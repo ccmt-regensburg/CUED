@@ -8,11 +8,10 @@ from cued.utility import ConversionFactors as co
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 
 def write_and_compile_latex_PDF(T, P, S, freq, I_exact_E_dir, I_exact_ortho, Int_exact_E_dir, Int_exact_ortho):
-        
         t_fs = T.t*co.au_to_fs
         num_points_max_for_plotting = 1000
         t_idx = get_time_indices_for_plotting(T.E_field, t_fs, num_points_max_for_plotting, factor_t_end=1.0)
-        f_idx = get_freq_indices_for_plotting(freq/P.w, num_points_max_for_plotting, freq_max=30)
+        f_idx = get_freq_indices_for_plotting(freq/P.f, num_points_max_for_plotting, freq_max=30)
 
         latex_dir = "latex_pdf_files"
 
@@ -38,10 +37,10 @@ def write_and_compile_latex_PDF(T, P, S, freq, I_exact_E_dir, I_exact_ortho, Int
                   r'Current $j_{\parallel}(t)$ parallel to $\bE$ in atomic units', "j_E_dir")
         tikz_time(I_exact_ortho, t_fs, t_idx, \
                   r'Current $j_{\bot}(t)$ orthogonal to $\bE$ in atomic units', "j_ortho")
-        tikz_freq(Int_exact_E_dir, Int_exact_ortho, freq/P.w, f_idx, \
+        tikz_freq(Int_exact_E_dir, Int_exact_ortho, freq/P.f, f_idx, \
                   r'Emission intensity in atomic units', "Emission_total", two_func=True, \
                   label_1="$\;I_{\parallel}(\omega)$", label_2="$\;I_{\\bot}(\omega)$")
-        tikz_freq(Int_exact_E_dir+Int_exact_ortho, None, freq/P.w, f_idx, \
+        tikz_freq(Int_exact_E_dir+Int_exact_ortho, None, freq/P.f, f_idx, \
                   r'Emission intensity in atomic units', "Emission_para_ortho", two_func=False, \
                   label_1="$\;I(\omega) = I_{\parallel}(\omega) + I_{\\bot}(\omega)$")
         replace("semithick", "thick", "*")
@@ -69,7 +68,7 @@ def write_parameter(P, run_time):
             replace("PH-EFIELD-DIRECTION", "$\\\\Gamma$-M direction")
 
     replace("PH-E0",    str(P.E0_MVpcm))
-    replace("PH-FREQ",  str(P.w_THz))
+    replace("PH-FREQ",  str(P.f_THz))
     replace("PH-CHIRP", str(P.chirp_THz))
     eps = 1.0E-13
     if P.phase > np.pi/2-eps and P.phase < np.pi/2+eps:

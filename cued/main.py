@@ -201,7 +201,6 @@ def make_rhs_ode(P, S, T):
 
 
 def calculate_system_in_path(path, Nk2_idx, P, S):
-    
     sys = S.sys
 
     # Retrieve the set of k-points for the current path
@@ -255,7 +254,6 @@ def calculate_system_in_path(path, Nk2_idx, P, S):
         S.wf_in_path[:, 1, 1] = Ujit[1][1](kx=kx_in_path, ky=ky_in_path)
 
     elif P.hamiltonian_evaluation == 'bandstructure':
-        
         sys = S.sys
 
         dipole_x = evaluate_njit_matrix(sys.dipole_xjit, kx=kx_in_path,
@@ -486,10 +484,8 @@ def calculate_fourier(S, T, P, W):
     elif P.fourier_window_function == 'parzen':
          T.window_function = parzen(T.t)
 
-    if P.save_exact:
-
-        W.I_E_dir, W.I_ortho, W.j_E_dir, W.j_ortho = fourier_current_intensity(
-                T.j_E_dir, T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
+    W.I_E_dir, W.I_ortho, W.j_E_dir, W.j_ortho =\
+        fourier_current_intensity(T.j_E_dir, T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq)
 
     if P.save_approx:
         # Approximate current and emission intensity
@@ -521,7 +517,7 @@ def write_current_emission(S, T, P, W):
 
     tail : str
     kweight : float
-    w : float
+    f : float
         driving pulse frequency
     t : ndarray
         array of the time points corresponding to a solution of the sbe
@@ -552,7 +548,7 @@ def write_current_emission(S, T, P, W):
     ##############################################################
 
     #     np.save(I_approx_name, [
-    #                             W.freq/P.w, W.j_intra_plus_dtP_inter_E_dir, W.j_intra_plus_dtP_inter_ortho,
+    #                             W.freq/P.f, W.j_intra_plus_dtP_inter_E_dir, W.j_intra_plus_dtP_inter_ortho,
     #                             W.I_intra_plus_dtP_inter_E_dir, W.I_intra_plus_dtP_inter_ortho,
     #                             W.I_intra_E_dir, W.I_intra_ortho,
     #                             W.I_dtP_inter_E_dir, W.I_dtP_inter_ortho,
@@ -561,7 +557,7 @@ def write_current_emission(S, T, P, W):
         # if P.save_txt:
         #     np.savetxt(I_approx_name + '.dat',
         #                np.column_stack([T.t.real, T.j_intra_plus_dtP_inter_E_dir, T.j_intra_plus_dtP_inter_ortho,
-        #                                 (W.freq/P.w).real, W.j_intra_plus_dtP_inter_E_dir.real, W.j_intra_plus_dtP_inter_E_dir.imag,
+        #                                 (W.freq/P.f).real, W.j_intra_plus_dtP_inter_E_dir.real, W.j_intra_plus_dtP_inter_E_dir.imag,
         #                                 W.j_intra_plus_dtP_inter_ortho, W.j_intra_plus_dtP_inter_ortho,
         #                                 W.I_intra_plus_dtP_inter_E_dir, W.I_intra_plus_dtP_inter_ortho]),
         #                header="t, I_E_dir, I_ortho, freqw/w, Re(Iw_E_dir), Im(Iw_E_dir), Re(Iw_ortho), Im(Iw_ortho), I_E_dir, I_ortho",
@@ -607,7 +603,7 @@ def write_current_emission(S, T, P, W):
                     "dtP_E_dir", "dtP_ortho",
                     "j_intra_plus_dtP_E_dir", "j_intra_plus_dtP_ortho",
                     "j_anom_ortho", "j_intra_plus_anom_ortho")
-        freq_output = np.column_stack([T.t.real,
+        freq_output = np.column_stack([(W.freq/P.f).real,
                                        T.j_E_dir.real, T.j_ortho.real,
                                        T.j_intra_E_dir.real, T.j_intra_ortho.real,
                                        T.dtP_E_dir.real, T.dtP_ortho.real,
@@ -618,7 +614,7 @@ def write_current_emission(S, T, P, W):
         freq_header = "{:23s} {:25s} {:25s}"\
             .format("freqw", "Re(j_E_dir)", "Im(j_E_dir)", "Re(j_ortho)", "Im(j_ortho)")
         np.savetxt('frequency_data.dat',
-                   np.column_stack([W.freq/P.w,
+                   np.column_stack([W.freq/P.f,
                                     T.j_E_dir.real, T.j_ortho.real]),
                    header=time_header, fmt="%+.18e")
 
@@ -630,13 +626,13 @@ def write_current_emission(S, T, P, W):
 
     # np.save(I_exact_name, [T.t,
     #                        T.j_E_dir, T.j_ortho,
-    #                        W.freq/P.w, W.j_E_dir, W.j_ortho,
+    #                        W.freq/P.f, W.j_E_dir, W.j_ortho,
     #                        W.I_E_dir, W.I_ortho])
 
     # if P.save_txt and P.factor_freq_resolution == 1:
     #     np.savetxt(I_exact_name + '.dat',
     #                np.column_stack([T.t.real, T.j_E_dir.real, T.j_ortho.real,
-    #                                 (W.freq/P.w).real, W.j_E_dir.real, W.j_E_dir.imag,
+    #                                 (W.freq/P.f).real, W.j_E_dir.real, W.j_E_dir.imag,
     #                                 W.j_ortho.real, W.j_ortho.imag,
     #                                 W.I_E_dir.real, W.I_ortho.real]),
     #                header="t, I_exact_E_dir, I_exact_ortho, freqw/w, Re(Iw_exact_E_dir), Im(Iw_exact_E_dir), Re(Iw_exact_ortho), Im(Iw_exact_ortho), I_exact_E_dir, I_exact_ortho",
@@ -647,7 +643,7 @@ def write_current_emission(S, T, P, W):
     #     write_and_compile_latex_PDF(T, P, S, W.freq, T.j_E_dir, T.j_ortho, W.I_E_dir, W.I_ortho)
 
 
-def fourier_current_intensity(I_E_dir, I_ortho, gaussian_envelope, dt_out, prefac_emission, freq):
+def fourier_current_intensity(I_E_dir, I_ortho, window_function, dt_out, prefac_emission, freq):
 
     ndt     = np.size(I_E_dir)
     ndt_fft = np.size(freq)
@@ -696,8 +692,8 @@ def print_user_info(P, B0=None, mu=None, incident_angle=None):
               + "[" + '%.6f'%(B0) + "]")
         print("Magnetic moments ", mu)
     print("Pulse Frequency (THz)[a.u.]     = " + "("
-          + '{:.6f}'.format(P.w_THz) + ")"
-          + "[" + '{:.6f}'.format(P.w) + "]")
+          + '{:.6f}'.format(P.f_THz) + ")"
+          + "[" + '{:.6f}'.format(P.f) + "]")
     print("Pulse Width (fs)[a.u.]          = " + "("
           + '{:.6f}'.format(P.alpha_fs) + ")"
           + "[" + '{:.6f}'.format(P.alpha) + "]")

@@ -103,7 +103,7 @@ def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=N
 
     #Initialize electric_field, create fnumba and initialize solver
     if electric_field_function is None:
-        electric_field = make_electric_field(P.E0, P.w, P.alpha, P.chirp, P.phase, \
+        electric_field = make_electric_field(P.E0, P.f, P.alpha, P.chirp, P.phase, \
             P.type_real_np)
     else:
         electric_field = electric_field_function
@@ -264,7 +264,6 @@ def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=N
                 J_intra_E_dir[ti] += J_intra_E_dir_buf
                 J_intra_ortho[ti] += J_intra_ortho_buf
                 J_anom_ortho[ti] += J_anom_ortho_buf
-            
             if P.solver_method in ('bdf', 'adams'):
                 # Integrate one integration time step
                 solver.integrate(solver.t + P.dt)
@@ -283,7 +282,7 @@ def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=N
     # Write solutions
     # Filename tail
     tail = 'E_{:.4f}_w_{:.1f}_a_{:.1f}_{}_t0_{:.1f}_dt_{:.6f}_NK1-{}_NK2-{}_T1_{:.1f}_T2_{:.1f}_chirp_{:.3f}_ph_{:.2f}_solver_{:s}_dk_order{}'\
-        .format(P.E0_MVpcm, P.w_THz, P.alpha_fs, P.gauge, P.t0_fs, P.dt_fs, P.Nk1, P.Nk2, P.T1_fs, P.T2_fs, P.chirp_THz, P.phase, P.solver_method, P.dk_order)
+        .format(P.E0_MVpcm, P.f_THz, P.alpha_fs, P.gauge, P.t0_fs, P.dt_fs, P.Nk1, P.Nk2, P.T1_fs, P.T2_fs, P.chirp_THz, P.phase, P.solver_method, P.dk_order)
 
     write_current_emission(tail, kweight, t, J_exact_E_dir, J_exact_ortho,
                            J_intra_E_dir, J_intra_ortho, P_inter_E_dir, P_inter_ortho, J_anom_ortho, P)
@@ -548,7 +547,7 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
 
         tail : str
         kweight : float
-        w : float
+        f : float
             driving pulse frequency
         t : ndarray
             array of the time points corresponding to a solution of the sbe
@@ -635,7 +634,7 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
         I_approx_name = 'Iapprox_' + tail
 
         np.save(I_approx_name, [t, I_E_dir, I_ortho,
-                                freq/P.w, Iw_E_dir, Iw_ortho,
+                                freq/P.f, Iw_E_dir, Iw_ortho,
                                 Int_E_dir, Int_ortho,
                                 I_intra_E_dir, I_intra_ortho,
                                 Int_intra_E_dir, Int_intra_ortho,
@@ -649,7 +648,7 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
         if P.save_txt:
             np.savetxt(I_approx_name + '.dat',
                        np.column_stack([t.real, I_E_dir.real, I_ortho.real,
-                                        (freq/P.w).real, Iw_E_dir.real, Iw_E_dir.imag,
+                                        (freq/P.f).real, Iw_E_dir.real, Iw_E_dir.imag,
                                         Iw_ortho.real, Iw_ortho.imag,
                                         Int_E_dir.real, Int_ortho.real]),
                        header="t, I_E_dir, I_ortho, freqw/w, Re(Iw_E_dir), Im(Iw_E_dir), Re(Iw_ortho), Im(Iw_ortho), Int_E_dir, Int_ortho",
@@ -668,12 +667,12 @@ def write_current_emission(tail, kweight, t, I_exact_E_dir, I_exact_ortho,
 
         I_exact_name = 'Iexact_' + tail
         np.save(I_exact_name, [t, I_exact_E_dir, I_exact_ortho,
-                            freq/P.w, Iw_exact_E_dir, Iw_exact_ortho,
+                            freq/P.f, Iw_exact_E_dir, Iw_exact_ortho,
                             Int_exact_E_dir, Int_exact_ortho])
         if P.save_txt:
             np.savetxt(I_exact_name + '.dat',
                     np.column_stack([t.real, I_exact_E_dir.real, I_exact_ortho.real,
-                                        (freq/P.w).real, Iw_exact_E_dir.real, Iw_exact_E_dir.imag,
+                                        (freq/P.f).real, Iw_exact_E_dir.real, Iw_exact_E_dir.imag,
                                         Iw_exact_ortho.real, Iw_exact_ortho.imag,
                                         Int_exact_E_dir.real, Int_exact_ortho.real]),
                     header="t, I_exact_E_dir, I_exact_ortho, freqw/w, Re(Iw_exact_E_dir), Im(Iw_exact_E_dir), Re(Iw_exact_ortho), Im(Iw_exact_ortho), Int_exact_E_dir, Int_exact_ortho",
@@ -717,8 +716,8 @@ def print_user_info(P, B0=None, mu=None, incident_angle=None):
               + "[" + '%.6f'%(B0) + "]")
         print("Magnetic moments ", mu)
     print("Pulse Frequency (THz)[a.u.]     = " + "("
-          + '{:.6f}'.format(P.w_THz) + ")"
-          + "[" + '{:.6f}'.format(P.w) + "]")
+          + '{:.6f}'.format(P.f_THz) + ")"
+          + "[" + '{:.6f}'.format(P.f) + "]")
     print("Pulse Width (fs)[a.u.]          = " + "("
           + '{:.6f}'.format(P.alpha_fs) + ")"
           + "[" + '{:.6f}'.format(P.alpha) + "]")
