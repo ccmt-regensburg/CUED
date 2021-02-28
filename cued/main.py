@@ -453,10 +453,7 @@ def calculate_fourier(S, T, P, W):
     # 1/(3c^3) in atomic units
     prefac_emission = 1/(3*(137.036**3))
     dt_out = T.t[1] - T.t[0]
-    factor_freq_resolution = P.factor_freq_resolution
-    if P.fourier_window_function == 'time_reflection':
-        factor_freq_resolution *= 2
-    ndt_fft = (T.t.size-1)*factor_freq_resolution + 1
+    ndt_fft = (T.t.size-1)*P.factor_freq_resolution + 1
     W.freq = fftshift(fftfreq(ndt_fft, d=dt_out))
 
     if P.fourier_window_function == 'gaussian':
