@@ -420,6 +420,24 @@ def hann(t):
     '''
     return (np.cos(np.pi*t/(np.amax(t)-np.amin(t))))**2
 
+def parzen(t):
+    '''
+    Window function to multiply a Function f(t) before Fourier transform
+    to ensure no step in time between t_final and t_final + delta
+    '''
+    n_t = t.size
+    t_half_size = (t[-1]-t[0])/2
+    t_1 = t[0     :n_t//4]
+    t_2 = t[n_t//4:n_t//2]
+
+    parzen                = np.zeros(n_t)
+    parzen[0:     n_t//4] = 2*(1-np.abs(t_1)/t_half_size)**3
+    parzen[n_t//4:n_t//2] = 1-6*(t_2/t_half_size)**2*(1-np.abs(t_2)/t_half_size)
+    parzen                = parzen + parzen[::-1]
+    parzen[n_t//2]        = 1.0
+
+    return parzen
+
 def update_currents_with_kweight(S, T, P):
 
     T.j_E_dir *= S.kweight
@@ -460,6 +478,8 @@ def calculate_fourier(S, T, P, W):
          window_function = gaussian(T.t, P.gaussian_window_width)
     elif P.fourier_window_function == 'hann':
          window_function = hann(T.t)
+    elif P.fourier_window_function == 'parzen':
+         window_function = parzen(T.t)
 
     if P.save_exact:
 
