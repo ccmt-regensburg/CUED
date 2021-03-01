@@ -165,7 +165,7 @@ def sbe_solver(sys, params, electric_field_function=None):
     write_current_emission(S, T, P, W)
 
     # Save the parameters of the calculation
-    params_name = 'params_' + P.tail + '.txt'
+    params_name = 'params.txt'
     paramsfile = open(params_name, 'w')
     paramsfile.write(str(P.__dict__) + "\n\n")
     paramsfile.write("Runtime: {:.16f} s".format(S.run_time))
@@ -549,13 +549,13 @@ def write_current_emission(S, T, P, W):
     # Time data save
     ##################################################
     if P.save_approx:
-        time_header = ("{:23s}" + " {:25s}"*10)\
+        time_header = ("{:25s}" + " {:27s}"*10)\
             .format("t",
                     "j_E_dir", "j_ortho",
                     "j_intra_E_dir", "j_intra_ortho",
                     "dtP_E_dir", "dtP_ortho",
-                    "j_intra_+_dtP_E_dir", "j_intra_+_dtP_ortho",
-                    "j_anom_ortho", "j_intra_+_anom_ortho")
+                    "j_intra_plus_dtP_E_dir", "j_intra_plus_dtP_ortho",
+                    "j_anom_ortho", "j_intra_plus_anom_ortho")
         time_output = np.column_stack([T.t.real,
                                        T.j_E_dir.real, T.j_ortho.real,
                                        T.j_intra_E_dir.real, T.j_intra_ortho.real,
@@ -564,7 +564,7 @@ def write_current_emission(S, T, P, W):
                                        T.j_anom_ortho.real, T.j_intra_plus_anom_ortho.real])
 
     else:
-        time_header = ("{:23s}" + " {:25s}"*2)\
+        time_header = ("{:25s}" + " {:27s}"*2)\
             .format("t", "j_E_dir", "j_ortho")
         time_output = np.column_stack([T.t.real,
                                        T.j_E_dir.real, T.j_ortho.real])
@@ -573,13 +573,13 @@ def write_current_emission(S, T, P, W):
     time_output[np.abs(time_output) <= 10e-100] = 0
     time_output[np.abs(time_output) >= 1e+100] = np.inf
 
-    np.savetxt('time_data.dat', time_output, header=time_header, fmt="%+.18e")
+    np.savetxt('time_data.dat', time_output, header=time_header, delimiter='   ', fmt="%+.18e")
 
     ##################################################
     # Frequency data save
     ##################################################
     if P.save_approx:
-        freq_header = ("{:23s}" + " {:25s}"*30)\
+        freq_header = ("{:25s}" + " {:27s}"*30)\
             .format("f/f0",
                     "Re(j_E_dir)", "Im(j_E_dir)", "Re(j_ortho)", "Im(j_ortho)",
                     "I_E_dir", "I_ortho",
@@ -587,10 +587,10 @@ def write_current_emission(S, T, P, W):
                     "I_intra_E_dir", "I_intra_ortho",
                     "Re(dtP_E_dir)", "Im(dtP_E_dir)", "Re(dtP_ortho)", "Im(dtP_ortho)",
                     "I_dtP_E_dir", "I_dtP_ortho",
-                    "Re(j_intra_+_dtP_E_dir)", "Im(j_intra_+_dtP_E_dir)", "Re(j_intra_+_dtP_ortho)", "Im(j_intra_+_dtP_ortho)",
-                    "I_intra_+_dtP_E_dir", "I_intra_+_dtP_ortho",
-                    "Re(j_anom_ortho)", "Im(j_anom_ortho)", "Re(j_intra_+_anom_ortho)", "Im(j_intra_+_anom_ortho)",
-                    "I_anom_ortho", "I_intra_+_anom_ortho")
+                    "Re(j_intra_plus_dtP_E_dir)", "Im(j_intra_plus_dtP_E_dir)", "Re(j_intra_plus_dtP_ortho)", "Im(j_intra_plus_dtP_ortho)",
+                    "I_intra_plus_dtP_E_dir", "I_intra_plus_dtP_ortho",
+                    "Re(j_anom_ortho)", "Im(j_anom_ortho)", "Re(j_intra_plus_anom_ortho)", "Im(j_intra_plus_anom_ortho)",
+                    "I_anom_ortho", "I_intra_plus_anom_ortho")
 
         # Current same order as in time output, always real and imaginary part
         # next column -> corresponding intensities
@@ -607,7 +607,7 @@ def write_current_emission(S, T, P, W):
                                        W.I_anom_ortho.real, W.I_intra_plus_anom_ortho.real])
 
     else:
-        freq_header = ("{:23s}" + " {:25s}"*6)\
+        freq_header = ("{:25s}" + " {:27s}"*6)\
             .format("f/f0",
                     "Re(j_E_dir)", "Im(j_E_dir)", "Re(j_ortho)", "Im(j_ortho)",
                     "I_E_dir", "I_ortho")
@@ -619,7 +619,7 @@ def write_current_emission(S, T, P, W):
     freq_output[np.abs(freq_output) <= 10e-100] = 0
     freq_output[np.abs(freq_output) >= 1e+100] = np.inf
 
-    np.savetxt('frequency_data.dat', freq_output, header=freq_header, fmt="%+.18e")
+    np.savetxt('frequency_data.dat', freq_output, header=freq_header, delimiter='   ', fmt="%+.18e")
 
     if P.save_latex_pdf:
         write_and_compile_latex_PDF(T, P, S, W.freq, T.j_E_dir, T.j_ortho, W.I_E_dir, W.I_ortho)

@@ -1,34 +1,28 @@
 import numpy as np
 import os
 
-
 def read_datasets(subpaths):
     """
     Specify a path and read all subfolders
     read_dataset defines the individual order
     """
-    Soldata_container = []
-    Iexactdata_container = []
-    Iapproxdata_container = []
+    time_data_container = []
+    freq_data_container = []
+    dens_data_container = []
 
     for subpath in subpaths:
         print("Evaluating " + subpath + " data", end='\n\n')
-        Iexactdata, Iapproxdata, Soldata = read_dataset(subpath)
-        Iexactdata_container.append(Iexactdata)
-        Iapproxdata_container.append(Iapproxdata)
-        Soldata_container.append(Soldata)
+        time_data, freq_data = read_dataset(subpath)
+        time_data_container.append(time_data)
+        freq_data_container.append(freq_data)
+        dens_data_container.append(dens_data)
 
-    return np.array(Iexactdata_container), np.array(Iapproxdata_container),\
-        np.array(Soldata_container)
+    return time_data_container, freq_data_container, dens_data_container
 
-
-def read_dataset(path):
+def read_dataset(path, prefix='', suffix=''):
     """
     Read the data from a specific folder;
-    Iexactdata = [t, I_exact_E_dir, I_exact_ortho, freq/w, Iw_exact_E_dir, Iw_exact_ortho,
-     Int_exact_E_dir, Int_exact_ortho]
-    Iapproxdata = [t, I_E_dir, I_ortho, freq/w, Iw_E_dir, Iw_ortho, Int_E_dir, Int_ortho]
-    Soldat = [t, Solution, paths, electric_field, A_field]
+    Create memory views of all datasets
 
     Parameters
     ----------
@@ -37,38 +31,37 @@ def read_dataset(path):
 
     Returns
     -------
-    Iexactdata : np.ndarray
-        Exact current and emission data
-    Iapprox : np.ndarray
-        Approx. current and emission data (kira & koch formula)
-    Solution : np.ndarray
-        Full solution density, paths, electric field and vector potential
+    time_data : np.ndarray
+        time dependent data
+    freq_data : np.ndarray
+        fourier/frequency data
+    dens_data : np.ndarray
+        data from the full density matrix
     """
     filelist = os.listdir(path)
-    Soldata = None
-    Iexactdata = None
-    Iapproxdata = None
+    time_data = None
+    freq_data = None
+    dens_data = None
+
+    time_string = prefix + 'time_data' + suffix
+    freq_string = prefix + 'frequency_data' + suffix
+    dens_string = prefix + 'density_data' + suffix
 
     for filename in filelist:
-        # Emissions I
-        # [t, solution, paths, electric_field, A_field]
-        if ('Sol_' in filename and '.npy' in filename):
-            print("Reading :", path, filename)
-            Soldict = np.load(path + filename)
-            Soldata = np.array([Soldict['t'], Soldict['solution'],
-                                Soldict['paths'], Soldict['electric_field'],
-                                Soldict['A_field']])
+        # Time data
+        filepath = path + '/' + filename
+        if (filename.startswith(time_string) and '.dat' in filename):
+            print("Reading time:", filepath)
+            time_data = np.genfromtxt(filepath, names=True, encoding='utf8', deletechars='')
 
-        # Emissions Iexact
-        # [t, I_exact_E_dir, I_exact_ortho, freq/w, Iw_exact_E_dir,
-        # Iw_exact_ortho, Int_exact_E_dir, Int_exact_ortho]
-        if ('Iexact_' in filename and '.npy' in filename):
-            print("Reading :", path, filename)
-            Iexactdata = np.array(np.load(path + filename))
+        # Frequency data
+        if (filename.startswith(freq_string) and '.dat' in filename):
+            print("Reading fourier:", filepath)
+            freq_data = np.genfromtxt(filepath, names=True, encoding='utf8', deletechars='')
 
-        # Emission approximate
-        if ('Iapprox_' in filename and '.npy' in filename):
-            print("Reading :", path, filename)
-            Iapproxdata = np.array(np.load(path + filename))
+        # Density data
+        if (filename.startswith(dens_string) and '.dat' in filename):
+            print("Reading density:", filepath)
+            dens_data = np.genfromtxt(filepath, names=True, encoding='utf8', deletechars='')
 
-    return Iexactdata, Iapproxdata, Soldata
+    return time_data, freq_data, dens_data
