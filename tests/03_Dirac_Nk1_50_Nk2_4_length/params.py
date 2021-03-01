@@ -39,5 +39,5 @@ class params:
     gauge                   = 'length'   # Gauge of the system
     hamiltonian_evaluation  = 'ana'
     solver                  = '2band'
-    save_approx             = True
+    current_splitting       = True
     user_out                = False

@@ -20,7 +20,7 @@ def time_containers(P, electric_field_function):
     T.j_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
     T.j_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
-    if P.save_approx:
+    if P.current_splitting:
         T.j_intra_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
         T.j_intra_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 

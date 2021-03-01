@@ -277,19 +277,19 @@ def prepare_current_calculations(path, Nk2_idx, S, P):
             current_exact_path = make_emission_exact_path_length(path, S, P)
         if P.gauge == 'velocity':
             current_exact_path = make_emission_exact_path_velocity(path, S, P)
-        if P.save_approx:
+        if P.current_splitting:
             polarization_inter_path = make_polarization_path(path, S, P)
             current_intra_path = make_current_path(path, S, P)
 
     if P.hamiltonian_evaluation == 'num':
         current_exact_path = make_current_exact_path_hderiv(Nk2_idx, S, P)
-        if P.save_approx:
+        if P.current_splitting:
             polarization_inter_path = make_polarization_inter_path(S, P)
             current_intra_path = make_intraband_current_path(Nk2_idx, S, P)
 
     if P.hamiltonian_evaluation == 'bandstructure':
         current_exact_path = make_current_exact_bandstructure(path, S, P)
-        if P.save_approx:
+        if P.current_splitting:
             polarization_inter_path = make_polarization_inter_bandstructure(S, P)
             current_intra_path = make_intraband_current_bandstructure(path, S, P)
     return current_exact_path, polarization_inter_path, current_intra_path
@@ -332,7 +332,7 @@ def calculate_currents(ti, current_exact_path, polarization_inter_path, current_
     T.j_E_dir[ti] += j_E_dir_buf
     T.j_ortho[ti] += j_ortho_buf
 
-    if P.save_approx:
+    if P.current_splitting:
         if P.hamiltonian_evaluation == 'ana':
             P_E_dir_buf, P_ortho_buf = polarization_inter_path(T.solution[:, 1, 0], T.A_field[ti])
             j_intra_E_dir_buf, j_intra_ortho_buf, j_anom_ortho_buf = current_intra_path(T.solution[:,0,0], T.solution[:, 1, 1], T.A_field[ti], T.E_field[ti])
@@ -448,7 +448,7 @@ def update_currents_with_kweight(S, T, P):
     T.j_E_dir *= S.kweight
     T.j_ortho *= S.kweight
 
-    if P.save_approx:
+    if P.current_splitting:
         T.j_intra_E_dir *= S.kweight
         T.j_intra_ortho *= S.kweight
 
@@ -489,7 +489,7 @@ def calculate_fourier(S, T, P, W):
     W.I_E_dir, W.I_ortho, W.j_E_dir, W.j_ortho =\
         fourier_current_intensity(T.j_E_dir, T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq)
 
-    if P.save_approx:
+    if P.current_splitting:
         # Approximate current and emission intensity
         W.I_intra_plus_dtP_E_dir, W.I_intra_plus_dtP_ortho, W.j_intra_plus_dtP_E_dir, W.j_intra_plus_dtP_ortho =\
             fourier_current_intensity(T.j_intra_plus_dtP_E_dir, T.j_intra_plus_dtP_ortho, T.window_function, dt_out, prefac_emission, W.freq)
@@ -537,7 +537,7 @@ def write_current_emission(S, T, P, W):
         polarization orthogonal to E-field
     window_function : function
         window function to multiply to a function before Fourier transform
-    save_approx : boolean
+    current_splitting : boolean
         determines whether approximate solutions should be saved
 
     Returns:
@@ -548,7 +548,7 @@ def write_current_emission(S, T, P, W):
     ##################################################
     # Time data save
     ##################################################
-    if P.save_approx:
+    if P.current_splitting:
         time_header = ("{:25s}" + " {:27s}"*10)\
             .format("t",
                     "j_E_dir", "j_ortho",
@@ -578,7 +578,7 @@ def write_current_emission(S, T, P, W):
     ##################################################
     # Frequency data save
     ##################################################
-    if P.save_approx:
+    if P.current_splitting:
         freq_header = ("{:25s}" + " {:27s}"*30)\
             .format("f/f0",
                     "Re(j_E_dir)", "Im(j_E_dir)", "Re(j_ortho)", "Im(j_ortho)",

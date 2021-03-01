@@ -42,7 +42,7 @@ class params:
     solver                  = '2band'
     do_semicl               = False      # Turn all dipoles to 0 and use Berry curvature in emission
     user_out                = True       # Set to True to get user plotting and progress output
-    save_approx             = True
+    current_splitting       = True
     save_full               = False
     save_latex_pdf          = True
 

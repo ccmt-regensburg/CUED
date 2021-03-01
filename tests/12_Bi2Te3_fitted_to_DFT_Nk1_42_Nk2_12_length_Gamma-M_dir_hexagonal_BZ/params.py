@@ -42,5 +42,5 @@ class params:
     hamiltonian_evaluation  = 'ana'
     solver                  = '2band'
     user_out                = False       # Set to True to get user plotting and progress output
-    save_approx             = True
+    current_splitting       = True
 
