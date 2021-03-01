@@ -42,7 +42,7 @@ class params:
     gauge                   = 'length'   # Gauge of the system
     hamiltonian_evaluation  = 'ana'
     solver                  = '2band'
-    user_out                = False       # Set to True to get user plotting and progress output
-    current_splitting       = True
+    user_out                = False
+    split_current           = False
     save_text               = True
 

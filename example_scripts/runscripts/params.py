@@ -44,7 +44,7 @@ class params:
     solver                  = '2band'
     do_semicl               = False      # Turn all dipoles to 0 and use Berry curvature in emission
     user_out                = True       # Set to True to get user plotting and progress output
-    current_splitting       = True
+    split_current       = True
     save_full               = False
     solver_method           = 'rk4'
 

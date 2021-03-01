@@ -18,9 +18,9 @@ def parse_params(user_params):
     if hasattr(UP, 'save_full'):
         P.save_full = UP.save_full
 
-    P.current_splitting = False             # Save j^intra, j^anom, dP^inter/dt
-    if hasattr(UP, 'current_splitting'):
-        P.current_splitting = UP.current_splitting
+    P.split_current = False             # Save j^intra, j^anom, dP^inter/dt
+    if hasattr(UP, 'split_current'):
+        P.split_current = UP.split_current
 
     P.do_semicl = False                     # Semiclassical calc. (dipole = 0)
     if hasattr(UP, 'do_semicl'):

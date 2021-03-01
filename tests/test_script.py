@@ -11,13 +11,14 @@ from cued.plotting import read_dataset
 # THIS SCRIPT NEEDS TO BE EXECUTED IN THE MAIN GIT DIRECTORY BY CALLING python3 tests/test_script.py #
 ######################################################################################################
 
+#################################
+# PARAMETERS OF THE TEST SCRIPT #
+#################################
+print_latex_pdf       = False
+threshold_rel_error   = 0.1
+
 def check_test(testdir):
 
-    #################################
-    # PARAMETERS OF THE TEST SCRIPT #
-    #################################
-    print_latex_pdf       = False
-    threshold_rel_error   = 0.1
 
     print('\n\n=====================================================\n\nStart with test:'
           '\n\n' + testdir + '\n\n')
@@ -56,45 +57,28 @@ def check_test(testdir):
     # All indices between 0 and 10th order
     freq_idx = np.where(np.logical_and(0 <= freq, freq <= 10))[0]
 
+
     # Full emission
     I_E_dir_ref = freq_data_ref['I_E_dir'][freq_idx]
     I_ortho_ref = freq_data_ref['I_ortho'][freq_idx]
     I_E_dir = freq_data['I_E_dir'][freq_idx]
     I_ortho = freq_data['I_ortho'][freq_idx]
-
-    # Intra + dtP emission
-    I_intra_plus_dtP_E_dir_ref = freq_data_ref['I_intra_plus_dtP_E_dir'][freq_idx]
-    I_intra_plus_dtP_ortho_ref = freq_data_ref['I_intra_plus_dtP_E_dir'][freq_idx]
-    I_intra_plus_dtP_E_dir = freq_data['I_intra_plus_dtP_E_dir'][freq_idx]
-    I_intra_plus_dtP_ortho = freq_data['I_intra_plus_dtP_E_dir'][freq_idx]
-
-
     print("\n\nMaxima of the emission spectra: ",
           "\nfull  E_dir: ", np.amax(np.abs(I_E_dir_ref)),
-          "\nfull  ortho: ", np.amax(np.abs(I_ortho_ref)),
-          "\nintra plus dtP E_dir: ", np.amax(np.abs(I_intra_plus_dtP_E_dir_ref)),
-          "\nintra plus dtP ortho: ", np.amax(np.abs(I_intra_plus_dtP_ortho_ref)))
+          "\nfull  ortho: ", np.amax(np.abs(I_ortho_ref)))
+    check_emission(I_E_dir, I_ortho, I_E_dir_ref, I_ortho_ref, 'full')
 
-    full_relerror = (np.abs(I_E_dir + I_ortho) + 1.0E-90) / \
-        (np.abs(I_E_dir_ref + I_ortho_ref) + 1.0E-90) - 1
-
-    intra_dtP_relerror = (np.abs(I_intra_plus_dtP_E_dir + I_intra_plus_dtP_ortho) + 1.0E-90) / \
-        (np.abs(I_intra_plus_dtP_E_dir_ref+ I_intra_plus_dtP_ortho_ref) + 1.0E-90) - 1
-
-    full_max_relerror = np.amax(np.abs(full_relerror))
-    intra_dtP_max_relerror = np.amax(np.abs(intra_dtP_relerror))
-
-    print("\n\nTesting the \"full\" emission spectrum I(omega):",
-      "\n\nThe maximum relative deviation between the computed and the reference spectrum is:", full_max_relerror,
-        "\nThe threshold is:                                                                 ", threshold_rel_error, "\n")
-
-    assert full_max_relerror < threshold_rel_error, "The exact emission spectrum is not matching."
-
-    print("Testing the \"intra plus dtP\" emission spectrum I(omega):",
-          "\n\nThe maximum relative deviation between the computed and the reference spectrum is:", intra_dtP_max_relerror,
-        "\nThe threshold is:                                                                 ", threshold_rel_error, "\n")
-
-    assert intra_dtP_max_relerror < threshold_rel_error, "The approx. emission spectrum is not matching."
+    if params.split_current:
+        # Intra + dtP emission
+        I_intra_plus_dtP_E_dir_ref = freq_data_ref['I_intra_plus_dtP_E_dir'][freq_idx]
+        I_intra_plus_dtP_ortho_ref = freq_data_ref['I_intra_plus_dtP_E_dir'][freq_idx]
+        I_intra_plus_dtP_E_dir = freq_data['I_intra_plus_dtP_E_dir'][freq_idx]
+        I_intra_plus_dtP_ortho = freq_data['I_intra_plus_dtP_E_dir'][freq_idx]
+        print("\nintra plus dtP E_dir: ", np.amax(np.abs(I_intra_plus_dtP_E_dir_ref)),
+            "\nintra plus dtP ortho: ", np.amax(np.abs(I_intra_plus_dtP_ortho_ref)))
+        check_emission(I_intra_plus_dtP_E_dir, I_intra_plus_dtP_ortho,
+                       I_intra_plus_dtP_E_dir_ref, I_intra_plus_dtP_ortho_ref,
+                       'dtP')
 
     shutil.rmtree(testdir + '/__pycache__')
     for E0_dirname   in glob.glob(testdir + '/E0*'):   shutil.rmtree(E0_dirname)
@@ -115,6 +99,19 @@ def check_test(testdir):
           '\n\n=====================================================\n\n')
 
     os.chdir("..")
+
+
+def check_emission(I_E_dir, I_ortho, I_E_dir_ref, I_ortho_ref, name):
+    relerror = (np.abs(I_E_dir + I_ortho) + 1.0E-90) / \
+        (np.abs(I_E_dir_ref + I_ortho_ref) + 1.0E-90) - 1
+
+    max_relerror = np.amax(np.abs(relerror))
+
+    print("\n\nTesting the \"" + name + "\" emission spectrum I(omega):",
+      "\n\nThe maximum relative deviation between the computed and the reference spectrum is:", max_relerror,
+        "\nThe threshold is:                                                                 ", threshold_rel_error, "\n")
+
+    assert max_relerror < threshold_rel_error, "The \"" + name + "\" emission spectrum is not matching."
 
 
 def import_params(filename_params):
@@ -147,16 +144,17 @@ def main():
           '\n\n Executed in the directory:\n\n '+dirpath+
           '\n\n=====================================================\n\n')
 
+    tests_path = dirpath + '/tests'
     count = 0
 
-    for subdir, dirs, files in os.walk(dirpath+'/tests'):
-        for dir in sorted(dirs):
-            if not dir.startswith('norun'):
-                testdir = os.path.join(subdir, dir)
-                count += 1
-                check_test(testdir)
+    for cdir in sorted(os.listdir(tests_path)):
+        testdir = tests_path + '/' + cdir
+        if os.path.isdir(testdir) and not cdir.startswith('norun'):
+            print(testdir)
+            count += 1
+            check_test(testdir)
 
-    assert count > 0, 'There are no test files with ending .reference in directory ./' + testdir
+    assert count > 0, 'There are no test files with ending .reference in directory ' + tests_path
 
 if __name__ == "__main__":
     main()

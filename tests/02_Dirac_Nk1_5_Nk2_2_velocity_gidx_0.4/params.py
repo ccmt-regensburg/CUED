@@ -40,8 +40,8 @@ class params:
     gidx                    = 0.4
     hamiltonian_evaluation  = 'ana'
     solver                  = '2band'
-    do_semicl               = False      # Turn all dipoles to 0 and use Berry curvature in emission
-    user_out                = False       # Set to True to get user plotting and progress output
-    current_splitting       = False
+    do_semicl               = False
+    user_out                = False
+    split_current           = False
     save_full               = False
 
