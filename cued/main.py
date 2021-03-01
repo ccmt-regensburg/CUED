@@ -100,10 +100,15 @@ def sbe_solver(sys, params, electric_field_function=None):
     # SOLVING
     ###########################################################################
     # Iterate through each path in the Brillouin zone
-    Mpi = MpiHelpers()
-    print(Mpi.rank)
 
-    for Nk2_idx, path in enumerate(S.paths):
+    # Initalize MPI and fill local_Nk2_idx_list with per processor indices
+    # Important mpi.INT == np.int32
+    Mpi = MpiHelpers()
+    global_Nk2_idx_list, local_Nk2_idx_list, ptuple, displace = Mpi.listchop(np.arange(P.Nk2, dtype=np.int32))
+    Mpi.comm.Scatterv([global_Nk2_idx_list, ptuple, displace, Mpi.mpi.INT], local_Nk2_idx_list)
+
+    for Nk2_idx in local_Nk2_idx_list:
+        path = S.paths[Nk2_idx]
 
         if P.user_out:
             print('Solving SBE for Path', Nk2_idx+1)

@@ -7,20 +7,14 @@ class MpiHelpers:
     This class holds helper functions for the usage of the mpi scatterv and gatherv routines.
     '''
     def __init__(self):
+        self.mpi = MPI
         self.comm = MPI.COMM_WORLD
         self.size = self.comm.Get_size()
         self.rank = self.comm.Get_rank()
 
-    def listpart(self, krange, *args):
-        '''
-        Function dividing the given krange into an even list necessary for distribution among
-        processors.
-        '''
+    def listchop(self, idxlist):
         if(self.rank == 0):
-            klist = np.linspace(krange[0], krange[1], krange[2])
-            if(args and args[0] == "rand"):
-                np.random.shuffle(klist)
-            ptuple = self.__equipartition(len(klist))
+            ptuple = self.__equipartition(idxlist.size)
             displace = self.__displacelist(ptuple)
         else:
             klist = None
@@ -32,25 +26,8 @@ class MpiHelpers:
 
         for i, le in enumerate(ptuple):
             if(self.rank == i):
-                klocal = np.zeros(le)
-        return klist, klocal, ptuple, displace
-
-    def listchop(self, klist):
-        if(self.rank == 0):
-            ptuple = self.__equipartition(len(klist))
-            displace = self.__displacelist(ptuple)
-        else:
-            klist = None
-            ptuple = None
-            displace = None
-
-        ptuple = self.comm.bcast(ptuple, root=0)
-        displace = self.comm.bcast(displace, root=0)
-
-        for i, le in enumerate(ptuple):
-            if(self.rank == i):
-                klocal = np.zeros(le)
-        return klist, klocal, ptuple, displace
+                idx_local = np.empty(le, dtype=np.int32)
+        return idxlist, idx_local, ptuple, displace
 
     def __equipartition(self, L):
         '''
