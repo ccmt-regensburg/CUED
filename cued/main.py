@@ -89,7 +89,6 @@ def sbe_solver(sys, params, electric_field_function=None):
     S = system_properties(P, sys)
 
     # Make containers for time- and frequency- dependent observables
-
     T = time_containers(P, electric_field_function)
     W = frequency_containers()
 
@@ -102,10 +101,8 @@ def sbe_solver(sys, params, electric_field_function=None):
     # Iterate through each path in the Brillouin zone
 
     # Initalize MPI and fill local_Nk2_idx_list with per processor indices
-    # Important mpi.INT == np.int32
     Mpi = MpiHelpers()
-    global_Nk2_idx_list, local_Nk2_idx_list, ptuple, displace = Mpi.listchop(np.arange(P.Nk2, dtype=np.int32))
-    Mpi.comm.Scatterv([global_Nk2_idx_list, ptuple, displace, Mpi.mpi.INT], local_Nk2_idx_list)
+    local_Nk2_idx_list = Mpi.get_local_idx(P.Nk2)
 
     for Nk2_idx in local_Nk2_idx_list:
         path = S.paths[Nk2_idx]
@@ -163,6 +160,9 @@ def sbe_solver(sys, params, electric_field_function=None):
             # Increment time counter
             ti += 1
 
+    # in case of MPI-parallel execution: mpi sum
+    mpi_sum_currents(T, P, Mpi)
+
     # End time of solver loop
     end_time = time.perf_counter()
     S.run_time = end_time - start_time
@@ -170,7 +170,7 @@ def sbe_solver(sys, params, electric_field_function=None):
     # calculate and write solutions
     update_currents_with_kweight(S, T, P)
     calculate_fourier(S, T, P, W)
-    write_current_emission(S, T, P, W)
+    write_current_emission(S, T, P, W, Mpi)
 
     # Save the parameters of the calculation
     params_name = 'params.txt'
@@ -451,6 +451,17 @@ def parzen(t):
 
     return parzen
 
+def mpi_sum_currents(T, P, Mpi):
+
+    T.j_E_dir       = Mpi.sync_and_sum(T.j_E_dir)
+    T.j_ortho       = Mpi.sync_and_sum(T.j_ortho)
+    if P.split_current:
+        T.j_intra_E_dir = Mpi.sync_and_sum(T.j_intra_E_dir)
+        T.j_intra_ortho = Mpi.sync_and_sum(T.j_intra_ortho)
+        T.P_E_dir       = Mpi.sync_and_sum(T.P_E_dir)
+        T.P_ortho       = Mpi.sync_and_sum(T.P_ortho)
+        T.j_anom_ortho  = Mpi.sync_and_sum(T.j_anom_ortho)
+
 def update_currents_with_kweight(S, T, P):
 
     T.j_E_dir *= S.kweight
@@ -515,44 +526,8 @@ def calculate_fourier(S, T, P, W):
             fourier_current_intensity(T.j_anom_ortho, T.j_intra_plus_anom_ortho, T.window_function, dt_out, prefac_emission, W.freq)
 
 
-def write_current_emission(S, T, P, W):
-    """
-    Calculates the Emission Intensity I(omega) (eq. 51 in https://arxiv.org/abs/2008.03177)
+def write_current_emission(S, T, P, W, Mpi):
 
-    Author:
-    Additional Contact: Jan Wilhelm (jan.wilhelm@ur.de)
-
-    Parameters
-    ----------
-
-    tail : str
-    kweight : float
-    f : float
-        driving pulse frequency
-    t : ndarray
-        array of the time points corresponding to a solution of the sbe
-    I_exact_E_dir: ndarray
-        exact emission j(t) in E-field direction
-    I_exact_ortho : ndarray
-        exact emission j(t) orthogonal to E-field
-    J_E_dir : ndarray
-        approximate emission j(t) in E-field direction
-    J_E_ortho : ndarray
-        approximate emission j(t) orthogonal to E-field
-    P_E_dir : ndarray
-        polarization E-field direction
-    P_E_ortho : ndarray
-        polarization orthogonal to E-field
-    window_function : function
-        window function to multiply to a function before Fourier transform
-    split_current : boolean
-        determines whether approximate solutions should be saved
-
-    Returns:
-    --------
-
-    savefiles (see documentation of sbe_solver())
-    """
     ##################################################
     # Time data save
     ##################################################

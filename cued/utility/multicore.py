@@ -12,6 +12,13 @@ class MpiHelpers:
         self.size = self.comm.Get_size()
         self.rank = self.comm.Get_rank()
 
+    def get_local_idx(self, idxmax):
+        # Important mpi.INT == np.int32
+        global_idx_list, local_idx_list, ptuple, displace = self.listchop(np.arange(idxmax, dtype=np.int32))
+        self.comm.Scatterv([global_idx_list, ptuple, displace, self.mpi.INT], local_idx_list)
+
+        return local_idx_list
+
     def listchop(self, idxlist):
         if(self.rank == 0):
             ptuple = self.__equipartition(idxlist.size)
@@ -28,6 +35,19 @@ class MpiHelpers:
             if(self.rank == i):
                 idx_local = np.empty(le, dtype=np.int32)
         return idxlist, idx_local, ptuple, displace
+
+    def sync_and_sum(self, local_np_array):
+        '''
+        sum all data from local processes
+        '''
+
+        summed_np_array = np.zeros_like(local_np_array)
+
+        self.comm.Barrier()
+        self.comm.Allreduce(local_np_array, summed_np_array, op=MPI.SUM)
+        self.comm.Barrier()
+
+        return summed_np_array
 
     def __equipartition(self, L):
         '''
@@ -55,3 +75,4 @@ class MpiHelpers:
             else:
                 displace += (0,)
         return displace
+
