@@ -95,7 +95,7 @@ class ExampleTwoBand(NBandBandstructureDipoleSystem):
     def __init__(self, 
                 a = sp.Symbol('a', real=True), 
                 prefac_x = sp.Symbol('prefac_x'), 
-                prefac_y = sp.Symbol('prefac_y') ):
+                prefac_y = sp.Symbol('prefac_y') , flag = None):
 
 
         ev = sp.cos(a*self.kx + self.ky)
@@ -104,7 +104,7 @@ class ExampleTwoBand(NBandBandstructureDipoleSystem):
         e = [ev, ec]
         n = 2 
 
-        super().__init__(e, prefac_x, prefac_y, n)
+        super().__init__(e, prefac_x, prefac_y, n, flag)
 
 class DiracBandstructure(NBandBandstructureDipoleSystem):
 
@@ -115,9 +115,6 @@ class DiracBandstructure(NBandBandstructureDipoleSystem):
         ev = - vF * sp.sqrt( self.kx**2 + self.ky**2 )
         ec =   vF * sp.sqrt( self.kx**2 + self.ky**2 )
 
-        # if flag == 'd0':
-        # if flag == 'prefac':
-        # if flag == 'dipole':
 
         e = [ev, ec]
         n = 2
@@ -130,7 +127,7 @@ class ExampleThreeBand(NBandBandstructureDipoleSystem):
     def __init__(self, 
                 a = sp.Symbol('a', real=True), 
                 prefac_x = sp.Symbol('prefac_x'), 
-                prefac_y = sp.Symbol('prefac_y') ):
+                prefac_y = sp.Symbol('prefac_y') , flag = None):
 
         e = []
 
@@ -142,4 +139,4 @@ class ExampleThreeBand(NBandBandstructureDipoleSystem):
         e.append(e3)
         n = 3
 
-        super().__init__(e, prefac_x, prefac_y, n)
+        super().__init__(e, prefac_x, prefac_y, n, flag)

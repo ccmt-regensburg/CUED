@@ -2,7 +2,6 @@ import os
 import numpy as np
 from params import params
 
-import cued.dipole
 import cued.hamiltonian
 from cued.main import sbe_solver
 

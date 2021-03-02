@@ -12,7 +12,7 @@ from cued.utility import conditional_njit, evaluate_njit_matrix
 from cued.utility import parse_params, time_containers, system_properties, frequency_containers
 from cued.utility import write_and_compile_latex_PDF
 from cued.fields import make_electric_field
-from cued.dipole import diagonalize, dipole_elements
+from cued.dipole import diagonalize_path, dipole_elements_path
 from cued.observables import *
 from cued.rhs_ode import *
 
@@ -105,7 +105,7 @@ def sbe_solver(sys, params, electric_field_function=None):
             print('Solving SBE for Path', Nk2_idx+1)
 
         # Evaluate the dipole components along the path
-        calculate_system_in_path(path, Nk2_idx, P, S)
+        calculate_system_in_path(path, P, S)
 
         # Prepare calculations of observables
         current_exact_path, polarization_inter_path, current_intra_path =\
@@ -198,7 +198,7 @@ def make_rhs_ode(P, S, T):
     return rhs_ode, solver
 
 
-def calculate_system_in_path(path, Nk2_idx, P, S):
+def calculate_system_in_path(path, P, S):
     sys = S.sys
 
     # Retrieve the set of k-points for the current path
@@ -211,37 +211,17 @@ def calculate_system_in_path(path, Nk2_idx, P, S):
         # Calculate the dot products E_dir.d_nm(k).
         # To be multiplied by E-field magnitude later.
         else:
-            S.dipole_in_path = (S.E_dir[0]*S.dipole_x[:, Nk2_idx, :, :] +\
-                                S.E_dir[1]*S.dipole_y[:, Nk2_idx, :, :])
-            S.dipole_ortho = (S.E_ort[0]*S.dipole_x[:, Nk2_idx, :, :] +\
-                              S.E_ort[1]*S.dipole_y[:, Nk2_idx, :, :])
-            S.e_in_path = S.e[:, Nk2_idx, :]
-            S.wf_in_path = S.wf[:, Nk2_idx, :, :]   #not in E-dir!
+            S.dipole_path_x, S.dipole_path_y = dipole_elements_path(path, P, S)
+            S.e_in_path, S.wf_in_path = diagonalize_path(path, P, S)
 
     elif P.hamiltonian_evaluation == 'ana':
         if P.do_semicl:
             0
         else:
             # Calculate the dipole components along the path
-            di_00x = S.dipole.Axfjit[0][0](kx=kx_in_path, ky=ky_in_path)
-            di_01x = S.dipole.Axfjit[0][1](kx=kx_in_path, ky=ky_in_path)
-            di_11x = S.dipole.Axfjit[1][1](kx=kx_in_path, ky=ky_in_path)
-            di_00y = S.dipole.Ayfjit[0][0](kx=kx_in_path, ky=ky_in_path)
-            di_01y = S.dipole.Ayfjit[0][1](kx=kx_in_path, ky=ky_in_path)
-            di_11y = S.dipole.Ayfjit[1][1](kx=kx_in_path, ky=ky_in_path)
-
-            # Calculate the dot products E_dir.d_nm(k).
-            # To be multiplied by E-field magnitude later.
-            S.dipole_in_path[:, 0, 1] = S.E_dir[0]*di_01x + S.E_dir[1]*di_01y
-            S.dipole_in_path[:, 1, 0] = S.dipole_in_path[:, 0, 1].conjugate()
-            S.dipole_in_path[:, 0, 0] = S.E_dir[0]*di_00x + S.E_dir[1]*di_00y
-            S.dipole_in_path[:, 1, 1] = S.E_dir[0]*di_11x + S.E_dir[1]*di_11y
-
-            S.dipole_ortho[:, 0, 1] = S.E_ort[0]*di_01x + S.E_ort[1]*di_01y
-            S.dipole_ortho[:, 1, 0] = S.dipole_ortho[:, 0, 1].conjugate()
-            S.dipole_ortho[:, 0, 0] = S.E_ort[0]*di_00x + S.E_ort[1]*di_00y
-            S.dipole_ortho[:, 1, 1] = S.E_ort[0]*di_11x + S.E_ort[1]*di_11y
-
+            S.dipole_path_x = evaluate_njit_matrix(S.dipole.Axfjit, kx=kx_in_path, ky=ky_in_path)
+            S.dipole_path_y = evaluate_njit_matrix(S.dipole.Ayfjit, kx=kx_in_path, ky=ky_in_path)
+ 
         S.e_in_path[:, 0] = sys.efjit[0](kx=kx_in_path, ky=ky_in_path)
         S.e_in_path[:, 1] = sys.efjit[1](kx=kx_in_path, ky=ky_in_path)
 
@@ -254,16 +234,16 @@ def calculate_system_in_path(path, Nk2_idx, P, S):
     elif P.hamiltonian_evaluation == 'bandstructure':
         sys = S.sys
 
-        dipole_x = evaluate_njit_matrix(sys.dipole_xjit, kx=kx_in_path,
+        S.dipole_path_x = evaluate_njit_matrix(sys.dipole_xjit, kx=kx_in_path,
                                         ky=ky_in_path, dtype=P.type_complex_np)
-        dipole_y = evaluate_njit_matrix(sys.dipole_xjit, kx=kx_in_path,
+        S.dipole_path_y = evaluate_njit_matrix(sys.dipole_xjit, kx=kx_in_path,
                                         ky=ky_in_path, dtype=P.type_complex_np)
 
         for i in range(P.n):
             S.e_in_path[:, i] = sys.ejit[i](kx=kx_in_path, ky=ky_in_path)
 
-        S.dipole_in_path = S.E_dir[0]*dipole_x + S.E_dir[1]*dipole_y
-        S.dipole_ortho = S.E_ort[0]*dipole_x + S.E_ort[1]*dipole_y
+    S.dipole_in_path = S.E_dir[0]*S.dipole_path_x + S.E_dir[1]*S.dipole_path_y
+    S.dipole_ortho = S.E_ort[0]*S.dipole_path_x + S.E_ort[1]*S.dipole_path_y
 
 
 def prepare_current_calculations(path, Nk2_idx, S, P):
@@ -280,10 +260,10 @@ def prepare_current_calculations(path, Nk2_idx, S, P):
             current_intra_path = make_current_path(path, S, P)
 
     if P.hamiltonian_evaluation == 'num':
-        current_exact_path = make_current_exact_path_hderiv(Nk2_idx, S, P)
+        current_exact_path = make_current_exact_path_hderiv(path, S, P)
         if P.split_current:
             polarization_inter_path = make_polarization_inter_path(S, P)
-            current_intra_path = make_intraband_current_path(Nk2_idx, S, P)
+            current_intra_path = make_intraband_current_path(path, S, P)
 
     if P.hamiltonian_evaluation == 'bandstructure':
         current_exact_path = make_current_exact_bandstructure(path, S, P)
@@ -294,7 +274,7 @@ def prepare_current_calculations(path, Nk2_idx, S, P):
 
 
 def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, S):
-
+    
     is_first_Nk2_idx = (S.local_Nk2_idx_list[0] == Nk2_idx)
 
     if P.solver_method in ('bdf', 'adams'):

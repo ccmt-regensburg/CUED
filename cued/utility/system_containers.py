@@ -1,6 +1,5 @@
 import numpy as np
 import cued.dipole
-from cued.dipole import diagonalize, dipole_elements
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 from cued.utility import evaluate_njit_matrix
 from cued.utility import MpiHelpers
@@ -12,7 +11,7 @@ def system_properties(P, sys):
     S = System()
 
     S.sys = sys
-
+    
     S.Mpi = MpiHelpers()
     S.local_Nk2_idx_list = S.Mpi.get_local_idx(P.Nk2)
 
@@ -43,15 +42,14 @@ def system_properties(P, sys):
     if P.hamiltonian_evaluation == 'num':
         S.hnp = sys.hfjit
         P.n = np.size(evaluate_njit_matrix(S.hnp, kx=0, ky=0)[0, :, :], axis=0)
-        S.dipole_x, S.dipole_y = dipole_elements(P, S)
-        S.e, S.wf = diagonalize(P, S)
-        S.curvature = 0
-        S.dipole = 0
 
     if P.hamiltonian_evaluation == 'bandstructure':
         P.n = sys.n
 
     # Make in path containers
+    
+    S.dipole_path_x = np.zeros([P.Nk1, P.n, P.n], dtype = P.type_complex_np)
+    S.dipole_path_y = np.zeros([P.Nk1, P.n, P.n], dtype = P.type_complex_np)
 
     S.dipole_in_path = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
     S.dipole_ortho = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
