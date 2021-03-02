@@ -480,6 +480,14 @@ def calculate_fourier(S, T, P, W):
     W.I_E_dir, W.I_ortho, W.j_E_dir, W.j_ortho =\
         fourier_current_intensity(T.j_E_dir, T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq)
 
+    # always compute the Fourier transform with hann and parzen window for comparison; this is printed to the latex PDF
+    W.I_E_dir_hann, W.I_ortho_hann, W.j_E_dir_hann, W.j_ortho_hann =\
+        fourier_current_intensity(T.j_E_dir, T.j_ortho, hann(T.t), dt_out, prefac_emission, W.freq)
+
+    W.I_E_dir_parzen, W.I_ortho_parzen, W.j_E_dir_parzen, W.j_ortho_parzen =\
+        fourier_current_intensity(T.j_E_dir, T.j_ortho, parzen(T.t), dt_out, prefac_emission, W.freq)
+
+
     if P.split_current:
         # Approximate current and emission intensity
         W.I_intra_plus_dtP_E_dir, W.I_intra_plus_dtP_ortho, W.j_intra_plus_dtP_E_dir, W.j_intra_plus_dtP_ortho =\
@@ -584,7 +592,7 @@ def write_current_emission(S, T, P, W):
     np.savetxt('frequency_data.dat', freq_output, header=freq_header, delimiter='   ', fmt="%+.18e")
 
     if P.save_latex_pdf:
-        write_and_compile_latex_PDF(T, P, S, W.freq, T.j_E_dir, T.j_ortho, W.I_E_dir, W.I_ortho)
+        write_and_compile_latex_PDF(T, W, P, S)
 
 
 def fourier_current_intensity(I_E_dir, I_ortho, window_function, dt_out, prefac_emission, freq):

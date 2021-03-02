@@ -7,11 +7,14 @@ import tikzplotlib
 from cued.utility import ConversionFactors as co
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 
-def write_and_compile_latex_PDF(T, P, S, freq, I_exact_E_dir, I_exact_ortho, Int_exact_E_dir, Int_exact_ortho):
+def write_and_compile_latex_PDF(T, W, P, S):
         t_fs = T.t*co.au_to_fs
         num_points_max_for_plotting = 1000
         t_idx = get_time_indices_for_plotting(T.E_field, t_fs, num_points_max_for_plotting, factor_t_end=1.0)
-        f_idx = get_freq_indices_for_plotting(freq/P.f, num_points_max_for_plotting, freq_max=30)
+        f_idx = get_freq_indices_for_plotting(W.freq/P.f, num_points_max_for_plotting, freq_max=30)
+
+        t_idx_whole = get_indices_for_plotting_whole(t_fs, num_points_max_for_plotting, start=0)
+        f_idx_whole = get_indices_for_plotting_whole(W.freq, num_points_max_for_plotting, start=f_idx[0])
 
         latex_dir = "latex_pdf_files"
 
@@ -26,23 +29,35 @@ def write_and_compile_latex_PDF(T, P, S, freq, I_exact_E_dir, I_exact_ortho, Int
         shutil.copy(code_path+"/CUED_summary.tex", ".")
         shutil.copy(code_path+"/logo.pdf", ".")
 
-        write_parameter(P, S.run_time)
+        write_parameter(P, S)
 
         tikz_time(T.E_field*co.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield")
         tikz_time(T.A_field*co.au_to_MVpcm*co.au_to_fs, t_fs, t_idx, r"A-field $A(t)$ in MV*fs/cm", "Afield")
 
         BZ_plot(S.paths, P, T.A_field, S)
 
-        tikz_time(I_exact_E_dir, t_fs, t_idx, \
+        tikz_time(T.j_E_dir, t_fs, t_idx, \
                   r'Current $j_{\parallel}(t)$ parallel to $\bE$ in atomic units', "j_E_dir")
-        tikz_time(I_exact_ortho, t_fs, t_idx, \
+        tikz_time(T.j_E_dir, t_fs, t_idx_whole, \
+                  r'Current $j_{\parallel}(t)$ parallel to $\bE$ in atomic units', "j_E_dir_whole_time")
+        tikz_time(T.j_ortho, t_fs, t_idx, \
                   r'Current $j_{\bot}(t)$ orthogonal to $\bE$ in atomic units', "j_ortho")
-        tikz_freq(Int_exact_E_dir, Int_exact_ortho, freq/P.f, f_idx, \
-                  r'Emission intensity in atomic units', "Emission_total", two_func=True, \
+        tikz_time(T.j_ortho, t_fs, t_idx_whole, \
+                  r'Current $j_{\bot}(t)$ orthogonal to $\bE$ in atomic units', "j_ortho_whole_time")
+        tikz_freq(W.I_E_dir, W.I_ortho, W.freq/P.f, f_idx_whole, \
+                  r'Emission intensity in atomic units', "Emission_para_ortho_full_range", two_func=True, \
                   label_1="$\;I_{\parallel}(\omega)$", label_2="$\;I_{\\bot}(\omega)$")
-        tikz_freq(Int_exact_E_dir+Int_exact_ortho, None, freq/P.f, f_idx, \
-                  r'Emission intensity in atomic units', "Emission_para_ortho", two_func=False, \
+        tikz_freq(W.I_E_dir, W.I_ortho, W.freq/P.f, f_idx, \
+                  r'Emission intensity in atomic units', "Emission_para_ortho", two_func=True, \
+                  label_1="$\;I_{\parallel}(\omega)$", label_2="$\;I_{\\bot}(\omega)$")
+        tikz_freq(W.I_E_dir+W.I_ortho, None, W.freq/P.f, f_idx, \
+                  r'Emission intensity in atomic units', "Emission_total", two_func=False, \
                   label_1="$\;I(\omega) = I_{\parallel}(\omega) + I_{\\bot}(\omega)$")
+        tikz_freq(W.I_E_dir_hann+W.I_ortho_hann, W.I_E_dir_parzen+W.I_ortho_parzen, W.freq/P.f, f_idx, \
+                  r'Emission intensity in atomic units', "Emission_total_hann_parzen", two_func=True, \
+                  label_1="$\;I(\omega)$ with $\\bj(\omega)$ computed using the Hann window", \
+                  label_2="$\;I(\omega)$ with $\\bj(\omega)$ computed using the Parzen window", dashed=True)
+
         replace("semithick", "thick", "*")
 
         os.system("pdflatex CUED_summary.tex")
@@ -52,7 +67,7 @@ def write_and_compile_latex_PDF(T, P, S, freq, I_exact_E_dir, I_exact_ortho, Int
         os.chdir("..")
 
 
-def write_parameter(P, run_time):
+def write_parameter(P, S):
 
     if P.BZ_type == 'rectangle':
         if P.angle_inc_E_field == 0:
@@ -88,7 +103,8 @@ def write_parameter(P, run_time):
     replace("PH-NK1", str(P.Nk1))
     replace("PH-NK2", str(P.Nk2))
     replace("PH-T2", str(P.T2_fs))
-    replace("PH-RUN", '{:.1f}'.format(run_time))
+    replace("PH-RUN", '{:.1f}'.format(S.run_time))
+    replace("PH-MPIRANKS", str(S.Mpi.size))
 
 
 def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
@@ -111,17 +127,22 @@ def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
                      axis_width ='\\figurewidth' )
 
 
-def tikz_freq(func_of_f_1, func_of_f_2, freq_normalized, f_idx, ylabel, filename, two_func, \
-              label_1=None, label_2=None):
+def tikz_freq(func_1, func_2, freq_div_f0, f_idx, ylabel, filename, two_func, \
+              label_1=None, label_2=None, dashed=False):
 
     xlabel = r'Harmonic order = (frequency $f$)/(pulse frequency $f_0$)'
 
     _fig, (ax1) = plt.subplots(1)
-    _lines_exact_E_dir = ax1.semilogy(freq_normalized[f_idx], func_of_f_1[f_idx], marker='', label=label_1)
+    _lines_exact_E_dir = ax1.semilogy(freq_div_f0[f_idx], func_1[f_idx], marker='', label=label_1)
     if two_func:
-       _lines_exact_E_dir = ax1.semilogy(freq_normalized[f_idx], func_of_f_2[f_idx], marker='', label=label_2)
+      if dashed:
+       _lines_exact_E_dir = ax1.semilogy(freq_div_f0[f_idx], func_2[f_idx], marker='', label=label_2, \
+               linestyle='--')
+      else:
+       _lines_exact_E_dir = ax1.semilogy(freq_div_f0[f_idx], func_2[f_idx], marker='', label=label_2)
+      
 
-    f_lims = (freq_normalized[f_idx[0]], freq_normalized[f_idx[-1]])
+    f_lims = (freq_div_f0[f_idx[0]], freq_div_f0[f_idx[-1]])
     
     ax1.grid(True, axis='both', ls='--')
     ax1.set_xlim(f_lims)
@@ -177,14 +198,24 @@ def get_time_indices_for_plotting(E_field, time_fs, num_t_points_max, factor_t_e
     return t_idx
 
 
-def get_freq_indices_for_plotting(freq_normalized, num_points_max_for_plotting, freq_max):
+def get_indices_for_plotting_whole(data, num_points_for_plotting, start):
 
-    for i_counter, f_i in enumerate(freq_normalized):
+    n_data_points = data.size
+    step = n_data_points//num_points_for_plotting
+
+    idx = range(start, n_data_points-1, step)
+
+    return idx
+
+
+def get_freq_indices_for_plotting(freq_div_f0, num_points_max_for_plotting, freq_max):
+
+    for i_counter, f_i in enumerate(freq_div_f0):
         if f_i.real > -1.0E-8: 
             index_f_plot_start = i_counter
             break
 
-    for i_counter, f_i in enumerate(freq_normalized):
+    for i_counter, f_i in enumerate(freq_div_f0):
         if f_i.real > freq_max:
             index_f_plot_end = i_counter
             break
