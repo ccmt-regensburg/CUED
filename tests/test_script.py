@@ -44,7 +44,7 @@ def check_test(testdir):
 
     os.chdir(testdir)
 
-    os.system('python3 runscript.py')
+    os.system('mpirun -np 2 python3 runscript.py')
 
     # Reading in generated data
     time_data, freq_data, _dens_data = read_dataset(os.getcwd())

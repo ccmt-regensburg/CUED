@@ -1,6 +1,6 @@
 import numpy as np
 from mpi4py import MPI
-
+import sys
 
 class MpiHelpers:
     '''
@@ -13,6 +13,9 @@ class MpiHelpers:
         self.rank = self.comm.Get_rank()
 
     def get_local_idx(self, idxmax):
+        # Check whether there are more ranks than indices to partition
+        if self.size > idxmax: 
+            sys.exit("The number of MPI ranks has to be smaller equal "+str(idxmax)+".")
         # Important mpi.INT == np.int32
         global_idx_list, local_idx_list, ptuple, displace = self.listchop(np.arange(idxmax, dtype=np.int32))
         self.comm.Scatterv([global_idx_list, ptuple, displace, self.mpi.INT], local_idx_list)

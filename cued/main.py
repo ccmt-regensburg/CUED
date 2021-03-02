@@ -110,10 +110,6 @@ def sbe_solver(sys, params, electric_field_function=None):
         if P.user_out:
             print('Solving SBE for Path', Nk2_idx+1)
 
-        # parallelization if requested in runscript
-        if P.Nk2_idx_ext != Nk2_idx and P.Nk2_idx_ext >= 0:
-            continue
-
         # Evaluate the dipole components along the path
         calculate_system_in_path(path, Nk2_idx, P, S)
 
@@ -143,7 +139,7 @@ def sbe_solver(sys, params, electric_field_function=None):
             if (ti % (P.Nt//20) == 0 and P.user_out):
                 print('{:5.2f}%'.format((ti/P.Nt)*100))
 
-            calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P)
+            calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, local_Nk2_idx_list)
 
             # Calculate the currents at the timestep ti
             calculate_currents(ti, current_exact_path, polarization_inter_path, current_intra_path, T, P)
@@ -170,7 +166,7 @@ def sbe_solver(sys, params, electric_field_function=None):
     # calculate and write solutions
     update_currents_with_kweight(S, T, P)
     calculate_fourier(S, T, P, W)
-    write_current_emission(S, T, P, W, Mpi)
+    write_current_emission_mpi(S, T, P, W, Mpi)
 
     # Save the parameters of the calculation
     params_name = 'params.txt'
@@ -303,14 +299,16 @@ def prepare_current_calculations(path, Nk2_idx, S, P):
     return current_exact_path, polarization_inter_path, current_intra_path
 
 
-def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P):
+def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, local_Nk2_idx_list):
+
+    is_first_Nk2_idx = (local_Nk2_idx_list[0] == Nk2_idx)
 
     if P.solver_method in ('bdf', 'adams'):
         # Do not append the last element (A_field)
         T.solution = solver.y[:-1].reshape(P.Nk1, P.n, P.n)
 
         # Construct time array only once
-        if Nk2_idx == 0 or P.Nk2_idx_ext > 0:
+        if is_first_Nk2_idx:
             # Construct time and A_field only in first round
             T.t[ti] = solver.t
             T.A_field[ti] = solver.y[-1].real
@@ -321,7 +319,7 @@ def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P):
         T.solution = T.solution_y_vec[:-1].reshape(P.Nk1, P.n, P.n)
 
         # Construct time array only once
-        if Nk2_idx == 0 or P.Nk2_idx_ext > 0:
+        if is_first_Nk2_idx:
             # Construct time and A_field only in first round
             T.t[ti] = ti*P.dt + P.t0
             T.A_field[ti] = T.solution_y_vec[-1].real
@@ -526,7 +524,16 @@ def calculate_fourier(S, T, P, W):
             fourier_current_intensity(T.j_anom_ortho, T.j_intra_plus_anom_ortho, T.window_function, dt_out, prefac_emission, W.freq)
 
 
-def write_current_emission(S, T, P, W, Mpi):
+def write_current_emission_mpi(S, T, P, W, Mpi):
+
+    mpi_rank = Mpi.rank
+
+    # only save data from a single MPI rank
+    if mpi_rank == 0:
+        write_current_emission(S, T, P, W)
+
+
+def write_current_emission(S, T, P, W):
 
     ##################################################
     # Time data save

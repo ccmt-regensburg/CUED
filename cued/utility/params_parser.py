@@ -155,10 +155,6 @@ def parse_params(user_params):
     else:
         sys.exit("BZ_type needs to be either hexagon or rectangle.")
 
-    P.Nk2_idx_ext = -1
-    if hasattr(UP, 'Nk2_idx_ext'):        # For parallelization: only do calculation
-        P.Nk2_idx_ext = UP.Nk2_idx_ext    # for path Nk2_idx_ext (in total Nk2 paths)
-
     P.save_latex_pdf = False              # Save data as human readable PDF file
     if hasattr(UP, 'save_latex_pdf'):
         P.save_latex_pdf = UP.save_latex_pdf
