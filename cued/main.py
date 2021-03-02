@@ -11,7 +11,6 @@ from cued.utility import ConversionFactors as co
 from cued.utility import conditional_njit, evaluate_njit_matrix
 from cued.utility import parse_params, time_containers, system_properties, frequency_containers
 from cued.utility import write_and_compile_latex_PDF
-from cued.utility import MpiHelpers
 from cued.fields import make_electric_field
 from cued.dipole import diagonalize, dipole_elements
 from cued.observables import *
@@ -99,12 +98,7 @@ def sbe_solver(sys, params, electric_field_function=None):
     # SOLVING
     ###########################################################################
     # Iterate through each path in the Brillouin zone
-
-    # Initalize MPI and fill local_Nk2_idx_list with per processor indices
-    Mpi = MpiHelpers()
-    local_Nk2_idx_list = Mpi.get_local_idx(P.Nk2)
-
-    for Nk2_idx in local_Nk2_idx_list:
+    for Nk2_idx in S.local_Nk2_idx_list:
         path = S.paths[Nk2_idx]
 
         if P.user_out:
@@ -139,7 +133,7 @@ def sbe_solver(sys, params, electric_field_function=None):
             if (ti % (P.Nt//20) == 0 and P.user_out):
                 print('{:5.2f}%'.format((ti/P.Nt)*100))
 
-            calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, local_Nk2_idx_list)
+            calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, S)
 
             # Calculate the currents at the timestep ti
             calculate_currents(ti, current_exact_path, polarization_inter_path, current_intra_path, T, P)
@@ -157,7 +151,7 @@ def sbe_solver(sys, params, electric_field_function=None):
             ti += 1
 
     # in case of MPI-parallel execution: mpi sum
-    mpi_sum_currents(T, P, Mpi)
+    mpi_sum_currents(T, P, S)
 
     # End time of solver loop
     end_time = time.perf_counter()
@@ -166,7 +160,7 @@ def sbe_solver(sys, params, electric_field_function=None):
     # calculate and write solutions
     update_currents_with_kweight(S, T, P)
     calculate_fourier(S, T, P, W)
-    write_current_emission_mpi(S, T, P, W, Mpi)
+    write_current_emission_mpi(S, T, P, W)
 
     # Save the parameters of the calculation
     params_name = 'params.txt'
@@ -299,9 +293,9 @@ def prepare_current_calculations(path, Nk2_idx, S, P):
     return current_exact_path, polarization_inter_path, current_intra_path
 
 
-def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, local_Nk2_idx_list):
+def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, S):
 
-    is_first_Nk2_idx = (local_Nk2_idx_list[0] == Nk2_idx)
+    is_first_Nk2_idx = (S.local_Nk2_idx_list[0] == Nk2_idx)
 
     if P.solver_method in ('bdf', 'adams'):
         # Do not append the last element (A_field)
@@ -449,16 +443,16 @@ def parzen(t):
 
     return parzen
 
-def mpi_sum_currents(T, P, Mpi):
+def mpi_sum_currents(T, P, S):
 
-    T.j_E_dir       = Mpi.sync_and_sum(T.j_E_dir)
-    T.j_ortho       = Mpi.sync_and_sum(T.j_ortho)
+    T.j_E_dir       = S.Mpi.sync_and_sum(T.j_E_dir)
+    T.j_ortho       = S.Mpi.sync_and_sum(T.j_ortho)
     if P.split_current:
-        T.j_intra_E_dir = Mpi.sync_and_sum(T.j_intra_E_dir)
-        T.j_intra_ortho = Mpi.sync_and_sum(T.j_intra_ortho)
-        T.P_E_dir       = Mpi.sync_and_sum(T.P_E_dir)
-        T.P_ortho       = Mpi.sync_and_sum(T.P_ortho)
-        T.j_anom_ortho  = Mpi.sync_and_sum(T.j_anom_ortho)
+        T.j_intra_E_dir = S.Mpi.sync_and_sum(T.j_intra_E_dir)
+        T.j_intra_ortho = S.Mpi.sync_and_sum(T.j_intra_ortho)
+        T.P_E_dir       = S.Mpi.sync_and_sum(T.P_E_dir)
+        T.P_ortho       = S.Mpi.sync_and_sum(T.P_ortho)
+        T.j_anom_ortho  = S.Mpi.sync_and_sum(T.j_anom_ortho)
 
 def update_currents_with_kweight(S, T, P):
 
@@ -524,12 +518,10 @@ def calculate_fourier(S, T, P, W):
             fourier_current_intensity(T.j_anom_ortho, T.j_intra_plus_anom_ortho, T.window_function, dt_out, prefac_emission, W.freq)
 
 
-def write_current_emission_mpi(S, T, P, W, Mpi):
-
-    mpi_rank = Mpi.rank
+def write_current_emission_mpi(S, T, P, W):
 
     # only save data from a single MPI rank
-    if mpi_rank == 0:
+    if S.Mpi.rank == 0:
         write_current_emission(S, T, P, W)
 
 

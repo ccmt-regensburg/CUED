@@ -3,7 +3,7 @@ import cued.dipole
 from cued.dipole import diagonalize, dipole_elements
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 from cued.utility import evaluate_njit_matrix
-
+from cued.utility import MpiHelpers
 
 def system_properties(P, sys):
     class System():
@@ -12,6 +12,9 @@ def system_properties(P, sys):
     S = System()
 
     S.sys = sys
+
+    S.Mpi = MpiHelpers()
+    S.local_Nk2_idx_list = S.Mpi.get_local_idx(P.Nk2)
 
     # Form Brillouin Zone
 
