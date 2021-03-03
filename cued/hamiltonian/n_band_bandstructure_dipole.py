@@ -115,7 +115,6 @@ class DiracBandstructure(NBandBandstructureDipoleSystem):
         ev = - vF * sp.sqrt( self.kx**2 + self.ky**2 )
         ec =   vF * sp.sqrt( self.kx**2 + self.ky**2 )
 
-
         e = [ev, ec]
         n = 2
 
