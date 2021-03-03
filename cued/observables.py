@@ -479,7 +479,7 @@ def make_emission_exact_path_length(path, S, P):
     return emission_exact_path_length
 
 ##########################################################################################
-### Observables from new class
+### Observables from given bandstructures
 ##########################################################################################
 def make_current_exact_bandstructure(path, S, P):
     
@@ -588,30 +588,28 @@ def make_polarization_inter_bandstructure(S, P):
 ### Observables for the n-band code
 ##########################################################################################
 
+# mel_x = evaluate_njit_matrix(sys.melxjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
+
+
 def make_current_exact_path_hderiv(path, S, P):
 
     """
         Function that calculates the exact current via eq. (79)
     """
-    hamiltonian = S.hnp
+    sys = S.sys
     wf = S.wf_in_path
     E_dir = S.E_dir
     E_ort = S.E_ort
 
     Nk1 = P.Nk1
     n = P.n
-    epsilon = P.epsilon
     type_complex_np = P.type_complex_np
 
     kx = path[:, 0]
     ky = path[:, 1]
-    hgridplusx = evaluate_njit_matrix(hamiltonian, kx=kx+epsilon, ky=ky, dtype=type_complex_np)
-    hgridminusx = evaluate_njit_matrix(hamiltonian, kx=kx-epsilon, ky=ky, dtype=type_complex_np)
-    hgridplusy = evaluate_njit_matrix(hamiltonian, kx=kx, ky=ky+epsilon, dtype=type_complex_np)
-    hgridminusy = evaluate_njit_matrix(hamiltonian, kx=kx, ky=ky-epsilon, dtype=type_complex_np)
 
-    dhdkx = (hgridplusx - hgridminusx)/(2*epsilon)
-    dhdky = (hgridplusy - hgridminusy)/(2*epsilon)
+    dhdkx = evaluate_njit_matrix(sys.hderivfjit[0], kx=kx, ky=ky, dtype=type_complex_np)
+    dhdky = evaluate_njit_matrix(sys.hderivfjit[1], kx=kx, ky=ky, dtype=type_complex_np)
 
     matrix_element_x = np.empty([Nk1, n, n], dtype=type_complex_np)
     matrix_element_y = np.empty([Nk1, n, n], dtype=type_complex_np)
@@ -681,7 +679,6 @@ def make_intraband_current_path(path, S, P):
 
     Nk1 = P.Nk1
     n = P.n
-    gidx = P.gidx
     epsilon = P.epsilon
     type_complex_np = P.type_complex_np
     save_anom = P.save_anom

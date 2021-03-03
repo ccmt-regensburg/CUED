@@ -13,9 +13,14 @@ class NBandHamiltonianSystem():
     
         self.h = h
         self.hsymbols = self.h.free_symbols
+        self.hderiv = self.__hamiltonian_derivatives()
 
         self.hfjit = matrix_to_njit_functions(self.h, self.hsymbols)
-
+        self.hderivfjit = [matrix_to_njit_functions(hd, self.hsymbols)
+                           for hd in self.hderiv]
+                           
+    def __hamiltonian_derivatives(self):
+        return [sp.diff(self.h, self.kx), sp.diff(self.h, self.ky)]
 
 class BiTe3(NBandHamiltonianSystem):
     '''
