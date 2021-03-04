@@ -15,4 +15,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Test with test script
-      run:  python3 tests/test_script.py
+      run:  
+        export PYTHONPATH=$(pwd)
+        python3 tests/test_script.py
