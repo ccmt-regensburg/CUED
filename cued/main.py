@@ -221,7 +221,7 @@ def calculate_system_in_path(path, P, S):
             # Calculate the dipole components along the path
             S.dipole_path_x = evaluate_njit_matrix(S.dipole.Axfjit, kx=kx_in_path, ky=ky_in_path)
             S.dipole_path_y = evaluate_njit_matrix(S.dipole.Ayfjit, kx=kx_in_path, ky=ky_in_path)
- 
+
         S.e_in_path[:, 0] = sys.efjit[0](kx=kx_in_path, ky=ky_in_path)
         S.e_in_path[:, 1] = sys.efjit[1](kx=kx_in_path, ky=ky_in_path)
 
@@ -274,7 +274,7 @@ def prepare_current_calculations(path, Nk2_idx, S, P):
 
 
 def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, S):
-    
+
     is_first_Nk2_idx = (S.local_Nk2_idx_list[0] == Nk2_idx)
 
     if P.solver_method in ('bdf', 'adams'):
@@ -389,14 +389,12 @@ def ifourier(dt, data):
     return (np.sqrt(2*np.pi)/dt)*fftshift(ifft(ifftshift(data)))
 
 
-def gaussian(t, alpha):
+def gaussian(t, sigma):
     '''
     Window function to multiply a Function f(t) before Fourier transform
     to ensure no step in time between t_final and t_final + delta
     '''
-    # sigma = sqrt(2)*alpha
-    # # 1/(2*np.sqrt(np.pi)*alpha)*np.exp(-t**2/(2*alpha)**2)
-    return np.exp(-t**2/(2*alpha)**2)
+    return np.exp(-t**2/(2*sigma**2))
 
 def hann(t):
     '''
@@ -647,8 +645,8 @@ def print_user_info(P, B0=None, mu=None, incident_angle=None):
           + '{:.6f}'.format(P.f_THz) + ")"
           + "[" + '{:.6f}'.format(P.f) + "]")
     print("Pulse Width (fs)[a.u.]          = " + "("
-          + '{:.6f}'.format(P.alpha_fs) + ")"
-          + "[" + '{:.6f}'.format(P.alpha) + "]")
+          + '{:.6f}'.format(P.sigma_fs) + ")"
+          + "[" + '{:.6f}'.format(P.sigma) + "]")
     print("Chirp rate (THz)[a.u.]          = " + "("
           + '{:.6f}'.format(P.chirp_THz) + ")"
           + "[" + '{:.6f}'.format(P.chirp) + "]")
@@ -661,4 +659,3 @@ def print_user_info(P, B0=None, mu=None, incident_angle=None):
     print("Time step (fs)[a.u.]            = " + "("
           + '{:.6f}'.format(P.dt_fs) + ")"
           + "[" + '{:.6f}'.format(P.dt) + "]")
-

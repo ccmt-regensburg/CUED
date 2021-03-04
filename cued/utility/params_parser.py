@@ -92,8 +92,8 @@ def parse_params(user_params):
     P.f_THz = UP.f
     P.chirp = UP.chirp*co.THz_to_au              # Pulse chirp frequency
     P.chirp_THz = UP.chirp
-    P.alpha = UP.alpha*co.fs_to_au               # Gaussian pulse width
-    P.alpha_fs = UP.alpha
+    P.sigma = UP.sigma*co.fs_to_au               # Gaussian pulse width
+    P.sigma_fs = UP.sigma
     P.phase = UP.phase                           # Carrier-envelope phase
 
     # Time scales
@@ -131,7 +131,7 @@ def parse_params(user_params):
     if hasattr(UP, 'fourier_window_function'):
         P.fourier_window_function = UP.fourier_window_function
 
-    P.gaussian_window_width = P.alpha
+    P.gaussian_window_width = P.sigma
     if hasattr(UP, 'gaussian_window_width'):
         P.gaussian_window_width = UP.gaussian_window_width
 
@@ -161,6 +161,6 @@ def parse_params(user_params):
 
     # Filename tail
     P.tail = 'E_{:.4f}_w_{:.1f}_a_{:.1f}_{}_t0_{:.1f}_dt_{:.6f}_NK1-{}_NK2-{}_T1_{:.1f}_T2_{:.1f}_chirp_{:.3f}_ph_{:.2f}_solver_{:s}_dk_order{}'\
-        .format(P.E0_MVpcm, P.f_THz, P.alpha_fs, P.gauge, P.t0_fs, P.dt_fs, P.Nk1, P.Nk2, P.T1_fs, P.T2_fs, P.chirp_THz, P.phase, P.solver_method, P.dk_order)
+        .format(P.E0_MVpcm, P.f_THz, P.sigma_fs, P.gauge, P.t0_fs, P.dt_fs, P.Nk1, P.Nk2, P.T1_fs, P.T2_fs, P.chirp_THz, P.phase, P.solver_method, P.dk_order)
 
     return P

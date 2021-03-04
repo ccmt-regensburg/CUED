@@ -26,7 +26,7 @@ class params:
     E0                  = 3.00        # Pulse amplitude (MV/cm)
     f                   = 25.0        # Pulse frequency (THz)
     chirp               = 0.00        # Pulse chirp ratio (chirp = c/w) (THz)
-    alpha               = 25.0        # Gaussian pulse width (femtoseconds)
+    sigma               = np.sqrt(2)*25.0        # Gaussian pulse width (femtoseconds)
     phase               = 0.0
 
     # Time scales (all units in femtoseconds)
@@ -45,4 +45,3 @@ class params:
     user_out                = False
     split_current           = False
     save_text               = True
-

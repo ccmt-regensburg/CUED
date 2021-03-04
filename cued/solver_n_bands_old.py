@@ -110,7 +110,7 @@ def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=N
 
     fnumba = make_fnumba(P.n, E_dir, P.gamma1, P.gamma2, electric_field, P.dk_order, P.type_complex_np)
 
-    if P.solver_method in ('bdf', 'adams'):    
+    if P.solver_method in ('bdf', 'adams'):
         solver = ode(fnumba, jac=None)\
             .set_integrator('zvode', method=P.solver_method, max_step=P.dt)
 
@@ -119,15 +119,15 @@ def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=N
 
     dipole_in_path = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
     dipole_ortho = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
-    e_in_path = np.zeros([P.Nk1, P.n], dtype=P.type_real_np)  
+    e_in_path = np.zeros([P.Nk1, P.n], dtype=P.type_real_np)
 
-    hnp = sys.numpy_hamiltonian()  
+    hnp = sys.numpy_hamiltonian()
 
     if P.dipole_numerics:
     # Calculate the dipole elements on the full k-mesh
-        if P.user_out: 
+        if P.user_out:
             print("Calculating dipoles...")
-              
+
         dipole_x, dipole_y = dipole_elements(P, hnp, paths)
         e, wf = diagonalize(P, hnp, paths)
 
@@ -149,11 +149,11 @@ def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=N
         kx_in_path = path[:, 0]
         ky_in_path = path[:, 1]
 
-        if P.dipole_numerics:    
+        if P.dipole_numerics:
         # Evaluate the dipole components along the path
 
             # Calculate the dot products E_dir.d_nm(k).
-            # To be multiplied by E-field magnitude later.            
+            # To be multiplied by E-field magnitude later.
             dipole_in_path = (E_dir[0]*dipole_x[:, Nk2_idx, :, :] + \
                 E_dir[1]*dipole_y[:, Nk2_idx, :, :])
             dipole_ortho = (E_ort[0]*dipole_x[:, Nk2_idx, :, :] + \
@@ -247,7 +247,7 @@ def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=N
                     t[ti] = ti*P.dt + P.t0
                     A_field[ti] = solution_y_vec[-1].real
                     E_field[ti] = electric_field(t[ti])
-       
+
             # Only write full density matrix solution if save_full is True
             if P.save_full:
                 solution_full[:, Nk2_idx, ti, :, :] = solution
@@ -304,13 +304,13 @@ def sbe_solver_n_bands(sys, dipole, params, curvature, electric_field_function=N
 def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, dk_order, type_complex_np):
     """
         Initialization of the solver for the SBE ( eq. (39/40(80) in https://arxiv.org/abs/2008.03177)
-        
+
         Author: Adrian Seith (adrian.seith@ur.de)
         Additional Contact: Jan Wilhelm (jan.wilhelm@ur.de)
 
         Parameters:
-        ----------- 
-            n : integer 
+        -----------
+            n : integer
                 Number of bands of the system
             E_dir : np.ndarray
                 x and y component of the direction of the electric field
@@ -322,7 +322,7 @@ def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, dk_order, type_complex
                 returns the instantaneous driving field
             gauge : str
                 length or velocity gauge (only v. implemented)
-        
+
         Returns:
         --------
             freturn : function that is the right hand side of the ode
@@ -338,7 +338,7 @@ def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, dk_order, type_complex
         x = np.zeros(np.shape(y), dtype=type_complex_np)
         # Gradient term coefficient
         electric_f = electric_field(t)
-        
+
         D = electric_f/dk
 
         Nk_path = kpath.shape[0]
@@ -354,17 +354,17 @@ def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, dk_order, type_complex
             if k == 0:
                 left   = (Nk_path-1)
                 left2  = (Nk_path-2)
-                left3  = (Nk_path-3)           
-                left4  = (Nk_path-4)           
+                left3  = (Nk_path-3)
+                left4  = (Nk_path-4)
             elif k == 1 and dk_order >= 4:
                 left2  = (Nk_path-1)
-                left3  = (Nk_path-2)            
-                left4  = (Nk_path-3)          
+                left3  = (Nk_path-2)
+                left4  = (Nk_path-3)
             elif k == 2 and dk_order >= 6:
-                left3  = (Nk_path-1)          
-                left4  = (Nk_path-2) 
+                left3  = (Nk_path-1)
+                left4  = (Nk_path-2)
             elif k == 3 and dk_order >= 8:
-                left4  = (Nk_path-1) 
+                left4  = (Nk_path-1)
             elif k == Nk_path-1:
                 right4 = 3
                 right3 = 2
@@ -380,13 +380,13 @@ def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, dk_order, type_complex
             elif k == Nk_path-4 and dk_order >= 8:
                 right4 = 0
 
-            wr = dipole_in_path[k, :, :]*electric_f        
+            wr = dipole_in_path[k, :, :]*electric_f
 
             for i in range(n):
                 for j in range(n):
                     if i != j:
                         x[k*(n**2) + i*n + j] += -1j * ( e_in_path[k, i] - e_in_path[k, j] ) * y[k*(n**2) + i*n + j]
-                    
+
                     if dk_order ==2:
                         x[k*(n**2) + i*n + j] += D * (  y[right*(n**2) + i*n + j]/2 - y[left*(n**2) + i*n + j]/2 )
                     elif dk_order ==4:
@@ -403,7 +403,7 @@ def make_fnumba(n, E_dir, gamma1, gamma2, electric_field, dk_order, type_complex
 
                     if i == j:
                         x[k*(n**2) + i*n + j] += - gamma1 * (y[k*(n**2) + i*n + j] - y0[k*(n**2) + i*n + j])
-                    else: 
+                    else:
                         x[k*(n**2) + i*n + j] += - gamma2 * y[k*(n**2) + i*n + j]
                     for nbar in range(n):
                         if i == j:
