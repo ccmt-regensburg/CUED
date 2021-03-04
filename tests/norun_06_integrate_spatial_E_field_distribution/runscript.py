@@ -71,14 +71,14 @@ def run(system):
     t = time_data['t']
     dt = params.dt*co.fs_to_au
     f = params.f*co.THz_to_au
-    alpha = params.alpha*co.fs_to_au
+    sigma = params.sigma*co.fs_to_au
 
     prefac_emission = 1/(3*(137.036**3))
     freq = fftshift(fftfreq(t.size, d=dt))
 
     Int_exact_E_dir, Int_exact_ortho, Iw_exact_E_dir, Iw_exact_ortho = fourier_current_intensity(
             current_time_E_dir_integrated, current_time_ortho_integrated,
-            gaussian(t, alpha), dt, prefac_emission, freq)
+            gaussian(t, sigma), dt, prefac_emission, freq)
 
     np.save('Iexact_integrated_over_E_fields', [t,
                            current_time_E_dir_integrated, current_time_ortho_integrated,

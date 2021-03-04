@@ -17,28 +17,28 @@ class params:
     BZ_type = 'hexagon'
 
     # hexagonal BZ parameters
-    Nk1                 = 42         # Number of kpoints in each of the paths
-    Nk2                 = 12         # Number of paths
+    Nk1                 = 42                    # Number of kpoints in each of the paths
+    Nk2                 = 12                    # Number of paths
 
     # Driving field parameters
     ##########################################################################
     align               = 'M'
-    E0                  = 3.00        # Pulse amplitude (MV/cm)
-    f                   = 25.0        # Pulse frequency (THz)
-    chirp               = 0.00        # Pulse chirp ratio (chirp = c/w) (THz)
-    alpha               = 25.0        # Gaussian pulse width (femtoseconds)
+    E0                  = 3.00                   # Pulse amplitude (MV/cm)
+    f                   = 25.0                   # Pulse frequency (THz)
+    chirp               = 0.00                   # Pulse chirp ratio (chirp = c/w) (THz)
+    sigma               = np.sqrt(2)*25.0        # Gaussian pulse width (femtoseconds)
     phase               = 0.0
 
     # Time scales (all units in femtoseconds)
     ##########################################################################
-    T1    = 1000     # Phenomenological diagonal damping time
-    T2    = 1        # Phenomenological polarization damping time
-    t0    = -400     # Start time *pulse centered @ t=0, use t0 << 0
-    dt    = 0.1      # Time step
+    T1                  = 1000                   # Phenomenological diagonal damping time
+    T2                  = 1                      # Phenomenological polarization damping time
+    t0                  = -400                   # Start time *pulse centered @ t=0, use t0 << 0
+    dt                  = 0.1                    # Time step
 
     # Flags for testing and features
     ##########################################################################
-    gauge                   = 'length'   # Gauge of the system
+    gauge                   = 'length'           # Gauge of the system
     hamiltonian_evaluation  = 'ana'
     solver                  = '2band'
     user_out                = False

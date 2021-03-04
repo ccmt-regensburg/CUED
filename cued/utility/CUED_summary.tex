@@ -204,7 +204,7 @@ The following electric driving field is employed in the simulation:
 \begin{align}
     \bE(t)  = E(t)\,\hat{e}_\phi
     \;,\hspace{2em}
-    E(t) = E_0\,    \sin\Big(2\pi f_0\,(1+f_\text{chirp} t)\,t + \varphi\Big)\, e^{-t^2/(2\alpha)^2}\;.
+    E(t) = E_0\,    \sin\Big(2\pi f_0\,(1+f_\text{chirp} t)\,t + \varphi\Big)\, e^{-t^2/(2\sigma^2)}\;.
     \label{e1}
 \end{align}
 \begin{figure}[b!]
@@ -224,7 +224,7 @@ The following parameters are used in the simulation:
     \item Pulse frequency: $f_0 = PH-FREQ$\,THz
     \item Chirp: $f_\text{chirp} = PH-CHIRP$\,THz
     \item Carrier-envelope phase: $\phi = PH-CEP$
-    \item $\alpha = PH-ALPHA$\,fs, full width at half maximum (FWHM) of the Gaussian envelope = PH-FWHM\,fs
+    \item $\sigma = PH-SIGMA$\,fs, full width at half maximum (FWHM) of the Gaussian envelope = PH-FWHM\,fs
 \end{itemize}
 The gauge field~$\bA(t)\eqt A(t)\,\hat{e}_\phi$ follows from~$\dot\bA(t)\eqt -\bE(t)$. We compute $A(t)$ for the sketch in Fig.~\ref{fig:Efield} as
 \begin{align}

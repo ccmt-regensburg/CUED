@@ -97,8 +97,8 @@ def write_parameter(P, S):
     else:
          replace("PH-CEP", str(P.phase))
 
-    replace("PH-ALPHA", str(P.alpha_fs))
-    replace("PH-FWHM", '{:.3f}'.format(P.alpha_fs*4*np.sqrt(np.log(2))))
+    replace("PH-SIGMA", str(P.sigma_fs))
+    replace("PH-FWHM", '{:.3f}'.format(P.sigma_fs*2*np.sqrt(2*np.log(2))))
     replace("PH-BZ", P.BZ_type)
     replace("PH-NK1", str(P.Nk1))
     replace("PH-NK2", str(P.Nk2))
