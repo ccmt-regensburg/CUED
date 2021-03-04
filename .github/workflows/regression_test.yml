@@ -10,17 +10,9 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
     - uses: actions/checkout@v2
-    - name: Install dependencies
-      run:
-        pip install matplotlib
-        pip install scipy
-        pip install argparse
-        pip install numba
-        pip install sympy
-        pip install mpi4py
     - name: Test with test script
       run:  python3 tests/test_script.py
