@@ -14,11 +14,5 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set python path
-      run:  echo "$(pwd)" >> $GITHUB_PATH
-    - name: Check pwd
-      run:  echo $(pwd)
-    - name: Check github path
-      run:  echo "$PATH"  
-    - name: Test with test script
+    - name: Run test script
       run:  python3 tests/test_script.py
