@@ -236,7 +236,7 @@ def calculate_system_in_path(path, P, S):
 
         S.dipole_path_x = evaluate_njit_matrix(sys.dipole_xjit, kx=kx_in_path,
                                         ky=ky_in_path, dtype=P.type_complex_np)
-        S.dipole_path_y = evaluate_njit_matrix(sys.dipole_xjit, kx=kx_in_path,
+        S.dipole_path_y = evaluate_njit_matrix(sys.dipole_yjit, kx=kx_in_path,
                                         ky=ky_in_path, dtype=P.type_complex_np)
 
         for i in range(P.n):
