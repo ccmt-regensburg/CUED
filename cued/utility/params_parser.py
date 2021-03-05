@@ -2,7 +2,7 @@ from math import modf
 import sys
 import numpy as np
 
-from cued.utility import ConversionFactors as co
+from cued.utility import ConversionFactors as CoFa
 
 class Params():
     """
@@ -88,21 +88,21 @@ class Params():
                 sys.exit("dk_order needs to be either 2, 4, 6, or 8.")
 
         # Parameters for initial occupation
-        self.e_fermi = UP.e_fermi*co.eV_to_au           # Fermi energy
-        self.temperature = UP.temperature*co.eV_to_au   # Temperature
+        self.e_fermi = UP.e_fermi*CoFa.eV_to_au           # Fermi energy
+        self.temperature = UP.temperature*CoFa.eV_to_au   # Temperature
 
         # Driving field parameters
-        self.f = UP.f*co.THz_to_au                      # Driving pulse frequency
-        self.E0 = UP.E0*co.MVpcm_to_au                  # Driving pulse field amplitude
-        self.chirp = UP.chirp*co.THz_to_au              # Pulse chirp frequency
-        self.sigma = UP.sigma*co.fs_to_au               # Gaussian pulse width
+        self.f = UP.f*CoFa.THz_to_au                      # Driving pulse frequency
+        self.E0 = UP.E0*CoFa.MVpcm_to_au                  # Driving pulse field amplitude
+        self.chirp = UP.chirp*CoFa.THz_to_au              # Pulse chirp frequency
+        self.sigma = UP.sigma*CoFa.fs_to_au               # Gaussian pulse width
         self.phase = UP.phase                           # Carrier-envelope phase
 
         # Time scales
-        self.T1 = UP.T1*co.fs_to_au                     # Occupation damping time
-        self.T2 = UP.T2*co.fs_to_au                     # Polarization damping time
-        self.t0 = UP.t0*co.fs_to_au
-        self.dt = UP.dt*co.fs_to_au
+        self.T1 = UP.T1*CoFa.fs_to_au                     # Occupation damping time
+        self.T2 = UP.T2*CoFa.fs_to_au                     # Polarization damping time
+        self.t0 = UP.t0*CoFa.fs_to_au
+        self.dt = UP.dt*CoFa.fs_to_au
 
         self.factor_freq_resolution = 1
         if hasattr(UP, 'factor_freq_resolution'):
@@ -115,7 +115,7 @@ class Params():
 
         self.gaussian_window_width = self.sigma
         if hasattr(UP, 'gaussian_window_width'):
-            self.gaussian_window_width = UP.gaussian_window_width*co.fs_to_au
+            self.gaussian_window_width = UP.gaussian_window_width*CoFa.fs_to_au
 
         # Brillouin zone type
         self.BZ_type = UP.BZ_type                      # Type of Brillouin zone
@@ -212,7 +212,7 @@ class Params():
         # Derived BZ parameter
         self.Nk = self.Nk1 * self.Nk2
         if self.BZ_type == 'hexagon':
-            self.a_angs = self.a*co.au_to_as
+            self.a_angs = self.a*CoFa.au_to_as
 
         # Filename tail
         self.tail =\
