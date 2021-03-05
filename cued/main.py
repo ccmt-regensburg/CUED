@@ -7,9 +7,9 @@ from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode
 
 import cued.dipole
-from cued.utility import ConversionFactors as co
+from cued.utility import ConversionFactors as CoFa, Params
 from cued.utility import conditional_njit, evaluate_njit_matrix
-from cued.utility import parse_params, time_containers, system_properties, frequency_containers
+from cued.utility import time_containers, system_properties, frequency_containers
 from cued.utility import write_and_compile_latex_PDF
 from cued.fields import make_electric_field
 from cued.dipole import diagonalize_path, dipole_elements_path
@@ -73,7 +73,7 @@ def sbe_solver(sys, params, electric_field_function=None):
     # RETRIEVE PARAMETERS
     ###########################################################################
     # Flag evaluation
-    P = parse_params(params)
+    P = Params(params)
 
     # USER OUTPUT
     ###########################################################################
@@ -638,7 +638,7 @@ def print_user_info(P, B0=None, mu=None, incident_angle=None):
           + "[" + '{:.6f}'.format(P.E0) + "]")
     if B0 is not None:
         print("Magnetic amplitude (T)[a.u.]    = " + "("
-              + '%.6f'%(B0*co.au_to_T) + ")"
+              + '%.6f'%(B0*CoFa.au_to_T) + ")"
               + "[" + '%.6f'%(B0) + "]")
         print("Magnetic moments ", mu)
     print("Pulse Frequency (THz)[a.u.]     = " + "("

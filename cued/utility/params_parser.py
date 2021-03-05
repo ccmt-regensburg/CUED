@@ -1,166 +1,222 @@
 from math import modf
-import numpy as np
 import sys
+import numpy as np
 
 from cued.utility import ConversionFactors as co
 
-def parse_params(user_params):
-    class Params():
-        pass
+class Params():
+    """
+    Environment variable class holding all relevant parameters in the SBE code.
+    Additional check for ill-defined user parameters included.
+    """
+    def __init__(self, UP):
+        # Command line progress output
+        self.user_out = True
+        if hasattr(UP, 'user_out'):
+            self.user_out = UP.user_out
 
-    P = Params()
-    UP = user_params
-    P.user_out = True                       # Command line progress output
-    if hasattr(UP, 'user_out'):
-        P.user_out = UP.user_out
+        # Save full density matrix
+        self.save_full = False
+        if hasattr(UP, 'save_full'):
+            self.save_full = UP.save_full
 
-    P.save_full = False                     # Save full density matrix
-    if hasattr(UP, 'save_full'):
-        P.save_full = UP.save_full
+        # Save data as human readable PDF file
+        self.save_latex_pdf = False
+        if hasattr(UP, 'save_latex_pdf'):
+            self.save_latex_pdf = UP.save_latex_pdf
 
-    P.split_current = False             # Save j^intra, j^anom, dP^inter/dt
-    if hasattr(UP, 'split_current'):
-        P.split_current = UP.split_current
+        # Save j^intra, j^anom, dP^inter/dt
+        self.split_current = False
+        if hasattr(UP, 'split_current'):
+            self.split_current = UP.split_current
 
-    P.do_semicl = False                     # Semiclassical calc. (dipole = 0)
-    if hasattr(UP, 'do_semicl'):
-        P.do_semicl = UP.do_semicl
+        # Semiclassical calc. (dipole = 0)
+        self.do_semicl = False
+        if hasattr(UP, 'do_semicl'):
+            self.do_semicl = UP.do_semicl
 
-    P.gauge = 'length'                      # Gauge of the SBE Dynamics
-    if hasattr(UP, 'gauge'):
-        P.gauge = UP.gauge
+        # Gauge of the SBE Dynamics
+        self.gauge = 'length'
+        if hasattr(UP, 'gauge'):
+            self.gauge = UP.gauge
 
-    P.hamiltonian_evaluation = 'num'                        # numerical or analytical calculation of eigenstates and dipoles
-    if hasattr(UP, 'hamiltonian_evaluation'):
-        P.hamiltonian_evaluation = UP.hamiltonian_evaluation
+        # Numerical or analytical calculation of eigenstates and dipoles
+        self.hamiltonian_evaluation = 'num'
+        if hasattr(UP, 'hamiltonian_evaluation'):
+            self.hamiltonian_evaluation = UP.hamiltonian_evaluation
 
-    P.solver = 'nband'                      # 2 or n band solver
-    if hasattr(UP, 'solver'):
-        P.solver = UP.solver
+        # 2 or n band solver
+        self.solver = 'nband'
+        if hasattr(UP, 'solver'):
+            self.solver = UP.solver
 
-    P.epsilon = 2e-5                        # step size for num. derivatives
-    if hasattr(UP, 'epsilon'):
-        P.epsilon = UP.epsilon
+        # Step size for num. derivatives
+        self.epsilon = 2e-5
+        if hasattr(UP, 'epsilon'):
+            self.epsilon = UP.epsilon
 
-    P.gidx = 1
-    if hasattr(UP, 'gidx'):
-        P.gidx = UP.gidx
+        # Index of real wave function entry (fixes gauge)
+        self.gidx = 1
+        if hasattr(UP, 'gidx'):
+            self.gidx = UP.gidx
 
-    P.save_anom = False
-    if hasattr(UP, 'save_anom'):
-        P.save_anom = UP.save_anom
+        # Calculate anomalous current
+        self.save_anom = False
+        if hasattr(UP, 'save_anom'):
+            self.save_anom = UP.save_anom
 
-    P.solver_method = 'bdf'                 # 'adams' non-stiff, 'bdf' stiff, 'rk4' Runge-Kutta 4th order
-    if hasattr(UP, 'solver_method'):
-        P.solver_method = UP.solver_method
+        # 'adams' non-stiff, 'bdf' stiff, 'rk4' Runge-Kutta 4th order
+        self.solver_method = 'bdf'
+        if hasattr(UP, 'solver_method'):
+            self.solver_method = UP.solver_method
 
-    P.precision = 'double'                  # quadruple for reducing numerical noise
-    if hasattr(UP, 'precision'):
-        P.precision = UP.precision
+        # Quadruple for reducing numerical noise
+        self.precision = 'double'
+        if hasattr(UP, 'precision'):
+            self.precision = UP.precision
 
-    if P.precision == 'double':
-        P.type_real_np    = np.float64
-        P.type_complex_np = np.complex128
-    elif P.precision == 'quadruple':
-        P.type_real_np    = np.float128
-        P.type_complex_np = np.complex256
-        if P.solver_method != 'rk4':
-            sys.exit("Error: Quadruple precision only works with Runge-Kutta 4 ODE solver.")
-    else:
-        sys.exit("Only default or quadruple precision available.")
+        # Special flag for accurate insulator calc.
+        self.symmetric_insulator = False
+        if hasattr(UP, 'symmetric_insulator'):
+            self.symmetric_insulator = UP.symmetric_insulator
 
-    P.symmetric_insulator = False           # special flag for accurate insulator calc.
-    if hasattr(UP, 'symmetric_insulator'):
-        P.symmetric_insulator = UP.symmetric_insulator
+        # Accuracy order of density-matrix k-deriv.
+        self.dk_order = 8
+        if hasattr(UP, 'dk_order'):
+            self.dk_order = UP.dk_order                 # with length gauge (avail: 2,4,6,8)
+            if self.dk_order not in [2, 4, 6, 8]:
+                sys.exit("dk_order needs to be either 2, 4, 6, or 8.")
 
-    P.dk_order = 8
-    if hasattr(UP, 'dk_order'):             # Accuracy order of density-matrix k-deriv.
-        P.dk_order = UP.dk_order            # with length gauge (avail: 2,4,6,8)
-        if P.dk_order not in [2, 4, 6, 8]:
-            sys.exit("dk_order needs to be either 2, 4, 6, or 8.")
+        # Parameters for initial occupation
+        self.e_fermi = UP.e_fermi*co.eV_to_au           # Fermi energy
+        self.temperature = UP.temperature*co.eV_to_au   # Temperature
 
-    # Parameters for initial occupation
-    P.e_fermi = UP.e_fermi*co.eV_to_au           # Fermi energy
-    P.e_fermi_eV = UP.e_fermi
-    P.temperature = UP.temperature*co.eV_to_au   # Temperature
-    P.temperature_eV =  UP.temperature
+        # Driving field parameters
+        self.f = UP.f*co.THz_to_au                      # Driving pulse frequency
+        self.E0 = UP.E0*co.MVpcm_to_au                  # Driving pulse field amplitude
+        self.chirp = UP.chirp*co.THz_to_au              # Pulse chirp frequency
+        self.sigma = UP.sigma*co.fs_to_au               # Gaussian pulse width
+        self.phase = UP.phase                           # Carrier-envelope phase
 
-    # Driving field parameters
-    P.E0 = UP.E0*co.MVpcm_to_au                  # Driving pulse field amplitude
-    P.E0_MVpcm = UP.E0
-    P.f = UP.f*co.THz_to_au                      # Driving pulse frequency
-    P.f_THz = UP.f
-    P.chirp = UP.chirp*co.THz_to_au              # Pulse chirp frequency
-    P.chirp_THz = UP.chirp
-    P.sigma = UP.sigma*co.fs_to_au               # Gaussian pulse width
-    P.sigma_fs = UP.sigma
-    P.phase = UP.phase                           # Carrier-envelope phase
+        # Time scales
+        self.T1 = UP.T1*co.fs_to_au                     # Occupation damping time
+        self.T2 = UP.T2*co.fs_to_au                     # Polarization damping time
+        self.t0 = UP.t0*co.fs_to_au
+        self.dt = UP.dt*co.fs_to_au
 
-    # Time scales
-    P.T1 = UP.T1*co.fs_to_au                     # Occupation damping time
-    P.gamma1 = 1/P.T1
-    P.T1_fs = UP.T1
-    P.gamma1_dfs = 1/P.T1_fs
+        self.factor_freq_resolution = 1
+        if hasattr(UP, 'factor_freq_resolution'):
+            self.factor_freq_resolution = UP.factor_freq_resolution
 
-    P.T2 = UP.T2*co.fs_to_au                     # Polarization damping time
-    P.gamma2 = 1/P.T2
-    P.T2_fs = UP.T2
-    P.gamma2_dfs = 1/P.T2_fs
+        # gaussian or hann
+        self.fourier_window_function = 'gaussian'
+        if hasattr(UP, 'fourier_window_function'):
+            self.fourier_window_function = UP.fourier_window_function
 
-    P.t0 = UP.t0*co.fs_to_au
-    P.t0_fs = UP.t0
+        self.gaussian_window_width = self.sigma
+        if hasattr(UP, 'gaussian_window_width'):
+            self.gaussian_window_width = UP.gaussian_window_width*co.fs_to_au
 
-    P.tf = -P.t0
-    P.tf_fs = -P.t0_fs
+        # Brillouin zone type
+        self.BZ_type = UP.BZ_type                      # Type of Brillouin zone
+        self.Nk1 = UP.Nk1                              # kpoints in b1 direction
+        self.Nk2 = UP.Nk2                              # kpoints in b2 direction
 
-    P.dt = P.type_real_np(UP.dt*co.fs_to_au)
-    P.dt_fs = UP.dt
+        # Parameters for individual Brillouin zone types
+        if self.BZ_type == 'hexagon':
+            self.align = UP.align                      # E-field alignment
+            self.angle_inc_E_field = None
+            self.a = UP.a                              # Lattice spacing
+        elif self.BZ_type == 'rectangle':
+            self.align = None
+            self.angle_inc_E_field = UP.angle_inc_E_field
+            self.length_BZ_ortho = UP.length_BZ_ortho  # Size of the Brillouin zone in atomic units
+            self.length_BZ_E_dir = UP.length_BZ_E_dir  # -"-
+        else:
+            sys.exit("BZ_type needs to be either hexagon or rectangle.")
 
-    Nf = int((abs(2*P.t0_fs))/P.dt_fs)
-    if modf((2*P.t0_fs/P.dt_fs))[0] > 1e-12:
-        print("WARNING: The time window divided by dt is not an integer.")
-    # Define a proper time window if Nt exists
-    # +1 assures the inclusion of tf in the calculation
-    P.Nt = Nf + 1
+        # Check if user params has any ill-defined parameters
+        self.__check_user_paramas_for_wrong_arguments(UP)
 
-    P.factor_freq_resolution = 1
-    if hasattr(UP, 'factor_freq_resolution'):
-        P.factor_freq_resolution = UP.factor_freq_resolution
+        self.__append_derived_parameters(UP)
 
-    P.fourier_window_function = 'gaussian'     # gaussian or hann
-    if hasattr(UP, 'fourier_window_function'):
-        P.fourier_window_function = UP.fourier_window_function
+    def __check_user_paramas_for_wrong_arguments(self, UP):
+        """
+        Compare default paramaters with user parameters.
+        If there are user paramters not defined in the parameters
+        give a warning and halt the code.
+        """
+        default_params = self.__dict__.keys()
+        user_params = UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__'}
+        diff_params = (default_params | user_params) - default_params
 
-    P.gaussian_window_width = P.sigma
-    if hasattr(UP, 'gaussian_window_width'):
-        P.gaussian_window_width = UP.gaussian_window_width
+        if diff_params:
+            print("Error: The following parameters have no effect inside the current run:")
+            for param in diff_params:
+                print(param, end=' ')
 
-    # Brillouin zone type
-    P.BZ_type = UP.BZ_type                      # Type of Brillouin zone
-    P.Nk1 = UP.Nk1                              # kpoints in b1 direction
-    P.Nk2 = UP.Nk2                              # kpoints in b2 direction
-    P.Nk = P.Nk1 * P.Nk2
+            print()
+            sys.exit()
 
-    # special parameters for individual Brillouin zone types
-    if P.BZ_type == 'hexagon':
-        P.align = UP.align                      # E-field alignment
-        P.angle_inc_E_field = None
-        P.a = UP.a                                  # Lattice spacing
-        P.a_angs = P.a*co.au_to_as
-    elif P.BZ_type == 'rectangle':
-        P.align = None
-        P.angle_inc_E_field = UP.angle_inc_E_field
-        P.length_BZ_ortho = UP.length_BZ_ortho     # Size of the Brillouin zone in atomic units
-        P.length_BZ_E_dir = UP.length_BZ_E_dir     # -"-
-    else:
-        sys.exit("BZ_type needs to be either hexagon or rectangle.")
+    def __append_derived_parameters(self, UP):
+        ##################################################
+        ## The following parameters are derived parameters
+        ## and can not be set in the params.py file
+        ##################################################
 
-    P.save_latex_pdf = False              # Save data as human readable PDF file
-    if hasattr(UP, 'save_latex_pdf'):
-        P.save_latex_pdf = UP.save_latex_pdf
+        # Derived precision parameters
+        if self.precision == 'double':
+            self.type_real_np    = np.float64
+            self.type_complex_np = np.complex128
+        elif self.precision == 'quadruple':
+            self.type_real_np    = np.float128
+            self.type_complex_np = np.complex256
+            if self.solver_method != 'rk4':
+                sys.exit("Error: Quadruple precision only works with Runge-Kutta 4 ODE solver.")
+        else:
+            sys.exit("Only default or quadruple precision available.")
 
-    # Filename tail
-    P.tail = 'E_{:.4f}_w_{:.1f}_a_{:.1f}_{}_t0_{:.1f}_dt_{:.6f}_NK1-{}_NK2-{}_T1_{:.1f}_T2_{:.1f}_chirp_{:.3f}_ph_{:.2f}_solver_{:s}_dk_order{}'\
-        .format(P.E0_MVpcm, P.f_THz, P.sigma_fs, P.gauge, P.t0_fs, P.dt_fs, P.Nk1, P.Nk2, P.T1_fs, P.T2_fs, P.chirp_THz, P.phase, P.solver_method, P.dk_order)
+        # Derived initial condition
+        self.e_fermi_eV = UP.e_fermi
+        self.temperature_eV =  UP.temperature
 
-    return P
+        # Derived driving field parameters
+        self.E0_MVpcm = UP.E0
+        self.f_THz = UP.f
+        self.chirp_THz = UP.chirp
+        self.sigma_fs = UP.sigma
+
+        # Derived time scale parameters
+        self.gamma1 = 1/self.T1
+        self.T1_fs = UP.T1
+        self.gamma1_dfs = 1/self.T1_fs
+
+        self.gamma2 = 1/self.T2
+        self.T2_fs = UP.T2
+        self.gamma2_dfs = 1/self.T2_fs
+
+        self.t0_fs = UP.t0
+        self.tf = -self.t0
+        self.tf_fs = -self.t0_fs
+
+        self.dt = self.type_real_np(self.dt)
+        self.dt_fs = self.type_real_np(self.dt)
+
+        Nf = int((abs(2*self.t0_fs))/self.dt_fs)
+        if modf((2*self.t0_fs/self.dt_fs))[0] > 1e-12:
+            print("WARNING: The time window divided by dt is not an integer.")
+        # Define a proper time window if Nt exists
+        # +1 assures the inclusion of tf in the calculation
+        self.Nt = Nf + 1
+
+        # Derived BZ parameter
+        self.Nk = self.Nk1 * self.Nk2
+        if self.BZ_type == 'hexagon':
+            self.a_angs = self.a*co.au_to_as
+
+        # Filename tail
+        self.tail =\
+            'E_{:.4f}_w_{:.1f}_a_{:.1f}_{}_t0_{:.1f}_dt_{:.6f}_NK1-{}_NK2-{}_T1_{:.1f}_T2_{:.1f}_chirp_{:.3f}_ph_{:.2f}_solver_{:s}_dk_order{}'\
+            .format(self.E0_MVpcm, self.f_THz, self.sigma_fs, self.gauge, self.t0_fs, self.dt_fs,
+                    self.Nk1, self.Nk2, self.T1_fs, self.T2_fs, self.chirp_THz, self.phase,
+                    self.solver_method, self.dk_order)
