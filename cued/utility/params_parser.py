@@ -200,7 +200,7 @@ class Params():
         self.tf_fs = -self.t0_fs
 
         self.dt = self.type_real_np(self.dt)
-        self.dt_fs = self.type_real_np(self.dt)
+        self.dt_fs = self.type_real_np(UP.dt)
 
         Nf = int((abs(2*self.t0_fs))/self.dt_fs)
         if modf((2*self.t0_fs/self.dt_fs))[0] > 1e-12:
