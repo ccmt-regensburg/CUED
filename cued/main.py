@@ -394,7 +394,7 @@ def gaussian(t, sigma):
     Window function to multiply a Function f(t) before Fourier transform
     to ensure no step in time between t_final and t_final + delta
     '''
-    return np.exp(-t**2/(2*sigma**2))
+    return np.exp(-t**2/sigma**2)
 
 def hann(t):
     '''

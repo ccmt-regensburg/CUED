@@ -98,7 +98,7 @@ def write_parameter(P, S):
          replace("PH-CEP", str(P.phase))
 
     replace("PH-SIGMA", str(P.sigma_fs))
-    replace("PH-FWHM", '{:.3f}'.format(P.sigma_fs*2*np.sqrt(2*np.log(2))))
+    replace("PH-FWHM", '{:.3f}'.format(P.sigma_fs*2*np.sqrt(np.log(2))))
     replace("PH-BZ", P.BZ_type)
     replace("PH-NK1", str(P.Nk1))
     replace("PH-NK2", str(P.Nk2))
@@ -115,7 +115,7 @@ def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
     _lines_exact_E_dir  = ax1.plot(time_fs[t_idx], func_of_t[t_idx], marker='')
 
     t_lims = (time_fs[t_idx[0]], time_fs[t_idx[-1]])
-    
+
     ax1.grid(True, axis='both', ls='--')
     ax1.set_xlim(t_lims)
     ax1.set_xlabel(xlabel)
@@ -123,7 +123,7 @@ def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
     ax1.legend(loc='upper right')
 
     tikzplotlib.save(filename+".tikz",
-                     axis_height='\\figureheight', 
+                     axis_height='\\figureheight',
                      axis_width ='\\figurewidth' )
 
 
@@ -140,10 +140,10 @@ def tikz_freq(func_1, func_2, freq_div_f0, f_idx, ylabel, filename, two_func, \
                linestyle='--')
       else:
        _lines_exact_E_dir = ax1.semilogy(freq_div_f0[f_idx], func_2[f_idx], marker='', label=label_2)
-      
+
 
     f_lims = (freq_div_f0[f_idx[0]], freq_div_f0[f_idx[-1]])
-    
+
     ax1.grid(True, axis='both', ls='--')
     ax1.set_xlim(f_lims)
     ax1.set_xlabel(xlabel)
@@ -152,9 +152,9 @@ def tikz_freq(func_1, func_2, freq_div_f0, f_idx, ylabel, filename, two_func, \
     ax1.set_xticks(np.arange(f_lims[1]+1))
 
     tikzplotlib.save(filename+".tikz",
-                     axis_height='\\figureheight', 
+                     axis_height='\\figureheight',
                      axis_width ='\\figurewidth' )
- 
+
     replace("xmax=30,", "xmax=30, xtick={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"+\
             ",21,22,23,24,25,26,27,28,29,30}, xticklabels={,1,,,,5,,,,,10,,,,,15,,,,,20,,,,,25,,,,,30},", \
             filename=filename+".tikz")
@@ -165,26 +165,26 @@ def replace(old, new, filename="CUED_summary.tex"):
     os.system("sed -i -e \'s/"+old+"/"+new+"/g\' "+filename)
 
 
-def get_time_indices_for_plotting(E_field, time_fs, num_t_points_max, factor_t_end): 
+def get_time_indices_for_plotting(E_field, time_fs, num_t_points_max, factor_t_end):
 
     E_max = np.amax(np.abs(E_field))
 
     threshold = 1.0E-3
-  
+
     for i_counter, E_i in enumerate(E_field):
-        if np.abs(E_i) > threshold*E_max: 
+        if np.abs(E_i) > threshold*E_max:
             index_t_plot_start = i_counter
             break
 
     for i_counter, E_i in reversed(list(enumerate(E_field))):
-        if np.abs(E_i) > threshold*E_max: 
+        if np.abs(E_i) > threshold*E_max:
             t_plot_end       = time_fs[i_counter]
             break
 
     t_plot_end *= factor_t_end
 
     for i_counter, t_i in enumerate(time_fs):
-        if t_i > t_plot_end: 
+        if t_i > t_plot_end:
             index_t_plot_end = i_counter
             break
 
@@ -211,7 +211,7 @@ def get_indices_for_plotting_whole(data, num_points_for_plotting, start):
 def get_freq_indices_for_plotting(freq_div_f0, num_points_max_for_plotting, freq_max):
 
     for i_counter, f_i in enumerate(freq_div_f0):
-        if f_i.real > -1.0E-8: 
+        if f_i.real > -1.0E-8:
             index_f_plot_start = i_counter
             break
 
@@ -287,7 +287,7 @@ def BZ_plot(paths, P, A_field, S):
             dk, kweight, printed_paths = hex_mesh(P)
         elif P.BZ_type == 'rectangle':
             dk, kweight, printed_paths = rect_mesh(P, S)
-        P.Nk1 = Nk1_safe 
+        P.Nk1 = Nk1_safe
         P.Nk2 = Nk2_safe
         P.Nk = P.Nk1*P.Nk2
 
@@ -343,4 +343,3 @@ def BZ_plot(paths, P, A_field, S):
 
 
 #    plt.show()
-

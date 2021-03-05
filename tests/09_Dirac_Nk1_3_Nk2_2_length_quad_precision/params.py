@@ -25,7 +25,7 @@ class params:
     E0                  = 5.00                   # Pulse amplitude (MV/cm)
     f                   = 25.0                   # Pulse frequency (THz)
     chirp               = 0.00                   # Pulse chirp ratio (chirp = c/w) (THz)
-    sigma               = np.sqrt(2)*25.0        # Gaussian pulse width (femtoseconds)
+    sigma               = 50.0                   # Gaussian pulse width (femtoseconds)
     phase               = 0.0
     dk_order            = 2                      # only use second order because we only use three k-points in each path
     solver_method       = 'rk4'                  # Runge-Kutta 4th order solver

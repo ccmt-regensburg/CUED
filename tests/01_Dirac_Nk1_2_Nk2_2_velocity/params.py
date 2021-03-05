@@ -23,22 +23,22 @@ class params:
     E0                  = 5.00                   # Pulse amplitude (MV/cm)
     f                   = 25.0                   # Pulse frequency (THz)
     chirp               = 0.00                   # Pulse chirp ratio (chirp = c/w) (THz)
-    sigma               = np.sqrt(2)*25.0        # Gaussian pulse width (femtoseconds)
+    sigma               = 50.0                   # Gaussian pulse width (femtoseconds)
     phase               = 0.0
 
     # Time scales (all units in femtoseconds)
     ##########################################################################
-    T1    = 1000                                 # Phenomenological diagonal damping time
-    T2    = 1                                    # Phenomenological polarization damping time
-    t0    = -1000                                # Start time *pulse centered @ t=0, use t0 << 0
-    dt    = 0.05                                 # Time step
+    T1                  = 1000                   # Phenomenological diagonal damping time
+    T2                  = 1                      # Phenomenological polarization damping time
+    t0                  = -1000                  # Start time *pulse centered @ t=0, use t0 << 0
+    dt                  = 0.05                   # Time step
 
     # Flags for testing and features
     ##########################################################################
-    gauge                   = 'velocity'         # Gauge of the system
-    hamiltonian_evaluation  = 'ana'
-    solver                  = '2band'
-    do_semicl               = False              # Turn all dipoles to 0 and use Berry curvature in emission
-    user_out                = False              # Set to True to get user plotting and progress output
-    split_current           = False
-    save_full               = False
+    gauge                  = 'velocity'          # Gauge of the system
+    hamiltonian_evaluation = 'ana'
+    solver                 = '2band'
+    do_semicl              = False               # Turn dipoles to 0, use Berry curvature in emission
+    user_out               = False               # True to get user plotting and progress output
+    split_current          = False
+    save_full              = False

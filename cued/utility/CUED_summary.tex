@@ -38,7 +38,7 @@ headheight=25pt,
 % \renewcommand{\chaptermark}[1]
 % {\markboth{{\chaptername\ \thechapter:\  #1}}{}}
 % \renewcommand{\sectionmark}[1]
-% {{\markright{ \thesection\ #1}}} 
+% {{\markright{ \thesection\ #1}}}
 %\renewcommand{\sectionmark}[1]{\markboth{#1}{}}
 
 %\renewcommand\sectionmark[1]{\markright{#1}}
@@ -59,7 +59,7 @@ headheight=25pt,
 \definecolor{darkgreen}{rgb}{0.0,0.6,0.0}
 \definecolor{shadedgreen}{rgb}{0.8,0.95,0.8}
 \definecolor{shadedblue}{rgb}{0.85,0.85,1.0}
-\newlength\figureheight 
+\newlength\figureheight
 \newlength\figurewidth
 
 
@@ -78,8 +78,8 @@ headheight=25pt,
 % \DeclareBibliographyDriver{article}{
 % \printnames{author}, \printfield{title},
 % \href{http://dx.doi.org/\thefield{doi}}
-% {\printfield{journaltitle} 
-% \textbf{\printfield{volume}}, \printfield{pages} 
+% {\printfield{journaltitle}
+% \textbf{\printfield{volume}}, \printfield{pages}
 % (\printfield{year})}.}
 
 % \DeclareBibliographyDriver{misc}{
@@ -171,7 +171,7 @@ Number of used processors: PH-MPIRANKS
       \\[0.5em]
     Ferdinand Evers
   \\[3em]
-  Contributors (in alphabetic order): 
+  Contributors (in alphabetic order):
   \\[1em]
   Jack Crewse
   \\[0.5em]
@@ -204,18 +204,18 @@ The following electric driving field is employed in the simulation:
 \begin{align}
     \bE(t)  = E(t)\,\hat{e}_\phi
     \;,\hspace{2em}
-    E(t) = E_0\,    \sin\Big(2\pi f_0\,(1+f_\text{chirp} t)\,t + \varphi\Big)\, e^{-t^2/(2\sigma^2)}\;.
+    E(t) = E_0\,    \sin\Big(2\pi f_0\,(1+f_\text{chirp} t)\,t + \varphi\Big)\, e^{-t^2/\sigma^2}\;.
     \label{e1}
 \end{align}
 \begin{figure}[b!]
 \centering
-\setlength\figureheight{7.5cm} 
+\setlength\figureheight{7.5cm}
 \setlength\figurewidth{7.5cm}
 \input{Efield.tikz}\hfill\input{Afield.tikz}
 \caption{Left: Electric driving field~$E(t)$ from Eq.~\eqref{e1}, right: Gauge field~$A(t)$ from Eq.~\eqref{e2}.}
     \label{fig:Efield}
 \end{figure}
-The pulse is sketched in Fig.~\ref{fig:Efield}. 
+The pulse is sketched in Fig.~\ref{fig:Efield}.
 %
 The following parameters are used in the simulation:
 \begin{itemize}
@@ -234,15 +234,15 @@ The gauge field~$\bA(t)\eqt A(t)\,\hat{e}_\phi$ follows from~$\dot\bA(t)\eqt -\b
 
 
 \section{Brillouin zone and \textit{k}-point grid}
-You are using a PH-BZ as Brillouin zone (BZ) with a mesh size of PH-NK1\,$\times$\,PH-NK2. 
+You are using a PH-BZ as Brillouin zone (BZ) with a mesh size of PH-NK1\,$\times$\,PH-NK2.
 %
 The BZ and a PH-SMALLNK1\,$\times$\,PH-SMALLNK2 $k$-point mesh is sketched in Fig.~\ref{fig:kp}.
 %
-Please note that in the params.py file, the BZ size (in case of a rectangular BZ) and the lattice parameter~$a$ (in case of a hexagonal BZ) are both given in atomic units, while the output here is in $1/$\AA (note: 1 atomic length unit = $1 a_0$ = 0.529\,\AA, $a_0$:~Bohr radius, 1 atomic inverse length unit = 1/(0.529\,\AA) = 1.890\,\AA$^{-1}$). 
+Please note that in the params.py file, the BZ size (in case of a rectangular BZ) and the lattice parameter~$a$ (in case of a hexagonal BZ) are both given in atomic units, while the output here is in $1/$\AA (note: 1 atomic length unit = $1 a_0$ = 0.529\,\AA, $a_0$:~Bohr radius, 1 atomic inverse length unit = 1/(0.529\,\AA) = 1.890\,\AA$^{-1}$).
 %
 \begin{figure}
 \centering
-\setlength\figureheight{1.00000000000000000000\textwidth} 
+\setlength\figureheight{1.00000000000000000000\textwidth}
 \setlength\figurewidth{0.87\textwidth}
 \input{BZ.tikz}
 \caption{Brillouin zone (BZ) and PH-SMALLNK1\,$\times$\,PH-SMALLNK2 $k$-point mesh.
@@ -251,7 +251,7 @@ The BZ is indicated by the black PH-BZ.
 %
 Gray points indicate $k$-points, colored lines indicate $k$-points that are coupled via  the term $\bE(t)\cdot \nabla_\bk$.
 %
-The green and red line at the top left corner sketch ${\color{darkgreen}\bA_\text{max}}\coloneqqt\hat{e}_\phi\max (-qA(t)/\hbar)$ and ${\color{red}\bA_\text{min}}\coloneqqt\hat{e}_\phi\min (-qA(t)/\hbar)$ indicating the extremal excursion of  electrons in the BZ.  
+The green and red line at the top left corner sketch ${\color{darkgreen}\bA_\text{max}}\coloneqqt\hat{e}_\phi\max (-qA(t)/\hbar)$ and ${\color{red}\bA_\text{min}}\coloneqqt\hat{e}_\phi\min (-qA(t)/\hbar)$ indicating the extremal excursion of  electrons in the BZ.
 }
     \label{fig:kp}
 \end{figure}
@@ -268,7 +268,7 @@ In case you choose the length gauge (\texttt{gauge = 'length'}, that is also the
     \left[
     \frac{\partial}{\partial t}
     +q\bE(t)\frac{\partial}{\partial \bk}
-    \right]\rhonnprime = 
+    \right]\rhonnprime =
     \big[i\sd(\epsilon_{n'}(\bk)-\epsilon_{n}(\bk))
    \sd {-}1/T_2\big]\,\rhonnprime
     -i\sd \bE(t){\sum_{\un}}
@@ -281,11 +281,11 @@ with a dephasing time $T_2\eqt PH-T2$\,fs. {\color{red}TODO: Plots of initial vv
 \section{Time-dependent current}
 \begin{figure}
 \centering
-\setlength\figureheight{7.5cm} 
+\setlength\figureheight{7.5cm}
 \setlength\figurewidth{7.5cm}
 \input{j_E_dir.tikz}\hfill\input{j_ortho.tikz}
 \\
-\setlength\figureheight{6.5cm} 
+\setlength\figureheight{6.5cm}
 \setlength\figurewidth{\textwidth}
 \input{j_E_dir_whole_time.tikz}
 \\
@@ -299,22 +299,22 @@ In case you choose the length gauge (\texttt{gauge = 'length'}, that is also the
  \bj(t)  =
 q\sum_{nn'} \intbzdkpi
 \ \langle u_{n\bk} |  \frac{\partial h(\bk)}{\partial \bk} | u_{n'\bk}\rangle \ \rhonprimen\;.\label{current}
-\end{align} 
+\end{align}
 The matrix element $ \langle u_{n\bk} |  (\partial_\bk h(\bk)) | u_{n'\bk}\rangle$ can be computed from Eq.~(68) in Ref.~[\ref{Wilhelm2021}] as
 \begin{align}
-   \langle u_{n\bk} |  \frac{\partial h(\bk)}{\partial \bk} | u_{n'\bk}\rangle  = \delta_{nn'}\partial_\bk\epsilon_n(\bk) 
+   \langle u_{n\bk} |  \frac{\partial h(\bk)}{\partial \bk} | u_{n'\bk}\rangle  = \delta_{nn'}\partial_\bk\epsilon_n(\bk)
    +\frac{i}{q}\, \bd_{nn'}(\bk)\,(\epsilon_n(\bk)-\epsilon_{n'}(\bk)) \;.
 \end{align}
 %
-In our case, the current is a two-dimensional vector. 
+In our case, the current is a two-dimensional vector.
 %
 For generating meaningful plots, we project the current onto the axis~$\hat{e}_\phi$ of the incoming E-field and its orthogonal direction $\hat{e}_{\phi+\pi/2}$:
 \begin{align}
     j_{\parallel}(t) = \hat{e}_\phi\;\bj(t)\;,\hspace{2em}
-    j_{\bot}(t) = \hat{e}_{\phi+\pi/2}\;\bj(t)\;, 
+    j_{\bot}(t) = \hat{e}_{\phi+\pi/2}\;\bj(t)\;,
     \label{currentcomp}
 \end{align}
-and we recover 
+and we recover
 \begin{align}
 \bj(t)\eqt\hat{e}_\phi\, j_{\parallel}(t)\pt\hat{e}_{\phi+\pi/2}\,j_{\bot}(t)\;.
     \label{currentdecomp}
@@ -323,14 +323,14 @@ and we recover
 \section{Frequency-resolved emission spectrum}
 \begin{figure}
 \centering
-\setlength\figureheight{10.5cm} 
+\setlength\figureheight{10.5cm}
 \setlength\figurewidth{0.95\textwidth}
 \input{Emission_total.tikz}
 \\[1.5em]
 \input{Emission_total_hann_parzen.tikz}
-\caption{Total emission intensity from the irradiated material computed from Eq.~\eqref{emission}. 
+\caption{Total emission intensity from the irradiated material computed from Eq.~\eqref{emission}.
 %
-In the lower graph, the emission computed from $\bj_w(\omega)$ is sketched where the Hann and the Parzen window have been used as window $w(t)$. 
+In the lower graph, the emission computed from $\bj_w(\omega)$ is sketched where the Hann and the Parzen window have been used as window $w(t)$.
 %
 This is a check: If both Fourier transforms coincide, the Fourier transform is converged with respect to the time window $[-t_0,t_0]$.
 %
@@ -342,14 +342,14 @@ The frequency is given by $f\eqt\omega/(2\pi)$.
 \end{figure}
 \begin{figure}
 \centering
-\setlength\figureheight{10.5cm} 
+\setlength\figureheight{10.5cm}
 \setlength\figurewidth{0.95\textwidth}
 \input{Emission_para_ortho_full_range.tikz}
 \\[1.5em]
 \input{Emission_para_ortho.tikz}
 \caption{Emission intensity of the polarization parallel and orthogonal to the incoming electric field from the irradiated material computed from Eq.~\eqref{emissiondecomp2}.
 %
-The data is displayed using two different frequency scales. 
+The data is displayed using two different frequency scales.
 %
 The frequency is given by $f\eqt\omega/(2\pi)$.
 }
@@ -367,7 +367,7 @@ Since the current $\bj(t)$ is not periodic in time, short-time Fourier transform
     \bj(\omega) = \frac{1}{\sqrt{2\pi}}\int\limits_{-t_0}^{t_0}\,w(t)\;\bj(t)\;e^{-i\omega t}\,.
 \end{align}
 %
-As window, a Hann, Parzen and Gaussian window are available in the code. 
+As window, a Hann, Parzen and Gaussian window are available in the code.
 %
 The emission is sketched in Fig.~\ref{fig:emissiontotal} including a test of the window function.
 %
@@ -397,7 +397,7 @@ The emission intensity of parallel and orthogonal polarized light is sketched in
 When using the CUED software package, please reference to CUED by citing the following publication:
 \begin{enumerate}[leftmargin=*]
 
-\paper{J.~Wilhelm, P.~Grössing, A.~Seith, J.~Crewse, M.~Nitsch, L.~Weigl, C.~Schmid, and F.~Evers}{Semi\-con\-duc\-tor-Bloch Formalism: Derivation and Application to High-Harmonic Generation from Dirac Fermions}{TOBEFILLED}{ 
+\paper{J.~Wilhelm, P.~Grössing, A.~Seith, J.~Crewse, M.~Nitsch, L.~Weigl, C.~Schmid, and F.~Evers}{Semi\-con\-duc\-tor-Bloch Formalism: Derivation and Application to High-Harmonic Generation from Dirac Fermions}{TOBEFILLED}{
 Phys.~Rev.~B~\,\textbf{x}, y (2021)}
 \label{Wilhelm2021}
 
