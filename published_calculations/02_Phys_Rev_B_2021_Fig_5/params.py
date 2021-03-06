@@ -25,7 +25,7 @@ class params:
     E0                  = 10.0                   # Pulse amplitude (MV/cm)
     f                   = 90.0                   # Pulse frequency (THz)
     chirp               = 0.00                   # Pulse chirp ratio (chirp = c/w) (THz)
-    alpha               = 25.0                   # Gaussian pulse width (femtoseconds)
+    sigma               = 25.0                   # Gaussian pulse width (femtoseconds)
     phase               = 0.0
 
     # Time scales (all units in femtoseconds)
@@ -40,8 +40,5 @@ class params:
     gauge                   = 'length'           # Gauge of the system
     hamiltonian_evaluation  = 'ana'
     solver                  = '2band'
-    do_semicl               = False              # Turn dipoles to 0, use Berry curvature in emission
-    user_out                = True               # True to get user plotting and progress output
-    split_current           = True
-    save_full               = False
-    save_latex_pdf          = True
+    fourier_window_function = 'gaussian'
+    user_out                = False              # True to get user plotting and progress output

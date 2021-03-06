@@ -40,7 +40,6 @@ class params:
     gauge                   = 'length'           # Gauge of the system
     hamiltonian_evaluation  = 'ana'
     solver                  = '2band'
-    do_semicl               = False              # Turn all dipoles to 0 and use Berry curvature in emission
+    fourier_window_function = 'gaussian'
     user_out                = False              # Set to True to get user plotting and progress output
-    split_current           = True
-    save_full               = False
+    save_latex_pdf          = True
