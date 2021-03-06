@@ -4,14 +4,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tikzplotlib
 
-from cued.utility import ConversionFactors as co
+from cued.utility import ConversionFactors as CoFa
 from cued.utility import system_properties
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 from cued.dipole import calculate_system_in_path
 
 def write_and_compile_latex_PDF(T, W, P, S):
 
-        t_fs = T.t*co.au_to_fs
+        t_fs = T.t*CoFa.au_to_fs
         num_points_for_plotting = 960
 
         t_idx = get_time_indices_for_plotting(T.E_field, t_fs, num_points_for_plotting, factor_t_end=1.0)
@@ -37,8 +37,8 @@ def write_and_compile_latex_PDF(T, W, P, S):
 
         write_parameter(P, S)
 
-        tikz_time(T.E_field*co.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield")
-        tikz_time(T.A_field*co.au_to_MVpcm*co.au_to_fs, t_fs, t_idx, r"A-field $A(t)$ in MV*fs/cm", "Afield")
+        tikz_time(T.E_field*CoFa.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield")
+        tikz_time(T.A_field*CoFa.au_to_MVpcm*CoFa.au_to_fs, t_fs, t_idx, r"A-field $A(t)$ in MV*fs/cm", "Afield")
 
         kx_BZ, ky_BZ = BZ_plot(P, T.A_field, S)
 
@@ -312,7 +312,7 @@ def BZ_plot(P, A_field, S):
         # polar angle of upper right point of a rectangle that is horizontally aligned
         alpha = np.arctan(P.length_BZ_ortho/P.length_BZ_E_dir)
         beta  = P.angle_inc_E_field/360*2*np.pi
-        dist_edge_to_Gamma = np.sqrt(P.length_BZ_E_dir**2+P.length_BZ_ortho**2)/2/co.au_to_as
+        dist_edge_to_Gamma = np.sqrt(P.length_BZ_E_dir**2+P.length_BZ_ortho**2)/2/CoFa.au_to_as
         kx_BZ = dist_edge_to_Gamma*np.array([np.cos(alpha+beta),np.cos(np.pi-alpha+beta),np.cos(alpha+beta+np.pi),np.cos(2*np.pi-alpha+beta),np.cos(alpha+beta)])
         ky_BZ = dist_edge_to_Gamma*np.array([np.sin(alpha+beta),np.sin(np.pi-alpha+beta),np.sin(alpha+beta+np.pi),np.sin(2*np.pi-alpha+beta),np.sin(alpha+beta)])
         plt.plot(kx_BZ, ky_BZ, color='black' )
@@ -361,16 +361,16 @@ def BZ_plot(P, A_field, S):
         num_k                = np.size(path[:,0])
         plot_path_x          = np.zeros(num_k+1)
         plot_path_y          = np.zeros(num_k+1)
-        plot_path_x[0:num_k] = 1/co.au_to_as*path[0:num_k, 0]
-        plot_path_x[num_k]   = 1/co.au_to_as*path[0, 0]
-        plot_path_y[0:num_k] = 1/co.au_to_as*path[0:num_k, 1]
-        plot_path_y[num_k]   = 1/co.au_to_as*path[0, 1]
+        plot_path_x[0:num_k] = 1/CoFa.au_to_as*path[0:num_k, 0]
+        plot_path_x[num_k]   = 1/CoFa.au_to_as*path[0, 0]
+        plot_path_y[0:num_k] = 1/CoFa.au_to_as*path[0:num_k, 1]
+        plot_path_y[num_k]   = 1/CoFa.au_to_as*path[0, 1]
 
         plt.plot(plot_path_x, plot_path_y)
         plt.plot(plot_path_x, plot_path_y, color='gray', marker="o", linestyle='None')
 
-    A_min = np.amin(A_field)/co.au_to_as
-    A_max = np.amax(A_field)/co.au_to_as
+    A_min = np.amin(A_field)/CoFa.au_to_as
+    A_max = np.amax(A_field)/CoFa.au_to_as
     A_diff = A_max - A_min
 
     adjusted_length_x = length_x - dist_to_border/2
@@ -425,7 +425,7 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_po
 
    _fig, (ax1) = plt.subplots(1)
    for i_band in range(P.n):
-       _lines_exact_E_dir  = ax1.plot(k_in_path, S_tmp.e_in_path[:,i_band]*co.au_to_eV, marker='', \
+       _lines_exact_E_dir  = ax1.plot(k_in_path, S_tmp.e_in_path[:,i_band]*CoFa.au_to_eV, marker='', \
                                       label="$n=$ "+str(i_band))
    plot_it(P,"Band energy $\epsilon_n(\mathbf{k})$ in eV", "bandstructure.tikz", ax1, k_in_path)
 
@@ -434,7 +434,7 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_po
        for j_band in range(P.n):
            if j_band >= i_band: continue
            abs_dipole = np.sqrt( np.abs(S_tmp.dipole_path_x[:,i_band,j_band])**2 + \
-                                 np.abs(S_tmp.dipole_path_y[:,i_band,j_band])**2 )/co.au_to_as
+                                 np.abs(S_tmp.dipole_path_y[:,i_band,j_band])**2 )/CoFa.au_to_as
            _lines_exact_E_dir  = ax2.semilogy(k_in_path, abs_dipole, marker='', \
                                               label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
    plot_it(P,"Dipole $|\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA","abs_dipole.tikz", ax2, k_in_path)
@@ -445,7 +445,7 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_po
        for j_band in range(P.n):
            if j_band >= i_band: continue
            proj_dipole = np.abs( S_tmp.dipole_path_x[:,i_band,j_band]*S.E_dir[0] + \
-                                 S_tmp.dipole_path_y[:,i_band,j_band]*S.E_dir[1] )/co.au_to_as
+                                 S_tmp.dipole_path_y[:,i_band,j_band]*S.E_dir[1] )/CoFa.au_to_as
            _lines_exact_E_dir  = ax3.semilogy(k_in_path, proj_dipole, marker='', \
                                               label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
    plot_it(P,"$|\hat{e}_\phi\cdot\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA","proj_dipole.tikz", ax3, k_in_path)
@@ -500,10 +500,10 @@ def dipole_quiver_plots(kx_BZ, ky_BZ, P, S):
 
         calculate_system_in_path(path, P, S_tmp)
 
-        d_x[k_path*Nk_plot:(k_path+1)*Nk_plot, :, :] = S_tmp.dipole_path_x[:,:,:]*co.au_to_as 
-        d_y[k_path*Nk_plot:(k_path+1)*Nk_plot, :, :] = S_tmp.dipole_path_y[:,:,:]*co.au_to_as 
-        k_x[k_path*Nk_plot:(k_path+1)*Nk_plot]       = path[:,0]/co.au_to_as 
-        k_y[k_path*Nk_plot:(k_path+1)*Nk_plot]       = path[:,1]/co.au_to_as 
+        d_x[k_path*Nk_plot:(k_path+1)*Nk_plot, :, :] = S_tmp.dipole_path_x[:,:,:]*CoFa.au_to_as 
+        d_y[k_path*Nk_plot:(k_path+1)*Nk_plot, :, :] = S_tmp.dipole_path_y[:,:,:]*CoFa.au_to_as 
+        k_x[k_path*Nk_plot:(k_path+1)*Nk_plot]       = path[:,0]/CoFa.au_to_as 
+        k_y[k_path*Nk_plot:(k_path+1)*Nk_plot]       = path[:,1]/CoFa.au_to_as 
 
     for i_band in range(P.n):
         for j_band in range(P.n):
@@ -534,7 +534,7 @@ def dipole_quiver_plots(kx_BZ, ky_BZ, P, S):
             ax.axis('equal')
             ax.set_xlabel(r'$k_x$ in 1/\AA')
             ax.set_ylabel(r'$k_y$ in 1/\AA')
-            plt.colorbar(plot, ax=ax, label=current_abs_name)
+            plt.CoFalorbar(plot, ax=ax, label=current_abs_name)
 #            tikzplotlib.save("dipole_quiver_Re_d_"+str(i_band)+"_"+str(j_band)+".tikz", 
 #                             axis_height='\\figureheight', axis_width ='\\figurewidth' )
 
@@ -549,7 +549,7 @@ def dipole_quiver_plots(kx_BZ, ky_BZ, P, S):
             ax.axis('equal')
             ax.set_xlabel(r'$k_x$ in 1/\AA')
             ax.set_ylabel(r'$k_y$ in 1/\AA')
-            plt.colorbar(plot, ax=ax, label=current_abs_name)
+            plt.CoFalorbar(plot, ax=ax, label=current_abs_name)
 #            tikzplotlib.save("dipole_quiver_Im_d_"+str(i_band)+"_"+str(j_band)+".tikz", 
 #                             axis_height='\\figureheight', axis_width ='\\figurewidth' )
 

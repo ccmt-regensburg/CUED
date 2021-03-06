@@ -96,7 +96,7 @@ class Params():
         self.E0 = UP.E0*CoFa.MVpcm_to_au                  # Driving pulse field amplitude
         self.chirp = UP.chirp*CoFa.THz_to_au              # Pulse chirp frequency
         self.sigma = UP.sigma*CoFa.fs_to_au               # Gaussian pulse width
-        self.phase = UP.phase                           # Carrier-envelope phase
+        self.phase = UP.phase                             # Carrier-envelope phase
 
         # Time scales
         self.T1 = UP.T1*CoFa.fs_to_au                     # Occupation damping time
