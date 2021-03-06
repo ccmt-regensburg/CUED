@@ -44,4 +44,3 @@ class params:
     solver                  = '2band'
     user_out                = False
     split_current           = False
-    save_text               = True
