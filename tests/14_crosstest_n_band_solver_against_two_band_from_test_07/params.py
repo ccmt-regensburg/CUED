@@ -39,8 +39,6 @@ class params:
     ##########################################################################
     gauge                   = 'length'           # Gauge of the system
     hamiltonian_evaluation  = 'ana'
+    fourier_window_function = 'gaussian'
     solver                  = '2band'
-    do_semicl               = False
     user_out                = False
-    split_current           = False
-    save_full               = False

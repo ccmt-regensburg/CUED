@@ -42,7 +42,5 @@ class params:
     gauge                   = 'length'           # Gauge of the system
     hamiltonian_evaluation  = 'num'
     solver                  = 'nband'
-    do_semicl               = False
+    fourier_window_function = 'gaussian'
     user_out                = False
-    split_current           = False
-    save_full               = False

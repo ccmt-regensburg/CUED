@@ -40,7 +40,6 @@ class params:
     gauge                   = 'velocity'         # Gauge of the system
     hamiltonian_evaluation  = 'ana'
     solver                  = '2band'
+    fourier_window_function = 'gaussian'
     do_semicl               = True
     user_out                = False
-    split_current           = False
-    save_full               = False

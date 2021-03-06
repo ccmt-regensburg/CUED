@@ -51,12 +51,12 @@ def read_dataset(path, prefix='', suffix=''):
         # Time data
         filepath = path + '/' + filename
         if (filename.startswith(time_string) and '.dat' in filename):
-            print("Reading time:", filepath)
+            print("Reading time data:", filepath)
             time_data = np.genfromtxt(filepath, names=True, encoding='utf8', deletechars='')
 
         # Frequency data
         if (filename.startswith(freq_string) and '.dat' in filename):
-            print("Reading fourier:", filepath)
+            print("Reading frequency data:", filepath)
             freq_data = np.genfromtxt(filepath, names=True, encoding='utf8', deletechars='')
 
         # Density data

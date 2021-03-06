@@ -35,10 +35,8 @@ class params:
 
     # Flags for testing and features
     ##########################################################################
-    gauge                  = 'velocity'          # Gauge of the system
-    hamiltonian_evaluation = 'ana'
-    solver                 = '2band'
-    do_semicl              = False               # Turn dipoles to 0, use Berry curvature in emission
-    user_out               = False               # True to get user plotting and progress output
-    split_current          = False
-    save_full              = False
+    gauge                   = 'velocity'          # Gauge of the system
+    hamiltonian_evaluation  = 'ana'
+    solver                  = '2band'
+    fourier_window_function = 'gaussian'
+    user_out                = False               # True to get user plotting and progress output

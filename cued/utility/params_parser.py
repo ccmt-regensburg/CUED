@@ -109,7 +109,7 @@ class Params():
             self.factor_freq_resolution = UP.factor_freq_resolution
 
         # gaussian or hann
-        self.fourier_window_function = 'gaussian'
+        self.fourier_window_function = 'hann'
         if hasattr(UP, 'fourier_window_function'):
             self.fourier_window_function = UP.fourier_window_function
 
