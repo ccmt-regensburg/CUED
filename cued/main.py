@@ -7,9 +7,9 @@ from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode
 
 import cued.dipole
-from cued.utility import ConversionFactors as CoFa, Params
+from cued.utility import ConversionFactors as CoFa, ParamsParser
 from cued.utility import conditional_njit, evaluate_njit_matrix
-from cued.utility import time_containers, system_properties, frequency_containers
+from cued.utility import TimeContainers, system_properties, frequency_containers
 from cued.utility import write_and_compile_latex_PDF
 from cued.fields import make_electric_field
 from cued.dipole import calculate_system_in_path
@@ -17,7 +17,7 @@ from cued.observables import *
 from cued.rhs_ode import *
 
 
-def sbe_solver(sys, params, electric_field_function=None):
+def sbe_solver(sys, params):
     """
     Solver for the semiconductor bloch equation ( eq. (39) or (47) in https://arxiv.org/abs/2008.03177)
     for a n band system with numerical calculation of the dipole elements (unfinished - analytical dipoles
@@ -73,7 +73,7 @@ def sbe_solver(sys, params, electric_field_function=None):
     # RETRIEVE PARAMETERS
     ###########################################################################
     # Flag evaluation
-    P = Params(params)
+    P = ParamsParser(params)
 
     # USER OUTPUT
     ###########################################################################
@@ -88,7 +88,7 @@ def sbe_solver(sys, params, electric_field_function=None):
     S = system_properties(P, sys)
 
     # Make containers for time- and frequency- dependent observables
-    T = time_containers(P, electric_field_function)
+    T = TimeContainers(P)
     W = frequency_containers()
 
     # Make rhs of ode for 2band or nband solver

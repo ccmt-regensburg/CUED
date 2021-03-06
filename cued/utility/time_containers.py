@@ -1,45 +1,35 @@
 import numpy as np
 from cued.fields import make_electric_field
 
-def time_containers(P, electric_field_function):
-    class Time():
-        pass
+class TimeContainers():
+    def __init__(self, P):
+        self.t = np.zeros(P.Nt, dtype=P.type_real_np)
+        self.solution = np.zeros((P.Nk1, P.n, P.n), dtype=P.type_real_np)
+        self.solution_y_vec = np.zeros((((P.n)**2)*(P.Nk1)+1), dtype=P.type_complex_np)
 
-    T  = Time()
+        if P.save_full:
+            self.solution_full = np.empty((P.Nk1, P.Nk2, P.Nt, P.n, P.n), dtype=P.type_complex_np)
 
-    T.t = np.zeros(P.Nt, dtype=P.type_real_np)
-    T.solution = np.zeros((P.Nk1, P.n, P.n), dtype=P.type_real_np)
-    T.solution_y_vec = np.zeros((((P.n)**2)*(P.Nk1)+1), dtype=P.type_complex_np)
+        self.A_field = np.zeros(P.Nt, dtype=P.type_real_np)
+        self.E_field = np.zeros(P.Nt, dtype=P.type_real_np)
 
-    if P.save_full:
-        solution_full = np.empty((P.Nk1, P.Nk2, P.Nt, P.n, P.n), dtype=P.type_complex_np)
+        self.j_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
+        self.j_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
-    T.A_field = np.zeros(P.Nt, dtype=P.type_real_np)
-    T.E_field = np.zeros(P.Nt, dtype=P.type_real_np)
+        if P.split_current:
+            self.j_intra_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
+            self.j_intra_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
-    T.j_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
-    T.j_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
+            self.P_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
+            self.P_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
-    if P.split_current:
-        T.j_intra_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
-        T.j_intra_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
+            self.dtP_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
+            self.dtP_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
-        T.P_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
-        T.P_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
+            self.j_anom_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
-        T.dtP_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
-        T.dtP_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
-
-        T.j_anom_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
-
-    #if P.zeeman:
-    #    T.Zee_field = np.zeros((P.Nt, 3), dtype=P.type_real_np)
-
-    # Initialize electric_field, create rhs of ode and initialize solver
-
-    if electric_field_function is None:
-        T.electric_field = make_electric_field(P)
-    else:
-        T.electric_field = electric_field_function
-
-    return T
+        # Initialize electric_field, create rhs of ode and initialize solver
+        if P.electric_field_function is None:
+            self.electric_field = make_electric_field(P)
+        else:
+            self.electric_field = P.electric_field_function

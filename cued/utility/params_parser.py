@@ -4,7 +4,7 @@ import numpy as np
 
 from cued.utility import ConversionFactors as CoFa
 
-class Params():
+class ParamsParser():
     """
     Environment variable class holding all relevant parameters in the SBE code.
     Additional check for ill-defined user parameters included.
@@ -40,6 +40,10 @@ class Params():
         self.chirp = UP.chirp*CoFa.THz_to_au              # Pulse chirp frequency
         self.sigma = UP.sigma*CoFa.fs_to_au               # Gaussian pulse width
         self.phase = UP.phase                             # Carrier-envelope phase
+
+        self.electric_field_function = None
+        if hasattr(UP, 'electric_field_function'):
+            self.electric_field_function = UP.electric_field_function
 
     def __brillouin_zone(self, UP):
         '''Brillouin zone/Lattice''' 
@@ -163,10 +167,10 @@ class Params():
 
         # Derived precision parameters
         if self.precision == 'double':
-            self.type_real_np    = np.float64
+            self.type_real_np = np.float64
             self.type_complex_np = np.complex128
         elif self.precision == 'quadruple':
-            self.type_real_np    = np.float128
+            self.type_real_np = np.float128
             self.type_complex_np = np.complex256
             if self.solver_method != 'rk4':
                 sys.exit("Error: Quadruple precision only works with Runge-Kutta 4 ODE solver.")
