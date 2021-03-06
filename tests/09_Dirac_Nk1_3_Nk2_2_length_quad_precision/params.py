@@ -5,7 +5,6 @@ import numpy as np
 class params:
     # System parameters
     #########################################################################
-    a                   = 8.304                  # Lattice spacing in atomic units (4.395 A)
     e_fermi             = 0.0                    # Fermi energy in eV
     temperature         = 0.0                    # Temperature in eV
 
