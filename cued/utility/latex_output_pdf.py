@@ -433,8 +433,8 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_po
    for i_band in range(P.n):
        for j_band in range(P.n):
            if j_band >= i_band: continue
-           abs_dipole = np.sqrt( np.abs(S_tmp.dipole_path_x[:,i_band,j_band])**2 + \
-                                 np.abs(S_tmp.dipole_path_y[:,i_band,j_band])**2 )/CoFa.au_to_as
+           abs_dipole = ( np.sqrt( np.abs(S_tmp.dipole_path_x[:,i_band,j_band])**2 + \
+                                   np.abs(S_tmp.dipole_path_y[:,i_band,j_band])**2 ) + 1.0e-80)/CoFa.au_to_as
            _lines_exact_E_dir  = ax2.semilogy(k_in_path, abs_dipole, marker='', \
                                               label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
    plot_it(P,"Dipole $|\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA","abs_dipole.tikz", ax2, k_in_path)
@@ -444,8 +444,8 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_po
    for i_band in range(P.n):
        for j_band in range(P.n):
            if j_band >= i_band: continue
-           proj_dipole = np.abs( S_tmp.dipole_path_x[:,i_band,j_band]*S.E_dir[0] + \
-                                 S_tmp.dipole_path_y[:,i_band,j_band]*S.E_dir[1] )/CoFa.au_to_as
+           proj_dipole = ( np.abs( S_tmp.dipole_path_x[:,i_band,j_band]*S.E_dir[0] + \
+                                   S_tmp.dipole_path_y[:,i_band,j_band]*S.E_dir[1] ) + 1.0e-80)/CoFa.au_to_as
            _lines_exact_E_dir  = ax3.semilogy(k_in_path, proj_dipole, marker='', \
                                               label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
    plot_it(P,"$|\hat{e}_\phi\cdot\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA","proj_dipole.tikz", ax3, k_in_path)

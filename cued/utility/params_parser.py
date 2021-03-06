@@ -141,6 +141,11 @@ class ParamsParser():
         if hasattr(UP, 'gaussian_window_width'):
             self.gaussian_window_width = UP.gaussian_window_width*CoFa.fs_to_au
 
+        self.num_dimensions = 'automatic'                 # dimensionality for determining the prefactor (2*pi)^d of current
+        if hasattr(UP, 'num_dimensions'):
+            self.num_dimensions = UP.num_dimensions
+
+
     def __check_user_paramas_for_wrong_arguments(self, UP):
         """
         Compare default paramaters with user parameters.

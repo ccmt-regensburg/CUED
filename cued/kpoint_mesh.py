@@ -45,7 +45,7 @@ def rect_mesh(P, S):
         paths.append(path)
 
     dk = length_BZ_E_dir/Nk_E_dir
-    kweight = length_BZ_E_dir/Nk_E_dir * length_BZ_ortho/Nk_ortho
+    kweight = length_BZ_E_dir/Nk_E_dir * length_BZ_ortho/Nk_ortho * two_pi_factor(P)
 
     return dk, kweight, np.array(paths)
 
@@ -149,4 +149,18 @@ def hex_mesh(P):
                     path_K.append(kpoint)
             paths.append(path_K)
 
-    return 1/P.Nk1, (3*np.sqrt(3)/2)*(4*np.pi/(P.a*3))**2/P.Nk, np.array(paths)
+    return 1/P.Nk1, (3*np.sqrt(3)/2)*(4*np.pi/(P.a*3))**2/P.Nk*two_pi_factor(P), np.array(paths)
+
+
+def two_pi_factor(P):
+    if P.num_dimensions == '1':
+        exponent = -1
+    elif P.num_dimensions == '2':
+        exponent = -2
+    elif P.num_dimensions == 'automatic':
+        if P.Nk2 == 1:
+            exponent = -1
+        else:
+            exponent = -2
+
+    return (2.0*np.pi)**exponent

@@ -18,12 +18,13 @@ def system_properties(P, sys):
     # Form Brillouin Zone
 
     if P.BZ_type == 'hexagon':
-        S.dk, S.kweight, S.paths = hex_mesh(P)
         if P.align == 'K':
             S.E_dir = np.array([1, 0])
         elif P.align == 'M':
             S.E_dir = np.array([np.cos(np.radians(-30)),
                               np.sin(np.radians(-30))])
+        S.dk, S.kweight, S.paths = hex_mesh(P)
+
     elif P.BZ_type == 'rectangle':
         S.E_dir = np.array([np.cos(np.radians(P.angle_inc_E_field)),
                           np.sin(np.radians(P.angle_inc_E_field))])
