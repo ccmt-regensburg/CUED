@@ -4,7 +4,8 @@ import sys
 
 class MpiHelpers:
     '''
-    This class holds helper functions for the usage of the mpi scatterv and gatherv routines.
+    This class holds helper functions for the usage of the
+    mpi scatterv and gatherv routines.
     '''
     def __init__(self):
         self.mpi = MPI
@@ -15,9 +16,11 @@ class MpiHelpers:
     def get_local_idx(self, idxmax):
         # Check whether there are more ranks than indices to partition
         if self.size > idxmax: 
-            sys.exit("The number of MPI ranks has to be smaller equal "+str(idxmax)+".")
+            sys.exit("The number of MPI ranks has to be smaller equal "
+                     + str(idxmax) + ".")
         # Important mpi.INT == np.int32
-        global_idx_list, local_idx_list, ptuple, displace = self.listchop(np.arange(idxmax, dtype=np.int32))
+        global_idx_list, local_idx_list, ptuple, displace =\
+            self.listchop(np.arange(idxmax, dtype=np.int32))
         self.comm.Scatterv([global_idx_list, ptuple, displace, self.mpi.INT], local_idx_list)
 
         return local_idx_list

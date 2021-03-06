@@ -9,7 +9,7 @@ from scipy.integrate import ode
 import cued.dipole
 from cued.utility import ConversionFactors as CoFa, ParamsParser
 from cued.utility import conditional_njit, evaluate_njit_matrix
-from cued.utility import TimeContainers, system_properties, frequency_containers
+from cued.utility import FrequencyContainers, SystemContainers, TimeContainers
 from cued.utility import write_and_compile_latex_PDF
 from cued.fields import make_electric_field
 from cued.dipole import calculate_system_in_path
@@ -85,11 +85,11 @@ def sbe_solver(sys, params):
 
     # Calculate the systems properties (hamiltonian, eigensystem, dipoles,
     # berry curvature, BZ, electric field)
-    S = system_properties(P, sys)
+    S = SystemContainers(P, sys)
 
     # Make containers for time- and frequency- dependent observables
     T = TimeContainers(P)
-    W = frequency_containers()
+    W = FrequencyContainers()
 
     # Make rhs of ode for 2band or nband solver
     rhs_ode, solver = make_rhs_ode(P, S, T)

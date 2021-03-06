@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import tikzplotlib
 
 from cued.utility import ConversionFactors as CoFa
-from cued.utility import system_properties
+from cued.utility import SystemContainers
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 from cued.dipole import calculate_system_in_path
 
@@ -408,7 +408,7 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_po
 
    Nk1    = P.Nk1
    P.Nk1  = num_points_for_plotting
-   S_tmp  = system_properties(P, S.sys)
+   S_tmp  = SystemContainers(P, S.sys)
 
    path = high_symmetry_path_BZ
 
@@ -484,7 +484,7 @@ def dipole_quiver_plots(kx_BZ, ky_BZ, P, S):
         P.length_BZ_E_dir = max(length_BZ_E_dir, length_BZ_ortho)
         P.length_BZ_ortho = max(length_BZ_E_dir, length_BZ_ortho)
  
-    S_tmp  = system_properties(P, S.sys)
+    S_tmp  = SystemContainers(P, S.sys)
  
     P.Nk1             = Nk1
     P.Nk2             = Nk2
