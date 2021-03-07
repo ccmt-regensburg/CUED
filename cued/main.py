@@ -583,25 +583,24 @@ def print_user_info(P, B0=None, mu=None, incident_angle=None):
         print("Driving field alignment         = " + P.align)
     elif P.BZ_type == 'rectangle':
         print("Driving field direction         = " + str(P.angle_inc_E_field))
-    if B0 is not None:
-        print("Incident angle                  = " + str(np.rad2deg(incident_angle)))
-    print("Driving amplitude (MV/cm)[a.u.] = " + "("
-          + '{:.6f}'.format(P.E0_MVpcm) + ")"
-          + "[" + '{:.6f}'.format(P.E0) + "]")
-    if B0 is not None:
-        print("Magnetic amplitude (T)[a.u.]    = " + "("
-              + '%.6f'%(B0*CoFa.au_to_T) + ")"
-              + "[" + '%.6f'%(B0) + "]")
-        print("Magnetic moments ", mu)
     print("Pulse Frequency (THz)[a.u.]     = " + "("
           + '{:.6f}'.format(P.f_THz) + ")"
           + "[" + '{:.6f}'.format(P.f) + "]")
-    print("Pulse Width (fs)[a.u.]          = " + "("
-          + '{:.6f}'.format(P.sigma_fs) + ")"
-          + "[" + '{:.6f}'.format(P.sigma) + "]")
-    print("Chirp rate (THz)[a.u.]          = " + "("
-          + '{:.6f}'.format(P.chirp_THz) + ")"
-          + "[" + '{:.6f}'.format(P.chirp) + "]")
+    if P.user_defined_field:
+        print("User defined field parameters..")
+    else:
+        print("Driving amplitude (MV/cm)[a.u.] = " + "("
+            + '{:.6f}'.format(P.E0_MVpcm) + ")"
+            + "[" + '{:.6f}'.format(P.E0) + "]")
+        print("Pulse Width (fs)[a.u.]          = " + "("
+            + '{:.6f}'.format(P.sigma_fs) + ")"
+            + "[" + '{:.6f}'.format(P.sigma) + "]")
+        print("Chirp rate (THz)[a.u.]          = " + "("
+            + '{:.6f}'.format(P.chirp_THz) + ")"
+            + "[" + '{:.6f}'.format(P.chirp) + "]")
+        print("Phase (1)[pi]                   = " + "("
+            + '{:.6f}'.format(P.phase) + ")"
+            + "[" + '{:.6f}'.format(P.phase/np.pi) + "]")
     print("Damping time (fs)[a.u.]         = " + "("
           + '{:.6f}'.format(P.T2_fs) + ")"
           + "[" + '{:.6f}'.format(P.T2) + "]")

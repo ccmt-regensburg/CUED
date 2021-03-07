@@ -34,10 +34,10 @@ class TimeContainers():
             self.j_anom_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
         # Initialize electric_field, create rhs of ode and initialize solver
-        if P.electric_field_function is None:
-            self.electric_field = make_electric_field(P)
-        else:
+        if P.user_defined_field:
             self.electric_field = P.electric_field_function
+        else:
+            self.electric_field = make_electric_field(P)
 
 
 class FrequencyContainers():

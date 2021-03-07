@@ -13,12 +13,13 @@ class ParamsParser():
 
         self.__occupation(UP)
         self.__time_scales(UP)
-        self.__field(UP)
+        user_defined_field = self.__field(UP)
         self.__brillouin_zone(UP)
         self.__optional(UP)
 
         # Check if user params has any ill-defined parameters
-        self.__check_user_paramas_for_wrong_arguments(UP)
+        self.__check_user_params_for_wrong_arguments(UP)
+        self.user_defined_field = user_defined_field
         self.__append_derived_parameters(UP)
 
     def __occupation(self, UP):
@@ -36,17 +37,22 @@ class ParamsParser():
     def __field(self, UP):
         '''Electrical Driving Field'''
         self.f = UP.f*CoFa.THz_to_au                      # Driving pulse frequency
-        self.E0 = UP.E0*CoFa.MVpcm_to_au                  # Driving pulse field amplitude
-        self.chirp = UP.chirp*CoFa.THz_to_au              # Pulse chirp frequency
-        self.sigma = UP.sigma*CoFa.fs_to_au               # Gaussian pulse width
-        self.phase = UP.phase                             # Carrier-envelope phase
 
-        self.electric_field_function = None
         if hasattr(UP, 'electric_field_function'):
             self.electric_field_function = UP.electric_field_function
+            user_defined_field = True                     # Disables all CUED specific field printouts
+            return user_defined_field                     # Derived parameter -> add to self after params check
+        else:
+            self.electric_field_function = None           # Gets set in TimeContainers
+            self.E0 = UP.E0*CoFa.MVpcm_to_au              # Driving pulse field amplitude
+            self.chirp = UP.chirp*CoFa.THz_to_au          # Pulse chirp frequency
+            self.sigma = UP.sigma*CoFa.fs_to_au           # Gaussian pulse width
+            self.phase = UP.phase                         # Carrier-envelope phase
+            user_defined_field = False
+            return user_defined_field                     # Derived parameter -> add to self after params check
 
     def __brillouin_zone(self, UP):
-        '''Brillouin zone/Lattice''' 
+        '''Brillouin zone/Lattice'''
         self.BZ_type = UP.BZ_type                         # Type of Brillouin zone
         self.Nk1 = UP.Nk1                                 # kpoints in b1 direction
         self.Nk2 = UP.Nk2                                 # kpoints in b2 direction
@@ -121,7 +127,6 @@ class ParamsParser():
         if hasattr(UP, 'symmetric_insulator'):
             self.symmetric_insulator = UP.symmetric_insulator
 
-        
         self.dk_order = 8                                 # Accuracy order of density-matrix k-deriv.
         if hasattr(UP, 'dk_order'):
             self.dk_order = UP.dk_order                   # with length gauge (avail: 2,4,6,8)
@@ -132,21 +137,26 @@ class ParamsParser():
         if hasattr(UP, 'factor_freq_resolution'):
             self.factor_freq_resolution = UP.factor_freq_resolution
 
-        
-        self.fourier_window_function = 'hann'             # gaussian or hann
-        if hasattr(UP, 'fourier_window_function'):
-            self.fourier_window_function = UP.fourier_window_function
-
-        self.gaussian_window_width = self.sigma
-        if hasattr(UP, 'gaussian_window_width'):
-            self.gaussian_window_width = UP.gaussian_window_width*CoFa.fs_to_au
-
         self.num_dimensions = 'automatic'                 # dimensionality for determining the prefactor (2*pi)^d of current
         if hasattr(UP, 'num_dimensions'):
             self.num_dimensions = UP.num_dimensions
 
+        self.fourier_window_function = 'hann'             # gaussian or hann
+        if hasattr(UP, 'fourier_window_function'):
+            self.fourier_window_function = UP.fourier_window_function
 
-    def __check_user_paramas_for_wrong_arguments(self, UP):
+        if self.fourier_window_function == 'gaussian':
+            if hasattr(UP, 'gaussian_window_width'):
+                self.gaussian_window_width = UP.gaussian_window_width*CoFa.fs_to_au
+            else:
+                self.gaussian_window_width = None
+
+            if self.user_defined_field and self.gaussian_window_width is None:
+                sys.exit("Gaussian needs a width (gaussian_window_width).")
+            else:
+                self.gaussian_window_width = self.sigma
+
+    def __check_user_params_for_wrong_arguments(self, UP):
         """
         Compare default paramaters with user parameters.
         If there are user paramters not defined in the parameters
@@ -187,10 +197,11 @@ class ParamsParser():
         self.temperature_eV =  UP.temperature
 
         # Derived driving field parameters
-        self.E0_MVpcm = UP.E0
         self.f_THz = UP.f
-        self.chirp_THz = UP.chirp
-        self.sigma_fs = UP.sigma
+        if not self.user_defined_field:
+            self.E0_MVpcm = UP.E0
+            self.chirp_THz = UP.chirp
+            self.sigma_fs = UP.sigma
 
         # Derived time scale parameters
         self.gamma1 = 1/self.T1
