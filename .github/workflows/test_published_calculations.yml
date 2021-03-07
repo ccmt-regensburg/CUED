@@ -15,8 +15,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Copy test file
-            cp tests/test_script.py published_calculations
+      run:  cp tests/test_script.py published_calculations
     - name: Only run on a single CPU
-            sed -i 's/mpirun -np 2/mpirun -np 1/g' published_calculations/test_script.py
+      run:  sed -i 's/mpirun -np 2/mpirun -np 1/g' published_calculations/test_script.py
     - name: Run test script
       run:  python3 published_calculations/test_script.py
