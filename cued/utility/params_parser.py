@@ -13,13 +13,12 @@ class ParamsParser():
 
         self.__occupation(UP)
         self.__time_scales(UP)
-        user_defined_field = self.__field(UP)
+        self.__field(UP)
         self.__brillouin_zone(UP)
         self.__optional(UP)
 
         # Check if user params has any ill-defined parameters
         self.__check_user_params_for_wrong_arguments(UP)
-        self.user_defined_field = user_defined_field
         self.__append_derived_parameters(UP)
 
     def __occupation(self, UP):
@@ -40,16 +39,16 @@ class ParamsParser():
 
         if hasattr(UP, 'electric_field_function'):
             self.electric_field_function = UP.electric_field_function
-            user_defined_field = True                     # Disables all CUED specific field printouts
-            return user_defined_field                     # Derived parameter -> add to self after params check
+            # Make first private to set it after params check in derived params
+            self.__user_defined_field = True              # Disables all CUED specific field printouts
+
         else:
             self.electric_field_function = None           # Gets set in TimeContainers
             self.E0 = UP.E0*CoFa.MVpcm_to_au              # Driving pulse field amplitude
             self.chirp = UP.chirp*CoFa.THz_to_au          # Pulse chirp frequency
             self.sigma = UP.sigma*CoFa.fs_to_au           # Gaussian pulse width
             self.phase = UP.phase                         # Carrier-envelope phase
-            user_defined_field = False
-            return user_defined_field                     # Derived parameter -> add to self after params check
+            self.__user_defined_field = False
 
     def __brillouin_zone(self, UP):
         '''Brillouin zone/Lattice'''
@@ -151,7 +150,7 @@ class ParamsParser():
             else:
                 self.gaussian_window_width = None
 
-            if self.user_defined_field and self.gaussian_window_width is None:
+            if self.__user_defined_field and self.gaussian_window_width is None:
                 sys.exit("Gaussian needs a width (gaussian_window_width).")
             else:
                 self.gaussian_window_width = self.sigma
@@ -179,6 +178,8 @@ class ParamsParser():
         ## The following parameters are derived parameters
         ## and can not be set in the params.py file
         ##################################################
+
+        self.user_defined_field = self.__user_defined_field
 
         # Derived precision parameters
         if self.precision == 'double':
