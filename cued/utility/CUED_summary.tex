@@ -268,7 +268,12 @@ The green and red line at the top left corner sketch ${\color{darkgreen}\bA_\tex
 \input{abs_dipole.tikz}
 \\[2em]
 \input{proj_dipole.tikz}
-\caption{Band structure~$\epsilon_n(\bk)$ as computed from the Hamiltonian~$h(\bk)$, see Eq.~\eqref{e3}. }
+\caption{Top: Band structure~$\epsilon_n(\bk)$ as computed from the Hamiltonian~$h(\bk)$, see Eq.~\eqref{e3}. 
+%
+Middle and bottom: Absolute value of the dipoles and projection of the dipole onto the axis of the electric field [this projection enters the semiconductor Bloch equations, Eq.~\eqref{e5}].
+%
+Dipoles below $10^{-10}$\,{\AA} are not displayed.
+}
     \label{fig:bandstructuredipole}
 \end{figure}
 
@@ -300,7 +305,7 @@ In case you choose the length gauge (\texttt{gauge = 'length'}, that is also the
     -i\sd \bE(t){\sum_{\un}}
     \big(\rho_{n\un}(\bk;t) \mathbf{d}_{\un n'}(\bk)
     -  \mathbf{d}_{n\un}(\bk)\rho_{\un n'}(\bk;t)
-    \big)
+    \big)\label{e5}
 \end{align}
 with a dephasing time $T_2\eqt PH-T2$\,fs. 
 
@@ -349,31 +354,17 @@ and we recover
 \section{Frequency-resolved emission spectrum}
 \begin{figure}
 \centering
-\setlength\figureheight{10.5cm} 
+\setlength\figureheight{7.0cm} 
 \setlength\figurewidth{0.95\textwidth}
 \input{Emission_total.tikz}
-\\[1.5em]
-\input{Emission_total_hann_parzen.tikz}
-\caption{Total emission intensity from the irradiated material computed from Eq.~\eqref{emission}. 
-%
-In the lower graph, the emission computed from $\bj_w(\omega)$ is sketched where the Hann and the Parzen window have been used as window $w(t)$. 
-%
-This is a check: If both Fourier transforms coincide, the Fourier transform is converged with respect to the time window $[-t_0,t_0]$.
-%
-If the Fourier transforms with Hann and Parzen window differ, increase~$t_0$.
-%
-The frequency is given by $f\eqt\omega/(2\pi)$.
-}
-    \label{fig:emissiontotal}
-\end{figure}
-\begin{figure}
-\centering
-\setlength\figureheight{10.5cm} 
-\setlength\figurewidth{0.95\textwidth}
-\input{Emission_para_ortho_full_range.tikz}
-\\[1.5em]
+\\[1.0em]
 \input{Emission_para_ortho.tikz}
-\caption{Emission intensity of the polarization parallel and orthogonal to the incoming electric field from the irradiated material computed from Eq.~\eqref{emissiondecomp2}.
+\\[1.0em]
+%\input{Emission_total_hann_parzen.tikz}
+\input{Emission_para_ortho_full_range.tikz}
+\caption{Top: Total emission intensity from the irradiated material computed from Eq.~\eqref{emission}. 
+%
+Middle and bottom: Emission intensity of the polarization parallel and orthogonal to the incoming electric field from the irradiated material computed from Eq.~\eqref{emissiondecomp2}.
 %
 The data is displayed using two different frequency scales. 
 %
@@ -381,6 +372,7 @@ The frequency is given by $f\eqt\omega/(2\pi)$.
 }
     \label{fig:emission}
 \end{figure}
+
 Experiments measure the  frequency resolved emission intensity~$I$, which is computed by Eq.~(53) in Ref.~[\ref{Wilhelm2021}]
 \begin{align}
 I(\omega) &=
@@ -395,7 +387,7 @@ Since the current $\bj(t)$ is not periodic in time, short-time Fourier transform
 %
 As window, a Hann, Parzen and Gaussian window are available in the code. 
 %
-The emission is sketched in Fig.~\ref{fig:emissiontotal} including a test of the window function.
+The emission is sketched in Fig.~\ref{fig:emission}.
 %
 %
 When inserting Eq.~\eqref{currentdecomp} in the frequency domain, we have

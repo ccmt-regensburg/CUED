@@ -430,6 +430,7 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_po
    plot_it(P,"Band energy $\epsilon_n(\mathbf{k})$ in eV", "bandstructure.tikz", ax1, k_in_path)
 
    _fig, (ax2) = plt.subplots(1)
+   d_min = 1.0E-10
    for i_band in range(P.n):
        for j_band in range(P.n):
            if j_band >= i_band: continue
@@ -437,10 +438,12 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_po
                                    np.abs(S_tmp.dipole_path_y[:,i_band,j_band])**2 ) + 1.0e-80)/CoFa.au_to_as
            _lines_exact_E_dir  = ax2.semilogy(k_in_path, abs_dipole, marker='', \
                                               label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
-   plot_it(P,"Dipole $|\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA","abs_dipole.tikz", ax2, k_in_path)
+           d_min = max(d_min, np.amin(abs_dipole))
+   plot_it(P,"Dipole $|\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA","abs_dipole.tikz", ax2, k_in_path, d_min)
 
 
    _fig, (ax3) = plt.subplots(1)
+   d_min = 1.0E-10
    for i_band in range(P.n):
        for j_band in range(P.n):
            if j_band >= i_band: continue
@@ -448,10 +451,11 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_po
                                    S_tmp.dipole_path_y[:,i_band,j_band]*S.E_dir[1] ) + 1.0e-80)/CoFa.au_to_as
            _lines_exact_E_dir  = ax3.semilogy(k_in_path, proj_dipole, marker='', \
                                               label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
-   plot_it(P,"$|\hat{e}_\phi\cdot\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA","proj_dipole.tikz", ax3, k_in_path)
+           d_min = max(d_min, np.amin(proj_dipole))
+   plot_it(P,"$|\hat{e}_\phi\cdot\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA","proj_dipole.tikz", ax3, k_in_path, d_min)
 
 
-def plot_it(P, ylabel, filename, ax1, k_in_path):
+def plot_it(P, ylabel, filename, ax1, k_in_path, y_min=None):
 
    num_points_for_plotting = k_in_path.size
    k_lims = ( k_in_path[0], k_in_path[-1] )
@@ -460,6 +464,8 @@ def plot_it(P, ylabel, filename, ax1, k_in_path):
    ax1.set_ylabel(ylabel)
    ax1.legend(loc='upper left')
    ax1.set_xlim(k_lims)
+   if y_min is not None:
+       ax1.set_ylim(bottom=y_min)
    ax1.set_xticks( [k_in_path[0], k_in_path[num_points_for_plotting//2], k_in_path[-1]] )
    if P.BZ_type == 'hexagon':
        ax1.set_xticklabels( ['K','$\Gamma$','M'] )
