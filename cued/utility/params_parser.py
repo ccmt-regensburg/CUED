@@ -233,8 +233,11 @@ class ParamsParser():
             self.a_angs = self.a*CoFa.au_to_as
 
         # Filename tail
-        self.tail =\
-            'E_{:.4f}_w_{:.1f}_a_{:.1f}_{}_t0_{:.1f}_dt_{:.6f}_NK1-{}_NK2-{}_T1_{:.1f}_T2_{:.1f}_chirp_{:.3f}_ph_{:.2f}_solver_{:s}_dk_order{}'\
-            .format(self.E0_MVpcm, self.f_THz, self.sigma_fs, self.gauge, self.t0_fs, self.dt_fs,
-                    self.Nk1, self.Nk2, self.T1_fs, self.T2_fs, self.chirp_THz, self.phase,
-                    self.solver_method, self.dk_order)
+        if self.user_defined_field:
+            self.tail = 'user_defined'
+        else:
+            self.tail =\
+                'E_{:.4f}_w_{:.1f}_a_{:.1f}_{}_t0_{:.1f}_dt_{:.6f}_NK1-{}_NK2-{}_T1_{:.1f}_T2_{:.1f}_chirp_{:.3f}_ph_{:.2f}_solver_{:s}_dk_order{}'\
+                .format(self.E0_MVpcm, self.f_THz, self.sigma_fs, self.gauge, self.t0_fs, self.dt_fs,
+                        self.Nk1, self.Nk2, self.T1_fs, self.T2_fs, self.chirp_THz, self.phase,
+                        self.solver_method, self.dk_order)
