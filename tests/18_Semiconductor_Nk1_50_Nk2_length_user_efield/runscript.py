@@ -39,7 +39,7 @@ def semich_bite():
 
 def run(system):
 
-    E0 = 1e-2                        # MV/cm
+    E0 = 1e-1                        # MV/cm
     sigma = 20                       # fs
     params.electric_field_function = make_gaussian(E0, sigma)
     sbe_solver(system, params)
