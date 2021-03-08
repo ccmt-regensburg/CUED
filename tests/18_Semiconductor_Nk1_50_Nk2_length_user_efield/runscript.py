@@ -18,9 +18,7 @@ def make_gaussian(E0, sigma):
         '''
         Returns the instantaneous driving pulse field
         '''
-        # Non-pulse
-        # return E0*np.sin(2.0*np.pi*w*t)
-        # Chirped Gaussian pulse
+        # Gaussian pulse
         return E0*np.exp(-t**2/sigma**2)
 
     return electric_field
@@ -41,7 +39,7 @@ def semich_bite():
 
 def run(system):
 
-    E0 = 1                           # MV/cm
+    E0 = 1e-2                        # MV/cm
     sigma = 20                       # fs
     params.electric_field_function = make_gaussian(E0, sigma)
     sbe_solver(system, params)
