@@ -98,6 +98,7 @@ def hex_mesh(P):
         if P.Nk2%3 != 0:
             raise RuntimeError("Nk2: " + "{:d}".format(P.Nk2) +
                                " needs to be divisible by 3")
+        b_a1 = b1
         b_a2 = (2*np.pi/(3*P.a))*np.array([1, np.sqrt(3)])
         alpha1 = np.linspace(-0.5 + (1/(2*P.Nk1)), 0.5 - (1/(2*P.Nk1)), num=P.Nk1)
         alpha2 = np.linspace(-1.0 + (1.5/(2*P.Nk2)), 0.5 - (1.5/(2*P.Nk2)), num=P.Nk2)
@@ -120,6 +121,7 @@ def hex_mesh(P):
                     path_M.append(kpoint)
             # Append the a1'th path to the paths array
             paths.append(path_M)
+        dk = np.linalg.norm(b_a1)/P.Nk1
 
     elif P.align == 'K':
         if P.Nk1%3 != 0 or P.Nk1%2 != 0:
@@ -148,8 +150,9 @@ def hex_mesh(P):
                     mesh.append(kpoint)
                     path_K.append(kpoint)
             paths.append(path_K)
+        dk = np.linalg.norm(1.5*b_a1)/P.Nk1
 
-    return 1/P.Nk1, (3*np.sqrt(3)/2)*(4*np.pi/(P.a*3))**2/P.Nk*two_pi_factor(P), np.array(paths)
+    return dk, (3*np.sqrt(3)/2)*(4*np.pi/(P.a*3))**2/P.Nk*two_pi_factor(P), np.array(paths)
 
 
 def two_pi_factor(P):
