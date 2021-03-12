@@ -22,7 +22,6 @@ def dirac():
     return dirac_system
     
 def run(system):
-    params.hamiltonian_evaluation = 'bandstructure'
     params.solver = 'nband'
     sbe_solver(system, params)
 

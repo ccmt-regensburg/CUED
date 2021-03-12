@@ -49,10 +49,12 @@ def make_polarization_path(path, P, sys):
     type_complex_np = P.type_complex_np
     gauge = P.gauge
     @conditional_njit(type_complex_np)
-    def polarization_path(rho_cv, A_field):
+    def polarization_path(solution, _E_field, A_field):
         ##################################################
         # Dipole container
         ##################################################
+        rho_cv = solution[:, 1, 0]
+        
         d_01x = np.empty(pathlen, dtype=type_complex_np)
         d_01y = np.empty(pathlen, dtype=type_complex_np)
 
@@ -132,7 +134,10 @@ def make_current_path(path, P, sys):
     gauge = P.gauge
     save_anom = P.save_anom
     @conditional_njit(type_complex_np)
-    def current_path(rho_vv, rho_cc, A_field, E_field):
+    def current_path(solution, E_field, A_field):        
+
+        rho_vv = solution[:, 0, 0]
+        rho_cc = solution[:, 1, 1]
         ##################################################
         # E derivative container
         ##################################################
@@ -274,6 +279,7 @@ def make_emission_exact_path_velocity(path, P, sys):
         I_ortho : type_real_np
             Orthogonal to electric field component of current
         '''
+        solution = solution.reshape(pathlen, 4)
         ##########################################################
         # H derivative container
         ##########################################################
@@ -433,6 +439,8 @@ def make_emission_exact_path_length(path, P, sys):
         I_ortho : type_real_np
             Orthogonal to electric field component of current
         '''
+        solution = solution.reshape(pathlen, 4)
+
         I_E_dir = 0
         I_ortho = 0
 
@@ -487,7 +495,7 @@ def make_current_exact_bandstructure(path, P, sys):
     mel_ortho = P.E_ort[0]*mel_x + P.E_ort[1]*mel_y
 
     @conditional_njit(P.type_complex_np)
-    def current_exact_path(solution):
+    def current_exact_path(solution, _E_field=0, _A_field=0):
     
         J_exact_E_dir = 0
         J_exact_ortho = 0
@@ -529,7 +537,7 @@ def make_intraband_current_bandstructure(path, P, sys):
     ederiv_ortho = P.E_ort[0]*ederivx + P.E_ort[1]*ederivy
 
     @conditional_njit(P.type_complex_np)
-    def current_intra_path(solution):
+    def current_intra_path(solution, _E_field=0, _A_field=0):
 
         J_intra_E_dir = 0
         J_intra_ortho = 0
@@ -559,7 +567,7 @@ def make_polarization_inter_bandstructure(P, sys):
     type_complex_np = P.type_complex_np
 
     @conditional_njit(type_complex_np)
-    def polarization_inter_path(solution):
+    def polarization_inter_path(solution, _E_field=0, _A_field=0):
 
         P_inter_E_dir = 0
         P_inter_ortho = 0
@@ -611,7 +619,7 @@ def make_current_exact_path_hderiv(path, P, sys):
     mel_ortho = matrix_element_x * E_ort[0] + matrix_element_y * E_ort[1]
 
     @conditional_njit(type_complex_np)
-    def current_exact_path_hderiv(solution):
+    def current_exact_path_hderiv(solution, _E_field=0, _A_field=0):
 
         J_exact_E_dir = 0
         J_exact_ortho = 0
@@ -640,7 +648,7 @@ def make_polarization_inter_path(P, sys):
     type_complex_np = P.type_complex_np
 
     @conditional_njit(type_complex_np)
-    def polarization_inter_path(solution):
+    def polarization_inter_path(solution, _E_field=0, _A_field=0):
 
         P_inter_E_dir = 0
         P_inter_ortho = 0
@@ -708,7 +716,7 @@ def make_intraband_current_path(path, P, sys):
     ederiv_ortho = E_ort[0] * ederivx + E_ort[1] * ederivy
 
     @conditional_njit(type_complex_np)
-    def current_intra_path(solution):
+    def current_intra_path(solution, _E_field=0, _A_field=0):
 
         J_intra_E_dir = 0
         J_intra_ortho = 0

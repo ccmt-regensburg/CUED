@@ -38,7 +38,6 @@ class params:
     # Flags for testing and features
     ##########################################################################
     gauge                   = 'length'           # Gauge of the system
-    hamiltonian_evaluation  = 'ana'
     solver                  = '2band'
     fourier_window_function = 'gaussian'
     user_out                = False              # Set to True to get user plotting and progress output

@@ -36,6 +36,9 @@ class NBandBandstructureDipoleSystem():
         self.melxjit = matrix_to_njit_functions(self.matrix_element_x, self.freesymbols)
         self.melyjit = matrix_to_njit_functions(self.matrix_element_y, self.freesymbols)
 
+        self.U = None             # Normalised eigenstates
+	
+        self.wf_in_path = None 
         self.e_in_path = None   #set when eigensystem_dipole_path is called
 
         self.dipole_path_x = None   

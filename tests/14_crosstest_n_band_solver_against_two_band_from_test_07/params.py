@@ -38,7 +38,6 @@ class params:
     # Flags for testing and features
     ##########################################################################
     gauge                   = 'length'           # Gauge of the system
-    hamiltonian_evaluation  = 'num'
     fourier_window_function = 'gaussian'
     solver                  = 'nband'
     user_out                = False

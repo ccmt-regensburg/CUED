@@ -10,7 +10,6 @@ def dirac():
 
     return dirac_system
 def run(system):
-    params.hamiltonian_evaluation = 'num'
     params.solver = 'nband'
     sbe_solver(system, params)
 

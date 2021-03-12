@@ -38,7 +38,6 @@ class params:
     # Flags for testing and features
     ##########################################################################
     gauge                   = 'velocity'         # Gauge of the system
-    hamiltonian_evaluation  = 'ana'
     solver                  = '2band'
     fourier_window_function = 'gaussian'
     do_semicl               = True

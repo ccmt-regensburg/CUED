@@ -2,7 +2,7 @@ import numpy as np
 from cued.utility import conditional_njit
 
 
-def make_rhs_ode_2_band(sys, E_dir, electric_field, P):
+def make_rhs_ode_2_band(sys, electric_field, P):
     """
         Initialization of the solver for the sbe ( eq. (39/47/80) in https://arxiv.org/abs/2008.03177)
 
@@ -38,9 +38,10 @@ def make_rhs_ode_2_band(sys, E_dir, electric_field, P):
     type_complex_np = P.type_complex_np
     dk_order = P.dk_order
     do_semicl = P.do_semicl
+    E_dir = P.E_dir
     gauge = P.gauge
 
-    if P.hamiltonian_evaluation == 'ana':
+    if sys.U is not None:
         ########################################
         # Wire the energies
         ########################################
@@ -253,7 +254,7 @@ def make_rhs_ode_2_band(sys, E_dir, electric_field, P):
 
     return f
 
-def make_rhs_ode_n_band(E_dir, electric_field, P):
+def make_rhs_ode_n_band(electric_field, P):
     """
         Initialization of the solver for the SBE ( eq. (39/40(80) in https://arxiv.org/abs/2008.03177)
         
@@ -284,6 +285,7 @@ def make_rhs_ode_n_band(E_dir, electric_field, P):
     type_complex_np = P.type_complex_np
     dk_order = P.dk_order
     gauge = P.gauge
+    E_dir = P.E_dir
     n = P.n
 
     @conditional_njit(type_complex_np)

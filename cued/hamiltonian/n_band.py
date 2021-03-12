@@ -24,6 +24,8 @@ class NBandHamiltonianSystem():
         
         self.n = np.size(evaluate_njit_matrix(self.hfjit, kx=0, ky=0)[0, :, :], axis=0)
 
+        self.U = None             # Normalised eigenstates
+
         self.e_in_path = None   #set when eigensystem_dipole_path is called
         self.wf_in_path = None
 

@@ -67,6 +67,7 @@ def sbe_solver(sys, params):
     -------
     approximate solutions, but same components as Iexact
     """
+
     # Start time of sbe_solver
     start_time = time.perf_counter()
 
@@ -199,15 +200,11 @@ def make_rhs_ode(P, T, sys):
     if P.solver == '2band':
         if P.n != 2:
             raise AttributeError('2-band solver works for 2-band systems only')
-        if P.hamiltonian_evaluation == 'ana':
-           rhs_ode = make_rhs_ode_2_band(sys, P.E_dir, T.electric_field, P)
-        elif P.hamiltonian_evaluation == 'num' or 'bandstructure':
-            if P.gauge == 'length':
-                rhs_ode = make_rhs_ode_2_band(sys, P.E_dir, T.electric_field, P)
-            if P.gauge == 'velocity':
-                raise AttributeError('numerical evaluation of the system not compatible with velocity gauge')
+        else:
+            rhs_ode = make_rhs_ode_2_band(sys, T.electric_field, P)
+    
     elif P.solver == 'nband':
-        rhs_ode = make_rhs_ode_n_band(P.E_dir, T.electric_field, P)
+        rhs_ode = make_rhs_ode_n_band(T.electric_field, P)
 
     if P.solver_method in ('bdf', 'adams'):
         solver = ode(rhs_ode, jac=None)\
@@ -222,7 +219,7 @@ def prepare_current_calculations(path, Nk2_idx, P, sys):
 
     polarization_inter_path = None
     current_intra_path = None
-    if P.hamiltonian_evaluation == 'ana':
+    if sys.U is not None:
         if P.gauge == 'length':
             current_exact_path = make_emission_exact_path_length(path, P, sys)
         if P.gauge == 'velocity':
@@ -230,14 +227,12 @@ def prepare_current_calculations(path, Nk2_idx, P, sys):
         if P.split_current:
             polarization_inter_path = make_polarization_path(path, P, sys)
             current_intra_path = make_current_path(path, P, sys)
-
-    if P.hamiltonian_evaluation == 'num':
+    elif sys.wf_in_path is not None:
         current_exact_path = make_current_exact_path_hderiv(path, P, sys)
         if P.split_current:
             polarization_inter_path = make_polarization_inter_path(P, sys)
             current_intra_path = make_intraband_current_path(path, P, sys)
-
-    if P.hamiltonian_evaluation == 'bandstructure':
+    else:
         current_exact_path = make_current_exact_bandstructure(path, P, sys)
         if P.split_current:
             polarization_inter_path = make_polarization_inter_bandstructure(P, sys)
@@ -277,20 +272,15 @@ def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, Mpi):
 
 
 def calculate_currents(ti, current_exact_path, polarization_inter_path, current_intra_path, T, P):
-    if P.hamiltonian_evaluation == 'ana':
-        j_E_dir_buf, j_ortho_buf = current_exact_path(T.solution.reshape(P.Nk1, 4), T.E_field[ti], T.A_field[ti])
-    elif P.hamiltonian_evaluation == 'num' or 'bandstructure':
-        j_E_dir_buf, j_ortho_buf = current_exact_path(T.solution)
+    
+    j_E_dir_buf, j_ortho_buf = current_exact_path(T.solution, T.E_field[ti], T.A_field[ti])
+
     T.j_E_dir[ti] += j_E_dir_buf
     T.j_ortho[ti] += j_ortho_buf
 
     if P.split_current:
-        if P.hamiltonian_evaluation == 'ana':
-            P_E_dir_buf, P_ortho_buf = polarization_inter_path(T.solution[:, 1, 0], T.A_field[ti])
-            j_intra_E_dir_buf, j_intra_ortho_buf, j_anom_ortho_buf = current_intra_path(T.solution[:,0,0], T.solution[:, 1, 1], T.A_field[ti], T.E_field[ti])
-        elif P.hamiltonian_evaluation == 'num' or 'bandstructure':
-            P_E_dir_buf, P_ortho_buf = polarization_inter_path(T.solution)
-            j_intra_E_dir_buf, j_intra_ortho_buf, j_anom_ortho_buf = current_intra_path(T.solution)
+        P_E_dir_buf, P_ortho_buf = polarization_inter_path(T.solution, T.E_field[ti], T.A_field[ti])
+        j_intra_E_dir_buf, j_intra_ortho_buf, j_anom_ortho_buf = current_intra_path(T.solution, T.E_field[ti], T.A_field[ti])
 
         T.P_E_dir[ti] += P_E_dir_buf
         T.P_ortho[ti] += P_ortho_buf
@@ -597,7 +587,6 @@ def print_user_info(P, B0=None, mu=None, incident_angle=None):
     print("Precision (default = double)    = " + str(P.precision))
     print("Number of k-points              = " + str(P.Nk))
     print("Order of k-derivative           = " + str(P.dk_order))
-    print("Eigensystem and dipoles         = " + str(P.hamiltonian_evaluation))
     print("Right hand side of ODE          = " + str(P.solver))
     if P.BZ_type == 'hexagon':
         print("Driving field alignment         = " + P.align)
