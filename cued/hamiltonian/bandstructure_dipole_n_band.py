@@ -37,8 +37,7 @@ class NBandBandstructureDipoleSystem():
         self.melyjit = matrix_to_njit_functions(self.matrix_element_y, self.freesymbols)
 
         self.U = None             # Normalised eigenstates
-	
-        self.wf_in_path = None 
+        self.wf_in_path = None
         self.e_in_path = None   #set when eigensystem_dipole_path is called
 
         self.dipole_path_x = None   
@@ -116,55 +115,3 @@ class NBandBandstructureDipoleSystem():
                     #mely_buf.append(sp.I * self.prefac_y)
         
         return matrix_element_x, matrix_element_y
-    
-###############################################################################################
-
-class ExampleTwoBand(NBandBandstructureDipoleSystem):
-
-    def __init__(self, 
-                a = sp.Symbol('a', real=True), 
-                prefac_x = sp.Symbol('prefac_x'), 
-                prefac_y = sp.Symbol('prefac_y') , flag = None):
-
-
-        ev = sp.cos(a*self.kx + self.ky)
-        ec = sp.sin(a*self.ky)
-
-        e = [ev, ec]
-        n = 2 
-
-        super().__init__(e, prefac_x, prefac_y, n, flag)
-
-class DiracBandstructure(NBandBandstructureDipoleSystem):
-
-    def __init__(self, vF = sp.Symbol('vF', real=True),
-                prefac_x = sp.Symbol('prefac_x'),
-                prefac_y = sp.Symbol('prefac_y'), flag = None):
-                
-        ev = - vF * sp.sqrt( self.kx**2 + self.ky**2 )
-        ec =   vF * sp.sqrt( self.kx**2 + self.ky**2 )
-
-        e = [ev, ec]
-        n = 2
-
-        super().__init__(e, prefac_x, prefac_y, n, flag)
-
-
-class ExampleThreeBand(NBandBandstructureDipoleSystem):
-
-    def __init__(self, 
-                a = sp.Symbol('a', real=True), 
-                prefac_x = sp.Symbol('prefac_x'), 
-                prefac_y = sp.Symbol('prefac_y') , flag = None):
-
-        e = []
-
-        e1 = sp.cos(a*self.kx)
-        e.append(e1)
-        e2 = sp.sin(a*self.ky)
-        e.append(e2)
-        e3 = sp.cos(2*a*self.kx+self.ky)
-        e.append(e3)
-        n = 3
-
-        super().__init__(e, prefac_x, prefac_y, n, flag)

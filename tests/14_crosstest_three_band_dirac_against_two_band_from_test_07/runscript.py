@@ -6,7 +6,7 @@ from cued.main import sbe_solver
 def dirac():
     A = 0.1974      # Fermi velocity
 
-    dirac_system = cued.hamiltonian.BiTe3(C0=0, C2=0, A=A, R=0, mz=0, gidx=1)
+    dirac_system = cued.hamiltonian.BiTe_num_3_bands(C0=0, C2=0, A=A, R=0, mz=0, gidx=1)
 
     return dirac_system
 def run(system):

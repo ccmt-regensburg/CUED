@@ -67,7 +67,7 @@ def sbe_solver(sys, params):
     -------
     approximate solutions, but same components as Iexact
     """
-
+    print('test')
     # Start time of sbe_solver
     start_time = time.perf_counter()
 
@@ -272,7 +272,7 @@ def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, Mpi):
 
 
 def calculate_currents(ti, current_exact_path, polarization_inter_path, current_intra_path, T, P):
-    
+
     j_E_dir_buf, j_ortho_buf = current_exact_path(T.solution, T.E_field[ti], T.A_field[ti])
 
     T.j_E_dir[ti] += j_E_dir_buf

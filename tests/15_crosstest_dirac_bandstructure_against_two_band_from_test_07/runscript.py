@@ -17,7 +17,7 @@ def dirac():
     prex = dx*sp.ones(2,2)
     prey = dy*sp.ones(2,2)
 
-    dirac_system = cued.hamiltonian.DiracBandstructure(vF=A, prefac_x = prex, prefac_y = prey, flag='dipole')
+    dirac_system = cued.hamiltonian.BiTeBandstructure(vF=A, prefac_x = prex, prefac_y = prey, flag='dipole')
 
     return dirac_system
     
