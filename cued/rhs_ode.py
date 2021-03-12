@@ -2,7 +2,7 @@ import numpy as np
 from cued.utility import conditional_njit
 
 
-def make_rhs_ode_2_band(sys, dipole, E_dir, electric_field, P):
+def make_rhs_ode_2_band(sys, E_dir, electric_field, P):
     """
         Initialization of the solver for the sbe ( eq. (39/47/80) in https://arxiv.org/abs/2008.03177)
 
@@ -51,14 +51,14 @@ def make_rhs_ode_2_band(sys, dipole, E_dir, electric_field, P):
         # Wire the dipoles
         ########################################
         # kx-parameter
-        di_00xf = dipole.Axfjit[0][0]
-        di_01xf = dipole.Axfjit[0][1]
-        di_11xf = dipole.Axfjit[1][1]
+        di_00xf = sys.Axfjit[0][0]
+        di_01xf = sys.Axfjit[0][1]
+        di_11xf = sys.Axfjit[1][1]
 
         # ky-parameter
-        di_00yf = dipole.Ayfjit[0][0]
-        di_01yf = dipole.Ayfjit[0][1]
-        di_11yf = dipole.Ayfjit[1][1]
+        di_00yf = sys.Ayfjit[0][0]
+        di_01yf = sys.Ayfjit[0][1]
+        di_11yf = sys.Ayfjit[1][1]
 
     @conditional_njit(P.type_complex_np)
     def flength(t, y, kpath, dipole_in_path, e_in_path, y0, dk):
@@ -286,8 +286,8 @@ def make_rhs_ode_n_band(E_dir, electric_field, P):
     gauge = P.gauge
     n = P.n
 
-    @conditional_njit(P.type_complex_np)
-    def fnumba(t, y, kpath, dipole_in_path, e_in_path, y0, dk):
+    @conditional_njit(type_complex_np)
+    def flength(t, y, kpath, dipole_in_path, e_in_path, y0, dk):
         """
             function that multiplies the block-structure of the matrices of the RHS
             of the SBE with the solution vector
@@ -372,18 +372,18 @@ def make_rhs_ode_n_band(E_dir, electric_field, P):
         x[-1] = -electric_f
 
         return x
-    
+
     freturn = None
     if gauge == 'length':
         print("Using length gauge")
-        freturn = fnumba
-    elif gauge == 'velocity':
-        print("Using velocity gauge")
-        raise AttributeError("Velocity gauge is not available for n-band solver")
+        freturn = flength
+    # elif gauge == 'velocity':
+    #     print("Using velocity gauge")
+    #     freturn = fvelocity
     else:
         raise AttributeError("You have to either assign velocity or length gauge")
 
     def f(t, y, kpath, dipole_in_path, e_in_path, y0, dk):
-        return fnumba(t, y, kpath, dipole_in_path, e_in_path, y0, dk)
+        return freturn(t, y, kpath, dipole_in_path, e_in_path, y0, dk)
 
     return f

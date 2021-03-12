@@ -7,9 +7,9 @@ import tikzplotlib
 from cued.utility import ConversionFactors as CoFa
 from cued.utility import SystemContainers
 from cued.kpoint_mesh import hex_mesh, rect_mesh
-from cued.dipole import calculate_system_in_path
 
-def write_and_compile_latex_PDF(T, W, P, S):
+
+def write_and_compile_latex_PDF(T, W, P, S, sys):
 
         t_fs = T.t*CoFa.au_to_fs
         num_points_for_plotting = 960
@@ -42,9 +42,9 @@ def write_and_compile_latex_PDF(T, W, P, S):
 
         kx_BZ, ky_BZ = BZ_plot(P, T.A_field, S)
 
-        bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_points_for_plotting)
+        bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_points_for_plotting, sys)
 
-#        dipole_quiver_plots(kx_BZ, ky_BZ, P, S)
+#        dipole_quiver_plots(kx_BZ, ky_BZ, P, S, sys)
 
         tikz_time(T.j_E_dir, t_fs, t_idx, \
                   r'Current $j_{\parallel}(t)$ parallel to $\bE$ in atomic units', "j_E_dir")
@@ -404,15 +404,15 @@ def BZ_plot(P, A_field, S):
 
     return kx_BZ, ky_BZ
 
-def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_points_for_plotting):
+def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_points_for_plotting, sys):
 
    Nk1    = P.Nk1
    P.Nk1  = num_points_for_plotting
-   S_tmp  = SystemContainers(P, S.sys)
+   S_tmp  = SystemContainers(P)
 
    path = high_symmetry_path_BZ
 
-   calculate_system_in_path(path, P, S_tmp)
+   sys.eigensystem_dipole_path(path, S_tmp.E_dir, P)
 
    P.Nk1 = Nk1
 
@@ -425,7 +425,7 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_po
 
    _fig, (ax1) = plt.subplots(1)
    for i_band in range(P.n):
-       _lines_exact_E_dir  = ax1.plot(k_in_path, S_tmp.e_in_path[:,i_band]*CoFa.au_to_eV, marker='', \
+       _lines_exact_E_dir  = ax1.plot(k_in_path, sys.e_in_path[:,i_band]*CoFa.au_to_eV, marker='', \
                                       label="$n=$ "+str(i_band))
    plot_it(P,"Band energy $\epsilon_n(\mathbf{k})$ in eV", "bandstructure.tikz", ax1, k_in_path)
 
@@ -434,8 +434,8 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_po
    for i_band in range(P.n):
        for j_band in range(P.n):
            if j_band >= i_band: continue
-           abs_dipole = ( np.sqrt( np.abs(S_tmp.dipole_path_x[:,i_band,j_band])**2 + \
-                                   np.abs(S_tmp.dipole_path_y[:,i_band,j_band])**2 ) + 1.0e-80)/CoFa.au_to_as
+           abs_dipole = ( np.sqrt( np.abs(sys.dipole_path_x[:,i_band,j_band])**2 + \
+                                   np.abs(sys.dipole_path_y[:,i_band,j_band])**2 ) + 1.0e-80)/CoFa.au_to_as
            _lines_exact_E_dir  = ax2.semilogy(k_in_path, abs_dipole, marker='', \
                                               label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
            d_min = max(d_min, np.amin(abs_dipole))
@@ -447,8 +447,8 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_po
    for i_band in range(P.n):
        for j_band in range(P.n):
            if j_band >= i_band: continue
-           proj_dipole = ( np.abs( S_tmp.dipole_path_x[:,i_band,j_band]*S.E_dir[0] + \
-                                   S_tmp.dipole_path_y[:,i_band,j_band]*S.E_dir[1] ) + 1.0e-80)/CoFa.au_to_as
+           proj_dipole = ( np.abs( sys.dipole_path_x[:,i_band,j_band]*S.E_dir[0] + \
+                                   sys.dipole_path_y[:,i_band,j_band]*S.E_dir[1] ) + 1.0e-80)/CoFa.au_to_as
            _lines_exact_E_dir  = ax3.semilogy(k_in_path, proj_dipole, marker='', \
                                               label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
            d_min = max(d_min, np.amin(proj_dipole))
@@ -477,7 +477,7 @@ def plot_it(P, ylabel, filename, ax1, k_in_path, y_min=None):
                     axis_width ='\\figurewidth' )
 
 
-def dipole_quiver_plots(kx_BZ, ky_BZ, P, S):
+def dipole_quiver_plots(kx_BZ, ky_BZ, P, S, sys):
 
     Nk_plot = 10
     Nk1     = P.Nk1
@@ -490,7 +490,7 @@ def dipole_quiver_plots(kx_BZ, ky_BZ, P, S):
         P.length_BZ_E_dir = max(length_BZ_E_dir, length_BZ_ortho)
         P.length_BZ_ortho = max(length_BZ_E_dir, length_BZ_ortho)
  
-    S_tmp  = SystemContainers(P, S.sys)
+    S_tmp  = SystemContainers(P)
  
     P.Nk1             = Nk1
     P.Nk2             = Nk2
@@ -504,10 +504,10 @@ def dipole_quiver_plots(kx_BZ, ky_BZ, P, S):
 
     for k_path, path in enumerate(S_tmp.paths):
 
-        calculate_system_in_path(path, P, S_tmp)
+        sys.eigensystem_dipole_path(path, S_tmp.E_dir, P)
 
-        d_x[k_path*Nk_plot:(k_path+1)*Nk_plot, :, :] = S_tmp.dipole_path_x[:,:,:]*CoFa.au_to_as 
-        d_y[k_path*Nk_plot:(k_path+1)*Nk_plot, :, :] = S_tmp.dipole_path_y[:,:,:]*CoFa.au_to_as 
+        d_x[k_path*Nk_plot:(k_path+1)*Nk_plot, :, :] = sys.dipole_path_x[:,:,:]*CoFa.au_to_as 
+        d_y[k_path*Nk_plot:(k_path+1)*Nk_plot, :, :] = sys.dipole_path_y[:,:,:]*CoFa.au_to_as 
         k_x[k_path*Nk_plot:(k_path+1)*Nk_plot]       = path[:,0]/CoFa.au_to_as 
         k_y[k_path*Nk_plot:(k_path+1)*Nk_plot]       = path[:,1]/CoFa.au_to_as 
 

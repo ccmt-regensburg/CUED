@@ -6,13 +6,11 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode
 
-import cued.dipole
 from cued.utility import ConversionFactors as CoFa, ParamsParser
 from cued.utility import conditional_njit, evaluate_njit_matrix
 from cued.utility import FrequencyContainers, SystemContainers, TimeContainers
 from cued.utility import write_and_compile_latex_PDF
 from cued.fields import make_electric_field
-from cued.dipole import calculate_system_in_path
 from cued.observables import *
 from cued.rhs_ode import *
 
@@ -75,6 +73,8 @@ def sbe_solver(sys, params):
     # Flag evaluation
     P = ParamsParser(params)
 
+    P.n = sys.n
+
     # USER OUTPUT
     ###########################################################################
     if P.user_out:
@@ -85,14 +85,14 @@ def sbe_solver(sys, params):
 
     # Calculate the systems properties (hamiltonian, eigensystem, dipoles,
     # berry curvature, BZ, electric field)
-    S = SystemContainers(P, sys)
+    S = SystemContainers(P)
 
     # Make containers for time- and frequency- dependent observables
     T = TimeContainers(P)
     W = FrequencyContainers()
 
     # Make rhs of ode for 2band or nband solver
-    rhs_ode, solver = make_rhs_ode(P, S, T)
+    rhs_ode, solver = make_rhs_ode(P, S, T, sys)
 
     ###########################################################################
     # SOLVING
@@ -105,21 +105,21 @@ def sbe_solver(sys, params):
             print('Solving SBE for Path', Nk2_idx+1)
 
         # Evaluate the dipole components along the path
-        calculate_system_in_path(path, P, S)
+        sys.eigensystem_dipole_path(path, S.E_dir, P)
 
         # Prepare calculations of observables
         current_exact_path, polarization_inter_path, current_intra_path =\
-            prepare_current_calculations(path, Nk2_idx, S, P)
+            prepare_current_calculations(path, Nk2_idx, S, P, sys)
 
         # Initialize the values of of each k point vector
 
-        y0 = initial_condition(P, S.e_in_path)
+        y0 = initial_condition(P, sys.e_in_path)
         y0 = np.append(y0, [0.0])
 
         # Set the initual values and function parameters for the current kpath
         if P.solver_method in ('bdf', 'adams'):
             solver.set_initial_value(y0, P.t0)\
-                .set_f_params(path, S.dipole_in_path, S.e_in_path, y0, S.dk)
+                .set_f_params(path, sys.dipole_in_path, sys.e_in_path, y0, S.dk)
         elif P.solver_method == 'rk4':
             T.solution_y_vec[:] = y0
 
@@ -144,7 +144,7 @@ def sbe_solver(sys, params):
                 solver_successful = solver.successful()
 
             elif P.solver_method == 'rk4':
-                T.solution_y_vec = rk_integrate(T.t[ti], T.solution_y_vec, path, S,
+                T.solution_y_vec = rk_integrate(T.t[ti], T.solution_y_vec, path, sys,
                                                 y0, S.dk, P.dt, rhs_ode)
 
             # Increment time counter
@@ -160,7 +160,7 @@ def sbe_solver(sys, params):
     # calculate and write solutions
     update_currents_with_kweight(S, T, P)
     calculate_fourier(S, T, P, W)
-    write_current_emission_mpi(S, T, P, W)
+    write_current_emission_mpi(S, T, P, W, sys)
 
     # Save the parameters of the calculation
     params_name = 'params.txt'
@@ -175,15 +175,15 @@ def sbe_solver(sys, params):
                  electric_field=T.electric_field(T.t), A_field=T.A_field)
 
 
-def make_rhs_ode(P, S, T):
+def make_rhs_ode(P, S, T, sys):
     if P.solver == '2band':
         if P.n != 2:
             raise AttributeError('2-band solver works for 2-band systems only')
         if P.hamiltonian_evaluation == 'ana':
-           rhs_ode = make_rhs_ode_2_band(S.sys, S.dipole, S.E_dir, T.electric_field, P)
+           rhs_ode = make_rhs_ode_2_band(sys, S.E_dir, T.electric_field, P)
         elif P.hamiltonian_evaluation == 'num' or 'bandstructure':
             if P.gauge == 'length':
-                rhs_ode = make_rhs_ode_2_band(0, 0, S.E_dir, T.electric_field, P)
+                rhs_ode = make_rhs_ode_2_band(sys, S.E_dir, T.electric_field, P)
             if P.gauge == 'velocity':
                 raise AttributeError('numerical evaluation of the system not compatible with velocity gauge')
     elif P.solver == 'nband':
@@ -198,30 +198,30 @@ def make_rhs_ode(P, S, T):
     return rhs_ode, solver
 
 
-def prepare_current_calculations(path, Nk2_idx, S, P):
+def prepare_current_calculations(path, Nk2_idx, S, P, sys):
 
     polarization_inter_path = None
     current_intra_path = None
     if P.hamiltonian_evaluation == 'ana':
         if P.gauge == 'length':
-            current_exact_path = make_emission_exact_path_length(path, S, P)
+            current_exact_path = make_emission_exact_path_length(path, S, P, sys)
         if P.gauge == 'velocity':
-            current_exact_path = make_emission_exact_path_velocity(path, S, P)
+            current_exact_path = make_emission_exact_path_velocity(path, S, P, sys)
         if P.split_current:
-            polarization_inter_path = make_polarization_path(path, S, P)
-            current_intra_path = make_current_path(path, S, P)
+            polarization_inter_path = make_polarization_path(path, S, P, sys)
+            current_intra_path = make_current_path(path, S, P, sys)
 
     if P.hamiltonian_evaluation == 'num':
-        current_exact_path = make_current_exact_path_hderiv(path, S, P)
+        current_exact_path = make_current_exact_path_hderiv(path, S, P, sys)
         if P.split_current:
-            polarization_inter_path = make_polarization_inter_path(S, P)
-            current_intra_path = make_intraband_current_path(path, S, P)
+            polarization_inter_path = make_polarization_inter_path(S, P, sys)
+            current_intra_path = make_intraband_current_path(path, S, P, sys)
 
     if P.hamiltonian_evaluation == 'bandstructure':
-        current_exact_path = make_current_exact_bandstructure(path, S, P)
+        current_exact_path = make_current_exact_bandstructure(path, S, P, sys)
         if P.split_current:
-            polarization_inter_path = make_polarization_inter_bandstructure(S, P)
-            current_intra_path = make_intraband_current_bandstructure(path, S, P)
+            polarization_inter_path = make_polarization_inter_bandstructure(S, P, sys)
+            current_intra_path = make_intraband_current_bandstructure(path, S, P, sys)
     return current_exact_path, polarization_inter_path, current_intra_path
 
 
@@ -279,12 +279,12 @@ def calculate_currents(ti, current_exact_path, polarization_inter_path, current_
         T.j_anom_ortho[ti] += j_anom_ortho_buf
 
 
-def rk_integrate(t, y, kpath, S, y0, dk, dt, rhs_ode):
+def rk_integrate(t, y, kpath, sys, y0, dk, dt, rhs_ode):
 
-    k1 = rhs_ode(t,          y,          kpath, S.dipole_in_path, S.e_in_path, y0, dk)
-    k2 = rhs_ode(t + 0.5*dt, y + 0.5*k1, kpath, S.dipole_in_path, S.e_in_path, y0, dk)
-    k3 = rhs_ode(t + 0.5*dt, y + 0.5*k2, kpath, S.dipole_in_path, S.e_in_path, y0, dk)
-    k4 = rhs_ode(t +     dt, y +     k3, kpath, S.dipole_in_path, S.e_in_path, y0, dk)
+    k1 = rhs_ode(t,          y,          kpath, sys.dipole_in_path, sys.e_in_path, y0, dk)
+    k2 = rhs_ode(t + 0.5*dt, y + 0.5*k1, kpath, sys.dipole_in_path, sys.e_in_path, y0, dk)
+    k3 = rhs_ode(t + 0.5*dt, y + 0.5*k2, kpath, sys.dipole_in_path, sys.e_in_path, y0, dk)
+    k4 = rhs_ode(t +     dt, y +     k3, kpath, sys.dipole_in_path, sys.e_in_path, y0, dk)
 
     ynew = y + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
 
@@ -456,14 +456,14 @@ def calculate_fourier(S, T, P, W):
             fourier_current_intensity(T.j_anom_ortho, T.j_intra_plus_anom_ortho, T.window_function, dt_out, prefac_emission, W.freq)
 
 
-def write_current_emission_mpi(S, T, P, W):
+def write_current_emission_mpi(S, T, P, W, sys):
 
     # only save data from a single MPI rank
     if S.Mpi.rank == 0:
-        write_current_emission(S, T, P, W)
+        write_current_emission(S, T, P, W, sys)
 
 
-def write_current_emission(S, T, P, W):
+def write_current_emission(S, T, P, W, sys):
 
     ##################################################
     # Time data save
@@ -542,7 +542,7 @@ def write_current_emission(S, T, P, W):
     np.savetxt('frequency_data.dat', freq_output, header=freq_header, delimiter='   ', fmt="%+.18e")
 
     if P.save_latex_pdf:
-        write_and_compile_latex_PDF(T, W, P, S)
+        write_and_compile_latex_PDF(T, W, P, S, sys)
 
 
 def fourier_current_intensity(I_E_dir, I_ortho, window_function, dt_out, prefac_emission, freq):

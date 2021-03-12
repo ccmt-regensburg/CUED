@@ -1,7 +1,7 @@
 import numpy as np
 import sympy as sp
 
-from cued.utility import list_to_njit_functions, matrix_to_njit_functions
+from cued.utility import evaluate_njit_matrix, list_to_njit_functions, matrix_to_njit_functions
 
 class NBandBandstructureDipoleSystem():
 
@@ -25,16 +25,24 @@ class NBandBandstructureDipoleSystem():
         self.dipole_x, self.dipole_y = self.dipole_elements()
         self.matrix_element_x, self.matrix_element_y = self.matrix_elements()
 
-        self.ejit = list_to_njit_functions(self.e, self.freesymbols)
+        self.efjit = list_to_njit_functions(self.e, self.freesymbols)
         
         self.dkxejit = list_to_njit_functions(self.dkxe, self.freesymbols)
         self.dkyejit = list_to_njit_functions(self.dkye, self.freesymbols)
         
-        self.dipole_xjit = matrix_to_njit_functions(self.dipole_x, self.freesymbols)
-        self.dipole_yjit = matrix_to_njit_functions(self.dipole_y, self.freesymbols)
+        self.dipole_xfjit = matrix_to_njit_functions(self.dipole_x, self.freesymbols)
+        self.dipole_yfjit = matrix_to_njit_functions(self.dipole_y, self.freesymbols)
 
         self.melxjit = matrix_to_njit_functions(self.matrix_element_x, self.freesymbols)
         self.melyjit = matrix_to_njit_functions(self.matrix_element_y, self.freesymbols)
+
+        self.e_in_path = None   #set when eigensystem_dipole_path is called
+
+        self.dipole_path_x = None   
+        self.dipole_path_y = None
+                           
+        self.dipole_in_path = None
+        self.dipole_ortho = None
 
     def energy_derivative(self):
         dkxe = sp.zeros(self.n)
@@ -69,6 +77,26 @@ class NBandBandstructureDipoleSystem():
                             dipole_y[i, j] = self.prefac_y[i, j] / ( self.e[j] - self.e[i] )
             
         return dipole_x, dipole_y
+
+    def eigensystem_dipole_path(self, path, E_dir, P):
+
+        # Retrieve the set of k-points for the current path
+        kx_in_path = path[:, 0]
+        ky_in_path = path[:, 1]
+        pathlen = path[:,0].size
+        self.e_in_path = np.zeros([pathlen, P.n], dtype=P.type_real_np)
+
+        E_ort = np.array([E_dir[1], -E_dir[0]])   
+
+        self.dipole_path_x = evaluate_njit_matrix(self.dipole_xfjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
+        self.dipole_path_y = evaluate_njit_matrix(self.dipole_yfjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
+
+        for n, e in enumerate(self.efjit):
+            self.e_in_path[:, n] = e(kx=kx_in_path, ky=ky_in_path)
+
+        self.dipole_in_path = E_dir[0]*self.dipole_path_x + E_dir[1]*self.dipole_path_y
+        self.dipole_ortho = E_ort[0]*self.dipole_path_x + E_ort[1]*self.dipole_path_y        
+
 
     def matrix_elements(self):
 

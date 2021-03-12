@@ -14,7 +14,7 @@ def dft():
     ksym = 0.0635012                  # k^2 coefficent dampening
     kasym = 0.113773                  # k^3 coeffcient dampening
 
-    dft_system = cued.hamiltonian.BiTeResummed(C0=C0, c2=c2, A=A, r=r, ksym=ksym, kasym=kasym)
+    dft_system = cued.hamiltonian.BiTeResummed(C0=C0, c2=c2, A=A, r=r, ksym=ksym, kasym=kasym, gidx=1)
 
     return dft_system
 

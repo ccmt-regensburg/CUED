@@ -33,7 +33,7 @@ def semich_bite():
     muz = 0.033
 
     semich_bite_system = cued.hamiltonian.Semiconductor(A=A, mz=muz, mx=mx,
-                                                        a=8.28834, align=True)
+                                                        a=8.28834, align=True, gidx=1)
     return semich_bite_system
 
 

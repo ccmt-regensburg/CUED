@@ -1,6 +1,5 @@
 import numpy as np
 from cued.utility import ConversionFactors as co
-from cued.dipole import diagonalize_path, derivative_path
 from cued.utility import conditional_njit, evaluate_njit_matrix
 
 
@@ -12,7 +11,7 @@ from cued.utility import conditional_njit, evaluate_njit_matrix
 ##########################################################################################
 ## Observables working with density matrices that contain NO time data; only path
 ##########################################################################################
-def make_polarization_path(path, S, P):
+def make_polarization_path(path, S, P, sys):
     """
     Function that calculates the polarization for the current path
 
@@ -37,9 +36,8 @@ def make_polarization_path(path, S, P):
     P_ortho : np.ndarray [type_real_np]
         Polarization orthogonal to E-field direction
     """
-    dipole = S.dipole
-    di_01xf = dipole.Axfjit[0][1]
-    di_01yf = dipole.Ayfjit[0][1]
+    di_01xf = sys.Axfjit[0][1]
+    di_01yf = sys.Ayfjit[0][1]
 
     E_dir = S.E_dir
     E_ort = S.E_ort
@@ -85,7 +83,7 @@ def make_polarization_path(path, S, P):
     return polarization_path
 
 
-def make_current_path(path, S, P):
+def make_current_path(path, S, P, sys):
     '''
     Calculates the intraband current as: J(t) = sum_k sum_n [j_n(k)f_n(k,t)]
     where j_n(k) != (d/dk) E_n(k)
@@ -112,8 +110,7 @@ def make_current_path(path, S, P):
     J_ortho : np.ndarray [type_real_np]
         intraband current j_intra orthogonal to E-field direction
     '''
-    sys = S.sys
-    curvature = S.curvature
+
 
     edxjit_v = sys.ederivfjit[0]
     edyjit_v = sys.ederivfjit[1]
@@ -121,8 +118,8 @@ def make_current_path(path, S, P):
     edyjit_c = sys.ederivfjit[3]
 
     if P.save_anom:
-        Bcurv_00 = curvature.Bfjit[0][0]
-        Bcurv_11 = curvature.Bfjit[1][1]
+        Bcurv_00 = sys.Bfjit[0][0]
+        Bcurv_11 = sys.Bfjit[1][1]
 
     E_dir = S.E_dir
     E_ort = S.E_ort
@@ -194,7 +191,7 @@ def make_current_path(path, S, P):
     return current_path
 
 
-def make_emission_exact_path_velocity(path, S, P):
+def make_emission_exact_path_velocity(path, S, P, sys):
     """
     Construct a function that calculates the emission for the system solution per path
     Works for velocity gauge.
@@ -217,9 +214,6 @@ def make_emission_exact_path_velocity(path, S, P):
     emision_kernel : function
         Calculates per timestep current of a path
     """
-    sys = S.sys
-    curvature = S.curvature
-
     E_dir = S.E_dir
 
     hderivx = sys.hderivfjit[0]
@@ -247,8 +241,8 @@ def make_emission_exact_path_velocity(path, S, P):
     U_h_11 = Ujit_h[1][1]
 
     if P.do_semicl:
-        Bcurv_00 = curvature.Bfjit[0][0]
-        Bcurv_11 = curvature.Bfjit[1][1]
+        Bcurv_00 = sys.Bfjit[0][0]
+        Bcurv_11 = sys.Bfjit[1][1]
 
     E_ort = np.array([E_dir[1], -E_dir[0]])
 
@@ -367,7 +361,7 @@ def make_emission_exact_path_velocity(path, S, P):
     return emission_exact_path_velocity
 
 
-def make_emission_exact_path_length(path, S, P):
+def make_emission_exact_path_length(path, S, P, sys):
     """
     Construct a function that calculates the emission for the system solution per path.
     Works for length gauge.
@@ -390,9 +384,6 @@ def make_emission_exact_path_length(path, S, P):
     emission_kernel : function
         Calculates per timestep current of a path
     """
-    sys = S.sys
-    curvature = S.curvature
-
     E_dir = S.E_dir
     E_ort = S.E_ort
 
@@ -418,8 +409,8 @@ def make_emission_exact_path_length(path, S, P):
     U_h = evaluate_njit_matrix(sys.Ujit_h, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
 
     if P.do_semicl:
-        Bcurv[:, 0] = curvature.Bfjit[0][0](kx=kx_in_path, ky=ky_in_path)
-        Bcurv[:, 1] = curvature.Bfjit[1][1](kx=kx_in_path, ky=ky_in_path)
+        Bcurv[:, 0] = sys.Bfjit[0][0](kx=kx_in_path, ky=ky_in_path)
+        Bcurv[:, 1] = sys.Bfjit[1][1](kx=kx_in_path, ky=ky_in_path)
 
     symmetric_insulator = P.symmetric_insulator
     do_semicl = P.do_semicl
@@ -481,9 +472,8 @@ def make_emission_exact_path_length(path, S, P):
 ##########################################################################################
 ### Observables from given bandstructures
 ##########################################################################################
-def make_current_exact_bandstructure(path, S, P):
-    
-    sys = S.sys
+def make_current_exact_bandstructure(path, S, P, sys):
+
     Nk1 = P.Nk1
     n = P.n 
 
@@ -515,13 +505,12 @@ def make_current_exact_bandstructure(path, S, P):
     return current_exact_path
 
 
-def make_intraband_current_bandstructure(path, S, P):
+def make_intraband_current_bandstructure(path, S, P, sys):
     """
         Function that calculates the intraband current from eq. (76 and 77) with or without the
         anomalous contribution via the Berry curvature
     """
-    
-    sys = S.sys
+
     Nk1 = P.Nk1
     n = P.n 
     save_anom = P.save_anom
@@ -559,12 +548,12 @@ def make_intraband_current_bandstructure(path, S, P):
     return current_intra_path
 
 
-def make_polarization_inter_bandstructure(S, P):
+def make_polarization_inter_bandstructure(S, P, sys):
     """
         Function that calculates the interband polarization from eq. (74)
     """
-    dipole_in_path = S.dipole_in_path
-    dipole_ortho = S.dipole_ortho
+    dipole_in_path = sys.dipole_in_path
+    dipole_ortho = sys.dipole_ortho
     n = P.n
     Nk1 = P.Nk1
     type_complex_np = P.type_complex_np
@@ -588,16 +577,13 @@ def make_polarization_inter_bandstructure(S, P):
 ### Observables for the n-band code
 ##########################################################################################
 
-# mel_x = evaluate_njit_matrix(sys.melxjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
 
-
-def make_current_exact_path_hderiv(path, S, P):
+def make_current_exact_path_hderiv(path, S, P, sys):
 
     """
         Function that calculates the exact current via eq. (79)
     """
-    sys = S.sys
-    wf = S.wf_in_path
+    wf = sys.wf_in_path
     E_dir = S.E_dir
     E_ort = S.E_ort
 
@@ -643,12 +629,12 @@ def make_current_exact_path_hderiv(path, S, P):
     return current_exact_path_hderiv
 
 
-def make_polarization_inter_path(S, P):
+def make_polarization_inter_path(S, P, sys):
     """
         Function that calculates the interband polarization from eq. (74)
     """
-    dipole_in_path = S.dipole_in_path
-    dipole_ortho = S.dipole_ortho
+    dipole_in_path = sys.dipole_in_path
+    dipole_ortho = sys.dipole_ortho
     n = P.n
     Nk1 = P.Nk1
     type_complex_np = P.type_complex_np
@@ -669,7 +655,7 @@ def make_polarization_inter_path(S, P):
     return polarization_inter_path
 
 
-def make_intraband_current_path(path, S, P):
+def make_intraband_current_path(path, S, P, sys):
     """
         Function that calculates the intraband current from eq. (76 and 77) with or without the
         anomalous contribution via the Berry curvature
@@ -703,15 +689,15 @@ def make_intraband_current_path(path, S, P):
     pathminus2y = np.copy(path)
     pathminus2y[:, :, 1] -= 2*epsilon
 
-    eplusx, wfplusx = diagonalize_path(pathplusx, P, S) 
-    eminusx, wfminusx = diagonalize_path(pathminusx, P, S)
-    eplusy, wfplusy = diagonalize_path(pathplusy, P, S)
-    eminusy, wfminusy = diagonalize_path(pathminusy, P, S)
+    eplusx, wfplusx = sys.diagonalize_path(pathplusx, P) 
+    eminusx, wfminusx = sys.diagonalize_path(pathminusx, P)
+    eplusy, wfplusy = sys.diagonalize_path(pathplusy, P)
+    eminusy, wfminusy = sys.diagonalize_path(pathminusy, P)
 
-    eplus2x, wfplus2x = diagonalize_path(pathplus2x, P, S)
-    eminus2x, wfminus2x = diagonalize_path(pathminus2x, P, S)
-    eplus2y, wfplus2y = diagonalize_path(pathplus2y, P, S)
-    eminus2y, wfminus2y = diagonalize_path(pathminus2y, P, S)
+    eplus2x, wfplus2x = sys.diagonalize_path(pathplus2x, P)
+    eminus2x, wfminus2x = sys.diagonalize_path(pathminus2x, P)
+    eplus2y, wfplus2y = sys.diagonalize_path(pathplus2y, P)
+    eminus2y, wfminus2y = sys.diagonalize_path(pathminus2y, P)
 
     ederivx = ( - eplus2x + 8 * eplusx - 8 * eminusx + eminus2x)/(12*epsilon)
     ederivy = ( - eplus2y + 8 * eplusy - 8 * eminusy + eminus2y)/(12*epsilon)
@@ -719,7 +705,7 @@ def make_intraband_current_path(path, S, P):
     # In E-field direction and orthogonal
 
     ederiv_in_path = E_dir[0] * ederivx + E_dir[1] * ederivy
-    ederiv_ortho = E_ort[0] * ederivx+ E_ort[1] * ederivy
+    ederiv_ortho = E_ort[0] * ederivx + E_ort[1] * ederivy
 
     @conditional_njit(type_complex_np)
     def current_intra_path(solution):

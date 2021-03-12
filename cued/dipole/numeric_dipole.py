@@ -35,8 +35,8 @@ def derivative_path(path, P, S):
     n = P.n
     gidx = P.gidx
 
-    xderivative = np.empty([Nk1, Nk2, n, n], dtype=np.complex128)
-    yderivative = np.empty([Nk1, Nk2, n, n], dtype=np.complex128)
+    xderivative = np.empty([Nk1, n, n], dtype=P.type_complex_np)
+    yderivative = np.empty([Nk1, n, n], dtype=P.type_complex_np)
 
     pathplusx = np.copy(path)
     pathplusx[:, 0] += epsilon

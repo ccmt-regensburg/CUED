@@ -11,7 +11,7 @@ def dirac():
     # System parameters
     A = 0.19732     # Fermi velocity
 
-    dirac_system = cued.hamiltonian.BiTe(C0=0, C2=0, A=A, R=0, mz=0)
+    dirac_system = cued.hamiltonian.BiTe(C0=0, C2=0, A=A, R=0, mz=0, gidx=0)
 
     return dirac_system
     
@@ -19,18 +19,12 @@ def run(system):
 
     params.gauge = 'length'
     params.BZ_type = 'rectangle'
-    params.system = 'ana'
+    params.hamiltonian_evaluation = 'ana'
     params.solver = '2band'
 
-    params.Nk1 = 1080
+    params.Nk1 = 20
     params.Nk2 = 2
 
-    params.E0 = 5
-    params.w = 25
-    params.alpha = 25
-
-    params.e_fermi = 0.0
-    params.temperature = 0.0
 
     sbe_solver(system, params)
 

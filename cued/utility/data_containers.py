@@ -45,8 +45,7 @@ class FrequencyContainers():
 
 
 class SystemContainers():
-    def __init__(self, P, sys):
-        self.sys = sys
+    def __init__(self, P):
 
         self.Mpi = MpiHelpers()
         self.local_Nk2_idx_list = self.Mpi.get_local_idx(P.Nk2)
@@ -66,26 +65,3 @@ class SystemContainers():
             self.dk, self.kweight, self.paths = rect_mesh(P, self)
 
         self.E_ort = np.array([self.E_dir[1], -self.E_dir[0]])
-
-        # Calculate Eigensystem and Dipoles
-        if P.hamiltonian_evaluation == 'ana':
-            h_sym, ef_sym, wf_sym, _ediff_sym = sys.eigensystem(gidx=P.gidx)
-            self.dipole = cued.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
-            self.curvature = cued.dipole.SymbolicCurvature(h_sym, self.dipole.Ax, self.dipole.Ay)
-            P.n = 2
-
-        if P.hamiltonian_evaluation == 'num':
-            self.hnp = sys.hfjit
-            P.n = np.size(evaluate_njit_matrix(self.hnp, kx=0, ky=0)[0, :, :], axis=0)
-
-        if P.hamiltonian_evaluation == 'bandstructure':
-            P.n = sys.n
-
-        # Make in path containers
-        self.dipole_path_x = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
-        self.dipole_path_y = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
-
-        self.dipole_in_path = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
-        self.dipole_ortho = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
-        self.e_in_path = np.zeros([P.Nk1, P.n], dtype=P.type_real_np)
-        self.wf_in_path = np.zeros([P.Nk1, P.n, P.n], dtype=P.type_complex_np)
