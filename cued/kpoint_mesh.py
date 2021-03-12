@@ -2,12 +2,12 @@ import numpy as np
 ###############################################################################
 # K-Point meshes
 ###############################################################################
-def rect_mesh(P, S):
+def rect_mesh(P):
     '''
     Create a rectangular mesh
     '''
     # Number of kpoints in E-field direction and orthogonal to the E-field
-    E_dir = S.E_dir
+    E_dir = P.E_dir
     Nk_E_dir_integer = P.Nk1
     Nk_E_dir         = P.type_real_np(Nk_E_dir_integer)
     Nk_ortho_integer = P.Nk2

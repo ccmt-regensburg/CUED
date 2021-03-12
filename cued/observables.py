@@ -11,7 +11,7 @@ from cued.utility import conditional_njit, evaluate_njit_matrix
 ##########################################################################################
 ## Observables working with density matrices that contain NO time data; only path
 ##########################################################################################
-def make_polarization_path(path, S, P, sys):
+def make_polarization_path(path, P, sys):
     """
     Function that calculates the polarization for the current path
 
@@ -39,8 +39,8 @@ def make_polarization_path(path, S, P, sys):
     di_01xf = sys.Axfjit[0][1]
     di_01yf = sys.Ayfjit[0][1]
 
-    E_dir = S.E_dir
-    E_ort = S.E_ort
+    E_dir = P.E_dir
+    E_ort = P.E_ort
 
     kx_in_path_before_shift = path[:, 0]
     ky_in_path_before_shift = path[:, 1]
@@ -83,7 +83,7 @@ def make_polarization_path(path, S, P, sys):
     return polarization_path
 
 
-def make_current_path(path, S, P, sys):
+def make_current_path(path, P, sys):
     '''
     Calculates the intraband current as: J(t) = sum_k sum_n [j_n(k)f_n(k,t)]
     where j_n(k) != (d/dk) E_n(k)
@@ -121,8 +121,8 @@ def make_current_path(path, S, P, sys):
         Bcurv_00 = sys.Bfjit[0][0]
         Bcurv_11 = sys.Bfjit[1][1]
 
-    E_dir = S.E_dir
-    E_ort = S.E_ort
+    E_dir = P.E_dir
+    E_ort = P.E_ort
     kx_in_path_before_shift = path[:, 0]
     ky_in_path_before_shift = path[:, 1]
     pathlen = kx_in_path_before_shift.size
@@ -191,7 +191,7 @@ def make_current_path(path, S, P, sys):
     return current_path
 
 
-def make_emission_exact_path_velocity(path, S, P, sys):
+def make_emission_exact_path_velocity(path, P, sys):
     """
     Construct a function that calculates the emission for the system solution per path
     Works for velocity gauge.
@@ -214,7 +214,7 @@ def make_emission_exact_path_velocity(path, S, P, sys):
     emision_kernel : function
         Calculates per timestep current of a path
     """
-    E_dir = S.E_dir
+    E_dir = P.E_dir
 
     hderivx = sys.hderivfjit[0]
     hdx_00 = hderivx[0][0]
@@ -361,7 +361,7 @@ def make_emission_exact_path_velocity(path, S, P, sys):
     return emission_exact_path_velocity
 
 
-def make_emission_exact_path_length(path, S, P, sys):
+def make_emission_exact_path_length(path, P, sys):
     """
     Construct a function that calculates the emission for the system solution per path.
     Works for length gauge.
@@ -384,8 +384,8 @@ def make_emission_exact_path_length(path, S, P, sys):
     emission_kernel : function
         Calculates per timestep current of a path
     """
-    E_dir = S.E_dir
-    E_ort = S.E_ort
+    E_dir = P.E_dir
+    E_ort = P.E_ort
 
     kx_in_path = path[:, 0]
     ky_in_path = path[:, 1]
@@ -472,7 +472,7 @@ def make_emission_exact_path_length(path, S, P, sys):
 ##########################################################################################
 ### Observables from given bandstructures
 ##########################################################################################
-def make_current_exact_bandstructure(path, S, P, sys):
+def make_current_exact_bandstructure(path, P, sys):
 
     Nk1 = P.Nk1
     n = P.n 
@@ -483,8 +483,8 @@ def make_current_exact_bandstructure(path, S, P, sys):
     mel_x = evaluate_njit_matrix(sys.melxjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
     mel_y = evaluate_njit_matrix(sys.melyjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
 
-    mel_in_path = S.E_dir[0]*mel_x + S.E_dir[1]*mel_y
-    mel_ortho = S.E_ort[0]*mel_x + S.E_ort[1]*mel_y
+    mel_in_path = P.E_dir[0]*mel_x + P.E_dir[1]*mel_y
+    mel_ortho = P.E_ort[0]*mel_x + P.E_ort[1]*mel_y
 
     @conditional_njit(P.type_complex_np)
     def current_exact_path(solution):
@@ -505,7 +505,7 @@ def make_current_exact_bandstructure(path, S, P, sys):
     return current_exact_path
 
 
-def make_intraband_current_bandstructure(path, S, P, sys):
+def make_intraband_current_bandstructure(path, P, sys):
     """
         Function that calculates the intraband current from eq. (76 and 77) with or without the
         anomalous contribution via the Berry curvature
@@ -525,8 +525,8 @@ def make_intraband_current_bandstructure(path, S, P, sys):
         ederivx[:, i] = sys.dkxejit[i](kx=kx_in_path, ky=ky_in_path)
         ederivy[:, i] = sys.dkyejit[i](kx=kx_in_path, ky=ky_in_path)
 
-    ederiv_in_path = S.E_dir[0]*ederivx + S.E_dir[1]*ederivy
-    ederiv_ortho = S.E_ort[0]*ederivx + S.E_ort[1]*ederivy
+    ederiv_in_path = P.E_dir[0]*ederivx + P.E_dir[1]*ederivy
+    ederiv_ortho = P.E_ort[0]*ederivx + P.E_ort[1]*ederivy
 
     @conditional_njit(P.type_complex_np)
     def current_intra_path(solution):
@@ -548,7 +548,7 @@ def make_intraband_current_bandstructure(path, S, P, sys):
     return current_intra_path
 
 
-def make_polarization_inter_bandstructure(S, P, sys):
+def make_polarization_inter_bandstructure(P, sys):
     """
         Function that calculates the interband polarization from eq. (74)
     """
@@ -578,14 +578,14 @@ def make_polarization_inter_bandstructure(S, P, sys):
 ##########################################################################################
 
 
-def make_current_exact_path_hderiv(path, S, P, sys):
+def make_current_exact_path_hderiv(path, P, sys):
 
     """
         Function that calculates the exact current via eq. (79)
     """
     wf = sys.wf_in_path
-    E_dir = S.E_dir
-    E_ort = S.E_ort
+    E_dir = P.E_dir
+    E_ort = P.E_ort
 
     Nk1 = P.Nk1
     n = P.n
@@ -629,7 +629,7 @@ def make_current_exact_path_hderiv(path, S, P, sys):
     return current_exact_path_hderiv
 
 
-def make_polarization_inter_path(S, P, sys):
+def make_polarization_inter_path(P, sys):
     """
         Function that calculates the interband polarization from eq. (74)
     """
@@ -655,13 +655,13 @@ def make_polarization_inter_path(S, P, sys):
     return polarization_inter_path
 
 
-def make_intraband_current_path(path, S, P, sys):
+def make_intraband_current_path(path, P, sys):
     """
         Function that calculates the intraband current from eq. (76 and 77) with or without the
         anomalous contribution via the Berry curvature
     """
-    E_dir = S.E_dir
-    E_ort = S.E_ort
+    E_dir = P.E_dir
+    E_ort = P.E_ort
 
     Nk1 = P.Nk1
     n = P.n

@@ -68,8 +68,8 @@ class NBandBandstructureDipoleSystem():
                         dipole_y[i, j] = 0
                     else:                   #offdiagonal elements from formula
                         if self.flag == 'd0':
-                            e0i = self.ejit[i](kx = 0, ky = 0)
-                            e0j = self.ejit[j](kx = 0, ky = 0)
+                            e0i = self.efjit[i](kx = 0, ky = 0)
+                            e0j = self.efjit[j](kx = 0, ky = 0)
                             dipole_x[i, j] = self.prefac_x[i, j] * ( e0j - e0i ) / ( self.e[j] - self.e[i] )
                             dipole_y[i, j] = self.prefac_y[i, j] * ( e0j - e0i ) / ( self.e[j] - self.e[i] )
                         if self.flag == 'prefac':
@@ -78,7 +78,7 @@ class NBandBandstructureDipoleSystem():
             
         return dipole_x, dipole_y
 
-    def eigensystem_dipole_path(self, path, E_dir, P):
+    def eigensystem_dipole_path(self, path, P):
 
         # Retrieve the set of k-points for the current path
         kx_in_path = path[:, 0]
@@ -86,16 +86,14 @@ class NBandBandstructureDipoleSystem():
         pathlen = path[:,0].size
         self.e_in_path = np.zeros([pathlen, P.n], dtype=P.type_real_np)
 
-        E_ort = np.array([E_dir[1], -E_dir[0]])   
-
         self.dipole_path_x = evaluate_njit_matrix(self.dipole_xfjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
         self.dipole_path_y = evaluate_njit_matrix(self.dipole_yfjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
 
         for n, e in enumerate(self.efjit):
             self.e_in_path[:, n] = e(kx=kx_in_path, ky=ky_in_path)
 
-        self.dipole_in_path = E_dir[0]*self.dipole_path_x + E_dir[1]*self.dipole_path_y
-        self.dipole_ortho = E_ort[0]*self.dipole_path_x + E_ort[1]*self.dipole_path_y        
+        self.dipole_in_path = P.E_dir[0]*self.dipole_path_x + P.E_dir[1]*self.dipole_path_y
+        self.dipole_ortho = P.E_ort[0]*self.dipole_path_x + P.E_ort[1]*self.dipole_path_y        
 
 
     def matrix_elements(self):

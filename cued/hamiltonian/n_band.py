@@ -125,7 +125,7 @@ class NBandHamiltonianSystem():
         return e_path, wf_path
 
 
-    def eigensystem_dipole_path(self, path, E_dir, P):
+    def eigensystem_dipole_path(self, path, P):
         '''
             Dipole Elements of the Hamiltonian for a given path
         '''
@@ -137,8 +137,6 @@ class NBandHamiltonianSystem():
         dx_path = np.zeros([pathlen, P.n, P.n], dtype=P.type_complex_np)
         dy_path = np.zeros([pathlen, P.n, P.n], dtype=P.type_complex_np)
 
-        E_ort = np.array([E_dir[1], -E_dir[0]])
-
         if not P.do_semicl:
             for i in range(pathlen):
                 dx_path[i, :, :] = -1j*np.conjugate(wf_path[i, :, :]).T.dot(dwfkx_path[i, :, :])
@@ -148,8 +146,8 @@ class NBandHamiltonianSystem():
         self.wf_in_path = wf_path
         self.dipole_path_x = dx_path
         self.dipole_path_y = dy_path
-        self.dipole_in_path = E_dir[0]*dx_path + E_dir[1]*dy_path
-        self.dipole_ortho = E_ort[0]*dx_path + E_ort[1]*dy_path
+        self.dipole_in_path = P.E_dir[0]*dx_path + P.E_dir[1]*dy_path
+        self.dipole_ortho = P.E_ort[0]*dx_path + P.E_ort[1]*dy_path
 
 class BiTe2(NBandHamiltonianSystem):
     '''

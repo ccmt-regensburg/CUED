@@ -5,11 +5,9 @@ import matplotlib.pyplot as plt
 import tikzplotlib
 
 from cued.utility import ConversionFactors as CoFa
-from cued.utility import SystemContainers
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 
-
-def write_and_compile_latex_PDF(T, W, P, S, sys):
+def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
 
         t_fs = T.t*CoFa.au_to_fs
         num_points_for_plotting = 960
@@ -20,7 +18,7 @@ def write_and_compile_latex_PDF(T, W, P, S, sys):
         t_idx_whole = get_indices_for_plotting_whole(t_fs, num_points_for_plotting, start=0)
         f_idx_whole = get_indices_for_plotting_whole(W.freq, num_points_for_plotting, start=f_idx[0])
 
-        high_symmetry_path_BZ = get_symmetry_path_in_BZ(P, S, num_points_for_plotting)
+        high_symmetry_path_BZ = get_symmetry_path_in_BZ(P, num_points_for_plotting)
 
         latex_dir = "latex_pdf_files"
 
@@ -35,16 +33,16 @@ def write_and_compile_latex_PDF(T, W, P, S, sys):
         shutil.copy(code_path+"/CUED_summary.tex", ".")
         shutil.copy(code_path+"/logo.pdf", ".")
 
-        write_parameter(P, S)
+        write_parameter(P, Mpi)
 
         tikz_time(T.E_field*CoFa.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield")
         tikz_time(T.A_field*CoFa.au_to_MVpcm*CoFa.au_to_fs, t_fs, t_idx, r"A-field $A(t)$ in MV*fs/cm", "Afield")
 
-        kx_BZ, ky_BZ = BZ_plot(P, T.A_field, S)
+        kx_BZ, ky_BZ = BZ_plot(P, T.A_field)
 
-        bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_points_for_plotting, sys)
+        bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, num_points_for_plotting, sys)
 
-#        dipole_quiver_plots(kx_BZ, ky_BZ, P, S, sys)
+#        dipole_quiver_plots(kx_BZ, ky_BZ, P, sys)
 
         tikz_time(T.j_E_dir, t_fs, t_idx, \
                   r'Current $j_{\parallel}(t)$ parallel to $\bE$ in atomic units', "j_E_dir")
@@ -77,7 +75,7 @@ def write_and_compile_latex_PDF(T, W, P, S, sys):
         os.chdir("..")
 
 
-def write_parameter(P, S):
+def write_parameter(P, Mpi):
 
     if P.BZ_type == 'rectangle':
         if P.angle_inc_E_field == 0:
@@ -113,8 +111,8 @@ def write_parameter(P, S):
     replace("PH-NK1", str(P.Nk1))
     replace("PH-NK2", str(P.Nk2))
     replace("PH-T2", str(P.T2_fs))
-    replace("PH-RUN", '{:.1f}'.format(S.run_time))
-    replace("PH-MPIRANKS", str(S.Mpi.size))
+    replace("PH-RUN", '{:.1f}'.format(P.run_time))
+    replace("PH-MPIRANKS", str(Mpi.size))
 
 
 def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
@@ -239,7 +237,7 @@ def get_freq_indices_for_plotting(freq_div_f0, num_points_for_plotting, freq_max
 
     return f_idx
 
-def get_symmetry_path_in_BZ(P, S, num_points_for_plotting):
+def get_symmetry_path_in_BZ(P, num_points_for_plotting):
 
     Nk_per_line = num_points_for_plotting//2
 
@@ -267,8 +265,8 @@ def get_symmetry_path_in_BZ(P, S, num_points_for_plotting):
 
     elif P.BZ_type == 'rectangle':
 
-         vec_k_E_dir = P.length_BZ_E_dir*S.E_dir
-         vec_k_ortho = P.length_BZ_ortho*np.array([S.E_dir[1], -S.E_dir[0]])
+         vec_k_E_dir = P.length_BZ_E_dir*P.E_dir
+         vec_k_ortho = P.length_BZ_ortho*np.array([P.E_dir[1], -P.E_dir[0]])
      
          path = []
          for alpha in pos_array_reverse:
@@ -282,7 +280,7 @@ def get_symmetry_path_in_BZ(P, S, num_points_for_plotting):
     return np.array(path)
 
 
-def BZ_plot(P, A_field, S):
+def BZ_plot(P, A_field):
     """
         Function that plots the Brillouin zone
     """
@@ -332,7 +330,7 @@ def BZ_plot(P, A_field, S):
     Nk1_max = 24
     Nk2_max = 6
     if P.Nk1 <= Nk1_max and P.Nk2 <= Nk2_max:
-        printed_paths = S.paths
+        printed_paths = P.paths
         Nk1_plot = P.Nk1
         Nk2_plot = P.Nk2
     else:
@@ -346,7 +344,7 @@ def BZ_plot(P, A_field, S):
         if P.BZ_type == 'hexagon':
             dk, kweight, printed_paths = hex_mesh(P)
         elif P.BZ_type == 'rectangle':
-            dk, kweight, printed_paths = rect_mesh(P, S)
+            dk, kweight, printed_paths = rect_mesh(P)
         P.Nk1 = Nk1_safe 
         P.Nk2 = Nk2_safe
         P.Nk = P.Nk1*P.Nk2
@@ -376,14 +374,14 @@ def BZ_plot(P, A_field, S):
     adjusted_length_x = length_x - dist_to_border/2
     adjusted_length_y = length_y - dist_to_border/2
 
-    anchor_A_x = -adjusted_length_x + abs(S.E_dir[0]*A_min)
-    anchor_A_y =  adjusted_length_y - abs(A_max*S.E_dir[1])
+    anchor_A_x = -adjusted_length_x + abs(P.E_dir[0]*A_min)
+    anchor_A_y =  adjusted_length_y - abs(A_max*P.E_dir[1])
 
-    neg_A_x = np.array([anchor_A_x + A_min*S.E_dir[0], anchor_A_x])
-    neg_A_y = np.array([anchor_A_y + A_min*S.E_dir[1], anchor_A_y])
+    neg_A_x = np.array([anchor_A_x + A_min*P.E_dir[0], anchor_A_x])
+    neg_A_y = np.array([anchor_A_y + A_min*P.E_dir[1], anchor_A_y])
 
-    pos_A_x = np.array([anchor_A_x + A_max*S.E_dir[0], anchor_A_x])
-    pos_A_y = np.array([anchor_A_y + A_max*S.E_dir[1], anchor_A_y])
+    pos_A_x = np.array([anchor_A_x + A_max*P.E_dir[0], anchor_A_x])
+    pos_A_y = np.array([anchor_A_y + A_max*P.E_dir[1], anchor_A_y])
 
     anchor_A_x_array = np.array([anchor_A_x])
     anchor_A_y_array = np.array([anchor_A_y])
@@ -404,15 +402,14 @@ def BZ_plot(P, A_field, S):
 
     return kx_BZ, ky_BZ
 
-def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_points_for_plotting, sys):
+def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, num_points_for_plotting, sys):
 
    Nk1    = P.Nk1
    P.Nk1  = num_points_for_plotting
-   S_tmp  = SystemContainers(P)
 
    path = high_symmetry_path_BZ
 
-   sys.eigensystem_dipole_path(path, S_tmp.E_dir, P)
+   sys.eigensystem_dipole_path(path, P)
 
    P.Nk1 = Nk1
 
@@ -447,8 +444,8 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, S, num_po
    for i_band in range(P.n):
        for j_band in range(P.n):
            if j_band >= i_band: continue
-           proj_dipole = ( np.abs( sys.dipole_path_x[:,i_band,j_band]*S.E_dir[0] + \
-                                   sys.dipole_path_y[:,i_band,j_band]*S.E_dir[1] ) + 1.0e-80)/CoFa.au_to_as
+           proj_dipole = ( np.abs( sys.dipole_path_x[:,i_band,j_band]*P.E_dir[0] + \
+                                   sys.dipole_path_y[:,i_band,j_band]*P.E_dir[1] ) + 1.0e-80)/CoFa.au_to_as
            _lines_exact_E_dir  = ax3.semilogy(k_in_path, proj_dipole, marker='', \
                                               label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
            d_min = max(d_min, np.amin(proj_dipole))
@@ -477,7 +474,7 @@ def plot_it(P, ylabel, filename, ax1, k_in_path, y_min=None):
                     axis_width ='\\figurewidth' )
 
 
-def dipole_quiver_plots(kx_BZ, ky_BZ, P, S, sys):
+def dipole_quiver_plots(kx_BZ, ky_BZ, P, sys):
 
     Nk_plot = 10
     Nk1     = P.Nk1
@@ -489,8 +486,7 @@ def dipole_quiver_plots(kx_BZ, ky_BZ, P, S, sys):
         length_BZ_ortho   = P.length_BZ_ortho
         P.length_BZ_E_dir = max(length_BZ_E_dir, length_BZ_ortho)
         P.length_BZ_ortho = max(length_BZ_E_dir, length_BZ_ortho)
- 
-    S_tmp  = SystemContainers(P)
+
  
     P.Nk1             = Nk1
     P.Nk2             = Nk2
@@ -502,9 +498,9 @@ def dipole_quiver_plots(kx_BZ, ky_BZ, P, S, sys):
     k_x = np.zeros( Nk_plot**2 )
     k_y = np.zeros( Nk_plot**2 )
 
-    for k_path, path in enumerate(S_tmp.paths):
+    for k_path, path in enumerate(P.paths):
 
-        sys.eigensystem_dipole_path(path, S_tmp.E_dir, P)
+        sys.eigensystem_dipole_path(path, P)
 
         d_x[k_path*Nk_plot:(k_path+1)*Nk_plot, :, :] = sys.dipole_path_x[:,:,:]*CoFa.au_to_as 
         d_y[k_path*Nk_plot:(k_path+1)*Nk_plot, :, :] = sys.dipole_path_y[:,:,:]*CoFa.au_to_as 

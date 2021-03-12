@@ -8,9 +8,11 @@ from scipy.integrate import ode
 
 from cued.utility import ConversionFactors as CoFa, ParamsParser
 from cued.utility import conditional_njit, evaluate_njit_matrix
-from cued.utility import FrequencyContainers, SystemContainers, TimeContainers
+from cued.utility import FrequencyContainers, TimeContainers
+from cued.utility import MpiHelpers
 from cued.utility import write_and_compile_latex_PDF
 from cued.fields import make_electric_field
+from cued.kpoint_mesh import hex_mesh, rect_mesh
 from cued.observables import *
 from cued.rhs_ode import *
 
@@ -74,6 +76,8 @@ def sbe_solver(sys, params):
     P = ParamsParser(params)
 
     P.n = sys.n
+    # Make Brillouin zone (saved in P)
+    make_BZ(P)
 
     # USER OUTPUT
     ###########################################################################
@@ -83,33 +87,33 @@ def sbe_solver(sys, params):
     # INITIALIZATIONS
     ###########################################################################
 
-    # Calculate the systems properties (hamiltonian, eigensystem, dipoles,
-    # berry curvature, BZ, electric field)
-    S = SystemContainers(P)
+    # Initialize Mpi
+    Mpi = MpiHelpers()
+    Mpi.local_Nk2_idx_list = Mpi.get_local_idx(P.Nk2)
 
     # Make containers for time- and frequency- dependent observables
     T = TimeContainers(P)
     W = FrequencyContainers()
 
     # Make rhs of ode for 2band or nband solver
-    rhs_ode, solver = make_rhs_ode(P, S, T, sys)
+    rhs_ode, solver = make_rhs_ode(P, T, sys)
 
     ###########################################################################
     # SOLVING
     ###########################################################################
     # Iterate through each path in the Brillouin zone
-    for Nk2_idx in S.local_Nk2_idx_list:
-        path = S.paths[Nk2_idx]
+    for Nk2_idx in Mpi.local_Nk2_idx_list:
+        path = P.paths[Nk2_idx]
 
         if P.user_out:
             print('Solving SBE for Path', Nk2_idx+1)
 
         # Evaluate the dipole components along the path
-        sys.eigensystem_dipole_path(path, S.E_dir, P)
+        sys.eigensystem_dipole_path(path, P)
 
         # Prepare calculations of observables
         current_exact_path, polarization_inter_path, current_intra_path =\
-            prepare_current_calculations(path, Nk2_idx, S, P, sys)
+            prepare_current_calculations(path, Nk2_idx, P, sys)
 
         # Initialize the values of of each k point vector
 
@@ -119,7 +123,7 @@ def sbe_solver(sys, params):
         # Set the initual values and function parameters for the current kpath
         if P.solver_method in ('bdf', 'adams'):
             solver.set_initial_value(y0, P.t0)\
-                .set_f_params(path, sys.dipole_in_path, sys.e_in_path, y0, S.dk)
+                .set_f_params(path, sys.dipole_in_path, sys.e_in_path, y0, P.dk)
         elif P.solver_method == 'rk4':
             T.solution_y_vec[:] = y0
 
@@ -133,7 +137,7 @@ def sbe_solver(sys, params):
             if (ti % (P.Nt//20) == 0 and P.user_out):
                 print('{:5.2f}%'.format((ti/P.Nt)*100))
 
-            calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, S)
+            calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, Mpi)
 
             # Calculate the currents at the timestep ti
             calculate_currents(ti, current_exact_path, polarization_inter_path, current_intra_path, T, P)
@@ -145,49 +149,65 @@ def sbe_solver(sys, params):
 
             elif P.solver_method == 'rk4':
                 T.solution_y_vec = rk_integrate(T.t[ti], T.solution_y_vec, path, sys,
-                                                y0, S.dk, P.dt, rhs_ode)
+                                                y0, P.dk, P.dt, rhs_ode)
 
             # Increment time counter
             ti += 1
 
     # in case of MPI-parallel execution: mpi sum
-    mpi_sum_currents(T, P, S)
+    mpi_sum_currents(T, P, Mpi)
 
     # End time of solver loop
     end_time = time.perf_counter()
-    S.run_time = end_time - start_time
+    P.run_time = end_time - start_time
 
     # calculate and write solutions
-    update_currents_with_kweight(S, T, P)
-    calculate_fourier(S, T, P, W)
-    write_current_emission_mpi(S, T, P, W, sys)
+    update_currents_with_kweight(T, P)
+    calculate_fourier(T, P, W)
+    write_current_emission_mpi(T, P, W, sys, Mpi)
 
     # Save the parameters of the calculation
     params_name = 'params.txt'
     paramsfile = open(params_name, 'w')
     paramsfile.write(str(P.__dict__) + "\n\n")
-    paramsfile.write("Runtime: {:.16f} s".format(S.run_time))
+    paramsfile.write("Runtime: {:.16f} s".format(P.run_time))
     paramsfile.close()
 
     if P.save_full:
         S_name = 'Sol_' + P.tail
-        np.savez(S_name, t=T.t, solution_full=T.solution_full, paths=S.paths,
+        np.savez(S_name, t=T.t, solution_full=T.solution_full, paths=P.paths,
                  electric_field=T.electric_field(T.t), A_field=T.A_field)
 
+def make_BZ(P):
+        # Form Brillouin Zone
+    if P.BZ_type == 'hexagon':
+        if P.align == 'K':
+            P.E_dir = np.array([1, 0])
+        elif P.align == 'M':
+            P.E_dir = np.array([np.cos(np.radians(-30)),
+                                    np.sin(np.radians(-30))])
+        P.dk, P.kweight, P.paths = hex_mesh(P)
 
-def make_rhs_ode(P, S, T, sys):
+    elif P.BZ_type == 'rectangle':
+        P.E_dir = np.array([np.cos(np.radians(P.angle_inc_E_field)),
+                                np.sin(np.radians(P.angle_inc_E_field))])
+        P.dk, P.kweight, P.paths = rect_mesh(P)
+
+    P.E_ort = np.array([P.E_dir[1], -P.E_dir[0]])
+
+def make_rhs_ode(P, T, sys):
     if P.solver == '2band':
         if P.n != 2:
             raise AttributeError('2-band solver works for 2-band systems only')
         if P.hamiltonian_evaluation == 'ana':
-           rhs_ode = make_rhs_ode_2_band(sys, S.E_dir, T.electric_field, P)
+           rhs_ode = make_rhs_ode_2_band(sys, P.E_dir, T.electric_field, P)
         elif P.hamiltonian_evaluation == 'num' or 'bandstructure':
             if P.gauge == 'length':
-                rhs_ode = make_rhs_ode_2_band(sys, S.E_dir, T.electric_field, P)
+                rhs_ode = make_rhs_ode_2_band(sys, P.E_dir, T.electric_field, P)
             if P.gauge == 'velocity':
                 raise AttributeError('numerical evaluation of the system not compatible with velocity gauge')
     elif P.solver == 'nband':
-        rhs_ode = make_rhs_ode_n_band(S.E_dir, T.electric_field, P)
+        rhs_ode = make_rhs_ode_n_band(P.E_dir, T.electric_field, P)
 
     if P.solver_method in ('bdf', 'adams'):
         solver = ode(rhs_ode, jac=None)\
@@ -198,36 +218,36 @@ def make_rhs_ode(P, S, T, sys):
     return rhs_ode, solver
 
 
-def prepare_current_calculations(path, Nk2_idx, S, P, sys):
+def prepare_current_calculations(path, Nk2_idx, P, sys):
 
     polarization_inter_path = None
     current_intra_path = None
     if P.hamiltonian_evaluation == 'ana':
         if P.gauge == 'length':
-            current_exact_path = make_emission_exact_path_length(path, S, P, sys)
+            current_exact_path = make_emission_exact_path_length(path, P, sys)
         if P.gauge == 'velocity':
-            current_exact_path = make_emission_exact_path_velocity(path, S, P, sys)
+            current_exact_path = make_emission_exact_path_velocity(path, P, sys)
         if P.split_current:
-            polarization_inter_path = make_polarization_path(path, S, P, sys)
-            current_intra_path = make_current_path(path, S, P, sys)
+            polarization_inter_path = make_polarization_path(path, P, sys)
+            current_intra_path = make_current_path(path, P, sys)
 
     if P.hamiltonian_evaluation == 'num':
-        current_exact_path = make_current_exact_path_hderiv(path, S, P, sys)
+        current_exact_path = make_current_exact_path_hderiv(path, P, sys)
         if P.split_current:
-            polarization_inter_path = make_polarization_inter_path(S, P, sys)
-            current_intra_path = make_intraband_current_path(path, S, P, sys)
+            polarization_inter_path = make_polarization_inter_path(P, sys)
+            current_intra_path = make_intraband_current_path(path, P, sys)
 
     if P.hamiltonian_evaluation == 'bandstructure':
-        current_exact_path = make_current_exact_bandstructure(path, S, P, sys)
+        current_exact_path = make_current_exact_bandstructure(path, P, sys)
         if P.split_current:
-            polarization_inter_path = make_polarization_inter_bandstructure(S, P, sys)
-            current_intra_path = make_intraband_current_bandstructure(path, S, P, sys)
+            polarization_inter_path = make_polarization_inter_bandstructure(P, sys)
+            current_intra_path = make_intraband_current_bandstructure(path, P, sys)
     return current_exact_path, polarization_inter_path, current_intra_path
 
 
-def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, S):
+def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, Mpi):
 
-    is_first_Nk2_idx = (S.local_Nk2_idx_list[0] == Nk2_idx)
+    is_first_Nk2_idx = (Mpi.local_Nk2_idx_list[0] == Nk2_idx)
 
     if P.solver_method in ('bdf', 'adams'):
         # Do not append the last element (A_field)
@@ -373,33 +393,33 @@ def parzen(t):
 
     return parzen
 
-def mpi_sum_currents(T, P, S):
+def mpi_sum_currents(T, P, Mpi):
 
-    T.j_E_dir       = S.Mpi.sync_and_sum(T.j_E_dir)
-    T.j_ortho       = S.Mpi.sync_and_sum(T.j_ortho)
+    T.j_E_dir       = Mpi.sync_and_sum(T.j_E_dir)
+    T.j_ortho       = Mpi.sync_and_sum(T.j_ortho)
     if P.split_current:
-        T.j_intra_E_dir = S.Mpi.sync_and_sum(T.j_intra_E_dir)
-        T.j_intra_ortho = S.Mpi.sync_and_sum(T.j_intra_ortho)
-        T.P_E_dir       = S.Mpi.sync_and_sum(T.P_E_dir)
-        T.P_ortho       = S.Mpi.sync_and_sum(T.P_ortho)
-        T.j_anom_ortho  = S.Mpi.sync_and_sum(T.j_anom_ortho)
+        T.j_intra_E_dir = Mpi.sync_and_sum(T.j_intra_E_dir)
+        T.j_intra_ortho = Mpi.sync_and_sum(T.j_intra_ortho)
+        T.P_E_dir       = Mpi.sync_and_sum(T.P_E_dir)
+        T.P_ortho       = Mpi.sync_and_sum(T.P_ortho)
+        T.j_anom_ortho  = Mpi.sync_and_sum(T.j_anom_ortho)
 
-def update_currents_with_kweight(S, T, P):
+def update_currents_with_kweight(T, P):
 
-    T.j_E_dir *= S.kweight
-    T.j_ortho *= S.kweight
+    T.j_E_dir *= P.kweight
+    T.j_ortho *= P.kweight
 
     if P.split_current:
-        T.j_intra_E_dir *= S.kweight
-        T.j_intra_ortho *= S.kweight
+        T.j_intra_E_dir *= P.kweight
+        T.j_intra_ortho *= P.kweight
 
-        T.dtP_E_dir = diff(T.t, T.P_E_dir)*S.kweight
-        T.dtP_ortho = diff(T.t, T.P_ortho)*S.kweight
+        T.dtP_E_dir = diff(T.t, T.P_E_dir)*P.kweight
+        T.dtP_ortho = diff(T.t, T.P_ortho)*P.kweight
 
-        T.P_E_dir *= S.kweight
-        T.P_ortho *= S.kweight
+        T.P_E_dir *= P.kweight
+        T.P_ortho *= P.kweight
 
-        T.j_anom_ortho *= S.kweight
+        T.j_anom_ortho *= P.kweight
 
         # Eq. (81( SBE formalism paper
         T.j_deph_E_dir = 1/P.T2*T.P_E_dir
@@ -411,7 +431,7 @@ def update_currents_with_kweight(S, T, P):
         T.j_intra_plus_anom_ortho = T.j_intra_ortho + T.j_anom_ortho
 
 
-def calculate_fourier(S, T, P, W):
+def calculate_fourier(T, P, W):
 
     # Fourier transforms
     # 1/(3c^3) in atomic units
@@ -456,14 +476,14 @@ def calculate_fourier(S, T, P, W):
             fourier_current_intensity(T.j_anom_ortho, T.j_intra_plus_anom_ortho, T.window_function, dt_out, prefac_emission, W.freq)
 
 
-def write_current_emission_mpi(S, T, P, W, sys):
+def write_current_emission_mpi(T, P, W, sys, Mpi):
 
     # only save data from a single MPI rank
-    if S.Mpi.rank == 0:
-        write_current_emission(S, T, P, W, sys)
+    if Mpi.rank == 0:
+        write_current_emission(T, P, W, sys, Mpi)
 
 
-def write_current_emission(S, T, P, W, sys):
+def write_current_emission(T, P, W, sys, Mpi):
 
     ##################################################
     # Time data save
@@ -542,7 +562,7 @@ def write_current_emission(S, T, P, W, sys):
     np.savetxt('frequency_data.dat', freq_output, header=freq_header, delimiter='   ', fmt="%+.18e")
 
     if P.save_latex_pdf:
-        write_and_compile_latex_PDF(T, W, P, S, sys)
+        write_and_compile_latex_PDF(T, W, P, sys, Mpi)
 
 
 def fourier_current_intensity(I_E_dir, I_ortho, window_function, dt_out, prefac_emission, freq):

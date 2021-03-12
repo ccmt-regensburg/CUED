@@ -4,7 +4,6 @@ from cued.fields import make_electric_field
 import cued.dipole
 from cued.utility import MpiHelpers
 from cued.utility import evaluate_njit_matrix
-from cued.kpoint_mesh import hex_mesh, rect_mesh
 
 class TimeContainers():
     def __init__(self, P):
@@ -43,25 +42,3 @@ class TimeContainers():
 class FrequencyContainers():
     pass
 
-
-class SystemContainers():
-    def __init__(self, P):
-
-        self.Mpi = MpiHelpers()
-        self.local_Nk2_idx_list = self.Mpi.get_local_idx(P.Nk2)
-
-        # Form Brillouin Zone
-        if P.BZ_type == 'hexagon':
-            if P.align == 'K':
-                self.E_dir = np.array([1, 0])
-            elif P.align == 'M':
-                self.E_dir = np.array([np.cos(np.radians(-30)),
-                                       np.sin(np.radians(-30))])
-            self.dk, self.kweight, self.paths = hex_mesh(P)
-
-        elif P.BZ_type == 'rectangle':
-            self.E_dir = np.array([np.cos(np.radians(P.angle_inc_E_field)),
-                                   np.sin(np.radians(P.angle_inc_E_field))])
-            self.dk, self.kweight, self.paths = rect_mesh(P, self)
-
-        self.E_ort = np.array([self.E_dir[1], -self.E_dir[0]])

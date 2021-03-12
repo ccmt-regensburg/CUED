@@ -191,15 +191,14 @@ class TwoBandHamiltonianSystem():
         Ay = sp.Matrix([[0, kdotp[1]/(ec-ev)], [np.conjugate(kdotp[1])/(ec-ev), 0]])
         return Ax, Ay
 
-    def eigensystem_dipole_path(self, path, E_dir, P):
+    def eigensystem_dipole_path(self, path, P):
 
         # Retrieve the set of k-points for the current path
         kx_in_path = path[:, 0]
         ky_in_path = path[:, 1]
         pathlen = path[:,0].size
         self.e_in_path = np.zeros([pathlen, P.n], dtype=P.type_real_np)
-
-        E_ort = np.array([E_dir[1], -E_dir[0]])   
+ 
 
         if P.do_semicl:
             self.dipole_path_x = np.zeros([pathlen, P.n, P.n], dtype=P.type_complex_np)
@@ -214,8 +213,8 @@ class TwoBandHamiltonianSystem():
 
         self.wf_in_path = evaluate_njit_matrix(self.Ujit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
 
-        self.dipole_in_path = E_dir[0]*self.dipole_path_x + E_dir[1]*self.dipole_path_y
-        self.dipole_ortho = E_ort[0]*self.dipole_path_x + E_ort[1]*self.dipole_path_y        
+        self.dipole_in_path = P.E_dir[0]*self.dipole_path_x + P.E_dir[1]*self.dipole_path_y
+        self.dipole_ortho = P.E_ort[0]*self.dipole_path_x + P.E_ort[1]*self.dipole_path_y        
 
     def eigensystem(self, gidx=None):
         """
