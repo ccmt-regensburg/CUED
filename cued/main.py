@@ -67,7 +67,6 @@ def sbe_solver(sys, params):
     -------
     approximate solutions, but same components as Iexact
     """
-    print('test')
     # Start time of sbe_solver
     start_time = time.perf_counter()
 
