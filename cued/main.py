@@ -10,7 +10,7 @@ from cued.utility import ConversionFactors as CoFa, ParamsParser
 from cued.utility import conditional_njit, evaluate_njit_matrix
 from cued.utility import FrequencyContainers, TimeContainers
 from cued.utility import MpiHelpers
-from cued.utility import write_and_compile_latex_PDF
+from cued.plotting import write_and_compile_latex_PDF
 from cued.fields import make_electric_field
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 from cued.observables import *

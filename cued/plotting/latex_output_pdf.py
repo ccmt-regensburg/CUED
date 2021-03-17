@@ -31,7 +31,7 @@ def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
         code_path = os.path.dirname(os.path.realpath(__file__))
 
         shutil.copy(code_path+"/CUED_summary.tex", ".")
-        shutil.copy(code_path+"/logo.pdf", ".")
+        shutil.copy(code_path+"/../branding/logo.pdf", ".")
 
         write_parameter(P, Mpi)
 

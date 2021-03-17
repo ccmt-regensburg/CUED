@@ -1,4 +1,4 @@
-# <img alt="CUED" src="/cued/utility/logo.png" height="100">
+# <img alt="CUED" src="/cued/branding/logo.png" height="100">
 ![Test workflow](https://github.com/ccmt-regensburg/CUED/actions/workflows/regression_test.yml/badge.svg)
 ![Test workflow for published calculations](https://github.com/ccmt-regensburg/CUED/actions/workflows/test_published_calculations.yml/badge.svg)
 
