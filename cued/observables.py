@@ -680,22 +680,22 @@ def make_intraband_current_path(path, P, sys):
     # derivative of band structure
 
     pathplusx = np.copy(path)
-    pathplusx[:, :, 0] += epsilon
+    pathplusx[:, 0] += epsilon
     pathminusx = np.copy(path)
-    pathminusx[:, :, 0] -= epsilon
+    pathminusx[:, 0] -= epsilon
     pathplusy = np.copy(path)
-    pathplusy[:, :, 1] += epsilon
+    pathplusy[:, 1] += epsilon
     pathminusy = np.copy(path)
-    pathminusy[:, :, 1] -= epsilon
+    pathminusy[:, 1] -= epsilon
 
     pathplus2x = np.copy(path)
-    pathplus2x[:, :, 0] += 2*epsilon
+    pathplus2x[:, 0] += 2*epsilon
     pathminus2x = np.copy(path)
-    pathminus2x[:, :, 0] -= 2*epsilon
+    pathminus2x[:, 0] -= 2*epsilon
     pathplus2y = np.copy(path)
-    pathplus2y[:, :, 1] += 2*epsilon
+    pathplus2y[:, 1] += 2*epsilon
     pathminus2y = np.copy(path)
-    pathminus2y[:, :, 1] -= 2*epsilon
+    pathminus2y[:, 1] -= 2*epsilon
 
     eplusx, wfplusx = sys.diagonalize_path(pathplusx, P) 
     eminusx, wfminusx = sys.diagonalize_path(pathminusx, P)

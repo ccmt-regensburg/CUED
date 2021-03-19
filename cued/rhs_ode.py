@@ -366,7 +366,7 @@ def make_rhs_ode_n_band(electric_field, P):
                     else: 
                         x[k*(n**2) + i*n + j] += - gamma2 * y[k*(n**2) + i*n + j]
                     for nbar in range(n):
-                        if i == j:
+                        if i == j and nbar != i:
                             x[k*(n**2) + i*n + j] += 2 * np.imag( y[k*(n**2) + i*n + nbar] * wr[nbar, i] )
                         else:
                             x[k*(n**2) + i*n + j] += -1j * ( y[k*(n**2) + i*n + nbar] * wr[nbar, j] - wr[i, nbar] * y[k*(n**2) + nbar*n + j])
