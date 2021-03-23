@@ -27,25 +27,25 @@ class conditional_njit():
             return func
         return njit(func)
 
-def matrix_to_njit_functions(sf, hsymbols, kpflag=False):
+def matrix_to_njit_functions(sf, hsymbols, dtype=np.complex128, kpflag=False):
     """
     Converts a sympy matrix into a matrix of functions
     """
     shp = sf.shape
-    jitmat = [[to_njit_function(sf[j, i], hsymbols, kpflag=kpflag)
+    jitmat = [[to_njit_function(sf[j, i], hsymbols, dtype, kpflag=kpflag)
                for i in range(shp[0])] for j in range(shp[1])]
     return jitmat
 
 
-def list_to_njit_functions(sf, hsymbols, kpflag=False):
+def list_to_njit_functions(sf, hsymbols, dtype=np.complex128, kpflag=False):
     """
     Converts a list of sympy functions/matrices to a list of numpy
     callable functions/matrices
     """
-    return [to_njit_function(sfn, hsymbols, kpflag) for sfn in sf]
+    return [to_njit_function(sfn, hsymbols, dtype, kpflag) for sfn in sf]
 
 
-def to_njit_function(sf, hsymbols, kpflag=False):
+def to_njit_function(sf, hsymbols, dtype=np.complex128, kpflag=False):
     """
     Converts a simple sympy function to a function callable by numpy
     """
@@ -56,34 +56,41 @@ def to_njit_function(sf, hsymbols, kpflag=False):
     # Decide wheter we need to use the kp version of the program
     if kpflag:
         kxp, kyp = sp.symbols('kxp kyp', real=True)
-        return __to_njit_function_kp(sf, hsymbols, kx, ky, kxp, kyp)
+        return __to_njit_function_kp(sf, hsymbols, kx, ky, kxp, kyp, dtype=dtype)
 
-    return __to_njit_function_k(sf, hsymbols, kx, ky)
+    return __to_njit_function_k(sf, hsymbols, kx, ky, dtype=dtype)
 
 
-def __to_njit_function_k(sf, hsymbols, kx, ky):
+def __to_njit_function_k(sf, hsymbols, kx, ky, dtype=np.complex128):
     kset = {kx, ky}
     # Check wheter k is contained in the free symbols
     contains_k = bool(sf.free_symbols.intersection(kset))
     if contains_k:
         # All free Hamiltonian symbols get function parameters
+        if dtype == np.complex256:
+            return lambdify(list(hsymbols), sf, "numpy")
         return njit(lambdify(list(hsymbols), sf, "numpy"))
-
     # Here we have non k variables in sf. Expand sf by 0*kx*ky
     sf = sf + kx*ky*sp.UnevaluatedExpr(0)
+    if dtype == np.complex256:
+        return lambdify(list(hsymbols), sf, "numpy")
     return njit(lambdify(list(hsymbols), sf, "numpy"))
 
 
-def __to_njit_function_kp(sf, hsymbols, kx, ky, kxp, kyp):
+def __to_njit_function_kp(sf, hsymbols, kx, ky, kxp, kyp, dtype=np.complex128):
     kset = {kx, ky, kxp, kyp}
     hsymbols = hsymbols.union({kxp, kyp})
     # Check wheter k is contained in the free symbols
     contains_k = bool(sf.free_symbols.intersection(kset))
     if contains_k:
         # All free Hamiltonian symbols get function parameters
+        if dtype == np.complex256:
+            return lambdify(list(hsymbols), sf, "numpy")
         return njit(lambdify(list(hsymbols), sf, "numpy"))
 
     sf = sf + kx*ky*kxp*kyp*sp.UnevaluatedExpr(0)
+    if dtype == np.complex256:
+        return lambdify(list(hsymbols), sf, "numpy")
     return njit(lambdify(list(hsymbols), sf, "numpy"))
 
 

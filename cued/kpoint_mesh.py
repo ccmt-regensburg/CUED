@@ -18,9 +18,9 @@ def rect_mesh(P):
     length_BZ_ortho = P.type_real_np(P.length_BZ_ortho)
 
     alpha_array = np.linspace(-0.5 + (1/(2*Nk_E_dir)),
-                               0.5 - (1/(2*Nk_E_dir)), num=Nk_E_dir_integer)
+                               0.5 - (1/(2*Nk_E_dir)), num=Nk_E_dir_integer, dtype=P.type_real_np)
     beta_array  = np.linspace(-0.5 + (1/(2*Nk_ortho)),
-                               0.5 - (1/(2*Nk_ortho)), num=Nk_ortho_integer)
+                               0.5 - (1/(2*Nk_ortho)), num=Nk_ortho_integer, dtype=P.type_real_np)
 
     vec_k_E_dir = length_BZ_E_dir*E_dir
     vec_k_ortho = length_BZ_ortho*np.array([E_dir[1], -E_dir[0]])
@@ -54,8 +54,8 @@ def hex_mesh(P):
     Create a hexagonal mesh
     '''
 
-    b1 = (2*np.pi/(P.a*np.sqrt(3)))*np.array([np.sqrt(3), -1])
-    b2 = (4*np.pi/(P.a*np.sqrt(3)))*np.array([0, 1])
+    b1 = (2*np.pi/(P.a*np.sqrt(3)))*np.array([np.sqrt(3), -1], dtype=P.type_real_np)
+    b2 = (4*np.pi/(P.a*np.sqrt(3)))*np.array([0, 1], dtype=P.type_real_np)
 
     def is_in_hex(p):
         # Returns true if the point is in the hexagonal BZ.
@@ -99,9 +99,9 @@ def hex_mesh(P):
             raise RuntimeError("Nk2: " + "{:d}".format(P.Nk2) +
                                " needs to be divisible by 3")
         b_a1 = b1
-        b_a2 = (2*np.pi/(3*P.a))*np.array([1, np.sqrt(3)])
-        alpha1 = np.linspace(-0.5 + (1/(2*P.Nk1)), 0.5 - (1/(2*P.Nk1)), num=P.Nk1)
-        alpha2 = np.linspace(-1.0 + (1.5/(2*P.Nk2)), 0.5 - (1.5/(2*P.Nk2)), num=P.Nk2)
+        b_a2 = (2*np.pi/(3*P.a))*np.array([1, np.sqrt(3)], dtype=P.type_real_np)
+        alpha1 = np.linspace(-0.5 + (1/(2*P.Nk1)), 0.5 - (1/(2*P.Nk1)), num=P.Nk1, dtype=P.type_real_np)
+        alpha2 = np.linspace(-1.0 + (1.5/(2*P.Nk2)), 0.5 - (1.5/(2*P.Nk2)), num=P.Nk2, dtype=P.type_real_np)
         for a2 in alpha2:
             # Container for a single gamma-M path
             path_M = []
@@ -130,12 +130,12 @@ def hex_mesh(P):
         if P.Nk2%3 != 0:
             raise RuntimeError("Nk2: " + "{:d}".format(P.Nk2) +
                                " needs to be divisible by 3")
-        b_a1 = 8*np.pi/(P.a*3)*np.array([1, 0])
-        b_a2 = 4*np.pi/(P.a*3)*np.array([0, np.sqrt(3)])
+        b_a1 = 8*np.pi/(P.a*3)*np.array([1, 0], dtype=P.type_real_np)
+        b_a2 = 4*np.pi/(P.a*3)*np.array([0, np.sqrt(3)], dtype=P.type_real_np)
         # Extend over half of the b2 direction and 1.5x the b1 direction
         # (extending into the 2nd BZ to get correct boundary conditions)
-        alpha1 = np.linspace(-0.5 + (1.5/(2*P.Nk1)), 1.0 - (1.5/(2*P.Nk1)), P.Nk1)
-        alpha2 = np.linspace(0 + (0.5/(2*P.Nk2)), 0.5 - (0.5/(2*P.Nk2)), P.Nk2)
+        alpha1 = np.linspace(-0.5 + (1.5/(2*P.Nk1)), 1.0 - (1.5/(2*P.Nk1)), P.Nk1, dtype=P.type_real_np)
+        alpha2 = np.linspace(0 + (0.5/(2*P.Nk2)), 0.5 - (0.5/(2*P.Nk2)), P.Nk2, dtype=P.type_real_np)
         for a2 in alpha2:
             path_K = []
             for a1 in alpha1:
@@ -166,4 +166,4 @@ def two_pi_factor(P):
         else:
             exponent = -2
 
-    return (2.0*np.pi)**exponent
+    return P.type_real_np((2.0*np.pi)**exponent)

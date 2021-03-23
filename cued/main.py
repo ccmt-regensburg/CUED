@@ -182,15 +182,15 @@ def make_BZ(P):
         # Form Brillouin Zone
     if P.BZ_type == 'hexagon':
         if P.align == 'K':
-            P.E_dir = np.array([1, 0])
+            P.E_dir = np.array([1, 0], P.type_real_np)
         elif P.align == 'M':
             P.E_dir = np.array([np.cos(np.radians(-30)),
-                                    np.sin(np.radians(-30))])
+                                    np.sin(np.radians(-30))], dtype=P.type_real_np)
         P.dk, P.kweight, P.paths = hex_mesh(P)
 
     elif P.BZ_type == 'rectangle':
         P.E_dir = np.array([np.cos(np.radians(P.angle_inc_E_field)),
-                                np.sin(np.radians(P.angle_inc_E_field))])
+                                np.sin(np.radians(P.angle_inc_E_field))], dtype=P.type_real_np)
         P.dk, P.kweight, P.paths = rect_mesh(P)
 
     P.E_ort = np.array([P.E_dir[1], -P.E_dir[0]])
@@ -410,7 +410,7 @@ def update_currents_with_kweight(T, P):
 
         T.j_anom_ortho *= P.kweight
 
-        # Eq. (81( SBE formalism paper
+        # Eq. (81) SBE formalism paper
         T.j_deph_E_dir = 1/P.T2*T.P_E_dir
         T.j_deph_ortho = 1/P.T2*T.P_ortho
 

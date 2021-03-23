@@ -19,13 +19,9 @@ class NBandHamiltonianSystem():
         self.hsymbols = self.h.free_symbols
         self.hderiv = self.__hamiltonian_derivatives()
 
-        self.hfjit = matrix_to_njit_functions(self.h, self.hsymbols)
-        self.hderivfjit = [matrix_to_njit_functions(hd, self.hsymbols)
-                           for hd in self.hderiv]
-        
-        self.n = np.size(evaluate_njit_matrix(self.hfjit, kx=0, ky=0)[0, :, :], axis=0)
+        self.n = h.shape[0]
 
-        self.U = None             # Normalised eigenstates
+        self.hfjit = None
 
         self.e_in_path = None   #set when eigensystem_dipole_path is called
         self.wf_in_path = None
@@ -132,7 +128,11 @@ class NBandHamiltonianSystem():
         '''
             Dipole Elements of the Hamiltonian for a given path
         '''
-
+        if self.hfjit == None:
+            self.hfjit = matrix_to_njit_functions(self.h, self.hsymbols, dtype=P.type_complex_np)
+            self.hderivfjit = [matrix_to_njit_functions(hd, self.hsymbols, dtype=P.type_complex_np)
+                            for hd in self.hderiv] 
+            
         pathlen = path[:, 0].size
         e_path, wf_path = self.diagonalize_path(path, P)
         dwfkx_path, dwfky_path = self.__derivative_path(path, P)
