@@ -22,7 +22,7 @@ class TwoBandHamiltonianSystem():
     m_zee_y = sp.Symbol('m_zee_y', real=True)
     m_zee_z = sp.Symbol('m_zee_z', real=True)
 
-    def __init__(self, ho, hx, hy, hz, gidx, offdiagonal_k=False, test=False, kdotp=None):
+    def __init__(self, ho, hx, hy, hz, offdiagonal_k=False, test=False, kdotp=None):
         """
         Generates the symbolic Hamiltonian, wave functions and
         energies.
@@ -32,6 +32,8 @@ class TwoBandHamiltonianSystem():
         ho, hx, hy, hz : Symbol
             Wheter to additionally return energy and wave function derivatives
         """
+        self.system = 'ana'
+        
         self.n = 2
         
         self.ho = ho
@@ -39,22 +41,24 @@ class TwoBandHamiltonianSystem():
         self.hy = hy
         self.hz = hz
 
-        self.gidx = gidx
+        self.offdiag_k = offdiagonal_k
+        self.test = test
+        self.kdotp = kdotp
 
         self.h = self.__hamiltonian()
         self.hsymbols = self.h.free_symbols
         self.hderiv = self.__hamiltonian_derivatives()
 
-        self.e = self.__energies()
-        self.ederiv = self.__energy_derivatives()
+        self.e = None
+        self.ederiv = None
 
         # Jitted Hamiltonian and energies
         self.hfjit = matrix_to_njit_functions(self.h, self.hsymbols)
         self.hderivfjit = [matrix_to_njit_functions(hd, self.hsymbols)
                            for hd in self.hderiv]
 
-        self.efjit = list_to_njit_functions(self.e, self.hsymbols)
-        self.ederivfjit = list_to_njit_functions(self.ederiv, self.hsymbols)
+        self.efjit = None
+        self.ederivjit = None
 
         # Get set when eigensystem is called (gauge needed)
         self.U = None             # Normalised eigenstates
@@ -64,17 +68,6 @@ class TwoBandHamiltonianSystem():
 
         self.Ujit = None
         self.Ujit_h = None
-
-        self.eigensystem(self.gidx)
-
-        if kdotp is None:
-            self.Ax, self.Ay = self.__fields(self.U, self.U_h)
-        else:
-            self.Ax, self.Ay = self.__kdotp_fields(kdotp, self.e[0], self.e[1])
-
-        # Njit function and function arguments
-        self.Axfjit = matrix_to_njit_functions(self.Ax, self.hsymbols)
-        self.Ayfjit = matrix_to_njit_functions(self.Ay, self.hsymbols)
 
         # Evaluated fields
         self.Ax_eval = None
@@ -87,16 +80,7 @@ class TwoBandHamiltonianSystem():
         self.Axfjit_offk = None
         self.Ayfjit_offk = None
 
-        if offdiagonal_k:
-            self.offdiagonal_k(self.U)
-        
-        # Curvature
-
-        self.B = sp.diff(self.Ax, self.ky) - sp.diff(self.Ay, self.kx)
-
-        self.Bfjit = matrix_to_njit_functions(self.B, self.hsymbols)
-
-        self.B_eval = None
+        self.B_eval = None    
 
         # Get set when evaluate_energy is called
         self.e_eval = None
@@ -193,6 +177,10 @@ class TwoBandHamiltonianSystem():
 
     def eigensystem_dipole_path(self, path, P):
 
+        # Set eigenfunction first time eigensystem_dipole_path is called
+        if self.e is None:
+            self.make_eigensystem_dipole(P)
+
         # Retrieve the set of k-points for the current path
         kx_in_path = path[:, 0]
         ky_in_path = path[:, 1]
@@ -216,6 +204,31 @@ class TwoBandHamiltonianSystem():
         self.dipole_in_path = P.E_dir[0]*self.dipole_path_x + P.E_dir[1]*self.dipole_path_y
         self.dipole_ortho = P.E_ort[0]*self.dipole_path_x + P.E_ort[1]*self.dipole_path_y        
 
+    def make_eigensystem_dipole(self, P):
+        self.e = self.__energies()
+        self.ederiv = self.__energy_derivatives()
+        self.efjit = list_to_njit_functions(self.e, self.hsymbols)
+        self.ederivfjit = list_to_njit_functions(self.ederiv, self.hsymbols)
+        
+        self.eigensystem(P.gidx)
+
+        if self.kdotp is None:
+            self.Ax, self.Ay = self.__fields(self.U, self.U_h)
+        else:
+            self.Ax, self.Ay = self.__kdotp_fields(self.kdotp, self.e[0], self.e[1])
+
+        # Njit function and function arguments
+        self.Axfjit = matrix_to_njit_functions(self.Ax, self.hsymbols)
+        self.Ayfjit = matrix_to_njit_functions(self.Ay, self.hsymbols)
+
+        if self.offdiag_k:
+            self.offdiagonal_k(self.U)
+        
+        # Curvature
+
+        self.B = sp.diff(self.Ax, self.ky) - sp.diff(self.Ay, self.kx)
+        self.Bfjit = matrix_to_njit_functions(self.B, self.hsymbols)
+       
     def eigensystem(self, gidx=None):
         """
         Generic form of Hamiltonian, energies and wave functions in a two band

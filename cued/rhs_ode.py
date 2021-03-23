@@ -41,7 +41,10 @@ def make_rhs_ode_2_band(sys, electric_field, P):
     E_dir = P.E_dir
     gauge = P.gauge
 
-    if sys.U is not None:
+    if sys.system == 'ana':
+
+        sys.make_eigensystem_dipole(P)
+
         ########################################
         # Wire the energies
         ########################################

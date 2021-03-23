@@ -8,7 +8,7 @@ def dirac():
     # System parameters
     A = 0.19732     # Fermi velocity
 
-    dirac_system = cued.hamiltonian.BiTe_num(C0=0, C2=0, A=A, R=0, mz=0, gidx=1)
+    dirac_system = cued.hamiltonian.BiTe_num(C0=0, C2=0, A=A, R=0, mz=0)
 
     return dirac_system
 def run(system):

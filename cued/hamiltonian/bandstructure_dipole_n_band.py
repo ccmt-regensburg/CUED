@@ -10,6 +10,8 @@ class NBandBandstructureDipoleSystem():
 
     def __init__(self, e, prefac_x, prefac_y, n, flag):
 
+        self.system = 'bandstructure'
+
         self.prefac_x = prefac_x
         self.prefac_y = prefac_y
         self.e = e

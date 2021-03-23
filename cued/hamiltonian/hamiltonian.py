@@ -14,7 +14,7 @@ class Haldane(TwoBandHamiltonianSystem):
     """
 
     def __init__(self, t1=sp.Symbol('t1'), t2=sp.Symbol('t2'),
-                 m=sp.Symbol('m'), phi=sp.Symbol('phi'), gidx=None):
+                 m=sp.Symbol('m'), phi=sp.Symbol('phi')):
 
         a1 = self.kx
         a2 = -1/2 * self.kx + sp.sqrt(3)/2 * self.ky
@@ -29,7 +29,7 @@ class Haldane(TwoBandHamiltonianSystem):
         hy = t1*(sp.sin(a1)+sp.sin(a2)+sp.sin(a3))
         hz = m - 2*t2*sp.sin(phi)*(sp.sin(b1)+sp.sin(b2)+sp.sin(b3))
 
-        super().__init__(ho, hx, hy, hz, gidx)
+        super().__init__(ho, hx, hy, hz)
 
 
 class two_site_semiconductor(TwoBandHamiltonianSystem):
@@ -41,14 +41,14 @@ class two_site_semiconductor(TwoBandHamiltonianSystem):
     def __init__(self,
                  lattice_const=sp.Symbol('lattice_const', real=True),
                  hopping=sp.Symbol('hopping', real=True),
-                 onsite_energy_difference=sp.Symbol('onsite_energy_difference', real=True), gidx=None) :
+                 onsite_energy_difference=sp.Symbol('onsite_energy_difference', real=True)) :
 
         ho = 1.0E-30*self.ky
         hx = hopping * (1 + sp.cos (self.kx * lattice_const))
         hy = 0
         hz = onsite_energy_difference/2
 
-        super().__init__(ho, hx, hy, hz, gidx)
+        super().__init__(ho, hx, hy, hz)
 
 
 class one_site_semiconductor(TwoBandHamiltonianSystem):
@@ -59,14 +59,14 @@ class one_site_semiconductor(TwoBandHamiltonianSystem):
 
     def __init__(self,
                  lattice_const=sp.Symbol('lattice_const', real=True),
-                 hopping=sp.Symbol('hopping', real=True), gidx=None):
+                 hopping=sp.Symbol('hopping', real=True)):
 
         ho = hopping * (1 - 2*sp.cos (self.kx * lattice_const))
         hx = 1.0e-50*self.ky
         hy = 1.0e-50
         hz = 1.0e-50
 
-        super().__init__(ho, hx, hy, hz, gidx)
+        super().__init__(ho, hx, hy, hz)
 
 
 
@@ -79,7 +79,7 @@ class BiTe(TwoBandHamiltonianSystem):
                  C2=sp.Symbol('C2', real=True),
                  A=sp.Symbol('A', real=True),
                  R=sp.Symbol('R', real=True),
-                 kcut=0, mz=0, gidx=None):
+                 kcut=0, mz=0):
 
         ho = C0 + C2*(self.kx**2 + self.ky**2)
         hx = A*self.ky
@@ -91,7 +91,7 @@ class BiTe(TwoBandHamiltonianSystem):
             cutfactor = 1/(1+(ratio))
             hz *= cutfactor
 
-        super().__init__(ho, hx, hy, hz, gidx)
+        super().__init__(ho, hx, hy, hz)
 
 
 class BiTePeriodic(TwoBandHamiltonianSystem):
@@ -103,7 +103,7 @@ class BiTePeriodic(TwoBandHamiltonianSystem):
                  C2=sp.Symbol('C2', real=True),
                  R=sp.Symbol('R', real=True),
                  a=sp.Symbol('a', real=True),
-                 mw=1, order=4, gidx=None):
+                 mw=1, order=4):
 
         kx = self.kx
         ky = self.ky
@@ -123,7 +123,7 @@ class BiTePeriodic(TwoBandHamiltonianSystem):
         hz += mw*8*(R/a**3)*3*sqr*4**(-order) \
             * (-sp.cos(K1)-sp.cos(K2)-sp.cos(K3) + 3)**order
 
-        super().__init__(ho, hx, hy, hz, gidx)
+        super().__init__(ho, hx, hy, hz)
 
 
 class BiTeResummed(TwoBandHamiltonianSystem):
@@ -136,7 +136,7 @@ class BiTeResummed(TwoBandHamiltonianSystem):
                  A=sp.Symbol('A', real=True),
                  r=sp.Symbol('r', real=True),
                  ksym=sp.Symbol('ksym', real=True),
-                 kasym=sp.Symbol('kasym', real=True), gidx=None):
+                 kasym=sp.Symbol('kasym', real=True)):
 
         k = sp.sqrt(self.kx**2 + self.ky**2)
         C2 = (c2/ksym**2)/(1+(k/ksym)**2)
@@ -146,7 +146,7 @@ class BiTeResummed(TwoBandHamiltonianSystem):
         hy = -A*self.kx
         hz = 2*R*self.kx*(self.kx**2 - 3*self.ky**2)
 
-        super().__init__(ho, hx, hy, hz, gidx)
+        super().__init__(ho, hx, hy, hz)
 
 
 class Graphene(TwoBandHamiltonianSystem):
@@ -154,7 +154,7 @@ class Graphene(TwoBandHamiltonianSystem):
     Graphene model
     """
 
-    def __init__(self, t=sp.Symbol('t'), gidx=None):
+    def __init__(self, t=sp.Symbol('t')):
         a1 = self.kx
         a2 = -1/2 * self.kx + sp.sqrt(3)/2 * self.ky
         a3 = -1/2 * self.kx - sp.sqrt(3)/2 * self.ky
@@ -164,7 +164,7 @@ class Graphene(TwoBandHamiltonianSystem):
         hy = t*(sp.sin(a1)+sp.sin(a2)+sp.sin(a3))
         hz = 0
 
-        super().__init__(ho, hx, hy, hz, gidx)
+        super().__init__(ho, hx, hy, hz)
 
 
 class QWZ(TwoBandHamiltonianSystem):
@@ -172,7 +172,7 @@ class QWZ(TwoBandHamiltonianSystem):
     Qi-Wu-Zhang model of a 2D Chern insulator
     """
 
-    def __init__(self, t=sp.Symbol('t'), m=sp.Symbol('m'), order=sp.oo, gidx=None):
+    def __init__(self, t=sp.Symbol('t'), m=sp.Symbol('m'), order=sp.oo):
         n = order+1
 
         ho = 0
@@ -186,7 +186,7 @@ class QWZ(TwoBandHamiltonianSystem):
             hz = m - sp.cos(self.kx).series(n=n).removeO()\
                 - sp.cos(self.ky).series(n=n).removeO()
 
-        super().__init__(t*ho, t*hx, t*hy, t*hz, gidx)
+        super().__init__(t*ho, t*hx, t*hy, t*hz)
 
 
 class Dirac(TwoBandHamiltonianSystem):
@@ -195,39 +195,39 @@ class Dirac(TwoBandHamiltonianSystem):
     """
 
     def __init__(self, vx=sp.Symbol('vx'), vy=sp.Symbol('vy'),
-                 m=sp.Symbol('m'), gidx=None):
+                 m=sp.Symbol('m')):
 
         ho = 0
         hx = vx*self.kx
         hy = vy*self.ky
         hz = m
 
-        super().__init__(ho, hx, hy, hz, gidx)
+        super().__init__(ho, hx, hy, hz)
 
 
 class Test(TwoBandHamiltonianSystem):
     def __init__(self, A=sp.Symbol('A', real=True),
                  a=sp.Symbol('a', real=True),
-                 mx=0, mz=0, gidx=None):
+                 mx=0, mz=0):
 
         ho = 0
         hx = mx
         hy = 0
         hz = A*(2 + mz - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
 
-        super().__init__(ho, hx, hy, hz, gidx)
+        super().__init__(ho, hx, hy, hz)
 
 
 class Parabolic(TwoBandHamiltonianSystem):
     def __init__(self, A=sp.Symbol('A', real=True),
-                 mz=0, gidx=None):
+                 mz=0):
 
         ho = 0
         hx = A*(self.ky**2)
         hy = A*(self.kx**2)
         hz = mz
 
-        super().__init__(ho, hx, hy, hz, gidx)
+        super().__init__(ho, hx, hy, hz)
 
 
 class Semiconductor(TwoBandHamiltonianSystem):
@@ -236,7 +236,7 @@ class Semiconductor(TwoBandHamiltonianSystem):
     """
 
     def __init__(self, A=sp.Symbol('A'), mx=sp.Symbol('mx'),
-                 mz=sp.Symbol('mz'), a=sp.Symbol('a'), align=False, gidx=None):
+                 mz=sp.Symbol('mz'), a=sp.Symbol('a'), align=False):
         ho = 0
         hx = mx
         hy = 0
@@ -246,7 +246,7 @@ class Semiconductor(TwoBandHamiltonianSystem):
         else:
             hz = (A/4)*(2 - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
 
-        super().__init__(ho, hx, hy, hz, gidx)
+        super().__init__(ho, hx, hy, hz)
 
 
 ############################################################################################
@@ -262,7 +262,7 @@ class BiTe_num(NBandHamiltonianSystem):
                  C2=sp.Symbol('C2', real=True),
                  A=sp.Symbol('A', real=True),
                  R=sp.Symbol('R', real=True),
-                 kcut=0, mz=0, gidx=None):
+                 kcut=0, mz=0):
 
         so = sp.Matrix([[1, 0], [0, 1]])
         sx = sp.Matrix([[0, 1], [1, 0]])
@@ -280,7 +280,7 @@ class BiTe_num(NBandHamiltonianSystem):
             hz *= cutfactor
         h = ho*so + hx*sx + hy*sy + hz*sz
 
-        super().__init__(h, gidx)
+        super().__init__(h)
 
 class BiTe_num_3_bands(NBandHamiltonianSystem):
     '''
@@ -291,7 +291,7 @@ class BiTe_num_3_bands(NBandHamiltonianSystem):
                  C2=sp.Symbol('C2', real=True),
                  A=sp.Symbol('A', real=True),
                  R=sp.Symbol('R', real=True),
-                 kcut=0, mz=0, gidx=None):
+                 kcut=0, mz=0):
 
         so = sp.Matrix([[1, 0, 0], [0, 1, 0], [0, 0, 0]])
         sx = sp.Matrix([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
@@ -309,7 +309,7 @@ class BiTe_num_3_bands(NBandHamiltonianSystem):
             hz *= cutfactor
         h = ho*so + hx*sx + hy*sy + hz*sz
 
-        super().__init__(h, gidx)
+        super().__init__(h)
 
 
 ############################################################################################

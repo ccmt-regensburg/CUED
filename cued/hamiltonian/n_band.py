@@ -11,10 +11,11 @@ class NBandHamiltonianSystem():
     kx = sp.Symbol('kx', real=True)
     ky = sp.Symbol('ky', real=True)
 
-    def __init__(self, h, gidx):
-    
+    def __init__(self, h):
+        
+        self.system = 'num'
+
         self.h = h
-        self.gidx = gidx
         self.hsymbols = self.h.free_symbols
         self.hderiv = self.__hamiltonian_derivatives()
 
@@ -119,9 +120,9 @@ class NBandHamiltonianSystem():
   
         for i in range(pathlen):
             e_path[i], wf_buff = lin.eigh(h_in_path[i, :, :])
-            wf_gauged_entry = np.copy(wf_buff[self.gidx, :])
-            wf_buff[self.gidx, :] = np.abs(wf_gauged_entry)
-            wf_buff[~(np.arange(np.size(wf_buff, axis=0)) == self.gidx)] *= np.exp(1j*np.angle(wf_gauged_entry.conj()))
+            wf_gauged_entry = np.copy(wf_buff[P.gidx, :])
+            wf_buff[P.gidx, :] = np.abs(wf_gauged_entry)
+            wf_buff[~(np.arange(np.size(wf_buff, axis=0)) == P.gidx)] *= np.exp(1j*np.angle(wf_gauged_entry.conj()))
             wf_path[i] = wf_buff
 
         return e_path, wf_path

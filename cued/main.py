@@ -218,7 +218,7 @@ def prepare_current_calculations(path, Nk2_idx, P, sys):
 
     polarization_inter_path = None
     current_intra_path = None
-    if sys.U is not None:
+    if sys.system == 'ana':
         if P.gauge == 'length':
             current_exact_path = make_emission_exact_path_length(path, P, sys)
         if P.gauge == 'velocity':
@@ -226,7 +226,7 @@ def prepare_current_calculations(path, Nk2_idx, P, sys):
         if P.split_current:
             polarization_inter_path = make_polarization_path(path, P, sys)
             current_intra_path = make_current_path(path, P, sys)
-    elif sys.wf_in_path is not None:
+    elif sys.system == 'num':
         current_exact_path = make_current_exact_path_hderiv(path, P, sys)
         if P.split_current:
             polarization_inter_path = make_polarization_inter_path(P, sys)
