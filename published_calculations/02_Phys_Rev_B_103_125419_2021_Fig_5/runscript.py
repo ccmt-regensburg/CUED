@@ -7,9 +7,9 @@ import numpy as np
 
 def semiconductor():
 
-    a = 6            # lattice constant
-    t = 3.0/27.211   # hopping: 1 eV
-    m = 3.0/27.211   # on-site energy difference of two sites: 1 eV
+    a = 6            # lattice constant in atomic units
+    t = 3.0/27.211   # hopping: 3 eV
+    m = 3.0/27.211   # on-site energy difference of two sites: 3 eV
 
     params.length_BZ_E_dir = 2*np.pi/a
 
