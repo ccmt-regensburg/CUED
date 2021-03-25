@@ -14,7 +14,7 @@ Change to the directory of the code:
 
     cd CUED
     
-Type ``pwd`` and set the outcome to your pythonpath:
+Type ``pwd`` and set the outcome as pythonpath:
 
     export PYTHONPATH="/path/to/CUED"
 
