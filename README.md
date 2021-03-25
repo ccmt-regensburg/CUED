@@ -26,3 +26,6 @@ Now, you can run a test, for example
 The code is MPI parallel, you can run it via
 
     mpirun -np 2 python3 runscript.py
+    
+The output is written to ``time_data.dat`` (time-dependent current) and ``frequency_data.dat`` (emission spectrum). If you set ``save_latex_pdf = True``
+ in ``params.py`` and if pdflatex is installed on your Linux machine, CUED will generate a graphical output pdf ``latex_pdf_files/CUED_summary.pdf`` containing plots of the bandstructure, dipoles, Brillouin zone, current, emission spectrum, ... 
