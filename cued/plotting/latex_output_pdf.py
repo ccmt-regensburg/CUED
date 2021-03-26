@@ -1,7 +1,9 @@
 import os
 import shutil
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
+matplotlib.use('Agg')
 import tikzplotlib
 
 from cued.utility import ConversionFactors as CoFa
