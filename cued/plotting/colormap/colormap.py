@@ -261,3 +261,5 @@ whitedarkjet_arr = \
          [1.0000000, 0.1882400, 0.0039216]])
 
 whitedarkjet = colors.ListedColormap(whitedarkjet_arr)
+whitedarkjet.set_over(color='black')
+whitedarkjet.set_under(color='lime')
