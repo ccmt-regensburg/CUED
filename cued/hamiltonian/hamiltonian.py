@@ -375,7 +375,7 @@ class AIIIHamiltonian(NBandHamiltonianSystem):
 
 
 ############################################################################################
-# Bandstructures and Dipoles for kp-evaluation
+# Bandstructures and dipoles for kp-evaluation
 ############################################################################################
 
 class ExampleTwoBand(NBandBandstructureDipoleSystem):
