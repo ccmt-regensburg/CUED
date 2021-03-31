@@ -298,13 +298,13 @@ In case you choose the length gauge (\texttt{gauge = 'length'}, that is also the
 \begin{align}
     \left[
     \frac{\partial}{\partial t}
-    +q\bE(t)\frac{\partial}{\partial \bk}
+    {+}q\bE(t)\frac{\partial}{\partial \bk}
     \right]\rhonnprime = 
-    \big[i\sd(\epsilon_{n'}(\bk)-\epsilon_{n}(\bk))
-   \sd {-}1/T_2\big]\,\rhonnprime
+    \left[i\sd(\epsilon_{n'}(\bk){-}\epsilon_{n}(\bk))
+   \sd {-}\sd\frac{1{-}\sd\delta_{nn'}}{T_2}\right]\rhonnprime
     -i\sd \bE(t){\sum_{\un}}
     \big(\rho_{n\un}(\bk;t) \mathbf{d}_{\un n'}(\bk)
-    -  \mathbf{d}_{n\un}(\bk)\rho_{\un n'}(\bk;t)
+  \sd  {-} \sd \mathbf{d}_{n\un}(\bk)\rho_{\un n'}(\bk;t)
     \big)\label{e5}
 \end{align}
 with a dephasing time $T_2\eqt PH-T2$\,fs. 
