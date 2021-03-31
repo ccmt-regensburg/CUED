@@ -76,6 +76,9 @@ def sbe_solver(sys, params):
     P = ParamsParser(params)
 
     P.n = sys.n
+    if hasattr(sys, 'n_sheets'):
+        P.n_sheets = sys.n_sheets
+
     # Make Brillouin zone (saved in P)
     make_BZ(P)
 
@@ -436,15 +439,33 @@ def calculate_fourier(T, P, W):
     elif P.fourier_window_function == 'parzen':
          T.window_function = parzen(T.t)
 
-    W.I_E_dir, W.I_ortho, W.j_E_dir, W.j_ortho =\
-        fourier_current_intensity(T.j_E_dir, T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq)
+    if P.sheet_current:
+        j_E_dir_sum = np.zeros(P.Nt, dtype=P.type_real_np)
+        j_ortho_sum = np.zeros(P.Nt, dtype=P.type_real_np)
+        for t in range(P.Nt):
+            j_E_dir_sum[t] = np.sum(T.j_E_dir[t, :, :])
+            j_ortho_sum[t] = np.sum(T.j_E_dir[t, :, :])
 
-    # always compute the Fourier transform with hann and parzen window for comparison; this is printed to the latex PDF
-    W.I_E_dir_hann, W.I_ortho_hann, W.j_E_dir_hann, W.j_ortho_hann =\
-        fourier_current_intensity(T.j_E_dir, T.j_ortho, hann(T.t), dt_out, prefac_emission, W.freq)
+        W.I_E_dir, W.I_ortho, W.j_E_dir, W.j_ortho =\
+            fourier_current_intensity(j_E_dir_sum, j_ortho_sum, T.window_function, dt_out, prefac_emission, W.freq)
 
-    W.I_E_dir_parzen, W.I_ortho_parzen, W.j_E_dir_parzen, W.j_ortho_parzen =\
-        fourier_current_intensity(T.j_E_dir, T.j_ortho, parzen(T.t), dt_out, prefac_emission, W.freq)
+        # always compute the Fourier transform with hann and parzen window for comparison; this is printed to the latex PDF
+        W.I_E_dir_hann, W.I_ortho_hann, W.j_E_dir_hann, W.j_ortho_hann =\
+            fourier_current_intensity(j_E_dir_sum, j_ortho_sum, hann(T.t), dt_out, prefac_emission, W.freq)
+
+        W.I_E_dir_parzen, W.I_ortho_parzen, W.j_E_dir_parzen, W.j_ortho_parzen =\
+        fourier_current_intensity(j_E_dir_sum, j_ortho_sum, parzen(T.t), dt_out, prefac_emission, W.freq)
+
+    else:
+        W.I_E_dir, W.I_ortho, W.j_E_dir, W.j_ortho =\
+            fourier_current_intensity(T.j_E_dir, T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq)
+
+        # always compute the Fourier transform with hann and parzen window for comparison; this is printed to the latex PDF
+        W.I_E_dir_hann, W.I_ortho_hann, W.j_E_dir_hann, W.j_ortho_hann =\
+            fourier_current_intensity(T.j_E_dir, T.j_ortho, hann(T.t), dt_out, prefac_emission, W.freq)
+
+        W.I_E_dir_parzen, W.I_ortho_parzen, W.j_E_dir_parzen, W.j_ortho_parzen =\
+            fourier_current_intensity(T.j_E_dir, T.j_ortho, parzen(T.t), dt_out, prefac_emission, W.freq)
 
 
     if P.split_current:
@@ -491,7 +512,18 @@ def write_current_emission(T, P, W, sys, Mpi):
                                        T.dtP_E_dir.real, T.dtP_ortho.real,
                                        T.j_intra_plus_dtP_E_dir.real, T.j_intra_plus_dtP_ortho.real,
                                        T.j_anom_ortho.real, T.j_intra_plus_anom_ortho.real])
+    
+    if P.sheet_current:
+        time_header =("{:25s}").format('t')
+        for i in range(P.n_sheets):
+            for j in range(P.n_sheets):
+                time_header += (" {:27s}"*2).format("j_E_dir[]", "j_ortho[]")
 
+        time_output = T.t.real
+        for i in range(P.n_sheets):
+            for j in range(P.n_sheets):
+                time_output = np.column_stack((time_output, T.j_E_dir[:, i, j].real, T.j_ortho[:, i, j]) )
+                
     else:
         time_header = ("{:25s}" + " {:27s}"*2)\
             .format("t", "j_E_dir", "j_ortho")

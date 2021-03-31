@@ -8,7 +8,7 @@ from cued.utility import evaluate_njit_matrix
 class TimeContainers():
     def __init__(self, P):
         self.t = np.zeros(P.Nt, dtype=P.type_real_np)
-        self.solution = np.zeros((P.Nk1, P.n, P.n), dtype=P.type_real_np)
+        self.solution = np.zeros((P.Nk1, P.n, P.n), dtype=P.type_complex_np)
         self.solution_y_vec = np.zeros((((P.n)**2)*(P.Nk1)+1), dtype=P.type_complex_np)
 
         if P.save_full:
@@ -16,9 +16,13 @@ class TimeContainers():
 
         self.A_field = np.zeros(P.Nt, dtype=P.type_real_np)
         self.E_field = np.zeros(P.Nt, dtype=P.type_real_np)
-
-        self.j_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
-        self.j_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
+        
+        if P.sheet_current:
+            self.j_E_dir = np.zeros([P.Nt, P.n_sheets, P.n_sheets], dtype=P.type_real_np)
+            self.j_ortho = np.zeros([P.Nt, P.n_sheets, P.n_sheets], dtype=P.type_real_np)
+        else:    
+            self.j_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
+            self.j_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
         if P.split_current:
             self.j_intra_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)

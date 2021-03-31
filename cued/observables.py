@@ -597,7 +597,11 @@ def make_current_exact_path_hderiv(path, P, sys):
 
     Nk1 = P.Nk1
     n = P.n
+    n_sheets = P.n_sheets
     type_complex_np = P.type_complex_np
+    type_real_np = P.type_real_np
+    sheet_current= P.sheet_current
+    wf_in_path = sys.wf_in_path
 
     kx = path[:, 0]
     ky = path[:, 1]
@@ -618,22 +622,40 @@ def make_current_exact_path_hderiv(path, P, sys):
     mel_in_path = matrix_element_x * E_dir[0] + matrix_element_y * E_dir[1]
     mel_ortho = matrix_element_x * E_ort[0] + matrix_element_y * E_ort[1]
 
+
     @conditional_njit(type_complex_np)
     def current_exact_path_hderiv(solution, _E_field=0, _A_field=0):
 
-        J_exact_E_dir = 0
-        J_exact_ortho = 0
+        if sheet_current:
+            
+            J_exact_E_dir = np.zeros((n_sheets, n_sheets), dtype=type_real_np)
+            J_exact_ortho = np.zeros((n_sheets, n_sheets), dtype=type_real_np)
 
-        for i_k in range(Nk1):
-            for i in range(n):
-                J_exact_E_dir += - ( mel_in_path[i_k, i, i].real * solution[i_k, i, i].real )
-                J_exact_ortho += - ( mel_ortho[i_k, i, i].real * solution[i_k, i, i].real )
-                for j in range(n):
-                    if i != j:
-                        J_exact_E_dir += - np.real( mel_in_path[i_k, i, j] * solution[i_k, j, i] )
-                        J_exact_ortho += - np.real( mel_ortho[i_k, i, j] * solution[i_k, j, i] )
+            n_s = int(n/n_sheets)
+            for i_k in range(Nk1):
+                sol =  np.dot( wf_in_path[i_k, :, :], np.dot(solution[i_k, :, :], np.conjugate(wf_in_path[i_k, :, :].T) ) )
+                for s_i in range(n_sheets):
+                    for s_j in range(n_sheets):
+                        for i in range(n_s):
+                            for j in range(n_s):
+                                    J_exact_E_dir[s_i, s_j] += - np.real( mel_in_path[i_k, n_s*s_i + i, n_s*s_j + j] * solution[i_k, n_s*s_i + i, n_s*s_j + j] )
+                                    J_exact_ortho[s_i, s_j] += - np.real( mel_ortho[i_k, n_s*s_i + i, n_s*s_j + j] * solution[i_k, n_s*s_i + i, n_s*s_j + j] )
 
-        return J_exact_E_dir, J_exact_ortho
+            return J_exact_E_dir, J_exact_ortho
+        else:
+            J_exact_E_dir = 0
+            J_exact_ortho = 0
+
+            for i_k in range(Nk1):
+                for i in range(n):
+                    J_exact_E_dir += - ( mel_in_path[i_k, i, i].real * solution[i_k, i, i].real )
+                    J_exact_ortho += - ( mel_ortho[i_k, i, i].real * solution[i_k, i, i].real )
+                    for j in range(n):
+                        if i != j:
+                            J_exact_E_dir += - np.real( mel_in_path[i_k, i, j] * solution[i_k, j, i] )
+                            J_exact_ortho += - np.real( mel_ortho[i_k, i, j] * solution[i_k, j, i] )
+
+            return J_exact_E_dir, J_exact_ortho
     return current_exact_path_hderiv
 
 

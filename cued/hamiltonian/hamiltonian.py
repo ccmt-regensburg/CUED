@@ -1,5 +1,6 @@
 import numpy as np
 import sympy as sp
+from sympy.physics.quantum import TensorProduct
 
 from cued.hamiltonian import TwoBandHamiltonianSystem, NBandHamiltonianSystem, NBandBandstructureDipoleSystem
 
@@ -311,9 +312,70 @@ class BiTe_num_3_bands(NBandHamiltonianSystem):
 
         super().__init__(h)
 
+class BiTe_num_4_bands(NBandHamiltonianSystem):
+    '''
+        Artificial 3Band model with Dirac cone for first two bands, zero else
+    '''
+    
+    def __init__(self, C0=sp.Symbol('C0', real=True),
+                 C2=sp.Symbol('C2', real=True),
+                 A=sp.Symbol('A', real=True),
+                 R=sp.Symbol('R', real=True),
+                 kcut=0, mz=0):
+
+        so = sp.Matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+        sx = sp.Matrix([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+        sy = sp.Matrix([[0, -sp.I, 0, 0], [sp.I, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+        sz = sp.Matrix([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+
+        ho = C0 + C2*(self.kx**2 + self.ky**2)
+        hx = A*self.ky
+        hy = -A*self.kx
+        hz = 2*R*(self.kx**3 - 3*self.kx*self.ky**2) + mz
+
+        if (not np.isclose(kcut, 0)):
+            ratio = (self.kx**2 + self.ky**2)/kcut**2
+            cutfactor = 1/(1+(ratio))
+            hz *= cutfactor
+        h = ho*so + hx*sx + hy*sy + hz*sz
+
+        super().__init__(h)
+
+
+class AIIIHamiltonian(NBandHamiltonianSystem):
+
+    def __init__(self,
+                t = sp.Symbol('t', real=True),
+                tt = sp.Symbol('t', real=True),
+                m5 = sp.Symbol('m5', real= True),
+                n_sheets = 1):
+
+        #set of hermitian matrices
+        Gamma1=sp.Matrix([[0,0,0,1],[0,0,1,0],[0,1,0,0],[1,0,0,0]])
+        Gamma2=sp.Matrix([[0,0,0,-sp.I],[0,0,sp.I,0],[0,-sp.I,0,0],[sp.I,0,0,0]])
+        Gamma3=sp.Matrix([[0,0,1,0],[0,0,0,-1],[1,0,0,0],[0,-1,0,0]])
+        Gamma5=sp.Matrix([[0,0,-sp.I,0],[0,0,0,-sp.I],[sp.I,0,0,0],[0,sp.I,0,0]])
+
+        #diagonal part of hamiltonian
+        hdiag = ( m5 + t * ( sp.cos(self.kx) + sp.cos(self.ky) ) ) * Gamma5 \
+               + tt* ( sp.sin(self.kx) * Gamma1 + sp.sin(self.ky) * Gamma2 ) 
+        
+        #hopping between sheets
+        hoffdiag = 1/2*t*Gamma5 + 1/(2*sp.I)*tt*Gamma3  #lower offdiag blocks
+        hoffdiag_c = 1/2*t*Gamma5 - 1/(2*sp.I)*tt*Gamma3 #upper offdiag blocks
+
+        #build hamiltonian with nz sheets
+        diag = sp.eye(n_sheets)
+        lower = sp.Matrix.jordan_block(n_sheets, 0, band='lower')
+        upper = sp.Matrix.jordan_block(n_sheets, 0, band='upper')
+        
+        h = TensorProduct(diag, hdiag) + TensorProduct(lower, hoffdiag) + TensorProduct(upper, hoffdiag_c)
+
+        super().__init__(h, n_sheets)
+
 
 ############################################################################################
-# Bandstructures and dipoles for kp-evaluation
+# Bandstructures and Dipoles for kp-evaluation
 ############################################################################################
 
 class ExampleTwoBand(NBandBandstructureDipoleSystem):

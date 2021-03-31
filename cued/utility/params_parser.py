@@ -154,6 +154,9 @@ class ParamsParser():
                 sys.exit("Gaussian needs a width (gaussian_window_width).")
             else:
                 self.gaussian_window_width = self.sigma
+        self.sheet_current = False
+        if hasattr(UP, 'sheet_current'):
+            self.sheet_current = UP.sheet_current
 
     def __check_user_params_for_wrong_arguments(self, UP):
         """

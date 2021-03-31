@@ -11,10 +11,11 @@ class NBandHamiltonianSystem():
     kx = sp.Symbol('kx', real=True)
     ky = sp.Symbol('ky', real=True)
 
-    def __init__(self, h):
+    def __init__(self, h, n_sheets=1):
         
         self.system = 'num'
 
+        self.n_sheets = n_sheets
         self.h = h
         self.hsymbols = self.h.free_symbols
         self.hderiv = self.__hamiltonian_derivatives()
