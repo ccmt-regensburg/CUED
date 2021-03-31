@@ -313,7 +313,7 @@ class BiTe_num_3_bands(NBandHamiltonianSystem):
 
 
 ############################################################################################
-# Bandstructures and Dipoles for kp-evaluation
+# Bandstructures and dipoles for kp-evaluation
 ############################################################################################
 
 class ExampleTwoBand(NBandBandstructureDipoleSystem):
