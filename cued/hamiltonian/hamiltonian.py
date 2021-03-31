@@ -237,15 +237,15 @@ class Semiconductor(TwoBandHamiltonianSystem):
     """
 
     def __init__(self, A=sp.Symbol('A'), mx=sp.Symbol('mx'),
-                 mz=sp.Symbol('mz'), a=sp.Symbol('a'), align=False):
+                 mz=sp.Symbol('mz'), a=sp.Symbol('a'), nature=False):
         ho = 0
         hx = mx
         hy = 0
 
-        if (align):
+        if (nature):
             hz = A*(2 + mz - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
-        else:
-            hz = (A/4)*(2 - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
+
+        hz = A*(2 + mz - sp.cos((3*a/4)*self.kx) - sp.cos((3*a/4)*self.ky))
 
         super().__init__(ho, hx, hy, hz)
 
