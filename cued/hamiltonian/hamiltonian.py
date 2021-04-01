@@ -244,8 +244,8 @@ class Semiconductor(TwoBandHamiltonianSystem):
 
         if (nature):
             hz = A*(2 + mz - sp.cos((2*a/3)*self.kx) - sp.cos((2*a/3)*self.ky))
-
-        hz = A*(2 + mz - sp.cos((3*a/4)*self.kx) - sp.cos((3*a/4)*self.ky))
+        else:
+            hz = A*(2 + mz - sp.cos((3*a/4)*self.kx) - sp.cos((3*a/4)*self.ky))
 
         super().__init__(ho, hx, hy, hz)
 
@@ -258,7 +258,7 @@ class BiTe_num(NBandHamiltonianSystem):
     '''
        BiTe Hamiltonian for numerical evaluations
     '''
-    
+
     def __init__(self, C0=sp.Symbol('C0', real=True),
                  C2=sp.Symbol('C2', real=True),
                  A=sp.Symbol('A', real=True),
@@ -287,7 +287,7 @@ class BiTe_num_3_bands(NBandHamiltonianSystem):
     '''
         Artificial 3Band model with Dirac cone for first two bands, zero else
     '''
-    
+
     def __init__(self, C0=sp.Symbol('C0', real=True),
                  C2=sp.Symbol('C2', real=True),
                  A=sp.Symbol('A', real=True),
@@ -316,7 +316,7 @@ class BiTe_num_4_bands(NBandHamiltonianSystem):
     '''
         Artificial 3Band model with Dirac cone for first two bands, zero else
     '''
-    
+
     def __init__(self, C0=sp.Symbol('C0', real=True),
                  C2=sp.Symbol('C2', real=True),
                  A=sp.Symbol('A', real=True),
@@ -358,8 +358,8 @@ class AIIIHamiltonian(NBandHamiltonianSystem):
 
         #diagonal part of hamiltonian
         hdiag = ( m5 + t * ( sp.cos(self.kx) + sp.cos(self.ky) ) ) * Gamma5 \
-               + tt* ( sp.sin(self.kx) * Gamma1 + sp.sin(self.ky) * Gamma2 ) 
-        
+               + tt* ( sp.sin(self.kx) * Gamma1 + sp.sin(self.ky) * Gamma2 )
+
         #hopping between sheets
         hoffdiag = 1/2*t*Gamma5 + 1/(2*sp.I)*tt*Gamma3  #lower offdiag blocks
         hoffdiag_c = 1/2*t*Gamma5 - 1/(2*sp.I)*tt*Gamma3 #upper offdiag blocks
@@ -368,7 +368,7 @@ class AIIIHamiltonian(NBandHamiltonianSystem):
         diag = sp.eye(n_sheets)
         lower = sp.Matrix.jordan_block(n_sheets, 0, band='lower')
         upper = sp.Matrix.jordan_block(n_sheets, 0, band='upper')
-        
+
         h = TensorProduct(diag, hdiag) + TensorProduct(lower, hoffdiag) + TensorProduct(upper, hoffdiag_c)
 
         super().__init__(h, n_sheets)
@@ -380,9 +380,9 @@ class AIIIHamiltonian(NBandHamiltonianSystem):
 
 class ExampleTwoBand(NBandBandstructureDipoleSystem):
 
-    def __init__(self, 
-                a = sp.Symbol('a', real=True), 
-                prefac_x = sp.Symbol('prefac_x'), 
+    def __init__(self,
+                a = sp.Symbol('a', real=True),
+                prefac_x = sp.Symbol('prefac_x'),
                 prefac_y = sp.Symbol('prefac_y') , flag = None):
 
 
@@ -390,7 +390,7 @@ class ExampleTwoBand(NBandBandstructureDipoleSystem):
         ec = sp.sin(a*self.ky)
 
         e = [ev, ec]
-        n = 2 
+        n = 2
 
         super().__init__(e, prefac_x, prefac_y, n, flag)
 
@@ -399,7 +399,7 @@ class BiTeBandstructure(NBandBandstructureDipoleSystem):
     def __init__(self, vF = sp.Symbol('vF', real=True),
                 prefac_x = sp.Symbol('prefac_x'),
                 prefac_y = sp.Symbol('prefac_y'), flag = None):
-                
+
         ev = - vF * sp.sqrt( self.kx**2 + self.ky**2 )
         ec =   vF * sp.sqrt( self.kx**2 + self.ky**2 )
 
@@ -411,9 +411,9 @@ class BiTeBandstructure(NBandBandstructureDipoleSystem):
 
 class ExampleThreeBand(NBandBandstructureDipoleSystem):
 
-    def __init__(self, 
-                a = sp.Symbol('a', real=True), 
-                prefac_x = sp.Symbol('prefac_x'), 
+    def __init__(self,
+                a = sp.Symbol('a', real=True),
+                prefac_x = sp.Symbol('prefac_x'),
                 prefac_y = sp.Symbol('prefac_y') , flag = None):
 
         e = []
