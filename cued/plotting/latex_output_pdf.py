@@ -35,7 +35,7 @@ def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
         shutil.copy(code_path+"/CUED_summary.tex", ".")
         shutil.copy(code_path+"/../branding/logo.pdf", ".")
 
-        write_parameter(P, Mpi)
+        write_parameters(P, Mpi)
 
         tikz_time(T.E_field*CoFa.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield")
         tikz_time(T.A_field*CoFa.au_to_MVpcm*CoFa.au_to_fs, t_fs, t_idx, r"A-field $A(t)$ in MV*fs/cm", "Afield")
@@ -77,7 +77,7 @@ def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
         os.chdir("..")
 
 
-def write_parameter(P, Mpi):
+def write_parameters(P, Mpi):
 
     if P.BZ_type == 'rectangle':
         if P.angle_inc_E_field == 0:
@@ -92,23 +92,26 @@ def write_parameter(P, Mpi):
         elif P.align == 'M':
             replace("PH-EFIELD-DIRECTION", "$\\\\Gamma$-M direction")
 
-    replace("PH-E0",    str(P.E0_MVpcm))
-    replace("PH-FREQ",  str(P.f_THz))
-    replace("PH-CHIRP", str(P.chirp_THz))
-    eps = 1.0E-13
-    if P.phase > np.pi/2-eps and P.phase < np.pi/2+eps:
-         replace("PH-CEP", "\\\\pi\/2")
-    elif P.phase > np.pi-eps and P.phase < np.pi+eps:
-         replace("PH-CEP", "\\\\pi")
-    elif P.phase > 3*np.pi/2-eps and P.phase < 3*np.pi/2+eps:
-         replace("PH-CEP", "3\\\\pi\/2")
-    elif P.phase > 2*np.pi-eps and P.phase < 2*np.pi+eps:
-         replace("PH-CEP", "2\\\\pi")
+    if P.user_defined_field: 
+        replace("iftrue", "iffalse")
     else:
-         replace("PH-CEP", str(P.phase))
+        replace("PH-E0",    str(P.E0_MVpcm))
+        replace("PH-FREQ",  str(P.f_THz))
+        replace("PH-CHIRP", str(P.chirp_THz))
+        eps = 1.0E-13
+        if P.phase > np.pi/2-eps and P.phase < np.pi/2+eps:
+             replace("PH-CEP", "\\\\pi\/2")
+        elif P.phase > np.pi-eps and P.phase < np.pi+eps:
+             replace("PH-CEP", "\\\\pi")
+        elif P.phase > 3*np.pi/2-eps and P.phase < 3*np.pi/2+eps:
+             replace("PH-CEP", "3\\\\pi\/2")
+        elif P.phase > 2*np.pi-eps and P.phase < 2*np.pi+eps:
+             replace("PH-CEP", "2\\\\pi")
+        else:
+             replace("PH-CEP", str(P.phase))
+        replace("PH-SIGMA", str(P.sigma_fs))
+        replace("PH-FWHM", '{:.3f}'.format(P.sigma_fs*2*np.sqrt(np.log(2))))
 
-    replace("PH-SIGMA", str(P.sigma_fs))
-    replace("PH-FWHM", '{:.3f}'.format(P.sigma_fs*2*np.sqrt(np.log(2))))
     replace("PH-BZ", P.BZ_type)
     replace("PH-NK1", str(P.Nk1))
     replace("PH-NK2", str(P.Nk2))

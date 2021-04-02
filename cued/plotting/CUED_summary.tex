@@ -201,6 +201,15 @@ Number of used processors: PH-MPIRANKS
 \pagestyle{fancy}
 
 \section{Electric-field pulse}
+\begin{figure}[b!]
+\centering
+\setlength\figureheight{7.5cm} 
+\setlength\figurewidth{7.5cm}
+\input{Efield.tikz}\hfill\input{Afield.tikz}
+\caption{Left: Electric driving field~$E(t)$, right: Gauge field~$A(t)$ from Eq.~\eqref{e2}.}
+    \label{fig:Efield}
+\end{figure}
+\iftrue
 The following electric driving field is employed in the simulation:
 \begin{align}
     \bE(t)  = E(t)\,\hat{e}_\phi
@@ -208,14 +217,6 @@ The following electric driving field is employed in the simulation:
     E(t) = E_0\,    \sin\Big(2\pi f_0\,(1+f_\text{chirp} t)\,t + \varphi\Big)\, e^{-t^2/\sigma^2}\;.
     \label{e1}
 \end{align}
-\begin{figure}[b!]
-\centering
-\setlength\figureheight{7.5cm} 
-\setlength\figurewidth{7.5cm}
-\input{Efield.tikz}\hfill\input{Afield.tikz}
-\caption{Left: Electric driving field~$E(t)$ from Eq.~\eqref{e1}, right: Gauge field~$A(t)$ from Eq.~\eqref{e2}.}
-    \label{fig:Efield}
-\end{figure}
 The pulse is sketched in Fig.~\ref{fig:Efield}. 
 %
 The following parameters are used in the simulation:
@@ -227,6 +228,11 @@ The following parameters are used in the simulation:
     \item Carrier-envelope phase: $\phi = PH-CEP$
     \item $\sigma = PH-SIGMA$\,fs, full width at half maximum (FWHM) of the Gaussian envelope = PH-FWHM\,fs
 \end{itemize}
+\else 
+A user-defined pulse is used. 
+%
+It is sketched in Fig.~\ref{fig:Efield}. 
+\fi
 The gauge field~$\bA(t)\eqt A(t)\,\hat{e}_\phi$ follows from~$\dot\bA(t)\eqt -\bE(t)$. We compute $A(t)$ for the sketch in Fig.~\ref{fig:Efield} as
 \begin{align}
     \dot A(t) = -E(t) \hspace{2em}\Rightarrow\hspace{2em}
