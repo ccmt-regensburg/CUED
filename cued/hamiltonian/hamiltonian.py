@@ -150,46 +150,6 @@ class BiTeResummed(TwoBandHamiltonianSystem):
         super().__init__(ho, hx, hy, hz)
 
 
-class Graphene(TwoBandHamiltonianSystem):
-    """
-    Graphene model
-    """
-
-    def __init__(self, t=sp.Symbol('t')):
-        a1 = self.kx
-        a2 = -1/2 * self.kx + sp.sqrt(3)/2 * self.ky
-        a3 = -1/2 * self.kx - sp.sqrt(3)/2 * self.ky
-
-        ho = 0
-        hx = t*(sp.cos(a1)+sp.cos(a2)+sp.cos(a3))
-        hy = t*(sp.sin(a1)+sp.sin(a2)+sp.sin(a3))
-        hz = 0
-
-        super().__init__(ho, hx, hy, hz)
-
-
-class QWZ(TwoBandHamiltonianSystem):
-    """
-    Qi-Wu-Zhang model of a 2D Chern insulator
-    """
-
-    def __init__(self, t=sp.Symbol('t'), m=sp.Symbol('m'), order=sp.oo):
-        n = order+1
-
-        ho = 0
-        if order == sp.oo:
-            hx = sp.sin(self.kx)
-            hy = sp.sin(self.ky)
-            hz = m - sp.cos(self.kx) - sp.cos(self.ky)
-        else:
-            hx = sp.sin(self.kx).series(n=n).removeO()
-            hy = sp.sin(self.ky).series(n=n).removeO()
-            hz = m - sp.cos(self.kx).series(n=n).removeO()\
-                - sp.cos(self.ky).series(n=n).removeO()
-
-        super().__init__(t*ho, t*hx, t*hy, t*hz)
-
-
 class Dirac(TwoBandHamiltonianSystem):
     """
     Generic Dirac cone Hamiltonian
