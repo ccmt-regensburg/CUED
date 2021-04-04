@@ -14,7 +14,7 @@ def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
         t_fs = T.t*CoFa.au_to_fs
         num_points_for_plotting = 960
 
-        t_idx = get_time_indices_for_plotting(T.E_field, t_fs, num_points_for_plotting, factor_t_end=1.0)
+        t_idx = get_time_indices_for_plotting(T.E_field, t_fs, num_points_for_plotting)
         f_idx = get_freq_indices_for_plotting(W.freq/P.f, num_points_for_plotting, freq_max=30)
 
         t_idx_whole = get_indices_for_plotting_whole(t_fs, num_points_for_plotting, start=0)
@@ -178,7 +178,7 @@ def replace(old, new, filename="CUED_summary.tex"):
     os.system("sed -i -e \'s/"+old+"/"+new+"/g\' "+filename)
 
 
-def get_time_indices_for_plotting(E_field, time_fs, num_t_points_max, factor_t_end): 
+def get_time_indices_for_plotting(E_field, time_fs, num_t_points_max): 
 
     E_max = np.amax(np.abs(E_field))
 
@@ -191,13 +191,6 @@ def get_time_indices_for_plotting(E_field, time_fs, num_t_points_max, factor_t_e
 
     for i_counter, E_i in reversed(list(enumerate(E_field))):
         if np.abs(E_i) > threshold*E_max: 
-            t_plot_end       = time_fs[i_counter]
-            break
-
-    t_plot_end *= factor_t_end
-
-    for i_counter, t_i in enumerate(time_fs):
-        if t_i > t_plot_end: 
             index_t_plot_end = i_counter
             break
 
