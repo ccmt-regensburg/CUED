@@ -5,6 +5,7 @@ from numpy.fft import fftshift, fft, ifftshift, ifft, fftfreq
 import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode
+import os
 
 from cued.utility import ConversionFactors as CoFa, ParamsParser
 from cued.utility import conditional_njit, evaluate_njit_matrix
@@ -177,6 +178,7 @@ def sbe_solver(sys, params):
     paramsfile.close()
 
     if P.save_full:
+        # write_full_density_mpi(T, P, sys, Mpi)
         S_name = 'Sol_' + P.tail
         np.savez(S_name, t=T.t, solution_full=T.solution_full, paths=P.paths,
                  electric_field=T.electric_field(T.t), A_field=T.A_field)
@@ -204,7 +206,7 @@ def make_rhs_ode(P, T, sys):
             raise AttributeError('2-band solver works for 2-band systems only')
         else:
             rhs_ode = make_rhs_ode_2_band(sys, T.electric_field, P)
-    
+
     elif P.solver == 'nband':
         rhs_ode = make_rhs_ode_n_band(T.electric_field, P)
 
@@ -486,6 +488,39 @@ def calculate_fourier(T, P, W):
             fourier_current_intensity(T.j_anom_ortho, T.j_intra_plus_anom_ortho, T.window_function, dt_out, prefac_emission, W.freq)
 
 
+# def write_full_density_mpi(T, P, sys, Mpi):
+#     relative_dir = 'densities'
+#     if Mpi.rank == 0:
+#         os.mkdir(relative_dir)
+#     Mpi.comm.Barrier()
+#     # Write out density matrix for every path
+#     for Nk2_idx in Mpi.local_Nk2_idx_list:
+#         write_full_density(T, P, sys, Nk2_idx, relative_dir)
+
+# def write_full_density(T, P, sys, Nk2_idx, relative_dir):
+
+#     path = P.paths[Nk2_idx]
+#     kpath_filename = relative_dir + 'kpath_path_idx_{:d}'
+#     full_density_filename = relative_dir + 'density_data_path_idx_{:d}.dat'.format(Nk2_idx)
+#     # Upper triangular, coherence entries
+#     nt = int((P.n/2)*(P.n-1))
+#     # Diagonal, density entries
+#     nd = P.n
+#     dens_header = ("{:25s} {:27s} {:27s}" + " {:27s}"*nd)
+#     dens_header_format = ["rho({:d},{:d})".format(idx, idx) for idx in range(nd)]
+#     dens_header = dens_header.format("t", "kx", "ky", *dens_header_format)
+
+#     cohe_header = (" {:27s} {:27s}"*nt)
+#     cohe_header_format = []
+#     for idx in range(nd):
+#         for jdx in range(idx + 1, nd):
+#             cohe_header_format.append("Re[rho({:d},{:d})]".format(idx, jdx))
+#             cohe_header_format.append("Im[rho({:d},{:d})]".format(idx, jdx))
+
+#     cohe_header = cohe_header.format(*cohe_header_format)
+#     full_density_header = dens_header + cohe_header
+#     full_density
+
 def write_current_emission_mpi(T, P, W, sys, Mpi):
 
     # only save data from a single MPI rank
@@ -512,7 +547,7 @@ def write_current_emission(T, P, W, sys, Mpi):
                                        T.dtP_E_dir.real, T.dtP_ortho.real,
                                        T.j_intra_plus_dtP_E_dir.real, T.j_intra_plus_dtP_ortho.real,
                                        T.j_anom_ortho.real, T.j_intra_plus_anom_ortho.real])
-    
+
     if P.sheet_current:
         time_header =("{:25s}").format('t')
         for i in range(P.n_sheets):
@@ -523,7 +558,7 @@ def write_current_emission(T, P, W, sys, Mpi):
         for i in range(P.n_sheets):
             for j in range(P.n_sheets):
                 time_output = np.column_stack((time_output, T.j_E_dir[:, i, j].real, T.j_ortho[:, i, j]) )
-                
+
     else:
         time_header = ("{:25s}" + " {:27s}"*2)\
             .format("t", "j_E_dir", "j_ortho")
@@ -542,15 +577,15 @@ def write_current_emission(T, P, W, sys, Mpi):
     if P.split_current:
         freq_header = ("{:25s}" + " {:27s}"*30)\
             .format("f/f0",
-                    "Re(j_E_dir)", "Im(j_E_dir)", "Re(j_ortho)", "Im(j_ortho)",
+                    "Re[j_E_dir]", "Im[j_E_dir]", "Re[j_ortho]", "Im[j_ortho]",
                     "I_E_dir", "I_ortho",
-                    "Re(j_intra_E_dir)", "Im(j_intra_E_dir)", "Re(j_intra_ortho)", "Im(j_intra_ortho)",
+                    "Re[j_intra_E_dir]", "Im[j_intra_E_dir]", "Re[j_intra_ortho]", "Im[j_intra_ortho]",
                     "I_intra_E_dir", "I_intra_ortho",
-                    "Re(dtP_E_dir)", "Im(dtP_E_dir)", "Re(dtP_ortho)", "Im(dtP_ortho)",
+                    "Re[dtP_E_dir]", "Im[dtP_E_dir]", "Re[dtP_ortho]", "Im[dtP_ortho]",
                     "I_dtP_E_dir", "I_dtP_ortho",
-                    "Re(j_intra_plus_dtP_E_dir)", "Im(j_intra_plus_dtP_E_dir)", "Re(j_intra_plus_dtP_ortho)", "Im(j_intra_plus_dtP_ortho)",
+                    "Re[j_intra_plus_dtP_E_dir]", "Im[j_intra_plus_dtP_E_dir[", "Re[j_intra_plus_dtP_ortho]", "Im[j_intra_plus_dtP_ortho]",
                     "I_intra_plus_dtP_E_dir", "I_intra_plus_dtP_ortho",
-                    "Re(j_anom_ortho)", "Im(j_anom_ortho)", "Re(j_intra_plus_anom_ortho)", "Im(j_intra_plus_anom_ortho)",
+                    "Re[j_anom_ortho]", "Im[j_anom_ortho]", "Re[j_intra_plus_anom_ortho]", "Im[j_intra_plus_anom_ortho]",
                     "I_anom_ortho", "I_intra_plus_anom_ortho")
 
         # Current same order as in time output, always real and imaginary part
@@ -570,7 +605,7 @@ def write_current_emission(T, P, W, sys, Mpi):
     else:
         freq_header = ("{:25s}" + " {:27s}"*6)\
             .format("f/f0",
-                    "Re(j_E_dir)", "Im(j_E_dir)", "Re(j_ortho)", "Im(j_ortho)",
+                    "Re[j_E_dir]", "Im[j_E_dir]", "Re[j_ortho]", "Im[j_ortho]",
                     "I_E_dir", "I_ortho")
         freq_output = np.column_stack([(W.freq/P.f).real,
                                        W.j_E_dir.real, W.j_E_dir.imag, W.j_ortho.real, W.j_ortho.imag,

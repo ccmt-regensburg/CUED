@@ -16,11 +16,11 @@ class TimeContainers():
 
         self.A_field = np.zeros(P.Nt, dtype=P.type_real_np)
         self.E_field = np.zeros(P.Nt, dtype=P.type_real_np)
-        
+
         if P.sheet_current:
             self.j_E_dir = np.zeros([P.Nt, P.n_sheets, P.n_sheets], dtype=P.type_real_np)
             self.j_ortho = np.zeros([P.Nt, P.n_sheets, P.n_sheets], dtype=P.type_real_np)
-        else:    
+        else:
             self.j_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
             self.j_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
@@ -45,4 +45,3 @@ class TimeContainers():
 
 class FrequencyContainers():
     pass
-

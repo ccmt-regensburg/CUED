@@ -28,8 +28,8 @@ class ParamsParser():
 
     def __time_scales(self, UP):
         '''Time Scales'''
-        self.T1 = UP.T1*CoFa.fs_to_au                     # Occupation damping time
-        self.T2 = UP.T2*CoFa.fs_to_au                     # Polarization damping time
+        self.T1 = UP.T1*CoFa.fs_to_au                     # Density damping time
+        self.T2 = UP.T2*CoFa.fs_to_au                     # Coherence damping time
         self.t0 = UP.t0*CoFa.fs_to_au
         self.dt = UP.dt*CoFa.fs_to_au
 
@@ -161,7 +161,7 @@ class ParamsParser():
     def __check_user_params_for_wrong_arguments(self, UP):
         """
         Compare default paramaters with user parameters.
-        If there are user paramters not defined in the parameters
+        If there are user parameters not defined in the parameters
         give a warning and halt the code.
         """
         default_params = self.__dict__.keys()
@@ -198,7 +198,7 @@ class ParamsParser():
 
         # Derived initial condition
         self.e_fermi_eV = UP.e_fermi
-        self.temperature_eV =  UP.temperature
+        self.temperature_eV = UP.temperature
 
         # Derived driving field parameters
         self.f_THz = UP.f

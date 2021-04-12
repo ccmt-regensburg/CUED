@@ -33,9 +33,9 @@ class TwoBandHamiltonianSystem():
             Wheter to additionally return energy and wave function derivatives
         """
         self.system = 'ana'
-        
+
         self.n = 2
-        
+
         self.ho = ho
         self.hx = hx
         self.hy = hy
@@ -75,7 +75,7 @@ class TwoBandHamiltonianSystem():
         self.Axfjit_offk = None
         self.Ayfjit_offk = None
 
-        self.B_eval = None    
+        self.B_eval = None
 
         # Get set when evaluate_energy is called
         self.e_eval = None
@@ -84,12 +84,12 @@ class TwoBandHamiltonianSystem():
         self.e_in_path = None   #set when eigensystem_dipole_path is called
         self.wf_in_path = None
 
-        self.dipole_path_x = None   
+        self.dipole_path_x = None
         self.dipole_path_y = None
-                           
+
         self.dipole_in_path = None
         self.dipole_ortho = None
-        
+
     def __hamiltonian(self):
         return self.ho*self.so + self.hx*self.sx + self.hy*self.sy \
             + self.hz*self.sz
@@ -181,7 +181,6 @@ class TwoBandHamiltonianSystem():
         ky_in_path = path[:, 1]
         pathlen = path[:,0].size
         self.e_in_path = np.zeros([pathlen, P.n], dtype=P.type_real_np)
- 
 
         if P.do_semicl:
             self.dipole_path_x = np.zeros([pathlen, P.n, P.n], dtype=P.type_complex_np)
@@ -197,10 +196,10 @@ class TwoBandHamiltonianSystem():
         self.wf_in_path = evaluate_njit_matrix(self.Ujit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
 
         self.dipole_in_path = P.E_dir[0]*self.dipole_path_x + P.E_dir[1]*self.dipole_path_y
-        self.dipole_ortho = P.E_ort[0]*self.dipole_path_x + P.E_ort[1]*self.dipole_path_y        
+        self.dipole_ortho = P.E_ort[0]*self.dipole_path_x + P.E_ort[1]*self.dipole_path_y
 
     def make_eigensystem_dipole(self, P):
-        
+
         self.e = self.__energies()
         self.ederiv = self.__energy_derivatives()
 
@@ -208,10 +207,10 @@ class TwoBandHamiltonianSystem():
         self.hfjit = matrix_to_njit_functions(self.h, self.hsymbols, dtype=P.type_complex_np)
         self.hderivfjit = [matrix_to_njit_functions(hd, self.hsymbols, dtype=P.type_complex_np)
                            for hd in self.hderiv]
-        
+
         self.efjit = list_to_njit_functions(self.e, self.hsymbols, dtype=P.type_complex_np)
         self.ederivfjit = list_to_njit_functions(self.ederiv, self.hsymbols, dtype=P.type_complex_np)
-        
+
         self.eigensystem(P)
 
         if self.kdotp is None:
@@ -225,12 +224,12 @@ class TwoBandHamiltonianSystem():
 
         if self.offdiag_k:
             self.offdiagonal_k(self.U)
-        
+
         # Curvature
 
         self.B = sp.diff(self.Ax, self.ky) - sp.diff(self.Ay, self.kx)
         self.Bfjit = matrix_to_njit_functions(self.B, self.hsymbols, dtype=P.type_complex_np)
-       
+
     def eigensystem(self, P):
         """
         Generic form of Hamiltonian, energies and wave functions in a two band

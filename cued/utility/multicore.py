@@ -15,7 +15,7 @@ class MpiHelpers:
 
     def get_local_idx(self, idxmax):
         # Check whether there are more ranks than indices to partition
-        if self.size > idxmax: 
+        if self.size > idxmax:
             sys.exit("The number of MPI ranks has to be smaller equal "
                      + str(idxmax) + ".")
         # Important mpi.INT == np.int32
@@ -81,4 +81,3 @@ class MpiHelpers:
             else:
                 displace += (0,)
         return displace
-
