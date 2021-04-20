@@ -633,13 +633,19 @@ def make_current_exact_path_hderiv(path, P, sys):
 
             n_s = int(n/n_sheets)
             for i_k in range(Nk1):
-                sol =  np.dot( wf_in_path[i_k, :, :], np.dot(solution[i_k, :, :], np.conjugate(wf_in_path[i_k, :, :].T) ) )
+                sol = np.zeros((n,n), dtype=type_complex_np)
+                for a in range(n):
+                    for b in range(n):
+                        for c in range(n):
+                            for d in range(n):
+                                sol[a, d] += wf_in_path[i_k, a, b] * solution[i_k, b, c] * np.conjugate(wf_in_path[i_k, d, c])
+                #sol =  np.dot( wf_in_path[i_k, :, :], np.dot(solution[i_k, :, :], np.conjugate(wf_in_path[i_k, :, :].T) ) )
                 for s_i in range(n_sheets):
                     for s_j in range(n_sheets):
                         for i in range(n_s):
                             for j in range(n_s):
-                                    J_exact_E_dir[s_i, s_j] += - np.real( mel_in_path[i_k, n_s*s_i + i, n_s*s_j + j] * solution[i_k, n_s*s_i + i, n_s*s_j + j] )
-                                    J_exact_ortho[s_i, s_j] += - np.real( mel_ortho[i_k, n_s*s_i + i, n_s*s_j + j] * solution[i_k, n_s*s_i + i, n_s*s_j + j] )
+                                    J_exact_E_dir[s_i, s_j] += - np.real( mel_in_path[i_k, n_s*s_i + i, n_s*s_j + j] * sol[n_s*s_i + i, n_s*s_j + j] )
+                                    J_exact_ortho[s_i, s_j] += - np.real( mel_ortho[i_k, n_s*s_i + i, n_s*s_j + j] * sol[n_s*s_i + i, n_s*s_j + j] )
 
             return J_exact_E_dir, J_exact_ortho
         else:

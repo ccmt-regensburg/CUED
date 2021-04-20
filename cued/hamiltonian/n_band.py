@@ -11,10 +11,11 @@ class NBandHamiltonianSystem():
     kx = sp.Symbol('kx', real=True)
     ky = sp.Symbol('ky', real=True)
 
-    def __init__(self, h, n_sheets=1):
+    def __init__(self, h, n_sheets=1, degenerate_eigenvalues=False):
         
         self.system = 'num'
 
+        self.degenerate_eigenvalues = degenerate_eigenvalues
         self.n_sheets = n_sheets
         self.h = h
         self.hsymbols = self.h.free_symbols
@@ -117,6 +118,14 @@ class NBandHamiltonianSystem():
   
         for i in range(pathlen):
             e_path[i], wf_buff = lin.eigh(h_in_path[i, :, :])
+            if self.degenerate_eigenvalues:
+                for j in range(int(P.n/2)):
+                    wf1 = np.copy(wf_buff[:, 2*j])
+                    wf2 = np.copy(wf_buff[:, 2*j+1])
+                    wf_buff[:, 2*j] *= wf2[P.n-2]
+                    wf_buff[:, 2*j] -= wf1[P.n-2]*wf2
+                    wf_buff[:, 2*j+1] *= wf1[P.n-1]
+                    wf_buff[:, 2*j+1] -= wf2[P.n-1]*wf1
             wf_gauged_entry = np.copy(wf_buff[P.gidx, :])
             wf_buff[P.gidx, :] = np.abs(wf_gauged_entry)
             wf_buff[~(np.arange(np.size(wf_buff, axis=0)) == P.gidx)] *= np.exp(1j*np.angle(wf_gauged_entry.conj()))

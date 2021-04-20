@@ -305,10 +305,11 @@ class BiTe_num_4_bands(NBandHamiltonianSystem):
 class AIIIHamiltonian(NBandHamiltonianSystem):
 
     def __init__(self,
+                A = sp.Symbol('A', real=True),
                 t = sp.Symbol('t', real=True),
-                tt = sp.Symbol('t', real=True),
+                tt = sp.Symbol('tt', real=True),
                 m5 = sp.Symbol('m5', real= True),
-                n_sheets = 1):
+                n_sheets = sp.Symbol('n_sheets', int=True)):
 
         #set of hermitian matrices
         Gamma1=sp.Matrix([[0,0,0,1],[0,0,1,0],[0,1,0,0],[1,0,0,0]])
@@ -317,12 +318,12 @@ class AIIIHamiltonian(NBandHamiltonianSystem):
         Gamma5=sp.Matrix([[0,0,-sp.I,0],[0,0,0,-sp.I],[sp.I,0,0,0],[0,sp.I,0,0]])
 
         #diagonal part of hamiltonian
-        hdiag = ( m5 + t * ( sp.cos(self.kx) + sp.cos(self.ky) ) ) * Gamma5 \
-               + tt* ( sp.sin(self.kx) * Gamma1 + sp.sin(self.ky) * Gamma2 )
+        hdiag = A * ( m5 + t * ( sp.cos(self.kx) + sp.cos(self.ky) ) ) * Gamma5 \
+               + A * tt * ( sp.sin(self.kx) * Gamma1 + sp.sin(self.ky) * Gamma2 )
 
         #hopping between sheets
-        hoffdiag = 1/2*t*Gamma5 + 1/(2*sp.I)*tt*Gamma3  #lower offdiag blocks
-        hoffdiag_c = 1/2*t*Gamma5 - 1/(2*sp.I)*tt*Gamma3 #upper offdiag blocks
+        hoffdiag = A * ( 1/2*t*Gamma5 + 1/(2*sp.I)*tt*Gamma3 ) #lower offdiag blocks
+        hoffdiag_c = A * ( 1/2*t*Gamma5 - 1/(2*sp.I)*tt*Gamma3 ) #upper offdiag blocks
 
         #build hamiltonian with nz sheets
         diag = sp.eye(n_sheets)
@@ -331,7 +332,7 @@ class AIIIHamiltonian(NBandHamiltonianSystem):
 
         h = TensorProduct(diag, hdiag) + TensorProduct(lower, hoffdiag) + TensorProduct(upper, hoffdiag_c)
 
-        super().__init__(h, n_sheets)
+        super().__init__(h, n_sheets, degenerate_eigenvalues=True)
 
 
 ############################################################################################

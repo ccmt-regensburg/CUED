@@ -158,6 +158,10 @@ class ParamsParser():
         if hasattr(UP, 'sheet_current'):
             self.sheet_current = UP.sheet_current
 
+        self.degenerate_evals = False
+        if hasattr(UP, 'degenerat_evals'):
+            self.degenerate_evals = UP.degenerat_evals
+            
     def __check_user_params_for_wrong_arguments(self, UP):
         """
         Compare default paramaters with user parameters.
