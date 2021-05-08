@@ -40,13 +40,13 @@ def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
         tikz_time(T.E_field*CoFa.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield")
         tikz_time(T.A_field*CoFa.au_to_MVpcm*CoFa.au_to_fs, t_fs, t_idx, r"A-field $A(t)$ in MV*fs/cm", "Afield")
 
-        kx_BZ, ky_BZ = BZ_plot(P, T.A_field)
+        K = BZ_plot(P, T.A_field)
 
         bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, num_points_for_plotting, sys)
 
-#        dipole_quiver_plots(kx_BZ, ky_BZ, P, sys)
+#        dipole_quiver_plots(K, P, sys)
 
-        density_matrix_plot(P, T, kx_BZ, ky_BZ)
+        density_matrix_plot(P, T, K)
 
         tikz_time(T.j_E_dir, t_fs, t_idx, \
                   r'Current $j_{\parallel}(t)$ parallel to $\bE$ in atomic units', "j_E_dir")
@@ -399,8 +399,14 @@ def BZ_plot(P, A_field):
     replace("1.00000000000000000000",  str(ratio_yx))
     replace("figureheight,", "figureheight,  scale only axis=true,", filename="BZ.tikz")
 
+    K = BZ_plot_parameters()
 
-    return kx_BZ, ky_BZ
+    K.kx_BZ = kx_BZ
+    K.ky_BZ = ky_BZ
+    K.length_x = length_x
+    K.length_y = length_y
+
+    return K
 
 def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, num_points_for_plotting, sys):
 
@@ -474,7 +480,7 @@ def plot_it(P, ylabel, filename, ax1, k_in_path, y_min=None):
                     axis_width ='\\figurewidth' )
 
 
-def dipole_quiver_plots(kx_BZ, ky_BZ, P, sys):
+def dipole_quiver_plots(K, P, sys):
 
     Nk_plot = 10
     Nk1     = P.Nk1
@@ -526,7 +532,7 @@ def dipole_quiver_plots(kx_BZ, ky_BZ, P, sys):
             ij_index = i_band*P.n + j_band
 
             fig, ax = plt.subplots(1)
-            ax.plot(kx_BZ, ky_BZ, color='gray' )
+            ax.plot(K.kx_BZ, K.ky_BZ, color='gray' )
             plot = ax.quiver(k_x, k_y, norm_Re_d_x, norm_Re_d_y, np.log10(abs_Re_d),
                                           angles='xy', cmap='coolwarm', width=0.007 )
 
@@ -541,7 +547,7 @@ def dipole_quiver_plots(kx_BZ, ky_BZ, P, sys):
 #                             axis_height='\\figureheight', axis_width ='\\figurewidth' )
 
             fig, ax = plt.subplots(1)
-            ax.plot(kx_BZ, ky_BZ, color='gray' )
+            ax.plot(K.kx_BZ, K.ky_BZ, color='gray' )
             plot = ax.quiver(k_x, k_y, norm_Im_d_x, norm_Im_d_y, np.log10(abs_Im_d),
                              angles='xy', cmap='coolwarm', width=0.007 )
 
@@ -558,7 +564,7 @@ def dipole_quiver_plots(kx_BZ, ky_BZ, P, sys):
     plt.show()
 
 
-def density_matrix_plot(P, T, kx_BZ, ky_BZ):
+def density_matrix_plot(P, T, K):
 
     t_i = 0
     i_band = 1
@@ -576,11 +582,20 @@ def density_matrix_plot(P, T, kx_BZ, ky_BZ):
            np.shape(T.pdf_densmat[:, :, t_i, i_band, j_band]), \
            np.shape(reordered_pdf_densmat) )
 
-    fig, ax = plt.subplots(1)
-    ax.plot(kx_BZ, ky_BZ, color='gray' )
-    ax.tricontourf(P.mesh[:,0], P.mesh[:,1], reordered_pdf_densmat[:, t_i, i_band, j_band].real )
+    fig = plt.figure(figsize=(6,6))
+    plt.tricontourf(P.mesh[:,0]/CoFa.au_to_as, P.mesh[:,1]/CoFa.au_to_as, \
+                    reordered_pdf_densmat[:, t_i, i_band, j_band].real )
 
-    fig.savefig('density_matrix_ij_ti.pdf')
+    plt.xlim(-K.length_x, K.length_x)
+    plt.ylim(-K.length_y, K.length_y)
 
-    plt.show()
+    plt.xlabel(r'$k_x$ in 1/\AA')
+    plt.ylabel(r'$k_y$ in 1/\AA')
 
+    plt.plot(K.kx_BZ, K.ky_BZ, color='black' )
+
+    plt.savefig('density_matrix_ij_ti.pdf')
+
+
+class BZ_plot_parameters():
+    pass
