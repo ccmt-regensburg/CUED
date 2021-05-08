@@ -578,11 +578,7 @@ def density_matrix_plot(P, T, K):
             combined_k_index = i_k1 + j_k2*P.Nk1
             reordered_pdf_densmat[combined_k_index, :, :, :] = T.pdf_densmat[i_k1, j_k2, :, :, :]
 
-    print("sizes", np.shape(P.mesh[:,0]), np.shape(P.mesh[:,1]), \
-           np.shape(T.pdf_densmat[:, :, t_i, i_band, j_band]), \
-           np.shape(reordered_pdf_densmat) )
-
-    fig = plt.figure(figsize=(6,6))
+    fig = plt.figure(figsize=(6,6*K.length_y/K.length_x))
     plt.tricontourf(P.mesh[:,0]/CoFa.au_to_as, P.mesh[:,1]/CoFa.au_to_as, \
                     reordered_pdf_densmat[:, t_i, i_band, j_band].real )
 
@@ -592,7 +588,7 @@ def density_matrix_plot(P, T, K):
     plt.xlabel(r'$k_x$ in 1/\AA')
     plt.ylabel(r'$k_y$ in 1/\AA')
 
-    plt.plot(K.kx_BZ, K.ky_BZ, color='black' )
+    plt.plot(K.kx_BZ, K.ky_BZ, color='black')
 
     plt.savefig('density_matrix_ij_ti.pdf')
 
