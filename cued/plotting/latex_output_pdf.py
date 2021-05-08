@@ -44,7 +44,7 @@ def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
 
         bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, num_points_for_plotting, sys)
 
-#        dipole_quiver_plots(K, P, sys)
+        dipole_quiver_plots(K, P, sys)
 
         density_matrix_plot(P, T, K)
 
@@ -482,36 +482,40 @@ def plot_it(P, ylabel, filename, ax1, k_in_path, y_min=None):
 
 def dipole_quiver_plots(K, P, sys):
 
-    Nk_plot = 10
-    Nk1     = P.Nk1
-    Nk2     = P.Nk2
-    P.Nk1   = Nk_plot
-    P.Nk2   = Nk_plot
+    Nk1 = P.Nk1
+    Nk2 = P.Nk2
     if P.BZ_type == 'rectangle':
+        Nk_plot = 10
+        P.Nk1   = Nk_plot
+        P.Nk2   = Nk_plot
         length_BZ_E_dir   = P.length_BZ_E_dir
         length_BZ_ortho   = P.length_BZ_ortho
         P.length_BZ_E_dir = max(length_BZ_E_dir, length_BZ_ortho)
         P.length_BZ_ortho = max(length_BZ_E_dir, length_BZ_ortho)
+    elif P.BZ_type == 'rectangle':
+        P.Nk1 = 24
+        P.Nk2 = 6
 
- 
-    P.Nk1             = Nk1
-    P.Nk2             = Nk2
-    P.length_BZ_E_dir = length_BZ_E_dir
-    P.length_BZ_ortho = length_BZ_ortho
- 
-    d_x = np.zeros([Nk_plot**2, P.n, P.n], dtype=np.complex128)
-    d_y = np.zeros([Nk_plot**2, P.n, P.n], dtype=np.complex128)
-    k_x = np.zeros( Nk_plot**2 )
-    k_y = np.zeros( Nk_plot**2 )
+    Nk_combined = P.Nk1*P.Nk2
 
-    for k_path, path in enumerate(P.paths):
+    d_x = np.zeros([Nk_combined, P.n, P.n], dtype=np.complex128)
+    d_y = np.zeros([Nk_combined, P.n, P.n], dtype=np.complex128)
+    k_x = np.zeros( Nk_combined )
+    k_y = np.zeros( Nk_combined )
+
+    if P.BZ_type == 'hexagon':
+        dk, kweight, printed_paths, printed_mesh = hex_mesh(P)
+    elif P.BZ_type == 'rectangle':
+        dk, kweight, printed_paths, printed_mesh = rect_mesh(P)
+
+    for k_path, path in enumerate(printed_paths):
 
         sys.eigensystem_dipole_path(path, P)
 
-        d_x[k_path*Nk_plot:(k_path+1)*Nk_plot, :, :] = sys.dipole_path_x[:,:,:]*CoFa.au_to_as 
-        d_y[k_path*Nk_plot:(k_path+1)*Nk_plot, :, :] = sys.dipole_path_y[:,:,:]*CoFa.au_to_as 
-        k_x[k_path*Nk_plot:(k_path+1)*Nk_plot]       = path[:,0]/CoFa.au_to_as 
-        k_y[k_path*Nk_plot:(k_path+1)*Nk_plot]       = path[:,1]/CoFa.au_to_as 
+        d_x[k_path*P.Nk1:(k_path+1)*P.Nk1, :, :] = sys.dipole_path_x[:,:,:]*CoFa.au_to_as 
+        d_y[k_path*P.Nk1:(k_path+1)*P.Nk1, :, :] = sys.dipole_path_y[:,:,:]*CoFa.au_to_as 
+        k_x[k_path*P.Nk1:(k_path+1)*P.Nk1]       = path[:,0]/CoFa.au_to_as 
+        k_y[k_path*P.Nk1:(k_path+1)*P.Nk1]       = path[:,1]/CoFa.au_to_as 
 
     for i_band in range(P.n):
         for j_band in range(P.n):
@@ -542,27 +546,20 @@ def dipole_quiver_plots(K, P, sys):
             ax.axis('equal')
             ax.set_xlabel(r'$k_x$ in 1/\AA')
             ax.set_ylabel(r'$k_y$ in 1/\AA')
-            plt.Colorbar(plot, ax=ax, label=current_abs_name)
-#            tikzplotlib.save("dipole_quiver_Re_d_"+str(i_band)+"_"+str(j_band)+".tikz", 
-#                             axis_height='\\figureheight', axis_width ='\\figurewidth' )
-
-            fig, ax = plt.subplots(1)
-            ax.plot(K.kx_BZ, K.ky_BZ, color='gray' )
-            plot = ax.quiver(k_x, k_y, norm_Im_d_x, norm_Im_d_y, np.log10(abs_Im_d),
-                             angles='xy', cmap='coolwarm', width=0.007 )
-
-            current_name = r"Im $(\mathbf{d}_{" + str(i_band) + str(j_band) + "})$"
-            current_abs_name = r"log$_{10}\;| \mathrm{Im} (\mathbf{d}_{" + str(i_band) + str(j_band) + "})|$"
-            ax.set_title(current_name)
-            ax.axis('equal')
-            ax.set_xlabel(r'$k_x$ in 1/\AA')
-            ax.set_ylabel(r'$k_y$ in 1/\AA')
-            plt.Colorbar(plot, ax=ax, label=current_abs_name)
-#            tikzplotlib.save("dipole_quiver_Im_d_"+str(i_band)+"_"+str(j_band)+".tikz", 
-#                             axis_height='\\figureheight', axis_width ='\\figurewidth' )
+            plt.colorbar(plot, ax=ax, label=current_abs_name)
+       
+            filename = 'Re_d_'+str(i_band)+str(j_band)+'.pdf'
+            plt.savefig(filename, bbox_inches='tight')
 
     plt.show()
 
+    P.Nk1 = Nk1
+    P.Nk2 = Nk2
+
+    if P.BZ_type == 'rectangle':
+
+        P.length_BZ_E_dir = length_BZ_E_dir
+        P.length_BZ_ortho = length_BZ_ortho
 
 def density_matrix_plot(P, T, K):
 
@@ -627,7 +624,6 @@ def plot_density_matrix_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, pref
                           '{:.1f}'.format(T.t_pdf_densmat[t_i]*CoFa.au_to_fs) + '$ fs')
 
     plt.savefig(filename, bbox_inches='tight')
-
 
 
 class BZ_plot_parameters():
