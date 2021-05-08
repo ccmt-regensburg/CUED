@@ -192,12 +192,12 @@ def make_BZ(P):
         elif P.align == 'M':
             P.E_dir = np.array([np.cos(np.radians(-30)),
                                     np.sin(np.radians(-30))], dtype=P.type_real_np)
-        P.dk, P.kweight, P.paths = hex_mesh(P)
+        P.dk, P.kweight, P.paths, P.mesh = hex_mesh(P)
 
     elif P.BZ_type == 'rectangle':
         P.E_dir = np.array([np.cos(np.radians(P.angle_inc_E_field)),
                                 np.sin(np.radians(P.angle_inc_E_field))], dtype=P.type_real_np)
-        P.dk, P.kweight, P.paths = rect_mesh(P)
+        P.dk, P.kweight, P.paths, P.mesh = rect_mesh(P)
 
     P.E_ort = np.array([P.E_dir[1], -P.E_dir[0]])
 
@@ -277,10 +277,10 @@ def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, Mpi):
 
     # store density matrix for Latex pdf
     if P.save_latex_pdf:
-        store_density_matrix(T, P, Nk2_idx, ti)
+        store_density_matrix_for_pdf(T, P, Nk2_idx, ti)
 
 
-def store_density_matrix(T, P, Nk2_idx, ti):
+def store_density_matrix_for_pdf(T, P, Nk2_idx, ti):
 
     for count, t_pdf_densmat in enumerate(P.t_pdf_densmat):
 

@@ -46,6 +46,8 @@ def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
 
 #        dipole_quiver_plots(kx_BZ, ky_BZ, P, sys)
 
+        density_matrix_plot(P, T, kx_BZ, ky_BZ)
+
         tikz_time(T.j_E_dir, t_fs, t_idx, \
                   r'Current $j_{\parallel}(t)$ parallel to $\bE$ in atomic units', "j_E_dir")
         tikz_time(T.j_E_dir, t_fs, t_idx_whole, \
@@ -340,9 +342,9 @@ def BZ_plot(P, A_field):
         Nk2_plot = P.Nk2
         P.Nk = P.Nk1*P.Nk2
         if P.BZ_type == 'hexagon':
-            dk, kweight, printed_paths = hex_mesh(P)
+            dk, kweight, printed_paths, printed_mesh = hex_mesh(P)
         elif P.BZ_type == 'rectangle':
-            dk, kweight, printed_paths = rect_mesh(P)
+            dk, kweight, printed_paths, printed_mesh = rect_mesh(P)
         P.Nk1 = Nk1_safe 
         P.Nk2 = Nk2_safe
         P.Nk = P.Nk1*P.Nk2
@@ -534,7 +536,7 @@ def dipole_quiver_plots(kx_BZ, ky_BZ, P, sys):
             ax.axis('equal')
             ax.set_xlabel(r'$k_x$ in 1/\AA')
             ax.set_ylabel(r'$k_y$ in 1/\AA')
-            plt.CoFalorbar(plot, ax=ax, label=current_abs_name)
+            plt.Colorbar(plot, ax=ax, label=current_abs_name)
 #            tikzplotlib.save("dipole_quiver_Re_d_"+str(i_band)+"_"+str(j_band)+".tikz", 
 #                             axis_height='\\figureheight', axis_width ='\\figurewidth' )
 
@@ -549,9 +551,36 @@ def dipole_quiver_plots(kx_BZ, ky_BZ, P, sys):
             ax.axis('equal')
             ax.set_xlabel(r'$k_x$ in 1/\AA')
             ax.set_ylabel(r'$k_y$ in 1/\AA')
-            plt.CoFalorbar(plot, ax=ax, label=current_abs_name)
+            plt.Colorbar(plot, ax=ax, label=current_abs_name)
 #            tikzplotlib.save("dipole_quiver_Im_d_"+str(i_band)+"_"+str(j_band)+".tikz", 
 #                             axis_height='\\figureheight', axis_width ='\\figurewidth' )
 
+    plt.show()
+
+
+def density_matrix_plot(P, T, kx_BZ, ky_BZ):
+
+    t_i = 0
+    i_band = 1
+    j_band = 1
+
+    reordered_pdf_densmat = np.zeros((P.Nk1*P.Nk2, P.Nt_pdf_densmat, P.n, P.n), dtype=P.type_complex_np)
+
+    for i_k1 in range(P.Nk1):
+        for j_k2 in range(P.Nk2):
+
+            combined_k_index = i_k1 + j_k2*P.Nk1
+            reordered_pdf_densmat[combined_k_index, :, :, :] = T.pdf_densmat[i_k1, j_k2, :, :, :]
+
+    print("sizes", np.shape(P.mesh[:,0]), np.shape(P.mesh[:,1]), \
+           np.shape(T.pdf_densmat[:, :, t_i, i_band, j_band]), \
+           np.shape(reordered_pdf_densmat) )
+
+    fig, ax = plt.subplots(1)
+    ax.plot(kx_BZ, ky_BZ, color='gray' )
+    ax.tricontourf(P.mesh[:,0], P.mesh[:,1], reordered_pdf_densmat[:, t_i, i_band, j_band].real )
+
+    fig.savefig('density_matrix_ij_ti.pdf')
 
     plt.show()
+
