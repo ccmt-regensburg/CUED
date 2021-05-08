@@ -598,8 +598,6 @@ def density_matrix_plot(P, T, K):
             plot_density_matrix_for_all_t(reshaped_pdf_dm.imag, P, T, K, i_band, j_band, 'Im', filename, n_vert)
 
 
-        
-
 def plot_density_matrix_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
                                   filename, n_plots_vertical):
 
@@ -628,7 +626,7 @@ def plot_density_matrix_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, pref
         ax[i,j].set_title(prefix_title+' $\\rho_{'+str(i_band)+','+str(j_band)+'}(\mathbf{k},t)$ at $t ='+ \
                           '{:.1f}'.format(T.t_pdf_densmat[t_i]*CoFa.au_to_fs) + '$ fs')
 
-    plt.savefig(filename)
+    plt.savefig(filename, bbox_inches='tight')
 
 
 
