@@ -566,35 +566,70 @@ def dipole_quiver_plots(K, P, sys):
 
 def density_matrix_plot(P, T, K):
 
-    t_i = 0
     i_band = 1
     j_band = 1
 
-    reordered_pdf_densmat = np.zeros((P.Nk1*P.Nk2, P.Nt_pdf_densmat, P.n, P.n), dtype=P.type_complex_np)
+    reshaped_pdf_dm = np.zeros((P.Nk1*P.Nk2, P.Nt_pdf_densmat, P.n, P.n), dtype=P.type_complex_np)
 
     for i_k1 in range(P.Nk1):
         for j_k2 in range(P.Nk2):
 
             combined_k_index = i_k1 + j_k2*P.Nk1
-            reordered_pdf_densmat[combined_k_index, :, :, :] = T.pdf_densmat[i_k1, j_k2, :, :, :]
+            reshaped_pdf_dm[combined_k_index, :, :, :] = T.pdf_densmat[i_k1, j_k2, :, :, :]
 
-    n_plots_vertical = (P.Nt_pdf_densmat+1)//2
+    n_vert = (P.Nt_pdf_densmat+1)//2
+
+    for i_band in range(P.n):
+
+        filename = 'dm_'+str(i_band)+str(i_band)+'.pdf'
+
+        plot_density_matrix_for_all_t(reshaped_pdf_dm.real, P, T, K, i_band, i_band, '', filename, n_vert)
+
+    for i_band in range(P.n):
+
+        for j_band in range(P.n):
+
+            if i_band >= j_band: continue
+
+            filename = 'Re_dm_'+str(i_band)+str(j_band)+'.pdf'
+            plot_density_matrix_for_all_t(reshaped_pdf_dm.real, P, T, K, i_band, j_band, 'Re', filename, n_vert)
+
+            filename = 'Im_dm_'+str(i_band)+str(j_band)+'.pdf'
+            plot_density_matrix_for_all_t(reshaped_pdf_dm.imag, P, T, K, i_band, j_band, 'Im', filename, n_vert)
+
+
+        
+
+def plot_density_matrix_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
+                                  filename, n_plots_vertical):
 
     fig, ax = plt.subplots(2, n_plots_vertical, figsize=(15,6.2*n_plots_vertical))
-    im = ax[0,0].tricontourf(P.mesh[:,0]/CoFa.au_to_as, P.mesh[:,1]/CoFa.au_to_as, \
-                    reordered_pdf_densmat[:, t_i, i_band, j_band].real , np.arange(0,1.01,0.01) )
 
-    ax[0,0].set_xlim(-K.length_x, K.length_x)
-    ax[0,0].set_ylim(-K.length_y, K.length_y)
-    ax[0,0].set_xlabel(r'$k_x$ in 1/\AA')
-    ax[0,0].set_ylabel(r'$k_y$ in 1/\AA')
-    ax[0,0].set_title('$\\rho_{'+str(i_band)+','+str(j_band)+'}(\mathbf{k},t)$ at $t ='+ \
-                      '{:.1f}'.format(T.t_pdf_densmat[t_i]*CoFa.au_to_fs) + '$ fs')
+    for t_i in range(P.Nt_pdf_densmat):
 
-    ax[0,0].plot(K.kx_BZ, K.ky_BZ, color='black')
-    fig.colorbar(im, ax=ax[0,0], ticks=np.arange(0,1.1,0.1))
+        i = t_i//2
+        j = t_i%2
+    
+        minval = np.amin(reshaped_pdf_dm[:, :, i_band, j_band].real)
+        maxval = np.amax(reshaped_pdf_dm[:, :, i_band, j_band].real)
+        step = (maxval-minval)/100
+    
+        im = ax[i,j].tricontourf(P.mesh[:,0]/CoFa.au_to_as, P.mesh[:,1]/CoFa.au_to_as, \
+                        reshaped_pdf_dm[:, t_i, i_band, j_band] , \
+                        np.arange(minval,maxval,step), cmap='nipy_spectral')
+    
+        fig.colorbar(im, ax=ax[i,j])
+    
+        ax[i,j].plot(K.kx_BZ, K.ky_BZ, color='black')
+        ax[i,j].set_xlim(-K.length_x, K.length_x)
+        ax[i,j].set_ylim(-K.length_y, K.length_y)
+        ax[i,j].set_xlabel(r'$k_x$ in 1/\AA')
+        ax[i,j].set_ylabel(r'$k_y$ in 1/\AA')
+        ax[i,j].set_title(prefix_title+' $\\rho_{'+str(i_band)+','+str(j_band)+'}(\mathbf{k},t)$ at $t ='+ \
+                          '{:.1f}'.format(T.t_pdf_densmat[t_i]*CoFa.au_to_fs) + '$ fs')
 
-    plt.savefig('density_matrix_ij_ti.pdf')
+    plt.savefig(filename)
+
 
 
 class BZ_plot_parameters():
