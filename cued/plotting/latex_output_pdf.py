@@ -578,17 +578,21 @@ def density_matrix_plot(P, T, K):
             combined_k_index = i_k1 + j_k2*P.Nk1
             reordered_pdf_densmat[combined_k_index, :, :, :] = T.pdf_densmat[i_k1, j_k2, :, :, :]
 
-    fig = plt.figure(figsize=(6,6*K.length_y/K.length_x))
-    plt.tricontourf(P.mesh[:,0]/CoFa.au_to_as, P.mesh[:,1]/CoFa.au_to_as, \
-                    reordered_pdf_densmat[:, t_i, i_band, j_band].real )
+    n_plots_vertical = (P.Nt_pdf_densmat+1)//2
 
-    plt.xlim(-K.length_x, K.length_x)
-    plt.ylim(-K.length_y, K.length_y)
+    fig, ax = plt.subplots(2, n_plots_vertical, figsize=(15,6.2*n_plots_vertical))
+    im = ax[0,0].tricontourf(P.mesh[:,0]/CoFa.au_to_as, P.mesh[:,1]/CoFa.au_to_as, \
+                    reordered_pdf_densmat[:, t_i, i_band, j_band].real , np.arange(0,1.01,0.01) )
 
-    plt.xlabel(r'$k_x$ in 1/\AA')
-    plt.ylabel(r'$k_y$ in 1/\AA')
+    ax[0,0].set_xlim(-K.length_x, K.length_x)
+    ax[0,0].set_ylim(-K.length_y, K.length_y)
+    ax[0,0].set_xlabel(r'$k_x$ in 1/\AA')
+    ax[0,0].set_ylabel(r'$k_y$ in 1/\AA')
+    ax[0,0].set_title('$\\rho_{'+str(i_band)+','+str(j_band)+'}(\mathbf{k},t)$ at $t ='+ \
+                      '{:.1f}'.format(T.t_pdf_densmat[t_i]*CoFa.au_to_fs) + '$ fs')
 
-    plt.plot(K.kx_BZ, K.ky_BZ, color='black')
+    ax[0,0].plot(K.kx_BZ, K.ky_BZ, color='black')
+    fig.colorbar(im, ax=ax[0,0], ticks=np.arange(0,1.1,0.1))
 
     plt.savefig('density_matrix_ij_ti.pdf')
 
