@@ -42,6 +42,9 @@ class TimeContainers():
         else:
             self.electric_field = make_electric_field(P)
 
+        if P.save_latex_pdf:
+            self.pdf_densmat = np.zeros((P.Nk1, P.Nk2, P.Nt_pdf_densmat, P.n, P.n), dtype=P.type_complex_np)
+            self.t_pdf_densmat = np.zeros(P.Nt_pdf_densmat)
 
 class FrequencyContainers():
     pass

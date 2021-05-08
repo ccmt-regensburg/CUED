@@ -275,6 +275,20 @@ def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, Mpi):
     if P.save_full:
         T.solution_full[:, Nk2_idx, ti, :, :] = T.solution
 
+    # store density matrix for Latex pdf
+    if P.save_latex_pdf:
+        store_density_matrix(T, P, Nk2_idx, ti)
+
+
+def store_density_matrix(T, P, Nk2_idx, ti):
+
+    for count, t_pdf_densmat in enumerate(P.t_pdf_densmat):
+
+        if (t_pdf_densmat > T.t[ti-1] and t_pdf_densmat < T.t[ti]) or t_pdf_densmat == T.t[ti]:
+
+            T.pdf_densmat[:, Nk2_idx, count, :, :] = T.solution
+            T.t_pdf_densmat[count] = T.t[ti]
+
 
 def calculate_currents(ti, current_exact_path, polarization_inter_path, current_intra_path, T, P):
 
@@ -398,6 +412,8 @@ def mpi_sum_currents(T, P, Mpi):
         T.P_E_dir       = Mpi.sync_and_sum(T.P_E_dir)
         T.P_ortho       = Mpi.sync_and_sum(T.P_ortho)
         T.j_anom_ortho  = Mpi.sync_and_sum(T.j_anom_ortho)
+    if P.save_latex_pdf:
+        T.pdf_densmat   = Mpi.sync_and_sum(T.pdf_densmat)
 
 def update_currents_with_kweight(T, P):
 

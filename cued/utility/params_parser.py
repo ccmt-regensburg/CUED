@@ -82,6 +82,10 @@ class ParamsParser():
         if hasattr(UP, 'save_latex_pdf'):
             self.save_latex_pdf = UP.save_latex_pdf
 
+        self.t_pdf_densmat = np.array([-100,0,100])*CoFa.fs_to_au    # List of times for printing density matrix
+        if hasattr(UP, 't_pdf_densmat'):
+            self.t_pdf_densmat = np.array(UP.t_pdf_densmat)*CoFa.fs_to_au
+
         self.split_current = False                        # Save j^intra, j^anom, dP^inter/dt
         if hasattr(UP, 'split_current'):
             self.split_current = UP.split_current
@@ -248,3 +252,5 @@ class ParamsParser():
                 .format(self.E0_MVpcm, self.f_THz, self.sigma_fs, self.gauge, self.t0_fs, self.dt_fs,
                         self.Nk1, self.Nk2, self.T1_fs, self.T2_fs, self.chirp_THz, self.phase,
                         self.solver_method, self.dk_order)
+
+        self.Nt_pdf_densmat = np.size(self.t_pdf_densmat)
