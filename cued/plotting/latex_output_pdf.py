@@ -647,17 +647,24 @@ def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
         maxval = np.amax(reshaped_pdf_dm[:, :, i_band, j_band].real)
         step = (maxval-minval)/100
 
-        im = ax[i,j].tricontourf(P.mesh[:,0]/CoFa.au_to_as, P.mesh[:,1]/CoFa.au_to_as, \
-                        reshaped_pdf_dm[:, t_i, i_band, j_band] , \
-                        np.arange(minval,maxval,step), cmap='nipy_spectral')
-    
-        fig.colorbar(im, ax=ax[i,j])
-    
-        ax[i,j].plot(K.kx_BZ, K.ky_BZ, color='black')
-        ax[i,j].set_xlim(-K.length_x, K.length_x)
-        ax[i,j].set_ylim(-K.length_y, K.length_y)
+        if P.Nk2 > 1:
+
+            im = ax[i,j].tricontourf(P.mesh[:,0]/CoFa.au_to_as, P.mesh[:,1]/CoFa.au_to_as, \
+                            reshaped_pdf_dm[:, t_i, i_band, j_band] , \
+                            np.arange(minval,maxval,step), cmap='nipy_spectral')
+
+            fig.colorbar(im, ax=ax[i,j])
+
+            ax[i,j].plot(K.kx_BZ, K.ky_BZ, color='black')
+            ax[i,j].set_ylim(-K.length_y, K.length_y)
+            ax[i,j].set_ylabel(r'$k_y$ in 1/\AA')
+
+        else:
+
+            im = ax[i,j].plot(P.mesh[:,0]/CoFa.au_to_as, reshaped_pdf_dm[:, t_i, i_band, j_band])
+
         ax[i,j].set_xlabel(r'$k_x$ in 1/\AA')
-        ax[i,j].set_ylabel(r'$k_y$ in 1/\AA')
+        ax[i,j].set_xlim(-K.length_x, K.length_x)
         ax[i,j].set_title(prefix_title+' $\\rho_{'+str(i_band)+','+str(j_band)+'}(\mathbf{k},t)$ at $t ='+ \
                           '{:.1f}'.format(T.t_pdf_densmat[t_i]*CoFa.au_to_fs) + '$ fs')
 
