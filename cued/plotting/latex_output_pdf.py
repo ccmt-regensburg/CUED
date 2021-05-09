@@ -528,23 +528,40 @@ def dipole_quiver_plots(K, P, sys):
         title = r"$\mathbf{d}_{" + str(i_band) + str(i_band) + \
                 "}(\mathbf{k})$ (diagonal dipole matrix elements are real)"
         colbar_title = r"log$_{10}\;|(\mathbf{d}_{"+str(i_band)+str(i_band)+"}(\mathbf{k}))/$\AA$|$"
-        filename = 'd_'+str(i_band)+str(i_band)+'.pdf'
 
         plot_single_dipole(d_x.real, d_y.real, i_band, i_band, plot_x_index, plot_y_index, \
                            K, k_x, k_y, fig, ax, title, colbar_title)
 
+    counter = 0
 
-#    for i_band in range(P.n):
-#        for j_band in range(P.n):
+    for i_band in range(P.n):
+        for j_band in range(P.n):
 
-#            plot_x_index = i_band*P.n + j_band
-#            title = r"$\mathbf{d}_{" + str(i_band) + str(j_band) + \
-#                    "}(\mathbf{k})$ (diagonal dipole matrix elements are real)"
-#            colbar_title = r"log$_{10}\;|(\mathbf{d}_{"+str(i_band)+str(j_band)+"}(\mathbf{k}))/$\AA$|$"
-#            filename = 'd_'+str(i_band)+str(j_band)+'.pdf'
-#
-#            plot_single_dipole(d_x.real, d_y.real, i_band, j_band, ij_index, K, k_x, k_y, fig, ax, \
-#                               title, colbar_title, filename)
+            if i_band >= j_band: continue
+
+            plot_index = P.n + counter
+            plot_x_index = plot_index//2
+            plot_y_index = plot_index%2
+            counter += 1
+            title = r"Re $\mathbf{d}_{" + str(i_band) + str(j_band) + "}(\mathbf{k})$"
+            colbar_title = r"log$_{10}\;|\mathrm{Re } (\mathbf{d}_{"+str(i_band)+str(j_band)+\
+                           "}(\mathbf{k}))/$\AA$|$"
+    
+            plot_single_dipole(d_x.real, d_y.real, i_band, j_band, plot_x_index, plot_y_index, \
+                               K, k_x, k_y, fig, ax, title, colbar_title)
+
+            plot_index = P.n + counter
+            plot_x_index = plot_index//2
+            plot_y_index = plot_index%2
+            counter += 1
+            title = r"Im $\mathbf{d}_{" + str(i_band) + str(j_band) + "}(\mathbf{k})$"
+            colbar_title = r"log$_{10}\;|\mathrm{Im } (\mathbf{d}_{"+str(i_band)+str(j_band)+\
+                           "}(\mathbf{k}))/$\AA$|$"
+
+            plot_single_dipole(d_x.imag, d_y.imag, i_band, j_band, plot_x_index, plot_y_index, \
+                               K, k_x, k_y, fig, ax, title, colbar_title)
+
+
 
     filename = 'dipoles.pdf'
 
