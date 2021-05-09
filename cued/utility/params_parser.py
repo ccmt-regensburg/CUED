@@ -82,7 +82,7 @@ class ParamsParser():
         if hasattr(UP, 'save_latex_pdf'):
             self.save_latex_pdf = UP.save_latex_pdf
 
-        self.t_pdf_densmat = np.array([-100,0,100])*CoFa.fs_to_au    # List of times for printing density matrix
+        self.t_pdf_densmat = np.array([-100,0,100])*CoFa.fs_to_au   # Time points for printing density matrix
         if hasattr(UP, 't_pdf_densmat'):
             self.t_pdf_densmat = np.array(UP.t_pdf_densmat)*CoFa.fs_to_au
 

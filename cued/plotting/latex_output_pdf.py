@@ -520,7 +520,7 @@ def dipole_quiver_plots(K, P, sys):
     num_plots = (P.n**2+P.n)//2
     num_plots_vert = (num_plots+1)//2
 
-    fig, ax = plt.subplots(2, num_plots_vert, figsize=(15,6.2*num_plots_vert))
+    fig, ax = plt.subplots(num_plots_vert, 2, figsize=(15,6.2*num_plots_vert))
 
     for i_band in range(P.n):
         plot_x_index = i_band//2
@@ -561,10 +561,9 @@ def dipole_quiver_plots(K, P, sys):
             plot_single_dipole(d_x.imag, d_y.imag, i_band, j_band, plot_x_index, plot_y_index, \
                                K, k_x, k_y, fig, ax, title, colbar_title)
 
-
-
     filename = 'dipoles.pdf'
 
+    plt.tight_layout()
     plt.savefig(filename, bbox_inches='tight')
 
     P.Nk1 = Nk1
@@ -637,17 +636,17 @@ def density_matrix_plot(P, T, K):
 def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
                                   filename, n_plots_vertical):
 
-    fig, ax = plt.subplots(2, n_plots_vertical, figsize=(15,6.2*n_plots_vertical))
+    fig, ax = plt.subplots(n_plots_vertical, 2, figsize=(15,6.2*n_plots_vertical*K.length_y/K.length_x))
 
     for t_i in range(P.Nt_pdf_densmat):
 
         i = t_i//2
         j = t_i%2
-    
+
         minval = np.amin(reshaped_pdf_dm[:, :, i_band, j_band].real)
         maxval = np.amax(reshaped_pdf_dm[:, :, i_band, j_band].real)
         step = (maxval-minval)/100
-    
+
         im = ax[i,j].tricontourf(P.mesh[:,0]/CoFa.au_to_as, P.mesh[:,1]/CoFa.au_to_as, \
                         reshaped_pdf_dm[:, t_i, i_band, j_band] , \
                         np.arange(minval,maxval,step), cmap='nipy_spectral')
@@ -662,6 +661,7 @@ def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
         ax[i,j].set_title(prefix_title+' $\\rho_{'+str(i_band)+','+str(j_band)+'}(\mathbf{k},t)$ at $t ='+ \
                           '{:.1f}'.format(T.t_pdf_densmat[t_i]*CoFa.au_to_fs) + '$ fs')
 
+    plt.tight_layout()
     plt.savefig(filename, bbox_inches='tight')
 
 
