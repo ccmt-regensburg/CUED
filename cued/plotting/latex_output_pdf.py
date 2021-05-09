@@ -517,21 +517,38 @@ def dipole_quiver_plots(K, P, sys):
         k_x[k_path*P.Nk1:(k_path+1)*P.Nk1]       = path[:,0]/CoFa.au_to_as 
         k_y[k_path*P.Nk1:(k_path+1)*P.Nk1]       = path[:,1]/CoFa.au_to_as 
 
-    num_plots = (P.n**2+P.n)/2
+    num_plots = (P.n**2+P.n)//2
+    num_plots_vert = (num_plots+1)//2
+
+    fig, ax = plt.subplots(2, num_plots_vert, figsize=(15,6.2*num_plots_vert))
 
     for i_band in range(P.n):
-        for j_band in range(P.n):
+        plot_x_index = i_band//2
+        plot_y_index = i_band%2
+        title = r"$\mathbf{d}_{" + str(i_band) + str(i_band) + \
+                "}(\mathbf{k})$ (diagonal dipole matrix elements are real)"
+        colbar_title = r"log$_{10}\;|(\mathbf{d}_{"+str(i_band)+str(i_band)+"}(\mathbf{k}))/$\AA$|$"
+        filename = 'd_'+str(i_band)+str(i_band)+'.pdf'
 
-            ij_index = i_band*P.n + j_band
-            fig, ax = plt.subplots(1, figsize=(15,15))
-            title = r"$(\mathbf{d}_{" + str(i_band) + str(j_band) + "})$"
-            colbar_title = r"log$_{10}\;|(\mathbf{d}_{"+str(i_band)+str(j_band)+"})/$\AA$|$"
-            filename = 'd_'+str(i_band)+str(j_band)+'.pdf'
+        plot_single_dipole(d_x.real, d_y.real, i_band, i_band, plot_x_index, plot_y_index, \
+                           K, k_x, k_y, fig, ax, title, colbar_title)
 
-            plot_single_dipole(d_x.real, d_y.real, i_band, j_band, ij_index, K, k_x, k_y, fig, ax, \
-                               title, colbar_title, filename)
 
-            plt.savefig(filename, bbox_inches='tight')
+#    for i_band in range(P.n):
+#        for j_band in range(P.n):
+
+#            plot_x_index = i_band*P.n + j_band
+#            title = r"$\mathbf{d}_{" + str(i_band) + str(j_band) + \
+#                    "}(\mathbf{k})$ (diagonal dipole matrix elements are real)"
+#            colbar_title = r"log$_{10}\;|(\mathbf{d}_{"+str(i_band)+str(j_band)+"}(\mathbf{k}))/$\AA$|$"
+#            filename = 'd_'+str(i_band)+str(j_band)+'.pdf'
+#
+#            plot_single_dipole(d_x.real, d_y.real, i_band, j_band, ij_index, K, k_x, k_y, fig, ax, \
+#                               title, colbar_title, filename)
+
+    filename = 'dipoles.pdf'
+
+    plt.savefig(filename, bbox_inches='tight')
 
     P.Nk1 = Nk1
     P.Nk2 = Nk2
@@ -541,8 +558,8 @@ def dipole_quiver_plots(K, P, sys):
         P.length_BZ_ortho = length_BZ_ortho
 
 
-def plot_single_dipole(d_x, d_y, i_band, j_band, ij_index, K, k_x, k_y, fig, ax, \
-                       title, colbar_title, filename):
+def plot_single_dipole(d_x, d_y, i_band, j_band, x, y, K, k_x, k_y, fig, ax, \
+                       title, colbar_title):
 
     d_x_ij = d_x[:, i_band, j_band]
     d_y_ij = d_y[:, i_band, j_band]
@@ -552,18 +569,18 @@ def plot_single_dipole(d_x, d_y, i_band, j_band, ij_index, K, k_x, k_y, fig, ax,
     norm_d_x_ij = d_x_ij / abs_d_ij
     norm_d_y_ij = d_y_ij / abs_d_ij
 
-    ax.plot(K.kx_BZ, K.ky_BZ, color='gray' )
-    plot = ax.quiver(k_x, k_y, norm_d_x_ij, norm_d_y_ij, np.log10(abs_d_ij),
+    ax[x,y].plot(K.kx_BZ, K.ky_BZ, color='gray' )
+    plot = ax[x,y].quiver(k_x, k_y, norm_d_x_ij, norm_d_y_ij, np.log10(abs_d_ij),
                      angles='xy', cmap='coolwarm', width=0.007 )
 
-    ax.set_title(title)
-    ax.axis('equal')
-    ax.set_xlabel(r'$k_x$ in 1/\AA')
-    ax.set_ylabel(r'$k_y$ in 1/\AA')
-    ax.set_xlim(-K.length_x, K.length_x)
-    ax.set_ylim(-K.length_y, K.length_y)
+    ax[x,y].set_title(title)
+    ax[x,y].axis('equal')
+    ax[x,y].set_xlabel(r'$k_x$ in 1/\AA')
+    ax[x,y].set_ylabel(r'$k_y$ in 1/\AA')
+    ax[x,y].set_xlim(-K.length_x, K.length_x)
+    ax[x,y].set_ylim(-K.length_y, K.length_y)
 
-    plt.colorbar(plot, ax=ax, label=colbar_title)
+    plt.colorbar(plot, ax=ax[x,y], label=colbar_title)
 
 
 def density_matrix_plot(P, T, K):
