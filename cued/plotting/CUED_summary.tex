@@ -14,6 +14,8 @@
 \usepackage[labelfont=bf]{caption}
 %\usepackage{nonfloat}
 \usepackage{booktabs}%für Tabellen
+\usepackage{pgffor} %for loops
+\usepackage{ifthen} %for if
 \usepackage{pgfplots} %für Plots
 \pgfplotsset{
 compat=1.5,
@@ -283,6 +285,13 @@ Dipoles below $10^{-10}$\,{\AA} are not displayed.
     \label{fig:bandstructuredipole}
 \end{figure}
 
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{dipoles.pdf}
+    \caption{Real and imaginary part of dipole matrix elements.}
+    \label{fig:dipoles}
+\end{figure}
+
 The $n$-band Hamiltonian $h(\bk)$ is an $n\timest n$ matrix that is given as an input. 
 %
 Diagonalizing $h(\bk)$ yields the band structure and the eigenvectors~$\ketunk$,
@@ -296,7 +305,7 @@ Dipoles are computed from
 \end{align}
 where $q\eqt {-}\sd{e}$ is the electron charge.
 %
-The band structure and the dipoles are sketched in Fig.~\ref{fig:bandstructuredipole}. 
+The band structure and the dipoles are sketched in Fig.~\ref{fig:bandstructuredipole} and~\ref{fig:dipoles}. 
 %{\color{red}How is the complex phase of $\ketunk$ made continuous?}
 
 \section{Time evolution of the density matrix}
@@ -314,6 +323,36 @@ In case you choose the length gauge (\texttt{gauge = 'length'}, that is also the
     \big)\label{e5}
 \end{align}
 with a dephasing time $T_2\eqt PH-T2$\,fs. 
+%
+The time evolution of the density matrix is visualized in Figs.~\ref{fig:dm00}\,--\,\ref{fig:Imdm01}.
+\\\\
+\foreach \bandindex in {0,...,1}{
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{dm_\bandindex\bandindex.pdf}
+    \caption{Time evolution of the \bandindex-\bandindex{} diagonal entry of the density matrix.}
+    \label{fig:dm\bandindex\bandindex}
+\end{figure}
+}
+
+\foreach \bandindex in {0,...,1}{
+\foreach \jbandindex in {0,...,1}{
+\ifnum \bandindex<\jbandindex
+{
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{Re_dm_\bandindex\jbandindex.pdf}
+    \caption{Time evolution of the real part of the \bandindex-\jbandindex{} offdiagonal entry of the density matrix.}    \label{fig:Redm\bandindex\jbandindex}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{Im_dm_\bandindex\jbandindex.pdf}
+    \caption{Time evolution of the imaginary part of the \bandindex-\jbandindex{} offdiagonal entry of the density matrix.}       \label{fig:Imdm\bandindex\jbandindex}
+\end{figure}
+}
+\fi
+}
+}
 
 \section{Time-dependent current}
 \begin{figure}
