@@ -517,49 +517,54 @@ def dipole_quiver_plots(K, P, sys):
         k_x[k_path*P.Nk1:(k_path+1)*P.Nk1]       = path[:,0]/CoFa.au_to_as 
         k_y[k_path*P.Nk1:(k_path+1)*P.Nk1]       = path[:,1]/CoFa.au_to_as 
 
+    num_plots = (P.n**2+P.n)/2
+
     for i_band in range(P.n):
         for j_band in range(P.n):
 
-            Re_d_x = np.real(d_x[:,i_band,j_band]) 
-            Re_d_y = np.real(d_y[:,i_band,j_band])
-            Im_d_x = np.imag(d_x[:,i_band,j_band])
-            Im_d_y = np.imag(d_y[:,i_band,j_band])
-
-            abs_Re_d = np.maximum(np.sqrt( Re_d_x**2 + Re_d_y**2 ), 1.0e-32*np.ones(np.shape(Re_d_x)))
-            abs_Im_d = np.maximum(np.sqrt( Im_d_x**2 + Im_d_y**2 ), 1.0e-32*np.ones(np.shape(Im_d_x)))
-
-            norm_Re_d_x = Re_d_x / abs_Re_d
-            norm_Re_d_y = Re_d_y / abs_Re_d
-            norm_Im_d_x = Im_d_x / abs_Im_d
-            norm_Im_d_y = Im_d_y / abs_Im_d
-
             ij_index = i_band*P.n + j_band
+            fig, ax = plt.subplots(1, figsize=(15,15))
+            title = r"$(\mathbf{d}_{" + str(i_band) + str(j_band) + "})$"
+            colbar_title = r"log$_{10}\;|(\mathbf{d}_{"+str(i_band)+str(j_band)+"})/$\AA$|$"
+            filename = 'd_'+str(i_band)+str(j_band)+'.pdf'
 
-            fig, ax = plt.subplots(1)
-            ax.plot(K.kx_BZ, K.ky_BZ, color='gray' )
-            plot = ax.quiver(k_x, k_y, norm_Re_d_x, norm_Re_d_y, np.log10(abs_Re_d),
-                                          angles='xy', cmap='coolwarm', width=0.007 )
+            plot_single_dipole(d_x.real, d_y.real, i_band, j_band, ij_index, K, k_x, k_y, fig, ax, \
+                               title, colbar_title, filename)
 
-            current_name = r"Re $(\mathbf{d}_{" + str(i_band) + str(j_band) + "})$"
-            current_abs_name = r"log$_{10}\;| \mathrm{Re} (\mathbf{d}_{" + str(i_band) + str(j_band) + "})|$"
-            ax.set_title(current_name)
-            ax.axis('equal')
-            ax.set_xlabel(r'$k_x$ in 1/\AA')
-            ax.set_ylabel(r'$k_y$ in 1/\AA')
-            plt.colorbar(plot, ax=ax, label=current_abs_name)
-       
-            filename = 'Re_d_'+str(i_band)+str(j_band)+'.pdf'
             plt.savefig(filename, bbox_inches='tight')
-
-    plt.show()
 
     P.Nk1 = Nk1
     P.Nk2 = Nk2
 
     if P.BZ_type == 'rectangle':
-
         P.length_BZ_E_dir = length_BZ_E_dir
         P.length_BZ_ortho = length_BZ_ortho
+
+
+def plot_single_dipole(d_x, d_y, i_band, j_band, ij_index, K, k_x, k_y, fig, ax, \
+                       title, colbar_title, filename):
+
+    d_x_ij = d_x[:, i_band, j_band]
+    d_y_ij = d_y[:, i_band, j_band]
+
+    abs_d_ij = np.maximum(np.sqrt( d_x_ij**2 + d_y_ij**2 ), 1.0e-10*np.ones(np.shape(d_x_ij)))
+
+    norm_d_x_ij = d_x_ij / abs_d_ij
+    norm_d_y_ij = d_y_ij / abs_d_ij
+
+    ax.plot(K.kx_BZ, K.ky_BZ, color='gray' )
+    plot = ax.quiver(k_x, k_y, norm_d_x_ij, norm_d_y_ij, np.log10(abs_d_ij),
+                     angles='xy', cmap='coolwarm', width=0.007 )
+
+    ax.set_title(title)
+    ax.axis('equal')
+    ax.set_xlabel(r'$k_x$ in 1/\AA')
+    ax.set_ylabel(r'$k_y$ in 1/\AA')
+    ax.set_xlim(-K.length_x, K.length_x)
+    ax.set_ylim(-K.length_y, K.length_y)
+
+    plt.colorbar(plot, ax=ax, label=colbar_title)
+
 
 def density_matrix_plot(P, T, K):
 
@@ -580,7 +585,7 @@ def density_matrix_plot(P, T, K):
 
         filename = 'dm_'+str(i_band)+str(i_band)+'.pdf'
 
-        plot_density_matrix_for_all_t(reshaped_pdf_dm.real, P, T, K, i_band, i_band, '', filename, n_vert)
+        plot_dm_for_all_t(reshaped_pdf_dm.real, P, T, K, i_band, i_band, '', filename, n_vert)
 
     for i_band in range(P.n):
 
@@ -589,13 +594,13 @@ def density_matrix_plot(P, T, K):
             if i_band >= j_band: continue
 
             filename = 'Re_dm_'+str(i_band)+str(j_band)+'.pdf'
-            plot_density_matrix_for_all_t(reshaped_pdf_dm.real, P, T, K, i_band, j_band, 'Re', filename, n_vert)
+            plot_dm_for_all_t(reshaped_pdf_dm.real, P, T, K, i_band, j_band, 'Re', filename, n_vert)
 
             filename = 'Im_dm_'+str(i_band)+str(j_band)+'.pdf'
-            plot_density_matrix_for_all_t(reshaped_pdf_dm.imag, P, T, K, i_band, j_band, 'Im', filename, n_vert)
+            plot_dm_for_all_t(reshaped_pdf_dm.imag, P, T, K, i_band, j_band, 'Im', filename, n_vert)
 
 
-def plot_density_matrix_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
+def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
                                   filename, n_plots_vertical):
 
     fig, ax = plt.subplots(2, n_plots_vertical, figsize=(15,6.2*n_plots_vertical))
