@@ -165,7 +165,11 @@ class ParamsParser():
         self.degenerate_evals = False
         if hasattr(UP, 'degenerat_evals'):
             self.degenerate_evals = UP.degenerat_evals
-            
+
+        self.path_parallelization = True
+        if hasattr(UP, 'path_parallelization'):
+            self.path_parallelization = UP.path_parallelization
+
     def __check_user_params_for_wrong_arguments(self, UP):
         """
         Compare default paramaters with user parameters.

@@ -94,7 +94,13 @@ def sbe_solver(sys, params):
 
     # Initialize Mpi
     Mpi = MpiHelpers()
-    Mpi.local_Nk2_idx_list = Mpi.get_local_idx(P.Nk2)
+    if P.path_parallelization:
+        Mpi.local_Nk2_idx_list = Mpi.get_local_idx(P.Nk2)
+        Mpi.subcomm = Mpi.comm.Split(0, Mpi.rank)
+    
+    else:
+        Mpi.local_Nk2_idx_list = np.arange(P.Nk2)
+        Mpi.subcomm = Mpi.comm.Split(Mpi.rank, Mpi.rank)
 
     # Make containers for time- and frequency- dependent observables
     T = TimeContainers(P)

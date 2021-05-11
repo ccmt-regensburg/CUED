@@ -13,6 +13,8 @@ class MpiHelpers:
         self.size = self.comm.Get_size()
         self.rank = self.comm.Get_rank()
 
+        self.subcomm = None
+
     def get_local_idx(self, idxmax):
         # Check whether there are more ranks than indices to partition
         if self.size > idxmax:
@@ -49,11 +51,12 @@ class MpiHelpers:
 
         summed_np_array = np.zeros_like(local_np_array)
 
-        self.comm.Barrier()
-        self.comm.Allreduce(local_np_array, summed_np_array, op=MPI.SUM)
-        self.comm.Barrier()
+        self.subcomm.Barrier()
+        self.subcomm.Allreduce(local_np_array, summed_np_array, op=MPI.SUM)
+        self.subcomm.Barrier()
 
         return summed_np_array
+
 
     def __equipartition(self, L):
         '''
