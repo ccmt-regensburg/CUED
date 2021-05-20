@@ -7,7 +7,7 @@ from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode
 import os
 
-from cued.utility import ConversionFactors as CoFa, ParamsParser
+from cued.utility import ConversionFactors as CoFa, ParamsParser, mkdir
 from cued.utility import conditional_njit, evaluate_njit_matrix
 from cued.utility import FrequencyContainers, TimeContainers
 from cued.utility import MpiHelpers
@@ -17,8 +17,32 @@ from cued.kpoint_mesh import hex_mesh, rect_mesh
 from cued.observables import *
 from cued.rhs_ode import *
 
-
 def sbe_solver(sys, params):
+
+    # Initialize Mpi and parse params
+    P = ParamsParser(params)
+    Mpi = MpiHelpers()
+
+    # Parallelize over parameters if there are more parameter combinations than paths
+    if P.number_of_combinations >= params.Nk2 or P.path_list:
+        Mpi.local_params_idx_list = Mpi.get_local_idx(P.number_of_combinations)
+        for i in Mpi.local_params_idx_list:
+
+            P.path_parallelization = False
+            P.distribute_parameters(i, params)
+
+            run_sbe(sys, P, Mpi)
+
+    # Parallelize over paths else
+    else:
+        for i in range(P.number_of_combinations):
+
+            P.path_parallelization = True
+            P.distribute_parameters(i, params)
+
+            run_sbe(sys, P, Mpi)
+
+def run_sbe(sys, P, Mpi):
     """
     Solver for the semiconductor bloch equation ( eq. (39) or (47) in https://arxiv.org/abs/2008.03177)
     for a n band system with numerical calculation of the dipole elements (unfinished - analytical dipoles
@@ -74,8 +98,6 @@ def sbe_solver(sys, params):
     # RETRIEVE PARAMETERS
     ###########################################################################
     # Flag evaluation
-    P = ParamsParser(params)
-
     P.n = sys.n
     P.n_sheets = 1
     if hasattr(sys, 'n_sheets'):
@@ -93,11 +115,11 @@ def sbe_solver(sys, params):
     ###########################################################################
 
     # Initialize Mpi
-    Mpi = MpiHelpers()
     if P.path_parallelization:
         Mpi.local_Nk2_idx_list = Mpi.get_local_idx(P.Nk2)
         Mpi.subcomm = Mpi.comm.Split(0, Mpi.rank)
-    
+
+
     else:
         Mpi.local_Nk2_idx_list = np.arange(P.Nk2)
         Mpi.subcomm = Mpi.comm.Split(Mpi.rank, Mpi.rank)
@@ -178,7 +200,7 @@ def sbe_solver(sys, params):
     write_current_emission_mpi(T, P, W, sys, Mpi)
 
     # Save the parameters of the calculation
-    params_name = 'params.txt'
+    params_name = P.header + 'params.txt'
     paramsfile = open(params_name, 'w')
     paramsfile.write(str(P.__dict__) + "\n\n")
     paramsfile.write("Runtime: {:.16f} s".format(P.run_time))
@@ -530,7 +552,7 @@ def calculate_fourier(T, P, W):
 def write_current_emission_mpi(T, P, W, sys, Mpi):
 
     # only save data from a single MPI rank
-    if Mpi.rank == 0:
+    if Mpi.rank == 0 or not P.path_parallelization:
         write_current_emission(T, P, W, sys, Mpi)
 
 
@@ -576,7 +598,7 @@ def write_current_emission(T, P, W, sys, Mpi):
     time_output[np.abs(time_output) <= 10e-100] = 0
     time_output[np.abs(time_output) >= 1e+100] = np.inf
 
-    np.savetxt('time_data.dat', time_output, header=time_header, delimiter='   ', fmt="%+.18e")
+    np.savetxt(P.header + 'time_data.dat', time_output, header=time_header, delimiter='   ', fmt="%+.18e")
 
     ##################################################
     # Frequency data save
@@ -622,7 +644,7 @@ def write_current_emission(T, P, W, sys, Mpi):
     freq_output[np.abs(freq_output) <= 10e-100] = 0
     freq_output[np.abs(freq_output) >= 1e+100] = np.inf
 
-    np.savetxt('frequency_data.dat', freq_output, header=freq_header, delimiter='   ', fmt="%+.18e")
+    np.savetxt(P.header + 'frequency_data.dat', freq_output, header=freq_header, delimiter='   ', fmt="%+.18e")
 
     if P.save_latex_pdf:
         write_and_compile_latex_PDF(T, W, P, sys, Mpi)
@@ -650,7 +672,7 @@ def fourier_current_intensity(I_E_dir, I_ortho, window_function, dt_out, prefac_
 
                 I_E_dir[:, i, j] = prefac_emission*(freq**2)*np.abs(jw_E_dir[:, i, j])**2
                 I_ortho[:, i, j] = prefac_emission*(freq**2)*np.abs(jw_ortho[:, i, j])**2
-   
+
     else:
         ndt     = np.size(I_E_dir)
         ndt_fft = np.size(freq)
