@@ -7,7 +7,7 @@ from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode
 import os
 
-from cued.utility import ConversionFactors as CoFa, ParamsParser, mkdir
+from cued.utility import ConversionFactors as CoFa, ParamsParser
 from cued.utility import conditional_njit, evaluate_njit_matrix
 from cued.utility import FrequencyContainers, TimeContainers
 from cued.utility import MpiHelpers
@@ -119,7 +119,6 @@ def run_sbe(sys, P, Mpi):
         Mpi.local_Nk2_idx_list = Mpi.get_local_idx(P.Nk2)
         Mpi.subcomm = Mpi.comm.Split(0, Mpi.rank)
 
-
     else:
         Mpi.local_Nk2_idx_list = np.arange(P.Nk2)
         Mpi.subcomm = Mpi.comm.Split(Mpi.rank, Mpi.rank)
@@ -211,6 +210,10 @@ def run_sbe(sys, P, Mpi):
         S_name = 'Sol_' + P.tail
         np.savez(S_name, t=T.t, solution_full=T.solution_full, paths=P.paths,
                  electric_field=T.electric_field(T.t), A_field=T.A_field)
+
+    #save density matrix at given points in time
+    if P.save_dm_t:
+        np.savez(P.header + 'time_matrix', pdf_densmat=T.pdf_densmat, t_pdf_densmat=T.t_pdf_densmat, A_field=T.A_field)
 
 def make_BZ(P):
         # Form Brillouin Zone
@@ -304,7 +307,7 @@ def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, Mpi):
         T.solution_full[:, Nk2_idx, ti, :, :] = T.solution
 
     # store density matrix for Latex pdf
-    if P.save_latex_pdf:
+    if P.save_latex_pdf or P.save_dm_t:
         store_density_matrix_for_pdf(T, P, Nk2_idx, ti)
 
 

@@ -131,6 +131,9 @@ class ParamsParser():
         if 'save_latex_pdf' in UP:
             self.save_latex_pdf = UP['save_latex_pdf']
 
+        self.save_dm_t = False                            # Save density matrix at given points in time
+        if 'save_dm_t' in UP:
+            self.save_dm_t = UP['save_dm_t']
 
         self.split_current = False                        # Save j^intra, j^anom, dP^inter/dt
         if 'split_current' in UP:
