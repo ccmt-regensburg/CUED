@@ -12,7 +12,7 @@ class ParamsParser():
     """
     def __init__(self, UP):
 
-        self.__combine_parameters(UP)   
+        self.__combine_parameters(UP)
 
     def __combine_parameters(self, UP):
 
@@ -33,7 +33,7 @@ class ParamsParser():
 
         # check, wheter Nk2 is given as a list
         self.path_list = False
-        if type(UP.__dict__['Nk2']) == list:
+        if type(UP.__dict__['Nk2']) == list or type(UP.__dict__['Nk2']) ==  np.ndarray:
             self.path_list = True
 
         # Build list with all possible parameter combinations
@@ -41,7 +41,9 @@ class ParamsParser():
 
     def __append_to_list(self, param):
 
-        if type(param) == list:
+        if type(param) == list or type(param) == np.ndarray:
+            if type(param) == np.ndarray:
+                param = param.tolist()
             self.number_of_combinations *= np.size(param)
             self.params_lists.append(param)
             # add to header
@@ -54,7 +56,7 @@ class ParamsParser():
         self.header = ''
         for key_idx, key in enumerate(self.user_params):
             current_parameters[key] = self.params_combinations[param_idx][key_idx]
-            if type(UP.__dict__[key]) == list:
+            if type(UP.__dict__[key]) == list or type(UP.__dict__[key]) == np.ndarray:
                 self.header += key + '=' + str(current_parameters[key]) + '_'
 
         self.__occupation(current_parameters)
