@@ -215,7 +215,7 @@ class ParamsParser():
         if 'degenerate_evals' in UP:
             self.degenerate_evals = UP['degenerate_evals']
 
-
+        #Flag for path parallelization, default value determined in main.py
         if 'path_parallelization' in UP:
             self.path_parallelization = UP['path_parallelization']
 

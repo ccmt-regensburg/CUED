@@ -23,24 +23,27 @@ def sbe_solver(sys, params):
     P = ParamsParser(params)
     Mpi = MpiHelpers()
 
+    P.n = sys.n
+    P.n_sheets = 1
+    if hasattr(sys, 'n_sheets'):
+        P.n_sheets = sys.n_sheets
+
     # Parallelize over parameters if there are more parameter combinations than paths
     if P.number_of_combinations >= params.Nk2 or P.path_list:
         Mpi.local_params_idx_list = Mpi.get_local_idx(P.number_of_combinations)
-        for i in Mpi.local_params_idx_list:
-
-            P.path_parallelization = False
-            P.distribute_parameters(i, params)
-
-            run_sbe(sys, P, Mpi)
-
+        P.path_parallelization = False
     # Parallelize over paths else
-    else:
-        for i in range(P.number_of_combinations):
+    else:    
+        Mpi.local_params_idx_list = range(P.number_of_combinations)
+        P.path_parallelization = True
 
-            P.path_parallelization = True
-            P.distribute_parameters(i, params)
+    #run sbe for i'th parameter set       
+    for i in Mpi.local_params_idx_list:
 
-            run_sbe(sys, P, Mpi)
+        P.distribute_parameters(i, params)        
+        make_subcommunicators(Mpi, P)
+        run_sbe(sys, P, Mpi)
+
 
 def run_sbe(sys, P, Mpi):
     """
@@ -95,14 +98,6 @@ def run_sbe(sys, P, Mpi):
     # Start time of sbe_solver
     start_time = time.perf_counter()
 
-    # RETRIEVE PARAMETERS
-    ###########################################################################
-    # Flag evaluation
-    P.n = sys.n
-    P.n_sheets = 1
-    if hasattr(sys, 'n_sheets'):
-        P.n_sheets = sys.n_sheets
-
     # Make Brillouin zone (saved in P)
     make_BZ(P)
 
@@ -113,15 +108,6 @@ def run_sbe(sys, P, Mpi):
 
     # INITIALIZATIONS
     ###########################################################################
-
-    # Initialize Mpi
-    if P.path_parallelization:
-        Mpi.local_Nk2_idx_list = Mpi.get_local_idx(P.Nk2)
-        Mpi.subcomm = Mpi.comm.Split(0, Mpi.rank)
-
-    else:
-        Mpi.local_Nk2_idx_list = np.arange(P.Nk2)
-        Mpi.subcomm = Mpi.comm.Split(Mpi.rank, Mpi.rank)
 
     # Make containers for time- and frequency- dependent observables
     T = TimeContainers(P)
@@ -214,6 +200,16 @@ def run_sbe(sys, P, Mpi):
     #save density matrix at given points in time
     if P.save_dm_t:
         np.savez(P.header + 'time_matrix', pdf_densmat=T.pdf_densmat, t_pdf_densmat=T.t_pdf_densmat, A_field=T.A_field)
+
+def make_subcommunicators(Mpi, P):
+
+    if P.path_parallelization:
+        Mpi.local_Nk2_idx_list = Mpi.get_local_idx(P.Nk2)
+        Mpi.subcomm = Mpi.comm.Split(0, Mpi.rank)
+
+    else:
+        Mpi.local_Nk2_idx_list = np.arange(P.Nk2)
+        Mpi.subcomm = Mpi.comm.Split(Mpi.rank, Mpi.rank)
 
 def make_BZ(P):
         # Form Brillouin Zone
