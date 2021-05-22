@@ -22,7 +22,7 @@ def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
 
         high_symmetry_path_BZ = get_symmetry_path_in_BZ(P, num_points_for_plotting)
 
-        latex_dir = "latex_pdf_files"
+        latex_dir = P.header+"latex_pdf_files"
 
         if os.path.exists(latex_dir) and os.path.isdir(latex_dir):
             shutil.rmtree(latex_dir)
