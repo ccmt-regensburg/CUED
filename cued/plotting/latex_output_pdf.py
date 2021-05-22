@@ -645,7 +645,13 @@ def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
 
         minval = np.amin(reshaped_pdf_dm[:, :, i_band, j_band].real)
         maxval = np.amax(reshaped_pdf_dm[:, :, i_band, j_band].real)
+        if maxval - minval < 1E-6:
+            minval -= 1E-6
+            maxval += 1E-6
+
         step = (maxval-minval)/100
+
+        print("minval =", minval, "maxval =", maxval, "step =", step)
 
         if P.Nk2 > 1:
 
