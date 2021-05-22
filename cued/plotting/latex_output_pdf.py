@@ -517,7 +517,7 @@ def dipole_quiver_plots(K, P, sys):
         k_x[k_path*P.Nk1:(k_path+1)*P.Nk1]       = path[:,0]/CoFa.au_to_as 
         k_y[k_path*P.Nk1:(k_path+1)*P.Nk1]       = path[:,1]/CoFa.au_to_as 
 
-    num_plots = (P.n**2+P.n)//2
+    num_plots = P.n**2
     num_plots_vert = (num_plots+1)//2
 
     fig, ax = plt.subplots(num_plots_vert, 2, figsize=(15,6.2*num_plots_vert))
@@ -633,6 +633,9 @@ def density_matrix_plot(P, T, K):
             plot_dm_for_all_t(reshaped_pdf_dm.imag, P, T, K, i_band, j_band, 'Im', filename, n_vert)
 
 
+    replace("bandindex in {0,...,1}", "bandindex in {0,...,"+str(P.n-1)+"}")
+
+
 def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
                                   filename, n_plots_vertical):
 
@@ -650,8 +653,6 @@ def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
             maxval += 1E-6
 
         step = (maxval-minval)/100
-
-        print("minval =", minval, "maxval =", maxval, "step =", step)
 
         if P.Nk2 > 1:
 

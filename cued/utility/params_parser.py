@@ -22,7 +22,7 @@ class ParamsParser():
             self.t_pdf_densmat = np.array(UP.t_pdf_densmat)*CoFa.fs_to_au
         else:
             self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__'})
-            self.t_pdf_densmat = np.array([-100,0,100])*CoFa.fs_to_au   # Time points for printing density matrix
+            self.t_pdf_densmat = np.array([-100,0,50,100])*CoFa.fs_to_au   # Time points for printing density matrix
 
         # build list of parameter lists
         self.number_of_combinations = 1
