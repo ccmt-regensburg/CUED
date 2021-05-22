@@ -656,8 +656,8 @@ def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
 
         if P.Nk2 > 1:
 
-            im = ax[i,j].tricontourf(P.mesh[:,0]/CoFa.au_to_as, P.mesh[:,1]/CoFa.au_to_as, \
-                            reshaped_pdf_dm[:, t_i, i_band, j_band] , \
+            im = ax[i,j].tricontourf(P.mesh[:,0].astype('float64')/CoFa.au_to_as, P.mesh[:,1].astype('float64')/CoFa.au_to_as, \
+                            reshaped_pdf_dm[:, t_i, i_band, j_band].astype('float64') , \
                             np.arange(minval,maxval,step), cmap='nipy_spectral')
 
             fig.colorbar(im, ax=ax[i,j])
