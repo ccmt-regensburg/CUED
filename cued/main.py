@@ -187,8 +187,14 @@ def run_sbe(sys, P, Mpi):
     # Save the parameters of the calculation
     params_name = P.header + 'params.txt'
     paramsfile = open(params_name, 'w')
-    paramsfile.write(str(P.__dict__) + "\n\n")
-    paramsfile.write("Runtime: {:.16f} s".format(P.run_time))
+    paramsfile.write("Runtime: {:.16f} s \n\n".format(P.run_time))
+    exceptions = {'__weakref__', '__doc__', '__dict__', '__module__', \
+                '_ParamsParser__user_defined_field', 'header', 'mesh', 'number_of_combinations', \
+                'params_combinations', 'params_lists', 'path_list', 'paths', 'run_time', \
+                't_pdf_densmat', 'tail', 'type_complex_np', 'type_real_np', 'user_params'}
+    for key in sorted(P.__dict__.keys() - exceptions):
+        paramsfile.write(str(key) + ' = ' + str(P.__dict__[key]) + "\n") 
+
     paramsfile.close()
 
     if P.save_full:
