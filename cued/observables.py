@@ -591,7 +591,7 @@ def make_current_exact_path_hderiv(path, P, sys):
     """
         Function that calculates the exact current via eq. (79)
     """
-    wf = sys.wf_in_path
+
     E_dir = P.E_dir
     E_ort = P.E_ort
 
@@ -612,12 +612,12 @@ def make_current_exact_path_hderiv(path, P, sys):
     matrix_element_x = np.empty([Nk1, n, n], dtype=type_complex_np)
     matrix_element_y = np.empty([Nk1, n, n], dtype=type_complex_np)
 
-    for i in range(Nk1):
-            buff = dhdkx[i, :, :] @ wf[i, :, :]
-            matrix_element_x[i, :, :] = np.conjugate(wf[i, :, :].T) @ buff
+    for i_k in range(Nk1):
+        buff = dhdkx[i_k, :, :] @ wf_in_path[i_k, :, :]
+        matrix_element_x[i_k, :, :] = np.conjugate(wf_in_path[i_k, :, :].T) @ buff
 
-            buff = dhdky[i, :, :] @ wf[i,:,:]
-            matrix_element_y[i, :, :] = np.conjugate(wf[i, :, :].T) @ buff
+        buff = dhdky[i_k, :, :] @ wf_in_path[i_k,:,:]
+        matrix_element_y[i_k, :, :] = np.conjugate(wf_in_path[i_k, :, :].T) @ buff
 
     mel_in_path = matrix_element_x * E_dir[0] + matrix_element_y * E_dir[1]
     mel_ortho = matrix_element_x * E_ort[0] + matrix_element_y * E_ort[1]
@@ -638,16 +638,16 @@ def make_current_exact_path_hderiv(path, P, sys):
                     for b in range(n):
                         for c in range(n):
                             for d in range(n):
-                                sol[a, d] += wf_in_path[i_k, a, b] * solution[i_k, b, c] * np.conjugate(wf_in_path[i_k, d, c])
-                #sol =  np.dot( wf_in_path[i_k, :, :], np.dot(solution[i_k, :, :], np.conjugate(wf_in_path[i_k, :, :].T) ) )
+                                sol[a, d] += np.conjugate(wf_in_path[i_k, b, a]) * wf_in_path[i_k, b, c] * solution[i_k, c, d]
+                # sol =  np.dot( wf_in_path[i_k, :, :], np.dot(solution[i_k, :, :], np.conjugate(wf_in_path[i_k, :, :].T) ) )
+
                 for s_i in range(n_sheets):
                     for s_j in range(n_sheets):
                         for i in range(n_s):
                             for j in range(n_s):
                                     J_exact_E_dir[s_i, s_j] += - np.real( mel_in_path[i_k, n_s*s_i + i, n_s*s_j + j] * sol[n_s*s_i + i, n_s*s_j + j] )
                                     J_exact_ortho[s_i, s_j] += - np.real( mel_ortho[i_k, n_s*s_i + i, n_s*s_j + j] * sol[n_s*s_i + i, n_s*s_j + j] )
-
-            return J_exact_E_dir, J_exact_ortho
+        
         else:
             J_exact_E_dir = 0
             J_exact_ortho = 0
@@ -661,7 +661,7 @@ def make_current_exact_path_hderiv(path, P, sys):
                             J_exact_E_dir += - np.real( mel_in_path[i_k, i, j] * solution[i_k, j, i] )
                             J_exact_ortho += - np.real( mel_ortho[i_k, i, j] * solution[i_k, j, i] )
 
-            return J_exact_E_dir, J_exact_ortho
+        return J_exact_E_dir, J_exact_ortho
     return current_exact_path_hderiv
 
 

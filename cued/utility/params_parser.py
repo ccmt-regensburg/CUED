@@ -207,6 +207,7 @@ class ParamsParser():
                 sys.exit("Gaussian needs a width (gaussian_window_width).")
             else:
                 self.gaussian_window_width = self.sigma
+                
         self.sheet_current = False
         if 'sheet_current' in UP:
             self.sheet_current = UP['sheet_current']

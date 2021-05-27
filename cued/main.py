@@ -491,7 +491,6 @@ def calculate_fourier(T, P, W):
     elif P.fourier_window_function == 'parzen':
          T.window_function = parzen(T.t)
 
-
     W.I_E_dir, W.I_ortho, W.j_E_dir, W.j_ortho =\
         fourier_current_intensity(T.j_E_dir, T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
 
@@ -501,7 +500,6 @@ def calculate_fourier(T, P, W):
 
     W.I_E_dir_parzen, W.I_ortho_parzen, W.j_E_dir_parzen, W.j_ortho_parzen =\
         fourier_current_intensity(T.j_E_dir, T.j_ortho, parzen(T.t), dt_out, prefac_emission, W.freq, P)
-
 
     if P.split_current:
         # Approximate current and emission intensity
@@ -582,7 +580,7 @@ def write_current_emission(T, P, W, sys, Mpi):
                                        T.j_anom_ortho.real, T.j_intra_plus_anom_ortho.real])
 
     elif P.sheet_current:
-        print('test')
+
         time_header =("{:25s}").format('t')
         for i in range(P.n_sheets):
             for j in range(P.n_sheets):
@@ -591,7 +589,7 @@ def write_current_emission(T, P, W, sys, Mpi):
         time_output = T.t.real
         for i in range(P.n_sheets):
             for j in range(P.n_sheets):
-                time_output = np.column_stack((time_output, T.j_E_dir[:, i, j].real, T.j_ortho[:, i, j]) )
+                time_output = np.column_stack((time_output, T.j_E_dir[:, i, j].real, T.j_ortho[:, i, j].real) )
 
     else:
         time_header = ("{:25s}" + " {:27s}"*2)\
@@ -636,6 +634,20 @@ def write_current_emission(T, P, W, sys, Mpi):
                                        W.j_anom_ortho.real, W.j_anom_ortho.imag, W.j_intra_plus_anom_ortho.real, W.j_intra_plus_anom_ortho.imag,
                                        W.I_anom_ortho.real, W.I_intra_plus_anom_ortho.real])
 
+    elif P.sheet_current:
+
+        freq_header =("{:25s}").format('f/f0')
+        for i in range(P.n_sheets):
+            for j in range(P.n_sheets):
+                freq_header += (" {:27s}"*6).format(f"Re[j_E_dir[{i},{j}]]", f"Im[j_E_dir[{i},{j}]]", \
+                    f"Re[j_ortho[{i},{j}]]", f"Im[j_ortho[{i},{j}]]", f"I_E_dir[{i},{j}]", f"I_ortho[{i},{j}]")
+
+        freq_output = (W.freq/P.f).real
+        for i in range(P.n_sheets):
+            for j in range(P.n_sheets):
+                freq_output = np.column_stack((freq_output, W.j_E_dir[:, i, j].real, W.j_E_dir[:, i, j].imag \
+                    ,W.j_ortho[:, i, j].real, W.j_ortho[:, i, j].imag, W.I_E_dir[:, i, j].real, W.I_ortho[:, i, j].real) )
+
     else:
         freq_header = ("{:25s}" + " {:27s}"*6)\
             .format("f/f0",
@@ -663,6 +675,8 @@ def fourier_current_intensity(I_E_dir, I_ortho, window_function, dt_out, prefac_
         ndt_fft = np.size(freq)
         jw_E_dir = np.zeros([ndt_fft, P.n_sheets, P.n_sheets])
         jw_ortho = np.zeros([ndt_fft, P.n_sheets, P.n_sheets])
+        Iw_E_dir = np.zeros([ndt_fft, P.n_sheets, P.n_sheets])
+        Iw_ortho = np.zeros([ndt_fft, P.n_sheets, P.n_sheets])
 
         for i in range(P.n_sheets):
             for j in range(P.n_sheets):
@@ -675,8 +689,8 @@ def fourier_current_intensity(I_E_dir, I_ortho, window_function, dt_out, prefac_
                 jw_E_dir[:, i, j] = fourier(dt_out, I_E_dir_for_fft)
                 jw_ortho[:, i, j] = fourier(dt_out, I_ortho_for_fft)
 
-                I_E_dir[:, i, j] = prefac_emission*(freq**2)*np.abs(jw_E_dir[:, i, j])**2
-                I_ortho[:, i, j] = prefac_emission*(freq**2)*np.abs(jw_ortho[:, i, j])**2
+                Iw_E_dir[:, i, j] = prefac_emission*(freq**2)*np.abs(jw_E_dir[:, i, j])**2
+                Iw_ortho[:, i, j] = prefac_emission*(freq**2)*np.abs(jw_ortho[:, i, j])**2
 
     else:
         ndt     = np.size(I_E_dir)
@@ -691,10 +705,10 @@ def fourier_current_intensity(I_E_dir, I_ortho, window_function, dt_out, prefac_
         jw_E_dir = fourier(dt_out, I_E_dir_for_fft)
         jw_ortho = fourier(dt_out, I_ortho_for_fft)
 
-        I_E_dir = prefac_emission*(freq**2)*np.abs(jw_E_dir)**2
-        I_ortho = prefac_emission*(freq**2)*np.abs(jw_ortho)**2
+        Iw_E_dir = prefac_emission*(freq**2)*np.abs(jw_E_dir)**2
+        Iw_ortho = prefac_emission*(freq**2)*np.abs(jw_ortho)**2
 
-    return I_E_dir, I_ortho, jw_E_dir, jw_ortho
+    return Iw_E_dir, Iw_ortho, jw_E_dir, jw_ortho
 
 
 def print_user_info(P, B0=None, mu=None, incident_angle=None):
