@@ -193,7 +193,7 @@ class ParamsParser():
         if 'num_dimensions' in UP:
             self.num_dimensions = UP['num_dimensions']
 
-        self.fourier_window_function = 'hann'             # gaussian or hann
+        self.fourier_window_function = 'hann'             # gaussian, parzen or hann
         if 'fourier_window_function' in UP:
             self.fourier_window_function = UP['fourier_window_function']
 
