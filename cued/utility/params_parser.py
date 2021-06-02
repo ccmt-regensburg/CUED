@@ -216,6 +216,16 @@ class ParamsParser():
         if 'degenerate_evals' in UP:
             self.degenerate_evals = UP['degenerate_evals']
 
+        # Flag for Zeeman term
+        self.Zeeman = False
+        if 'Zeeman' in UP:
+            self.Zeeman = UP['Zeeman']
+
+        # Value of Magnetic field strength in Tesla if Zeeman flag is set true
+        self.zeeman_strength = 0.0
+        if 'zeeman_strength' in UP:
+            self.zeeman_strength = UP['zeeman_strength']*0.5*CoFa.T_to_au
+        
         #Flag for path parallelization, default value determined in main.py
         if 'path_parallelization' in UP:
             self.path_parallelization = UP['path_parallelization']

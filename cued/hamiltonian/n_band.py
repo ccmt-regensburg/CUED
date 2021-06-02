@@ -2,7 +2,7 @@ import numpy as np
 import sympy as sp
 import numpy.linalg as lin
 import math
-
+from sympy.physics.quantum import TensorProduct
 from cued.utility import evaluate_njit_matrix, list_to_njit_functions, matrix_to_njit_functions
 
 
@@ -18,8 +18,8 @@ class NBandHamiltonianSystem():
         self.degenerate_eigenvalues = degenerate_eigenvalues
         self.n_sheets = n_sheets
         self.h = h
-        self.hsymbols = self.h.free_symbols
-        self.hderiv = self.__hamiltonian_derivatives()
+        self.hsymbols = None    # set when eigensystem_dipole_path is called
+        self.hderiv = None   # set when eigensystem_dipole_path is called
 
         self.n = h.shape[0]
 
@@ -37,7 +37,11 @@ class NBandHamiltonianSystem():
     def __hamiltonian_derivatives(self):
         return [sp.diff(self.h, self.kx), sp.diff(self.h, self.ky)]
 
-
+    def __isZeeman(self,mag_strength):
+        s_z = sp.Matrix([[1,0],[0,-1]])
+        self.n = self.h.shape[0]
+        return mag_strength*TensorProduct(s_z,sp.eye(int(self.n/2)))
+    
     def __derivative_path(self, path, P):
         
         epsilon = P.epsilon
@@ -138,6 +142,12 @@ class NBandHamiltonianSystem():
         '''
             Dipole Elements of the Hamiltonian for a given path
         '''
+        if P.Zeeman:
+            self.h = self.h + self.__isZeeman(P.zeeman_strength)
+
+        self.hsymbols = self.h.free_symbols
+        self.hderiv = self.__hamiltonian_derivatives()
+        
         if self.hfjit == None:
             self.hfjit = matrix_to_njit_functions(self.h, self.hsymbols, dtype=P.type_complex_np)
             self.hderivfjit = [matrix_to_njit_functions(hd, self.hsymbols, dtype=P.type_complex_np)
