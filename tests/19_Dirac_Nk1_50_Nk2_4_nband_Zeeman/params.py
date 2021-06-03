@@ -41,7 +41,7 @@ class params:
     fourier_window_function = 'gaussian'
     user_out                = False
     Zeeman                  = True
-
+    save_latex_pdf          = True
     # Strength of magnetic field
     ##########################################################################
     zeeman_strength   = 1/4.25531e-6             # Zeeman field strength
