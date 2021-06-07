@@ -403,22 +403,18 @@ class BiTeBandstructure(NBandBandstructureDipoleSystem):
 
         super().__init__(e, prefac_x, prefac_y, n, flag)
 
-class sigma_z_hamiltonian(NBandBandstructureDipoleSystem):
+class fully_flexible_bandstructure_dipoles(NBandBandstructureDipoleSystem):
 
     def __init__(self, 
-                 prefac_sigma_z = sp.Symbol('prefac_sigma_z', real=True),
-                 gap = sp.Symbol('gap', real=True),
+                 ev = sp.Symbol('ev', real=True),
+                 ec = sp.Symbol('ec', real=True),
                  dipole_x = sp.Symbol('dipole_x'),
                  dipole_y = sp.Symbol('dipole_y'), flag = 'dipole'):
-
-        ev = - prefac_sigma_z - gap/2
-        ec =   prefac_sigma_z + gap/2
 
         e = [ev, ec]
         n = 2
 
         super().__init__(e, dipole_x, dipole_y, n, flag)
-        
         
 class ExampleThreeBand(NBandBandstructureDipoleSystem):
 
