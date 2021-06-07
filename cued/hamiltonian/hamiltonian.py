@@ -405,12 +405,14 @@ class BiTeBandstructure(NBandBandstructureDipoleSystem):
 
 class sigma_z_hamiltonian(NBandBandstructureDipoleSystem):
 
-    def __init__(self, prefac_sigma_z = sp.Symbol('prefac_sigma_z', real=True),
-                dipole_x = sp.Symbol('dipole_x'),
-                dipole_y = sp.Symbol('dipole_y'), flag = 'dipole'):
+    def __init__(self, 
+                 prefac_sigma_z = sp.Symbol('prefac_sigma_z', real=True),
+                 gap = sp.Symbol('gap', real=True),
+                 dipole_x = sp.Symbol('dipole_x'),
+                 dipole_y = sp.Symbol('dipole_y'), flag = 'dipole'):
 
-        ev = - prefac_sigma_z
-        ec =   prefac_sigma_z
+        ev = - prefac_sigma_z - gap/2
+        ec =   prefac_sigma_z + gap/2
 
         e = [ev, ec]
         n = 2
