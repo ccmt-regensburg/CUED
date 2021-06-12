@@ -12,9 +12,9 @@ class params:
     ##########################################################################
     # Type of Brillouin zone
     BZ_type             = 'rectangle'            # rectangle or hexagon
-    Nk1                 = 600                     # Number of kpoints in each of the paths
-    Nk2                 = 1                      # Number of paths
-    length_BZ_E_dir     = 2*np.pi/6.0            # length of BZ in E-field direction
+    Nk1                 = 30                     # Number of kpoints in each of the paths
+    Nk2                 = 2                      # Number of paths
+    length_BZ_E_dir     = 5.0                    # length of BZ in E-field direction
     length_BZ_ortho     = 0.1                    # length of BZ orthogonal to E-field direction
     angle_inc_E_field   = 0                      # incoming angle of the E-field in degree
 
@@ -22,9 +22,9 @@ class params:
     ##########################################################################
     E0                  = 10.0                   # Pulse amplitude (MV/cm)
     f                   = 25.0                   # Pulse frequency (THz)
-    chirp               = np.linspace(-1.4,1.4,15)                   # Pulse chirp ratio (chirp = c/w) (THz)
+    chirp               = 0.00                   # Pulse chirp ratio (chirp = c/w) (THz)
     sigma               = 45.0                   # Gaussian pulse width (femtoseconds)
-    phase               = np.linspace(0,2*np.pi,96)
+    phase               = 0.0
     solver_method       = 'rk4'
 
     # Time scales (all units in femtoseconds)
@@ -39,6 +39,4 @@ class params:
     gauge                   = 'length'           # Gauge of the system
     solver                  = '2band'
     fourier_window_function = 'gaussian'
-    factor_freq_resolution  = 10
-    user_out                = True
-    path_parallelization    = False
+    user_out                = False
