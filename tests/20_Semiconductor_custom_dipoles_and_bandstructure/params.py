@@ -40,4 +40,3 @@ class params:
     solver                  = '2band'
     fourier_window_function = 'gaussian'
     factor_freq_resolution  = 2
-    user_out                = True

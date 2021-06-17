@@ -612,12 +612,19 @@ def make_current_exact_path_hderiv(path, P, sys):
     matrix_element_x = np.empty([Nk1, n, n], dtype=type_complex_np)
     matrix_element_y = np.empty([Nk1, n, n], dtype=type_complex_np)
 
-    for i_k in range(Nk1):
-        buff = dhdkx[i_k, :, :] @ wf_in_path[i_k, :, :]
-        matrix_element_x[i_k, :, :] = np.conjugate(wf_in_path[i_k, :, :].T) @ buff
+    if P.sheet_current:
 
-        buff = dhdky[i_k, :, :] @ wf_in_path[i_k,:,:]
-        matrix_element_y[i_k, :, :] = np.conjugate(wf_in_path[i_k, :, :].T) @ buff
+        matrix_element_x = dhdkx
+        matrix_element_y = dhdky
+    
+    else:
+        for i_k in range(Nk1):
+            buff = dhdkx[i_k, :, :] @ wf_in_path[i_k, :, :]
+            matrix_element_x[i_k, :, :] = np.conjugate(wf_in_path[i_k, :, :].T) @ buff
+
+            buff = dhdky[i_k, :, :] @ wf_in_path[i_k,:,:]
+            matrix_element_y[i_k, :, :] = np.conjugate(wf_in_path[i_k, :, :].T) @ buff
+
 
     mel_in_path = matrix_element_x * E_dir[0] + matrix_element_y * E_dir[1]
     mel_ortho = matrix_element_x * E_ort[0] + matrix_element_y * E_ort[1]
@@ -634,13 +641,11 @@ def make_current_exact_path_hderiv(path, P, sys):
             n_s = int(n/n_sheets)
             for i_k in range(Nk1):
                 sol = np.zeros((n,n), dtype=type_complex_np)
-                for a in range(n):
-                    for b in range(n):
-                        for c in range(n):
-                            for d in range(n):
-                                sol[a, d] += np.conjugate(wf_in_path[i_k, b, a]) * wf_in_path[i_k, b, c] * solution[i_k, c, d]
-                # sol =  np.dot( wf_in_path[i_k, :, :], np.dot(solution[i_k, :, :], np.conjugate(wf_in_path[i_k, :, :].T) ) )
-
+                for z in range(n):
+                    for zprime in range(n):
+                        for n_i in range(n):
+                            for n_j in range(n):
+                                sol[z, zprime] += np.conjugate(wf_in_path[i_k, z, n_i])*wf_in_path[i_k, zprime, n_j]*solution[i_k, n_j, n_i]
                 for s_i in range(n_sheets):
                     for s_j in range(n_sheets):
                         for i in range(n_s):
