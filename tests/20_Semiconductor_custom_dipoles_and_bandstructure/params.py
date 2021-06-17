@@ -12,7 +12,7 @@ class params:
     ##########################################################################
     # Type of Brillouin zone
     BZ_type             = 'rectangle'            # rectangle or hexagon
-    Nk1                 = 600                     # Number of kpoints in each of the paths
+    Nk1                 = 50                     # Number of kpoints in each of the paths
     Nk2                 = 2                      # Number of paths
     length_BZ_E_dir     = 2*np.pi/6.0            # length of BZ in E-field direction
     length_BZ_ortho     = 0.1                    # length of BZ orthogonal to E-field direction
@@ -40,3 +40,4 @@ class params:
     solver                  = '2band'
     fourier_window_function = 'gaussian'
     factor_freq_resolution  = 2
+    user_out                 = False
