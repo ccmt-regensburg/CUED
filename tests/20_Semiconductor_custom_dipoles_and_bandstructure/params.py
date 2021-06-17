@@ -41,4 +41,3 @@ class params:
     fourier_window_function = 'gaussian'
     factor_freq_resolution  = 2
     user_out                = True
-    path_parallelization    = False

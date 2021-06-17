@@ -12,7 +12,7 @@ class params:
     # Brillouin zone parameters
     ##########################################################################
     BZ_type           = 'rectangle'              # rectangle or hexagon
-    Nk1               = 50                       # Number of kpoints in each of the paths
+    Nk1               = [10, 12, 14]                       # Number of kpoints in each of the paths
     Nk2               = 4                        # Number of paths
     length_BZ_E_dir   = 5.0                      # length of BZ in E-field direction
     length_BZ_ortho   = 0.2                      # length of BZ orthogonal to E-field direction
@@ -31,17 +31,12 @@ class params:
     ##########################################################################
     T1                = 1000                     # Phenomenological diagonal damping time
     T2                = 1                        # Phenomenological polarization damping time
-    t0                = -1000                    # Start time *pulse centered @ t=0, use t0 << 0
+    t0                = -10                    # Start time *pulse centered @ t=0, use t0 << 0
     dt                = 0.05                     # Time step
 
     # Flags for testing and features
     ##########################################################################
     gauge                   = 'length'           # Gauge of the system
-    solver                  = 'nband'
+    solver                  = '2band'
     fourier_window_function = 'gaussian'
     user_out                = False
-    Zeeman                  = True
-    save_latex_pdf          = False
-    # Strength of magnetic field
-    ##########################################################################
-    zeeman_strength   = 1/4.25531e-6             # Zeeman field strength
