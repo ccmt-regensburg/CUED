@@ -187,7 +187,7 @@ def make_current_path(path, P, sys):
             Bcurv_c = Bcurv_11(kx=kx_in_path, ky=ky_in_path)
 
             J_anom_ortho = -E_field * np.sum(Bcurv_v.real * rho_vv.real)
-            J_anom_ortho = -E_field * np.sum(Bcurv_c.real * rho_cc.real)
+            J_anom_ortho += -E_field * np.sum(Bcurv_c.real * rho_cc.real)
         else:
             J_anom_ortho = 0
 
