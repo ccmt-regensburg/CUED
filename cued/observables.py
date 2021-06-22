@@ -54,7 +54,7 @@ def make_polarization_path(path, P, sys):
         # Dipole container
         ##################################################
         rho_cv = solution[:, 1, 0]
-        
+
         d_01x = np.empty(pathlen, dtype=type_complex_np)
         d_01y = np.empty(pathlen, dtype=type_complex_np)
 
@@ -134,7 +134,7 @@ def make_current_path(path, P, sys):
     gauge = P.gauge
     save_anom = P.save_anom
     @conditional_njit(type_complex_np)
-    def current_path(solution, E_field, A_field):        
+    def current_path(solution, E_field, A_field):
 
         rho_vv = solution[:, 0, 0]
         rho_cc = solution[:, 1, 1]
@@ -483,7 +483,7 @@ def make_emission_exact_path_length(path, P, sys):
 def make_current_exact_bandstructure(path, P, sys):
 
     Nk1 = P.Nk1
-    n = P.n 
+    n = P.n
 
     kx_in_path = path[:, 0]
     ky_in_path = path[:, 1]
@@ -496,7 +496,7 @@ def make_current_exact_bandstructure(path, P, sys):
 
     @conditional_njit(P.type_complex_np)
     def current_exact_path(solution, _E_field=0, _A_field=0):
-    
+
         J_exact_E_dir = 0
         J_exact_ortho = 0
 
@@ -508,7 +508,7 @@ def make_current_exact_bandstructure(path, P, sys):
                     if i != j:
                         J_exact_E_dir += - np.real( mel_in_path[i_k, i, j] * solution[i_k, j, i] )
                         J_exact_ortho += - np.real( mel_ortho[i_k, i, j] * solution[i_k, j, i] )
-                        
+
         return J_exact_E_dir, J_exact_ortho
     return current_exact_path
 
@@ -520,7 +520,7 @@ def make_intraband_current_bandstructure(path, P, sys):
     """
 
     Nk1 = P.Nk1
-    n = P.n 
+    n = P.n
     save_anom = P.save_anom
 
     kx_in_path = path[:, 0]
@@ -601,7 +601,9 @@ def make_current_exact_path_hderiv(path, P, sys):
     type_complex_np = P.type_complex_np
     type_real_np = P.type_real_np
     sheet_current= P.sheet_current
+    do_semicl = P.do_semicl
     wf_in_path = sys.wf_in_path
+    Bcurv_path = sys.Bcurv_path
 
     kx = path[:, 0]
     ky = path[:, 1]
@@ -609,14 +611,18 @@ def make_current_exact_path_hderiv(path, P, sys):
     dhdkx = evaluate_njit_matrix(sys.hderivfjit[0], kx=kx, ky=ky, dtype=type_complex_np)
     dhdky = evaluate_njit_matrix(sys.hderivfjit[1], kx=kx, ky=ky, dtype=type_complex_np)
 
-    matrix_element_x = np.empty([Nk1, n, n], dtype=type_complex_np)
-    matrix_element_y = np.empty([Nk1, n, n], dtype=type_complex_np)
+    matrix_element_x = np.zeros([Nk1, n, n], dtype=type_complex_np)
+    matrix_element_y = np.zeros([Nk1, n, n], dtype=type_complex_np)
 
     if P.sheet_current:
-
         matrix_element_x = dhdkx
         matrix_element_y = dhdky
-    
+
+    elif P.do_semicl:
+        for i in range(n):
+            matrix_element_x[:, i, i] = sys.ederivx_path[:, i]
+            matrix_element_y[:, i, i] = sys.ederivy_path[:, i]
+
     else:
         for i_k in range(Nk1):
             buff = dhdkx[i_k, :, :] @ wf_in_path[i_k, :, :]
@@ -631,10 +637,10 @@ def make_current_exact_path_hderiv(path, P, sys):
 
 
     @conditional_njit(type_complex_np)
-    def current_exact_path_hderiv(solution, _E_field=0, _A_field=0):
+    def current_exact_path_hderiv(solution, E_field=0, _A_field=0):
 
         if sheet_current:
-            
+
             J_exact_E_dir = np.zeros((n_sheets, n_sheets), dtype=type_real_np)
             J_exact_ortho = np.zeros((n_sheets, n_sheets), dtype=type_real_np)
 
@@ -652,7 +658,7 @@ def make_current_exact_path_hderiv(path, P, sys):
                             for j in range(n_s):
                                     J_exact_E_dir[s_i, s_j] += - np.real( mel_in_path[i_k, n_s*s_i + i, n_s*s_j + j] * sol[n_s*s_i + i, n_s*s_j + j] )
                                     J_exact_ortho[s_i, s_j] += - np.real( mel_ortho[i_k, n_s*s_i + i, n_s*s_j + j] * sol[n_s*s_i + i, n_s*s_j + j] )
-        
+
         else:
             J_exact_E_dir = 0
             J_exact_ortho = 0
@@ -665,6 +671,9 @@ def make_current_exact_path_hderiv(path, P, sys):
                         if i != j:
                             J_exact_E_dir += - np.real( mel_in_path[i_k, i, j] * solution[i_k, j, i] )
                             J_exact_ortho += - np.real( mel_ortho[i_k, i, j] * solution[i_k, j, i] )
+
+                    if do_semicl:
+                        J_exact_ortho += - E_field * Bcurv_path[i_k, i].real * solution[i_k, i, i].real
 
         return J_exact_E_dir, J_exact_ortho
     return current_exact_path_hderiv
@@ -709,6 +718,7 @@ def make_intraband_current_path(path, P, sys):
     epsilon = P.epsilon
     type_complex_np = P.type_complex_np
     save_anom = P.save_anom
+    Bcurv_path = sys.Bcurv_path
 
     # derivative of band structure
 
@@ -730,7 +740,7 @@ def make_intraband_current_path(path, P, sys):
     pathminus2y = np.copy(path)
     pathminus2y[:, 1] -= 2*epsilon
 
-    eplusx, wfplusx = sys.diagonalize_path(pathplusx, P) 
+    eplusx, wfplusx = sys.diagonalize_path(pathplusx, P)
     eminusx, wfminusx = sys.diagonalize_path(pathminusx, P)
     eplusy, wfplusy = sys.diagonalize_path(pathplusy, P)
     eminusy, wfminusy = sys.diagonalize_path(pathminusy, P)
@@ -749,7 +759,7 @@ def make_intraband_current_path(path, P, sys):
     ederiv_ortho = E_ort[0] * ederivx + E_ort[1] * ederivy
 
     @conditional_njit(type_complex_np)
-    def current_intra_path(solution, _E_field=0, _A_field=0):
+    def current_intra_path(solution, E_field=0, _A_field=0):
 
         J_intra_E_dir = 0
         J_intra_ortho = 0
@@ -761,8 +771,7 @@ def make_intraband_current_path(path, P, sys):
                 J_intra_ortho += - ederiv_ortho[k, i] * solution[k, i, i].real
 
                 if save_anom:
-                    J_anom_ortho += 0
-                    print('J_anom not implemented')
+                    J_anom_ortho += - E_field * Bcurv_path[k, i].real * solution[k, i, i].real
 
         return J_intra_E_dir, J_intra_ortho, J_anom_ortho
     return current_intra_path

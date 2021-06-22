@@ -185,6 +185,10 @@ class TwoBandHamiltonianSystem():
         if P.do_semicl:
             self.dipole_path_x = np.zeros([pathlen, P.n, P.n], dtype=P.type_complex_np)
             self.dipole_path_y = np.zeros([pathlen, P.n, P.n], dtype=P.type_complex_np)
+            self.Ax_path = evaluate_njit_matrix(self.Axfjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
+            self.Ay_path = evaluate_njit_matrix(self.Ayfjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
+            self.Bcurv = evaluate_njit_matrix(self.Bfjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
+
         else:
             # Calculate the dipole components along the path
             self.dipole_path_x = evaluate_njit_matrix(self.Axfjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
