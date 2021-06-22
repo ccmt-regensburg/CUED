@@ -185,14 +185,14 @@ def get_time_indices_for_plotting(E_field, time_fs, num_t_points_max):
     E_max = np.amax(np.abs(E_field))
 
     threshold = 1.0E-3
-  
+
     for i_counter, E_i in enumerate(E_field):
-        if np.abs(E_i) > threshold*E_max: 
+        if np.abs(E_i) > threshold*E_max:
             index_t_plot_start = i_counter
             break
 
     for i_counter, E_i in reversed(list(enumerate(E_field))):
-        if np.abs(E_i) > threshold*E_max: 
+        if np.abs(E_i) > threshold*E_max:
             index_t_plot_end = i_counter
             break
 
@@ -434,28 +434,48 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, num_point
 
    _fig, (ax2) = plt.subplots(1)
    d_min = 1.0E-10
-   for i_band in range(P.n):
-       for j_band in range(P.n):
-           if j_band >= i_band: continue
-           abs_dipole = ( np.sqrt( np.abs(sys.dipole_path_x[:,i_band,j_band])**2 + \
+   if P.do_semicl:
+       for i_band in range(P.n):
+           abs_connection = ( np.sqrt( np.abs(sys.Ax_path[:, i_band, i_band])**2 + \
+                                   np.abs(sys.Ay_path[:, i_band, i_band])**2 ) + 1.0e-80)/CoFa.au_to_as
+           _lines_exact_E_dir  = ax2.semilogy(k_in_path, abs_connection, marker='', \
+                                              label="$n=$ "+str(i_band))
+           d_min = max(d_min, np.amin(abs_connection))
+       plot_it(P,"Berry connection $|\mathbf{A}_{n}(\mathbf{k})|$ in 1/\AA","abs_dipole.tikz", ax2, k_in_path, d_min)
+
+   else:
+       for i_band in range(P.n):
+           for j_band in range(P.n):
+               if j_band >= i_band: continue
+               abs_dipole = ( np.sqrt( np.abs(sys.dipole_path_x[:,i_band,j_band])**2 + \
                                    np.abs(sys.dipole_path_y[:,i_band,j_band])**2 ) + 1.0e-80)/CoFa.au_to_as
-           _lines_exact_E_dir  = ax2.semilogy(k_in_path, abs_dipole, marker='', \
+               _lines_exact_E_dir  = ax2.semilogy(k_in_path, abs_dipole, marker='', \
                                               label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
-           d_min = max(d_min, np.amin(abs_dipole))
-   plot_it(P,"Dipole $|\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA","abs_dipole.tikz", ax2, k_in_path, d_min)
+               d_min = max(d_min, np.amin(abs_dipole))
+       plot_it(P,"Dipole $|\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA","abs_dipole.tikz", ax2, k_in_path, d_min)
 
 
    _fig, (ax3) = plt.subplots(1)
    d_min = 1.0E-10
-   for i_band in range(P.n):
-       for j_band in range(P.n):
-           if j_band >= i_band: continue
-           proj_dipole = ( np.abs( sys.dipole_path_x[:,i_band,j_band]*P.E_dir[0] + \
+   if P.do_semicl:
+       for i_band in range(P.n):
+           proj_connection = ( np.abs( sys.Ax_path[:,i_band,i_band]*P.E_dir[0] + \
+                                sys.Ay_path[:, i_band, i_band]*P.E_dir[1] ) + 1.0e-80)/CoFa.au_to_as
+           _lines_exact_E_dir  = ax3.semilogy(k_in_path, proj_connection, marker='', \
+                                           label="$n=$ "+str(i_band))
+           d_min = max(d_min, np.amin(proj_connection))
+       plot_it(P,"$|\hat{e}_\phi\cdot\mathbf{A}_{n}(\mathbf{k})|$ in 1/\AA","proj_dipole.tikz", ax3, k_in_path, d_min)
+
+   else:
+       for i_band in range(P.n):
+           for j_band in range(P.n):
+               if j_band >= i_band: continue
+               proj_dipole = ( np.abs( sys.dipole_path_x[:,i_band,j_band]*P.E_dir[0] + \
                                    sys.dipole_path_y[:,i_band,j_band]*P.E_dir[1] ) + 1.0e-80)/CoFa.au_to_as
-           _lines_exact_E_dir  = ax3.semilogy(k_in_path, proj_dipole, marker='', \
-                                              label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
-           d_min = max(d_min, np.amin(proj_dipole))
-   plot_it(P,"$|\hat{e}_\phi\cdot\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA","proj_dipole.tikz", ax3, k_in_path, d_min)
+               _lines_exact_E_dir  = ax3.semilogy(k_in_path, proj_dipole, marker='', \
+                                           label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
+               d_min = max(d_min, np.amin(proj_dipole))
+       plot_it(P,"$|\hat{e}_\phi\cdot\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA","proj_dipole.tikz", ax3, k_in_path, d_min)
 
 
 def plot_it(P, ylabel, filename, ax1, k_in_path, y_min=None):
