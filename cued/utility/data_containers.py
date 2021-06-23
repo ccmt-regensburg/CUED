@@ -34,7 +34,7 @@ class TimeContainers():
             self.dtP_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
             self.dtP_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
-            self.j_anom_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
+            self.j_anom_ortho = np.zeros([P.Nt, P.n], dtype=P.type_real_np)
 
         # Initialize electric_field, create rhs of ode and initialize solver
         if P.user_defined_field:

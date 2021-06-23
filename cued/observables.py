@@ -180,14 +180,17 @@ def make_current_path(path, P, sys):
             np.sum(e_deriv_ortho_c * rho_cc.real)
 
         if save_anom:
+
+            J_anom_ortho = np.zeros(2, dtype=type_real_np)
+
             Bcurv_v = np.empty(pathlen, dtype=type_complex_np)
             Bcurv_c = np.empty(pathlen, dtype=type_complex_np)
 
             Bcurv_v = Bcurv_00(kx=kx_in_path, ky=ky_in_path)
             Bcurv_c = Bcurv_11(kx=kx_in_path, ky=ky_in_path)
 
-            J_anom_ortho = -E_field * np.sum(Bcurv_v.real * rho_vv.real)
-            J_anom_ortho += -E_field * np.sum(Bcurv_c.real * rho_cc.real)
+            J_anom_ortho[0] = -E_field * np.sum(Bcurv_v.real * rho_vv.real)
+            J_anom_ortho[1] += -E_field * np.sum(Bcurv_c.real * rho_cc.real)
         else:
             J_anom_ortho = 0
 
@@ -717,6 +720,7 @@ def make_intraband_current_path(path, P, sys):
     n = P.n
     epsilon = P.epsilon
     type_complex_np = P.type_complex_np
+    type_real_np = P.type_real_np
     save_anom = P.save_anom
     Bcurv_path = sys.Bcurv_path
 
@@ -750,8 +754,8 @@ def make_intraband_current_path(path, P, sys):
     eplus2y, wfplus2y = sys.diagonalize_path(pathplus2y, P)
     eminus2y, wfminus2y = sys.diagonalize_path(pathminus2y, P)
 
-    ederivx = ( - eplus2x + 8 * eplusx - 8 * eminusx + eminus2x)/(12*epsilon)
-    ederivy = ( - eplus2y + 8 * eplusy - 8 * eminusy + eminus2y)/(12*epsilon)
+    ederivx = ( - eplus2x + 8 * eplusx - 8 * eminusx + eminus2x ) / (12*epsilon)
+    ederivy = ( - eplus2y + 8 * eplusy - 8 * eminusy + eminus2y ) / (12*epsilon)
 
     # In E-field direction and orthogonal
 
@@ -763,7 +767,7 @@ def make_intraband_current_path(path, P, sys):
 
         J_intra_E_dir = 0
         J_intra_ortho = 0
-        J_anom_ortho = 0
+        J_anom_ortho = np.zeros(n, dtype=type_real_np)
 
         for k in range(Nk1):
             for i in range(n):
@@ -771,7 +775,7 @@ def make_intraband_current_path(path, P, sys):
                 J_intra_ortho += - ederiv_ortho[k, i] * solution[k, i, i].real
 
                 if save_anom:
-                    J_anom_ortho += - E_field * Bcurv_path[k, i].real * solution[k, i, i].real
+                    J_anom_ortho[i] += - E_field * Bcurv_path[k, i].real * solution[k, i, i].real
 
         return J_intra_E_dir, J_intra_ortho, J_anom_ortho
     return current_intra_path

@@ -33,14 +33,14 @@ def sbe_solver(sys, params):
         Mpi.local_params_idx_list = Mpi.get_local_idx(P.number_of_combinations)
         P.path_parallelization = False
     # Parallelize over paths else
-    else:    
+    else:
         Mpi.local_params_idx_list = range(P.number_of_combinations)
         P.path_parallelization = True
 
-    #run sbe for i'th parameter set       
+    #run sbe for i'th parameter set
     for i in Mpi.local_params_idx_list:
 
-        P.distribute_parameters(i, params)        
+        P.distribute_parameters(i, params)
         make_subcommunicators(Mpi, P)
         run_sbe(sys, P, Mpi)
 
@@ -193,7 +193,7 @@ def run_sbe(sys, P, Mpi):
                 'params_combinations', 'params_lists', 'path_list', 'paths', 'run_time', \
                 't_pdf_densmat', 'tail', 'type_complex_np', 'type_real_np', 'user_params'}
     for key in sorted(P.__dict__.keys() - exceptions):
-        paramsfile.write(str(key) + ' = ' + str(P.__dict__[key]) + "\n") 
+        paramsfile.write(str(key) + ' = ' + str(P.__dict__[key]) + "\n")
 
     paramsfile.close()
 
@@ -338,7 +338,7 @@ def calculate_currents(ti, current_exact_path, polarization_inter_path, current_
         T.P_ortho[ti] += P_ortho_buf
         T.j_intra_E_dir[ti] += j_intra_E_dir_buf
         T.j_intra_ortho[ti] += j_intra_ortho_buf
-        T.j_anom_ortho[ti] += j_anom_ortho_buf
+        T.j_anom_ortho[ti, :] += j_anom_ortho_buf
 
 
 def rk_integrate(t, y, kpath, sys, y0, dk, dt, rhs_ode):
@@ -472,8 +472,9 @@ def update_currents_with_kweight(T, P):
         T.j_intra_plus_dtP_E_dir = T.j_intra_E_dir + T.dtP_E_dir
         T.j_intra_plus_dtP_ortho = T.j_intra_ortho + T.dtP_ortho
 
-        T.j_intra_plus_anom_ortho = T.j_intra_ortho + T.j_anom_ortho
-
+        T.j_intra_plus_anom_ortho = T.j_intra_ortho
+        for i in range(P.n):
+            T.j_intra_plus_anom_ortho += T.j_anom_ortho[:, i]
 
 def calculate_fourier(T, P, W):
 
@@ -516,7 +517,7 @@ def calculate_fourier(T, P, W):
 
         # Anomalous current, intraband current (de/dk-related) + anomalous current; and emission int.
         W.I_anom_ortho, W.I_intra_plus_anom_ortho, W.j_anom_ortho, W.j_intra_plus_anom_ortho =\
-            fourier_current_intensity(T.j_anom_ortho, T.j_intra_plus_anom_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
+            fourier_current_intensity_anom(T.j_anom_ortho, T.j_intra_plus_anom_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
 
 
 # def write_full_density_mpi(T, P, sys, Mpi):
@@ -565,7 +566,7 @@ def write_current_emission(T, P, W, sys, Mpi):
     # Time data save
     ##################################################
     if P.split_current:
-        time_header = ("{:25s}" + " {:27s}"*10)\
+        time_header = ("{:25s}" + " {:27s}"*8)\
             .format("t",
                     "j_E_dir", "j_ortho",
                     "j_intra_E_dir", "j_intra_ortho",
@@ -578,6 +579,12 @@ def write_current_emission(T, P, W, sys, Mpi):
                                        T.dtP_E_dir.real, T.dtP_ortho.real,
                                        T.j_intra_plus_dtP_E_dir.real, T.j_intra_plus_dtP_ortho.real,
                                        T.j_anom_ortho.real, T.j_intra_plus_anom_ortho.real])
+        if P.save_anom:
+            for i in range(P.n):
+                time_header += (" {:27s}").format(f"j_anom_ortho[{i}]")
+                time_output = np.column_stack((time_output, T.j_anom_ortho[:, i].real))
+            time_header += (" {:27s}").format("j_intra_plus_anom_ortho")
+            time_output = np.column_stack((time_output, T.j_intra_plus_anom_ortho.real))
 
     elif P.sheet_current:
 
@@ -607,7 +614,7 @@ def write_current_emission(T, P, W, sys, Mpi):
     # Frequency data save
     ##################################################
     if P.split_current:
-        freq_header = ("{:25s}" + " {:27s}"*30)\
+        freq_header = ("{:25s}" + " {:27s}"*24)\
             .format("f/f0",
                     "Re[j_E_dir]", "Im[j_E_dir]", "Re[j_ortho]", "Im[j_ortho]",
                     "I_E_dir", "I_ortho",
@@ -615,10 +622,8 @@ def write_current_emission(T, P, W, sys, Mpi):
                     "I_intra_E_dir", "I_intra_ortho",
                     "Re[dtP_E_dir]", "Im[dtP_E_dir]", "Re[dtP_ortho]", "Im[dtP_ortho]",
                     "I_dtP_E_dir", "I_dtP_ortho",
-                    "Re[j_intra_plus_dtP_E_dir]", "Im[j_intra_plus_dtP_E_dir[", "Re[j_intra_plus_dtP_ortho]", "Im[j_intra_plus_dtP_ortho]",
-                    "I_intra_plus_dtP_E_dir", "I_intra_plus_dtP_ortho",
-                    "Re[j_anom_ortho]", "Im[j_anom_ortho]", "Re[j_intra_plus_anom_ortho]", "Im[j_intra_plus_anom_ortho]",
-                    "I_anom_ortho", "I_intra_plus_anom_ortho")
+                    "Re[j_intra_plus_dtP_E_dir]", "Im[j_intra_plus_dtP_E_dir]", "Re[j_intra_plus_dtP_ortho]", "Im[j_intra_plus_dtP_ortho]",
+                    "I_intra_plus_dtP_E_dir", "I_intra_plus_dtP_ortho")
 
         # Current same order as in time output, always real and imaginary part
         # next column -> corresponding intensities
@@ -630,9 +635,15 @@ def write_current_emission(T, P, W, sys, Mpi):
                                        W.dtP_E_dir.real, W.dtP_E_dir.imag, W.dtP_ortho.real, W.dtP_ortho.imag,
                                        W.I_dtP_E_dir.real, W.I_dtP_ortho.real,
                                        W.j_intra_plus_dtP_E_dir.real, W.j_intra_plus_dtP_E_dir.imag, W.j_intra_plus_dtP_ortho.real, W.j_intra_plus_dtP_ortho.imag,
-                                       W.I_intra_plus_dtP_E_dir.real, W.I_intra_plus_dtP_ortho.real,
-                                       W.j_anom_ortho.real, W.j_anom_ortho.imag, W.j_intra_plus_anom_ortho.real, W.j_intra_plus_anom_ortho.imag,
-                                       W.I_anom_ortho.real, W.I_intra_plus_anom_ortho.real])
+                                       W.I_intra_plus_dtP_E_dir.real, W.I_intra_plus_dtP_ortho.real])
+        if P.save_anom:
+            for i in range(P.n):
+                freq_header += (" {:27s}"*3).format(f"Re[j_anom_ortho[{i}]]", f"Im[j_anom_ortho[{i}]", \
+                                            f"I_anom_ortho[{i}]")
+                freq_output = np.column_stack((freq_output, W.j_anom_ortho[:, i].real, W.j_anom_ortho[:, i].imag, W.I_anom_ortho[:, i].real) )
+
+            freq_header += (" {:27s}"*3).format(f"Re[j_intra_plus_anom_ortho]", f"Im[j_intra_plus_anom_ortho]", f"I_intra_plus_anom_ortho")
+            freq_output = np.column_stack((freq_output, W.j_intra_plus_anom_ortho.real, W.j_intra_plus_anom_ortho.imag, W.I_intra_plus_anom_ortho.real))
 
     elif P.sheet_current:
 
@@ -709,6 +720,29 @@ def fourier_current_intensity(I_E_dir, I_ortho, window_function, dt_out, prefac_
         Iw_ortho = prefac_emission*(freq**2)*np.abs(jw_ortho)**2
 
     return Iw_E_dir, Iw_ortho, jw_E_dir, jw_ortho
+
+
+def fourier_current_intensity_anom(I_list, I_value, window_function, dt_out, prefac_emission, freq, P):
+
+    ndt     = np.size(I_value)
+    ndt_fft = np.size(freq)
+
+    jw_list = np.zeros([ndt_fft, P.n], P.type_complex_np)
+    Iw_list = np.zeros([ndt_fft, P.n], P.type_complex_np)
+
+    for i in range(P.n):
+        I_list_for_fft = np.zeros(ndt_fft)
+        I_list_for_fft[ (ndt_fft-ndt)//2 : (ndt_fft+ndt)//2 ] = I_list[:, i]*window_function[:]
+        jw_list[:, i] = fourier(dt_out, I_list_for_fft)
+        Iw_list[:, i] = prefac_emission*(freq**2)*np.abs(jw_list[:, i])**2
+
+    I_value_for_fft = np.zeros(ndt_fft)
+    I_value_for_fft[ (ndt_fft-ndt)//2 : (ndt_fft+ndt)//2 ] = I_value[:]*window_function[:]
+    jw_value = fourier(dt_out, I_value_for_fft)
+    Iw_value = prefac_emission*(freq**2)*np.abs(jw_value)**2
+
+    return Iw_list, Iw_value, jw_list, jw_value
+
 
 
 def print_user_info(P, B0=None, mu=None, incident_angle=None):
