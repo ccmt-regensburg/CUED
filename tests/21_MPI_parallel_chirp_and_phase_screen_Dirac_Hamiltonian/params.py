@@ -12,8 +12,8 @@ class params:
     # Brillouin zone parameters
     ##########################################################################
     BZ_type           = 'rectangle'              # rectangle or hexagon
-    Nk1               = [10, 12, 14]                       # Number of kpoints in each of the paths
-    Nk2               = 4                        # Number of paths
+    Nk1               = 50                       # Number of kpoints in each of the paths
+    Nk2               = 2                        # Number of paths
     length_BZ_E_dir   = 5.0                      # length of BZ in E-field direction
     length_BZ_ortho   = 0.2                      # length of BZ orthogonal to E-field direction
     angle_inc_E_field = 0                        # incoming angle of the E-field in degree
@@ -23,15 +23,15 @@ class params:
     ##########################################################################
     E0                = 5.00                     # Pulse amplitude (MV/cm)
     f                 = 25.0                     # Pulse frequency (THz)
-    chirp             = 0.00                     # Pulse chirp ratio (chirp = c/w) (THz)
+    chirp             = np.array([0.00, 0.05])                     # Pulse chirp ratio (chirp = c/w) (THz)
     sigma             = 50.0                     # Gaussian pulse width (femtoseconds)
-    phase             = 0.0
+    phase             = np.array([0.0, np.pi])
 
     # Time scales (all units in femtoseconds)
     ##########################################################################
     T1                = 1000                     # Phenomenological diagonal damping time
     T2                = 1                        # Phenomenological polarization damping time
-    t0                = -10                    # Start time *pulse centered @ t=0, use t0 << 0
+    t0                = -100                    # Start time *pulse centered @ t=0, use t0 << 0
     dt                = 0.05                     # Time step
 
     # Flags for testing and features
