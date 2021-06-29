@@ -329,8 +329,6 @@ def calculate_currents(ti, current_exact_path, polarization_inter_path, current_
         T.j_intra_ortho[ti] += j_intra_ortho_buf
         T.j_anom_ortho[ti, :] += j_anom_ortho_buf
 
-
-
 def rk_integrate(t, y, kpath, sys, y0, dk, dt, rhs_ode):
 
     k1 = rhs_ode(t,          y,          kpath, sys.dipole_in_path, sys.e_in_path, y0, dk)
@@ -464,7 +462,14 @@ def update_currents_with_kweight(T, P):
 
         T.j_intra_plus_anom_ortho = T.j_intra_ortho
         for i in range(P.n):
+            T.j_anom_ortho_full += T.j_anom_ortho[:, i]
             T.j_intra_plus_anom_ortho += T.j_anom_ortho[:, i]
+
+    if P.sheet_current:
+        for i in range(P.n_sheets):
+            for j in range(P.n_sheets):
+                T.j_E_dir_full += T.j_E_dir[:, i, j]
+                T.j_ortho_full += T.j_ortho[:, i, j]
 
 def calculate_fourier(T, P, W):
 
@@ -483,45 +488,53 @@ def calculate_fourier(T, P, W):
          T.window_function = parzen(T.t)
 
     W.I_E_dir, W.j_E_dir =\
-        fourier_current_intensity(T.j_E_dir, T.window_function, dt_out, prefac_emission, W.freq)    
+        fourier_current_intensity(T.j_E_dir, T.window_function, dt_out, prefac_emission, W.freq, P)    
     W.I_ortho, W.j_ortho =\
-        fourier_current_intensity(T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq)
+        fourier_current_intensity(T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
 
     # always compute the Fourier transform with hann and parzen window for comparison; this is printed to the latex PDF
     W.I_E_dir_hann, W.j_E_dir_hann =\
-        fourier_current_intensity(T.j_E_dir, hann(T.t), dt_out, prefac_emission, W.freq)
+        fourier_current_intensity(T.j_E_dir, hann(T.t), dt_out, prefac_emission, W.freq, P)
     W.I_ortho_hann, W.j_ortho_hann =\
-        fourier_current_intensity(T.j_ortho, hann(T.t), dt_out, prefac_emission, W.freq)
+        fourier_current_intensity(T.j_ortho, hann(T.t), dt_out, prefac_emission, W.freq, P)
 
     W.I_E_dir_parzen, W.j_E_dir_parzen =\
-        fourier_current_intensity(T.j_E_dir, parzen(T.t), dt_out, prefac_emission, W.freq)
+        fourier_current_intensity(T.j_E_dir, parzen(T.t), dt_out, prefac_emission, W.freq, P)
     W.I_ortho_parzen, W.j_ortho_parzen =\
-        fourier_current_intensity(T.j_ortho, parzen(T.t), dt_out, prefac_emission, W.freq)
+        fourier_current_intensity(T.j_ortho, parzen(T.t), dt_out, prefac_emission, W.freq, P)
 
     if P.split_current:
         # Approximate current and emission intensity
         W.I_intra_plus_dtP_E_dir, W.j_intra_plus_dtP_E_dir =\
-            fourier_current_intensity(T.j_intra_plus_dtP_E_dir, T.window_function, dt_out, prefac_emission, W.freq)
+            fourier_current_intensity(T.j_intra_plus_dtP_E_dir, T.window_function, dt_out, prefac_emission, W.freq, P)
         W.I_intra_plus_dtP_ortho, W.j_intra_plus_dtP_ortho =\
-            fourier_current_intensity(T.j_intra_plus_dtP_ortho, T.window_function, dt_out, prefac_emission, W.freq)
+            fourier_current_intensity(T.j_intra_plus_dtP_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
 
         # Intraband current and emission intensity
         W.I_intra_E_dir, W.j_intra_E_dir =\
-            fourier_current_intensity(T.j_intra_E_dir, T.window_function, dt_out, prefac_emission, W.freq)
+            fourier_current_intensity(T.j_intra_E_dir, T.window_function, dt_out, prefac_emission, W.freq, P)
         W.I_intra_ortho, W.j_intra_ortho =\
-            fourier_current_intensity(T.j_intra_ortho, T.window_function, dt_out, prefac_emission, W.freq)
+            fourier_current_intensity(T.j_intra_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
 
         # Polarization-related current and emission intensity
         W.I_dtP_E_dir, W.dtP_E_dir =\
-            fourier_current_intensity(T.dtP_E_dir, T.window_function, dt_out, prefac_emission, W.freq)
+            fourier_current_intensity(T.dtP_E_dir, T.window_function, dt_out, prefac_emission, W.freq, P)
         W.I_dtP_ortho, W.dtP_ortho =\
-            fourier_current_intensity(T.dtP_ortho, T.window_function, dt_out, prefac_emission, W.freq)
+            fourier_current_intensity(T.dtP_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
 
         # Anomalous current, intraband current (de/dk-related) + anomalous current; and emission int.
         W.I_anom_ortho, W.j_anom_ortho =\
-            fourier_current_intensity(T.j_anom_ortho, T.window_function, dt_out, prefac_emission, W.freq)
+            fourier_current_intensity(T.j_anom_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
+        W.I_anom_ortho_full, W.j_anom_ortho_full =\
+            fourier_current_intensity(T.j_anom_ortho_full, T.window_function, dt_out, prefac_emission, W.freq, P)
         W.I_intra_plus_anom_ortho, W.j_intra_plus_anom_ortho =\
-            fourier_current_intensity(T.j_intra_plus_anom_ortho, T.window_function, dt_out, prefac_emission, W.freq)
+            fourier_current_intensity(T.j_intra_plus_anom_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
+
+    if P.sheet_current:
+        W.I_E_dir_full, W.j_E_dir_full =\
+            fourier_current_intensity(T.j_E_dir_full, T.window_function, dt_out, prefac_emission, W.freq, P)
+        W.I_ortho_full, W.j_ortho_full =\
+            fourier_current_intensity(T.j_ortho_full, T.window_function, dt_out, prefac_emission, W.freq, P)
 
 # def write_full_density_mpi(T, P, sys, Mpi):
 #     relative_dir = 'densities'
@@ -586,21 +599,20 @@ def write_current_emission(T, P, W, sys, Mpi):
             for i in range(P.n):
                 time_header += (" {:27s}").format(f"j_anom_ortho[{i}]")
                 time_output = np.column_stack((time_output, T.j_anom_ortho[:, i].real))
-            time_header += (" {:27s}").format("j_intra_plus_anom_ortho")
-            time_output = np.column_stack((time_output, T.j_intra_plus_anom_ortho.real))
+            time_header += (" {:27s}"*2).format("j_anom_ortho", "j_intra_plus_anom_ortho")
+            time_output = np.column_stack((time_output, T.j_anom_ortho_full.real, T.j_intra_plus_anom_ortho.real))
 
     elif P.sheet_current:
 
         time_header =("{:25s}").format('t')
+        time_output = T.t.real
+
         for i in range(P.n_sheets):
             for j in range(P.n_sheets):
                 time_header += (" {:27s}"*2).format(f"j_E_dir[{i},{j}]", f"j_ortho[{i},{j}]")
-
-        time_output = T.t.real
-        for i in range(P.n_sheets):
-            for j in range(P.n_sheets):
                 time_output = np.column_stack((time_output, T.j_E_dir[:, i, j].real, T.j_ortho[:, i, j].real) )
-
+            time_header += (" {:27s}"*2).format("j_E_dir", "j_ortho")
+            time_output = np.column_stack((time_output, T.j_E_dir_full.real, T.j_ortho_full.real) )
     else:
         time_header = ("{:25s}" + " {:27s}"*2)\
             .format("t", "j_E_dir", "j_ortho")
@@ -644,23 +656,25 @@ def write_current_emission(T, P, W, sys, Mpi):
                 freq_header += (" {:27s}"*3).format(f"Re[j_anom_ortho[{i}]]", f"Im[j_anom_ortho[{i}]", \
                                             f"I_anom_ortho[{i}]")
                 freq_output = np.column_stack((freq_output, W.j_anom_ortho[:, i].real, W.j_anom_ortho[:, i].imag, W.I_anom_ortho[:, i].real) )
-
-            freq_header += (" {:27s}"*3).format(f"Re[j_intra_plus_anom_ortho]", f"Im[j_intra_plus_anom_ortho]", f"I_intra_plus_anom_ortho")
-            freq_output = np.column_stack((freq_output, W.j_intra_plus_anom_ortho.real, W.j_intra_plus_anom_ortho.imag, W.I_intra_plus_anom_ortho.real))
+            freq_header += (" {:27s}"*6).format("Re[j_anom_ortho]", "Im[j_anom_ortho]", "I_anom_ortho", "Re[j_intra_plus_anom_ortho]", "Im[j_intra_plus_anom_ortho]", "I_intra_plus_anom_ortho")
+            freq_output = np.column_stack((freq_output, W.j_anom_ortho_full.real, W.j_anom_ortho_full.imag, W.I_anom_ortho_full, W.j_intra_plus_anom_ortho.real, W.j_intra_plus_anom_ortho.imag, W.I_intra_plus_anom_ortho.real))
 
     elif P.sheet_current:
 
         freq_header =("{:25s}").format('f/f0')
+        freq_output = (W.freq/P.f).real
+
         for i in range(P.n_sheets):
             for j in range(P.n_sheets):
                 freq_header += (" {:27s}"*6).format(f"Re[j_E_dir[{i},{j}]]", f"Im[j_E_dir[{i},{j}]]", \
                     f"Re[j_ortho[{i},{j}]]", f"Im[j_ortho[{i},{j}]]", f"I_E_dir[{i},{j}]", f"I_ortho[{i},{j}]")
-
-        freq_output = (W.freq/P.f).real
-        for i in range(P.n_sheets):
-            for j in range(P.n_sheets):
                 freq_output = np.column_stack((freq_output, W.j_E_dir[:, i, j].real, W.j_E_dir[:, i, j].imag \
                     ,W.j_ortho[:, i, j].real, W.j_ortho[:, i, j].imag, W.I_E_dir[:, i, j].real, W.I_ortho[:, i, j].real) )
+
+        freq_header += (" {:27s}"*6).format("Re[j_E_dir]", "Im[j_E_dir]", \
+                "Re[j_ortho]", "Im[j_ortho]", "I_E_dir", "I_ortho")
+        freq_output = np.column_stack((freq_output, W.j_E_dir_full.real, W.j_E_dir_full.imag \
+                ,W.j_ortho_full.real, W.j_ortho_full.imag, W.I_E_dir_full.real, W.I_ortho_full.real) )
 
     else:
         freq_header = ("{:25s}" + " {:27s}"*6)\
@@ -681,7 +695,7 @@ def write_current_emission(T, P, W, sys, Mpi):
         write_and_compile_latex_PDF(T, W, P, sys, Mpi)
 
 
-def fourier_current_intensity(jt, window_function, dt_out, prefac_emission, freq):
+def fourier_current_intensity(jt, window_function, dt_out, prefac_emission, freq, P):
 
     ndt_fft = np.size(freq)
 
@@ -699,8 +713,8 @@ def fourier_current_intensity(jt, window_function, dt_out, prefac_emission, freq
         ndt     = np.size(jt[:, 0])
         n       = np.size(jt[0, :])
 
-        jw      = np.zeros(ndt_fft, n)
-        Iw      = np.zeros(ndt_fft, n)
+        jw      = np.zeros([ndt_fft, n], dtype=P.type_complex_np)
+        Iw      = np.zeros([ndt_fft, n], dtype=P.type_real_np)
 
         for i in range(P.n):
             jt_for_fft = np.zeros(ndt_fft)
@@ -713,12 +727,12 @@ def fourier_current_intensity(jt, window_function, dt_out, prefac_emission, freq
         ndt     = np.size(jt[:, 0, 0])
         n       = np.size(jt[0, :, 0])
 
-        jw      = np.zeros(ndt_fft, n, n)
-        Iw      = np.zeros(ndt_fft, n, n)
+        jw      = np.zeros([ndt_fft, n, n], dtype=P.type_complex_np)
+        Iw      = np.zeros([ndt_fft, n, n], dtype=P.type_real_np)
 
 
-        for i in range(P.n_sheets):
-            for j in range(P.n_sheets):
+        for i in range(n):
+            for j in range(n):
                 jt_for_fft = np.zeros(ndt_fft)
                 jt_for_fft[ (ndt_fft-ndt)//2 : (ndt_fft+ndt)//2 ] = jt[:, i, j]*window_function[:]
                 jw[:, i, j] = fourier(dt_out, jt_for_fft)
