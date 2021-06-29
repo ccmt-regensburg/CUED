@@ -19,7 +19,7 @@ from cued.rhs_ode import *
 
 def sbe_solver(sys, params):
     """
-    Function that initializes MPI-parallelization and distributes parameters that are given as a 
+    Function that initializes MPI-parallelization and distributes parameters that are given as a
     list in the params.py file to the individual MPI-processes. Runs the SBE-calculation for each
     parameter combination.
 
@@ -81,7 +81,7 @@ def run_sbe(sys, P, Mpi):
         .dat file containing the time-dependent observables
 
     frequency_data.dat
-        .dat file containing the frequency-dependent observables 
+        .dat file containing the frequency-dependent observables
 
     """
     # Start time of sbe_solver
@@ -488,7 +488,7 @@ def calculate_fourier(T, P, W):
          T.window_function = parzen(T.t)
 
     W.I_E_dir, W.j_E_dir =\
-        fourier_current_intensity(T.j_E_dir, T.window_function, dt_out, prefac_emission, W.freq, P)    
+        fourier_current_intensity(T.j_E_dir, T.window_function, dt_out, prefac_emission, W.freq, P)
     W.I_ortho, W.j_ortho =\
         fourier_current_intensity(T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
 
@@ -587,14 +587,12 @@ def write_current_emission(T, P, W, sys, Mpi):
                     "j_E_dir", "j_ortho",
                     "j_intra_E_dir", "j_intra_ortho",
                     "dtP_E_dir", "dtP_ortho",
-                    "j_intra_plus_dtP_E_dir", "j_intra_plus_dtP_ortho",
-                    "j_anom_ortho", "j_intra_plus_anom_ortho")
+                    "j_intra_plus_dtP_E_dir", "j_intra_plus_dtP_ortho")
         time_output = np.column_stack([T.t.real,
                                        T.j_E_dir.real, T.j_ortho.real,
                                        T.j_intra_E_dir.real, T.j_intra_ortho.real,
                                        T.dtP_E_dir.real, T.dtP_ortho.real,
-                                       T.j_intra_plus_dtP_E_dir.real, T.j_intra_plus_dtP_ortho.real,
-                                       T.j_anom_ortho.real, T.j_intra_plus_anom_ortho.real])
+                                       T.j_intra_plus_dtP_E_dir.real, T.j_intra_plus_dtP_ortho.real])
         if P.save_anom:
             for i in range(P.n):
                 time_header += (" {:27s}").format(f"j_anom_ortho[{i}]")

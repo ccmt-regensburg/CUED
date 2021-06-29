@@ -99,6 +99,17 @@ def check_test(testdir, refdir):
                             I_intra_plus_dtP_E_dir_ref, I_intra_plus_dtP_ortho_ref,
                             'dtP')
 
+        if hasattr(params, 'save_anom'):
+            if params.save_anom:
+                # Intra + anom emission
+                I_anom_ortho_ref = freq_data_ref[i]['I_anom_ortho'][freq_idx]
+                I_anom_ortho = freq_data['I_anom_ortho'][freq_idx]
+
+                print("\nintra plus dtP E_dir: ", np.amax(np.abs(I_anom_ortho_ref)))
+                check_emission(I_anom_ortho, I_anom_ortho,
+                            I_anom_ortho_ref, I_anom_ortho_ref,
+                            'anom')
+
         os.remove(testdir + '/' + filenames[i][10:-18] + 'time_data.dat')
         os.remove(testdir + '/' + filenames[i][10:-18] + 'frequency_data.dat')
         os.remove(testdir + '/' + filenames[i][10:-18] + 'params.txt')
