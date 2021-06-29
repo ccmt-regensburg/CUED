@@ -18,6 +18,18 @@ from cued.observables import *
 from cued.rhs_ode import *
 
 def sbe_solver(sys, params):
+    """
+    Function that initializes MPI-parallelization and distributes parameters that are given as a 
+    list in the params.py file to the individual MPI-processes. Runs the SBE-calculation for each
+    parameter combination.
+
+    Parameters
+    ----------
+    sys : class
+        Symbolic Hamiltonian of the system
+    params : class
+        parameters of the params.py file
+    """
 
     # Initialize Mpi and parse params
     P = ParamsParser(params)
@@ -48,52 +60,29 @@ def sbe_solver(sys, params):
 def run_sbe(sys, P, Mpi):
     """
     Solver for the semiconductor bloch equation ( eq. (39) or (47) in https://arxiv.org/abs/2008.03177)
-    for a n band system with numerical calculation of the dipole elements (unfinished - analytical dipoles
+    for a n band system with numerical calculation of the dipole elements (analytical dipoles
     can be used for n=2)
-
-    Author: Adrian Seith (adrian.seith@ur.de)
-    Additional Contact: Jan Wilhelm (jan.wilhelm@ur.de)
 
     Parameters
     ----------
     sys : class
         Symbolic Hamiltonian of the system
-    dipole : class
-        Symbolic expression for the dipole elements (eq. (37/38))
-    params :
-        Parameters from the params.py file
-    curvature : class
-        Symbolic berry curvature (d(Ax)/d(ky) - d(Ay)/d(kx)) with
-        A as the Berry connection (eq. (38))
+    P : class
+        Default parameters combined with user parameters from the params.py file
+    Mpi : class
+        Information needed for MPI-parallel runs
 
     Returns
     -------
-    params
-    ------
-    saves parameters of the calculation
+    params.txt
+        .txt file containing the parameters of the calculation
 
-    Iexact (file, 8 components)
-    ------
-    t : np.ndarray
-        Nt-dimensional array of time-points
-    I_exact_E_dir : np.ndarray
-        Nt-dimensional array of current (eq. (59/64)) in E-field direction
-    I_exact_ortho : np.ndarray
-        Nt-dimensional array of current (eq. (59/64)) orthogonal to E-field
-    freq/w : np.ndarray
-        Nt-dimensional array of time-points in frequency domain
-    Iw_exact_E_dir : np.ndarray
-        Nt-dimensional array of fourier trafo of current in E-field direction
-    Iw_exact_ortho : np.ndarray
-        Nt-dimensional array of fourier trafo of current orthogonal to E-field
-    I_exact_E_dir : np.ndarray
-        Nt-dimensional array of emission intensity (eq. (51)) in E-field direction
-    I_exact_ortho : np.ndarray
-        Nt-dimensional array of emission intensity (eq. (51)) orthogonal to E-field
+    time_data.dat
+        .dat file containing the time-dependent observables
 
-    Iapprox  (file, 8 components)
-    -------
-    approximate solutions, but same components as Iexact
+    frequency_data.dat
+        .dat file containing the frequency-dependent observables 
+
     """
     # Start time of sbe_solver
     start_time = time.perf_counter()
