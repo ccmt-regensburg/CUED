@@ -575,6 +575,9 @@ def write_current_emission_mpi(T, P, W, sys, Mpi):
     if Mpi.rank == 0 or not P.path_parallelization:
         write_current_emission(T, P, W, sys, Mpi)
 
+        if P.save_fields:
+            write_efield_afield(T, P, W)
+
 
 def write_current_emission(T, P, W, sys, Mpi):
 
@@ -691,6 +694,30 @@ def write_current_emission(T, P, W, sys, Mpi):
 
     if P.save_latex_pdf:
         write_and_compile_latex_PDF(T, W, P, sys, Mpi)
+
+
+def write_efield_afield(T, P, W):
+
+    time_header = ("{:25s}" + " {:27s}"*2).format("t", "E_field", "A_field")
+    time_output = np.column_stack([T.t.real, T.E_field, T.A_field])
+
+    # Make the maximum exponent double digits
+    time_output[np.abs(time_output) <= 10e-100] = 0
+    time_output[np.abs(time_output) >= 1e+100] = np.inf
+
+    np.savetxt(P.header + 'fields_time_data.dat', time_output, header=time_header, delimiter='   ', fmt="%+.18e")
+
+    freq_header = ("{:25s}" + " {:27s}"*4).format("f/f0", "Re[E_field]", "Im[E_field]", "Re[A_field]", "Im[A_field]")
+    dt = T.t[1] - T.t[0]
+    E_fourier = fourier(dt, T.E_field)
+    A_fourier = fourier(dt, T.A_field)
+    freq_output = np.column_stack([(W.freq/P.f).real, E_fourier.real, E_fourier.imag, A_fourier.real, A_fourier.imag])
+
+    # Make the maximum exponent double digits
+    freq_output[np.abs(freq_output) <= 10e-100] = 0
+    freq_output[np.abs(freq_output) >= 1e+100] = np.inf
+
+    np.savetxt(P.header + 'fields_frequency_data.dat', freq_output, header=freq_header, delimiter='   ', fmt="%+.18e")
 
 
 def fourier_current_intensity(jt, window_function, dt_out, prefac_emission, freq, P):

@@ -27,3 +27,7 @@ class ConversionFactors:
 
     muB_to_au = 0.5                      # (1mu_b = 0.5 a.u.)
     au_to_muB = 1/muB_to_au
+
+    # SI conversions
+    eV_to_THz = 241.7991                 # (1THz = 241.7991 eV)
+    THz_to_eV = 1/eV_to_THz

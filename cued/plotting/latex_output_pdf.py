@@ -32,8 +32,8 @@ def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
 
         code_path = os.path.dirname(os.path.realpath(__file__))
 
-        shutil.copy(code_path+"/CUED_summary.tex", ".")
-        shutil.copy(code_path+"/../branding/logo.pdf", ".")
+        shutil.copy(code_path + "/CUED_summary.tex", ".")
+        shutil.copy(code_path + "/../branding/logo.pdf", ".")
 
         write_parameters(P, Mpi)
 
@@ -94,7 +94,7 @@ def write_parameters(P, Mpi):
         elif P.align == 'M':
             replace("PH-EFIELD-DIRECTION", "$\\\\Gamma$-M direction")
 
-    if P.user_defined_field: 
+    if P.user_defined_field:
         replace("iftrue", "iffalse")
     else:
         replace("PH-E0",    str(P.E0_MVpcm))
@@ -130,7 +130,7 @@ def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
     _lines_exact_E_dir  = ax1.plot(time_fs[t_idx], func_of_t[t_idx], marker='')
 
     t_lims = (time_fs[t_idx[0]], time_fs[t_idx[-1]])
-    
+
     ax1.grid(True, axis='both', ls='--')
     ax1.set_xlim(t_lims)
     ax1.set_xlabel(xlabel)
@@ -138,7 +138,7 @@ def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
     ax1.legend(loc='upper right')
 
     tikzplotlib.save(filename+".tikz",
-                     axis_height='\\figureheight', 
+                     axis_height='\\figureheight',
                      axis_width ='\\figurewidth' )
 
 
@@ -155,10 +155,10 @@ def tikz_freq(func_1, func_2, freq_div_f0, f_idx, ylabel, filename, two_func, \
                linestyle='--')
       else:
        _lines_exact_E_dir = ax1.semilogy(freq_div_f0[f_idx], func_2[f_idx], marker='', label=label_2)
-      
+
 
     f_lims = (freq_div_f0[f_idx[0]], freq_div_f0[f_idx[-1]])
-    
+
     ax1.grid(True, axis='both', ls='--')
     ax1.set_xlim(f_lims)
     ax1.set_xlabel(xlabel)
@@ -167,9 +167,9 @@ def tikz_freq(func_1, func_2, freq_div_f0, f_idx, ylabel, filename, two_func, \
     ax1.set_xticks(np.arange(f_lims[1]+1))
 
     tikzplotlib.save(filename+".tikz",
-                     axis_height='\\figureheight', 
+                     axis_height='\\figureheight',
                      axis_width ='\\figurewidth' )
- 
+
     replace("xmax=30,", "xmax=30, xtick={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"+\
             ",21,22,23,24,25,26,27,28,29,30}, xticklabels={,1,,,,5,,,,,10,,,,,15,,,,,20,,,,,25,,,,,30},", \
             filename=filename+".tikz")
@@ -180,7 +180,7 @@ def replace(old, new, filename="CUED_summary.tex"):
     os.system("sed -i -e \'s/"+old+"/"+new+"/g\' "+filename)
 
 
-def get_time_indices_for_plotting(E_field, time_fs, num_t_points_max): 
+def get_time_indices_for_plotting(E_field, time_fs, num_t_points_max):
 
     E_max = np.amax(np.abs(E_field))
 
@@ -219,7 +219,7 @@ def get_indices_for_plotting_whole(data, num_points_for_plotting, start):
 def get_freq_indices_for_plotting(freq_div_f0, num_points_for_plotting, freq_max):
 
     for i_counter, f_i in enumerate(freq_div_f0):
-        if f_i.real > -1.0E-8: 
+        if f_i.real > -1.0E-8:
             index_f_plot_start = i_counter
             break
 
@@ -267,7 +267,7 @@ def get_symmetry_path_in_BZ(P, num_points_for_plotting):
 
          vec_k_E_dir = P.length_BZ_E_dir*P.E_dir
          vec_k_ortho = P.length_BZ_ortho*np.array([P.E_dir[1], -P.E_dir[0]])
-     
+
          path = []
          for alpha in pos_array_reverse:
              kpoint = alpha*vec_k_E_dir
@@ -345,7 +345,7 @@ def BZ_plot(P, A_field):
             dk, kweight, printed_paths, printed_mesh = hex_mesh(P)
         elif P.BZ_type == 'rectangle':
             dk, kweight, printed_paths, printed_mesh = rect_mesh(P)
-        P.Nk1 = Nk1_safe 
+        P.Nk1 = Nk1_safe
         P.Nk2 = Nk2_safe
         P.Nk = P.Nk1*P.Nk2
 
@@ -496,7 +496,7 @@ def plot_it(P, ylabel, filename, ax1, k_in_path, y_min=None):
        ax1.set_xticklabels( ['X','$\Gamma$','Y'] )
 
    tikzplotlib.save(filename,
-                    axis_height='\\figureheight', 
+                    axis_height='\\figureheight',
                     axis_width ='\\figurewidth' )
 
 
@@ -532,10 +532,10 @@ def dipole_quiver_plots(K, P, sys):
 
         sys.eigensystem_dipole_path(path, P)
 
-        d_x[k_path*P.Nk1:(k_path+1)*P.Nk1, :, :] = sys.dipole_path_x[:,:,:]*CoFa.au_to_as 
-        d_y[k_path*P.Nk1:(k_path+1)*P.Nk1, :, :] = sys.dipole_path_y[:,:,:]*CoFa.au_to_as 
-        k_x[k_path*P.Nk1:(k_path+1)*P.Nk1]       = path[:,0]/CoFa.au_to_as 
-        k_y[k_path*P.Nk1:(k_path+1)*P.Nk1]       = path[:,1]/CoFa.au_to_as 
+        d_x[k_path*P.Nk1:(k_path+1)*P.Nk1, :, :] = sys.dipole_path_x[:,:,:]*CoFa.au_to_as
+        d_y[k_path*P.Nk1:(k_path+1)*P.Nk1, :, :] = sys.dipole_path_y[:,:,:]*CoFa.au_to_as
+        k_x[k_path*P.Nk1:(k_path+1)*P.Nk1]       = path[:,0]/CoFa.au_to_as
+        k_y[k_path*P.Nk1:(k_path+1)*P.Nk1]       = path[:,1]/CoFa.au_to_as
 
     num_plots = P.n**2
     num_plots_vert = (num_plots+1)//2
@@ -566,7 +566,7 @@ def dipole_quiver_plots(K, P, sys):
             title = r"Re $\mathbf{d}_{" + str(i_band) + str(j_band) + "}(\mathbf{k})$"
             colbar_title = r"log$_{10}\;|\mathrm{Re } (\mathbf{d}_{"+str(i_band)+str(j_band)+\
                            "}(\mathbf{k}))/$\AA$|$"
-    
+
             plot_single_dipole(d_x.real, d_y.real, i_band, j_band, plot_x_index, plot_y_index, \
                                K, k_x, k_y, fig, ax, title, colbar_title)
 

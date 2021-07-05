@@ -20,7 +20,7 @@ class TimeContainers():
         if P.sheet_current:
             self.j_E_dir = np.zeros([P.Nt, P.n_sheets, P.n_sheets], dtype=P.type_real_np)
             self.j_ortho = np.zeros([P.Nt, P.n_sheets, P.n_sheets], dtype=P.type_real_np)
-            self.j_E_dir_full = np.zeros(P.Nt, dtype=P.type_real_np)            
+            self.j_E_dir_full = np.zeros(P.Nt, dtype=P.type_real_np)
             self.j_ortho_full = np.zeros(P.Nt, dtype=P.type_real_np)
         else:
             self.j_E_dir = np.zeros(P.Nt, dtype=P.type_real_np)
@@ -38,7 +38,7 @@ class TimeContainers():
 
             self.j_anom_ortho = np.zeros([P.Nt, P.n], dtype=P.type_real_np)
             self.j_anom_ortho_full = np.zeros(P.Nt, dtype=P.type_real_np)
-            
+
         # Initialize electric_field, create rhs of ode and initialize solver
         if P.user_defined_field:
             self.electric_field = P.electric_field_function

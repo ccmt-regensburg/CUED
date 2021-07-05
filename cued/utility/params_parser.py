@@ -135,6 +135,10 @@ class ParamsParser():
         if 'save_dm_t' in UP:
             self.save_dm_t = UP['save_dm_t']
 
+        self.save_fields = False
+        if 'save_fields' in UP:
+            self.save_fields = UP['save_fields']
+
         self.split_current = False                        # Save j^intra, j^anom, dP^inter/dt
         if 'split_current' in UP:
             self.split_current = UP['split_current']
@@ -207,7 +211,7 @@ class ParamsParser():
                 sys.exit("Gaussian needs a width (gaussian_window_width).")
             else:
                 self.gaussian_window_width = self.sigma
-                
+
         self.sheet_current = False
         if 'sheet_current' in UP:
             self.sheet_current = UP['sheet_current']
@@ -225,7 +229,7 @@ class ParamsParser():
         self.zeeman_strength = 0.0
         if 'zeeman_strength' in UP:
             self.zeeman_strength = UP['zeeman_strength']*0.5*CoFa.T_to_au
-        
+
         #Flag for path parallelization, default value determined in main.py
         if 'path_parallelization' in UP:
             self.path_parallelization = UP['path_parallelization']
