@@ -56,6 +56,12 @@ def sbe_solver(sys, params):
         make_subcommunicators(Mpi, P)
         run_sbe(sys, P, Mpi)
 
+    # Wait until all calculations are finished.
+    Mpi.comm.Barrier()
+    if Mpi.rank == 0:
+        for i in range(P.number_of_combinations):
+            # We only need the parameter dependend file name
+            P.construct_current_parameters_and_header(i, params)
 
 def run_sbe(sys, P, Mpi):
     """

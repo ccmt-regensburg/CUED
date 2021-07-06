@@ -22,7 +22,7 @@ class ParamsParser():
             self.t_pdf_densmat = np.array(UP.t_pdf_densmat)*CoFa.fs_to_au
         else:
             self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__'})
-            self.t_pdf_densmat = np.array([-100,0,50,100])*CoFa.fs_to_au   # Time points for printing density matrix
+            self.t_pdf_densmat = np.array([-100, 0, 50, 100])*CoFa.fs_to_au   # Time points for printing density matrix
 
         # build list of parameter lists
         self.number_of_combinations = 1
@@ -50,7 +50,18 @@ class ParamsParser():
         else:
             self.params_lists.append([param])
 
-    def distribute_parameters(self, param_idx, UP): # Take index of parameter (MPI-parallelized) and write current_parameters
+    def construct_current_parameters_and_header(self, param_idx, UP):
+        """
+        Depending on the parameter indices (could be local when using MPI)
+        split lists in the params class into individual parameter sets represented by
+        a dictionary. Also automatically set the name of the output file on that parameter.
+        Parameters
+        ----------
+        param_idx : int
+            Index of the parameter to construct a dictionary from
+        UP : class
+            parameters of the params.py file
+        """
 
         current_parameters = {}
         self.header = ''
@@ -58,6 +69,12 @@ class ParamsParser():
             current_parameters[key] = self.params_combinations[param_idx][key_idx]
             if type(UP.__dict__[key]) == list or type(UP.__dict__[key]) == np.ndarray:
                 self.header += key + '=' + str(current_parameters[key]) + '_'
+
+        return current_parameters
+
+    def distribute_parameters(self, param_idx, UP): # Take index of parameter (MPI-parallelized) and write current_parameters
+
+        current_parameters = self.construct_current_parameters_and_header(param_idx, UP)
 
         self.__occupation(current_parameters)
         self.__time_scales(current_parameters)
