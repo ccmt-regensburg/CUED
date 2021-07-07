@@ -1,18 +1,12 @@
+from cued.plotting.latex_output_pdf import write_and_compile_cep_output
 import time
-from math import ceil, modf
 import numpy as np
 from numpy.fft import fftshift, fft, ifftshift, ifft, fftfreq
-import matplotlib.pyplot as plt
-from matplotlib.patches import RegularPolygon
 from scipy.integrate import ode
-import os
 
-from cued.utility import ConversionFactors as CoFa, ParamsParser
-from cued.utility import conditional_njit, evaluate_njit_matrix
-from cued.utility import FrequencyContainers, TimeContainers
+from cued.utility import FrequencyContainers, TimeContainers, ParamsParser
 from cued.utility import MpiHelpers
 from cued.plotting import write_and_compile_latex_PDF
-from cued.fields import make_electric_field
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 from cued.observables import *
 from cued.rhs_ode import *
@@ -58,14 +52,14 @@ def sbe_solver(sys, params):
 
     # Wait until all calculations are finished.
     Mpi.comm.Barrier()
-    if Mpi.rank == 0:
-        for i in range(P.number_of_combinations):
-            # We only need the parameter dependend file name
-            P.construct_current_parameters_and_header(i, params)
-
+    if Mpi.rank == 0 and P.number_of_combinations > 1:
+        write_and_compile_cep_output(P, params)
+            
+            
+                
 def run_sbe(sys, P, Mpi):
     """
-    Solver for the semiconductor bloch equation ( eq. (39) or (47) in https://arxiv.org/abs/2008.03177)
+    line numberSolver for the semiconductor bloch equation ( eq. (39) or (47) in https://arxiv.org/abs/2008.03177)
     for a n band system with numerical calculation of the dipole elements (analytical dipoles
     can be used for n=2)
 

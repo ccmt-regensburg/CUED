@@ -7,6 +7,7 @@ matplotlib.use('Agg')
 import tikzplotlib
 
 from cued.utility import ConversionFactors as CoFa
+from cued.plotting import read_dataset
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 
 def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
@@ -701,3 +702,28 @@ def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
 
 class BZ_plot_parameters():
     pass
+
+def write_and_compile_cep_output(P, params):
+    # Check which parameters are given as lists or ndarrays
+    list_keys = []
+    for key, item in params.__dict__.items():
+        if type(item) == list or type(item) == np.ndarray:
+            list_keys.append(key)
+
+    # Load all frequency related data into memory
+    params_container = []
+    freq_data_container = []
+    for i in range(P.number_of_combinations):
+        # We only need the parameter dependend file name
+        params_container.append(P.construct_current_parameters_and_header(i, params))
+        _t, freq_data, _d = read_dataset(path='.', prefix=P.header)
+        freq_data_container.append(freq_data)
+
+    # Check if all frequencies are equal -> otherwise no cep plots!
+    reference_f0 = freq_data_container[0]['f/f0']
+    for freq_data in freq_data_container:
+        to_check_f0 = freq_data['f/f0']
+        try:
+            np.all(np.equal(reference_f0, to_check_f0))
+        except:
+            raise ValueError("For CEP plots, frequency scales of all parameters need to be equal.")
