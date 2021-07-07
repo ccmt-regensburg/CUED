@@ -1,5 +1,6 @@
 import os
 import shutil
+from typing import OrderedDict
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -705,24 +706,36 @@ class BZ_plot_parameters():
 
 def write_and_compile_cep_output(P, params):
     # Check which parameters are given as lists or ndarrays
-    list_keys = []
-    for key, item in params.__dict__.items():
+    # Needs to be Ordered! (see __combine_parameters in params_parser.py)
+    # list_keys stores parameter key and length of param list
+    list_keys = OrderedDict()
+    for key, item in OrderedDict(params.__dict__).items():
         if type(item) == list or type(item) == np.ndarray:
-            list_keys.append(key)
-
+            list_keys[key] = len(item)
+ 
     # Load all frequency related data into memory
-    params_container = []
-    freq_data_container = []
-    for i in range(P.number_of_combinations):
+    # The params combination are created from the 
+    # same parameter order given in list_keys
+    params_dims = tuple(list_keys.values())
+    freq_data_container = np.empty(params_dims, dtype=object)
+
+    # Create all matrix indices
+    params_idx = [np.unravel_index(i, params_dims) for i in range(P.number_of_combinations)]
+
+    for i, idx in enumerate(params_idx):
         # We only need the parameter dependend file name
-        params_container.append(P.construct_current_parameters_and_header(i, params))
+        P.construct_current_parameters_and_header(i, params)
         _t, freq_data, _d = read_dataset(path='.', prefix=P.header)
-        freq_data_container.append(freq_data)
+        # if E0 = [1, 2], chirp = [0, 1]
+        # OrderedDict puts E0 before chirp
+        # E0=1, chirp=0 -> (0, 0), E0=1, chirp=1 -> (0, 1)
+        # E0=2, chirp=0 -> (1, 0), E0=2, chirp=1 -> (1, 1)
+        freq_data_container[idx] = freq_data
 
     # Check if all frequencies are equal -> otherwise no cep plots!
-    reference_f0 = freq_data_container[0]['f/f0']
-    for freq_data in freq_data_container:
-        to_check_f0 = freq_data['f/f0']
+    reference_f0 = freq_data_container[params_idx[0]]['f/f0']
+    for idx in params_idx:
+        to_check_f0 = freq_data_container[idx]['f/f0']
         try:
             np.all(np.equal(reference_f0, to_check_f0))
         except:
