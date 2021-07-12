@@ -160,6 +160,10 @@ class ParamsParser():
         if 'split_current' in UP:
             self.split_current = UP['split_current']
 
+        self.save_screening = False                       # Write screening files even with save_latex_pdf=False
+        if 'save_screening' in UP:
+            self.save_screening = UP['save_screening']
+
         self.do_semicl = False                            # Semiclassical calc. (dipole = 0)
         if 'do_semicl' in UP:
             self.do_semicl = UP['do_semicl']

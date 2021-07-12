@@ -53,8 +53,11 @@ def sbe_solver(sys, params):
 
     # Wait until all calculations are finished.
     testflag = False
-    if testflag is True:
-        write_cep_combinations_mpi(P, params, Mpi)
+    if P.save_screening or P.save_latex_pdf:
+        write_screening_combinations_mpi(P, params, Mpi)
+    if P.save_latex_pdf and False:
+        # Here comes the call to the screening latex plots
+        print("Not Implemented")
             
             
                 
@@ -570,25 +573,25 @@ def calculate_fourier(T, P, W):
 #     full_density_header = dens_header + cohe_header
 #     full_density
 
-def write_cep_combinations_mpi(P, params, Mpi):
+def write_screening_combinations_mpi(P, params, Mpi):
     # Wait until all jobs are finished
     Mpi.comm.Barrier()
     if Mpi.rank == 0 and P.number_of_combinations > 1:
-        write_cep_combinations(P, params)
+        write_screening_combinations(P, params)
 
-def write_cep_combinations(P, params):
+def write_screening_combinations(P, params):
     # Check which parameters are given as lists or ndarrays
     # Needs to be Ordered! (see __combine_parameters in params_parser.py)
     # parameter values is an empty Ordered Dictionary
-    # needed for construction of the cep file name
-    cep_filename_template = ''
+    # needed for construction of the screening file name
+    screening_filename_template = ''
     params_dims = ()
     params_values = OrderedDict()
     for key, item in OrderedDict(params.__dict__).items():
         if type(item) == list or type(item) == np.ndarray:
             params_values[key] = list(item)
             params_dims += (len(item), )
-            cep_filename_template += key + '={' + key + '}' + '_'
+            screening_filename_template += key + '={' + key + '}' + '_'
 
     # Create all matrix indices
     params_idx = [np.unravel_index(i, params_dims) for i in range(P.number_of_combinations)]
@@ -608,13 +611,13 @@ def write_cep_combinations(P, params):
         # E0=2, chirp=0 -> (1, 0), E0=2, chirp=1 -> (1, 1)
         _t, freq_data, _d = read_dataset(path='.', prefix=P.header)
         if not np.all(np.equal(reference_f0, freq_data['f/f0'])):
-            raise ValueError("For CEP plots, frequency scales of all parameters need to be equal.")
+            raise ValueError("For screening plots, frequency scales of all parameters need to be equal.")
         intensity_data_container[idx] = freq_data['I_E_dir'] + freq_data['I_ortho']
     
-    mkdir_chdir('cep_data')
+    mkdir_chdir('latex_pdf_files')
     # Name elements of output file
     params_name = {}
-    # the major parameter is the current y-axis of the "cep"-plot
+    # the major parameter is the current y-axis of the screening-plot
     # we need to do this plot for every minor parameter (all others) combination
     for i, major_key in enumerate(params_values.keys()):
         # Generate index combinations of all minor parameters
@@ -622,7 +625,6 @@ def write_cep_combinations(P, params):
         # All indices except the major one
         idx_minor = np.delete(np.arange(len(params_dims)), i)
 
-        # cep_header = cep_header_template.format(major_parameter='list')
         # Index template to access the data array major parameter and data is [:]
         # if E0 = [1, 2], chirp = [0, 1] and we currently have E0 major
         # slice_template -> [:, 0, :] -> [:, 1, :]
@@ -630,25 +632,25 @@ def write_cep_combinations(P, params):
         slice_template = np.empty(len(params_dims) + 1, dtype=object)
         slice_template[i] = slice(None)
         slice_template[-1] = slice(None)
-        # In the file name we call the 'cep'-parameter 'list'
-        params_name[major_key] = 'list'
+        # In the file name we call the screening-parameter 'variable'
+        params_name[major_key] = 'variable'
 
         # Header or column title in the .dat file
-        cep_header_name = ['{}={}'.format(major_key, val) for val in params_values[major_key]]
-        cep_header = ("{:25s}" + " {:27s}"*params_dims[i])\
-            .format('f/f0', *cep_header_name)
+        screening_header_name = ['{}={}'.format(major_key, val) for val in params_values[major_key]]
+        screening_header = ("{:25s}" + " {:27s}"*params_dims[i])\
+            .format('f/f0', *screening_header_name)
 
         for idx_tuple in product(*index_gen):
-            # idx_tuple only holds combinations of minor (non-cep param) indices
+            # idx_tuple only holds combinations of minor (non-screening param) indices
             # Now we create the output for every minor combination
             for j, idxm in enumerate(idx_minor):
                 minor_key = list(params_values.keys())[idxm]
                 params_name[minor_key] = list(params_values.values())[idxm][idx_tuple[j]]
                 slice_template[idxm] = idx_tuple[j]
-            cep_output = intensity_data_container[tuple(slice_template.tolist())]
-            cep_output = np.hstack((reference_f0[:, np.newaxis], cep_output.T))
-            cep_filename = cep_filename_template.format(**params_name)
-            np.savetxt(cep_filename + 'cep_data.dat', cep_output, header=cep_header, delimiter=' '*3, fmt="%+.18e")
+            screening_output = intensity_data_container[tuple(slice_template.tolist())]
+            screening_output = np.hstack((reference_f0[:, np.newaxis], screening_output.T))
+            screening_filename = screening_filename_template.format(**params_name)
+            np.savetxt(screening_filename + 'freq_data.dat', screening_output, header=screening_header, delimiter=' '*3, fmt="%+.18e")
 
 
 
