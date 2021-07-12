@@ -1,12 +1,13 @@
-from cued.plotting.latex_output_pdf import write_and_compile_cep_output
+from itertools import product
 import time
 import numpy as np
 from numpy.fft import fftshift, fft, ifftshift, ifft, fftfreq
 from scipy.integrate import ode
+from typing import OrderedDict
 
 from cued.utility import FrequencyContainers, TimeContainers, ParamsParser
-from cued.utility import MpiHelpers
-from cued.plotting import write_and_compile_latex_PDF
+from cued.utility import MpiHelpers, mkdir_chdir
+from cued.plotting import write_and_compile_latex_PDF, read_dataset
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 from cued.observables import *
 from cued.rhs_ode import *
@@ -51,9 +52,9 @@ def sbe_solver(sys, params):
         run_sbe(sys, P, Mpi)
 
     # Wait until all calculations are finished.
-    Mpi.comm.Barrier()
-    if Mpi.rank == 0 and P.number_of_combinations > 1:
-        write_and_compile_cep_output(P, params)
+    testflag = False
+    if testflag is True:
+        write_cep_combinations_mpi(P, params, Mpi)
             
             
                 
@@ -569,6 +570,88 @@ def calculate_fourier(T, P, W):
 #     full_density_header = dens_header + cohe_header
 #     full_density
 
+def write_cep_combinations_mpi(P, params, Mpi):
+    # Wait until all jobs are finished
+    Mpi.comm.Barrier()
+    if Mpi.rank == 0 and P.number_of_combinations > 1:
+        write_cep_combinations(P, params)
+
+def write_cep_combinations(P, params):
+    # Check which parameters are given as lists or ndarrays
+    # Needs to be Ordered! (see __combine_parameters in params_parser.py)
+    # parameter values is an empty Ordered Dictionary
+    # needed for construction of the cep file name
+    cep_filename_template = ''
+    params_dims = ()
+    params_values = OrderedDict()
+    for key, item in OrderedDict(params.__dict__).items():
+        if type(item) == list or type(item) == np.ndarray:
+            params_values[key] = list(item)
+            params_dims += (len(item), )
+            cep_filename_template += key + '={' + key + '}' + '_'
+
+    # Create all matrix indices
+    params_idx = [np.unravel_index(i, params_dims) for i in range(P.number_of_combinations)]
+
+    # Load a reference f/f0 into memory
+    P.construct_current_parameters_and_header(0, params)
+    _t, freq_data, _d = read_dataset(path='.', prefix=P.header)
+    reference_f0 = freq_data['f/f0']
+
+    # Load all f/f0 and intensities into memory
+    intensity_data_container = np.empty(params_dims + (reference_f0.size, ), dtype=np.float64)
+    for i, idx in enumerate(params_idx):
+        P.construct_current_parameters_and_header(i, params)
+        # if E0 = [1, 2], chirp = [0, 1]
+        # OrderedDict puts E0 before chirp
+        # E0=1, chirp=0 -> (0, 0), E0=1, chirp=1 -> (0, 1)
+        # E0=2, chirp=0 -> (1, 0), E0=2, chirp=1 -> (1, 1)
+        _t, freq_data, _d = read_dataset(path='.', prefix=P.header)
+        if not np.all(np.equal(reference_f0, freq_data['f/f0'])):
+            raise ValueError("For CEP plots, frequency scales of all parameters need to be equal.")
+        intensity_data_container[idx] = freq_data['I_E_dir'] + freq_data['I_ortho']
+    
+    mkdir_chdir('cep_data')
+    # Name elements of output file
+    params_name = {}
+    # the major parameter is the current y-axis of the "cep"-plot
+    # we need to do this plot for every minor parameter (all others) combination
+    for i, major_key in enumerate(params_values.keys()):
+        # Generate index combinations of all minor parameters
+        index_gen = [list(range(gen)) for j, gen in enumerate(params_dims) if j != i]
+        # All indices except the major one
+        idx_minor = np.delete(np.arange(len(params_dims)), i)
+
+        # cep_header = cep_header_template.format(major_parameter='list')
+        # Index template to access the data array major parameter and data is [:]
+        # if E0 = [1, 2], chirp = [0, 1] and we currently have E0 major
+        # slice_template -> [:, 0, :] -> [:, 1, :]
+        # meaning plot all E0 for chirp[0] -> all E0 for chirp[1]
+        slice_template = np.empty(len(params_dims) + 1, dtype=object)
+        slice_template[i] = slice(None)
+        slice_template[-1] = slice(None)
+        # In the file name we call the 'cep'-parameter 'list'
+        params_name[major_key] = 'list'
+
+        # Header or column title in the .dat file
+        cep_header_name = ['{}={}'.format(major_key, val) for val in params_values[major_key]]
+        cep_header_template = "{:25s}" + "{:27s}"*params_dims[i]
+        cep_header = cep_header_template.format('f/f0', *cep_header_name)
+
+        for idx_tuple in product(*index_gen):
+            # idx_tuple only holds combinations of minor (non-cep param) indices
+            # Now we create the output for every minor combination
+            for j, idxm in enumerate(idx_minor):
+                minor_key = list(params_values.keys())[idxm]
+                params_name[minor_key] = list(params_values.values())[idxm][idx_tuple[j]]
+                slice_template[idxm] = idx_tuple[j]
+            cep_output = intensity_data_container[tuple(slice_template.tolist())]
+            cep_output = np.hstack((reference_f0[:, np.newaxis], cep_output.T))
+            cep_filename = cep_filename_template.format(**params_name)
+            np.savetxt(cep_filename + 'cep_data.dat', cep_output, header=cep_header, delimiter=' '*3, fmt="%+.18e")
+
+
+
 def write_current_emission_mpi(T, P, W, sys, Mpi):
 
     # only save data from a single MPI rank
@@ -624,7 +707,7 @@ def write_current_emission(T, P, W, sys, Mpi):
     time_output[np.abs(time_output) <= 10e-100] = 0
     time_output[np.abs(time_output) >= 1e+100] = np.inf
 
-    np.savetxt(P.header + 'time_data.dat', time_output, header=time_header, delimiter='   ', fmt="%+.18e")
+    np.savetxt(P.header + 'time_data.dat', time_output, header=time_header, delimiter=' '*3, fmt="%+.18e")
 
     ##################################################
     # Frequency data save
@@ -690,7 +773,7 @@ def write_current_emission(T, P, W, sys, Mpi):
     freq_output[np.abs(freq_output) <= 10e-100] = 0
     freq_output[np.abs(freq_output) >= 1e+100] = np.inf
 
-    np.savetxt(P.header + 'frequency_data.dat', freq_output, header=freq_header, delimiter='   ', fmt="%+.18e")
+    np.savetxt(P.header + 'frequency_data.dat', freq_output, header=freq_header, delimiter=' '*3, fmt="%+.18e")
 
     if P.save_latex_pdf:
         write_and_compile_latex_PDF(T, W, P, sys, Mpi)
@@ -705,7 +788,7 @@ def write_efield_afield(T, P, W):
     time_output[np.abs(time_output) <= 10e-100] = 0
     time_output[np.abs(time_output) >= 1e+100] = np.inf
 
-    np.savetxt(P.header + 'fields_time_data.dat', time_output, header=time_header, delimiter='   ', fmt="%+.18e")
+    np.savetxt(P.header + 'fields_time_data.dat', time_output, header=time_header, delimiter=' '*3, fmt="%+.18e")
 
     freq_header = ("{:25s}" + " {:27s}"*4).format("f/f0", "Re[E_field]", "Im[E_field]", "Re[A_field]", "Im[A_field]")
     dt = T.t[1] - T.t[0]
@@ -717,7 +800,7 @@ def write_efield_afield(T, P, W):
     freq_output[np.abs(freq_output) <= 10e-100] = 0
     freq_output[np.abs(freq_output) >= 1e+100] = np.inf
 
-    np.savetxt(P.header + 'fields_frequency_data.dat', freq_output, header=freq_header, delimiter='   ', fmt="%+.18e")
+    np.savetxt(P.header + 'fields_frequency_data.dat', freq_output, header=freq_header, delimiter=' '*3, fmt="%+.18e")
 
 
 def fourier_current_intensity(jt, window_function, dt_out, prefac_emission, freq, P):

@@ -5,11 +5,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 matplotlib.use('Agg')
 import tikzplotlib
-from itertools import product
-from typing import OrderedDict
 
 from cued.utility import ConversionFactors as CoFa
-from cued.plotting import read_dataset
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 
 def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
@@ -704,55 +701,3 @@ def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
 
 class BZ_plot_parameters():
     pass
-
-def write_and_compile_cep_output(P, params):
-    # Check which parameters are given as lists or ndarrays
-    # Needs to be Ordered! (see __combine_parameters in params_parser.py)
-    # list_keys stores parameter key and length of param list
-    list_keys = OrderedDict()
-    for key, item in OrderedDict(params.__dict__).items():
-        if type(item) == list or type(item) == np.ndarray:
-            list_keys[key] = len(item)
-
-    params_dims = tuple(list_keys.values())
-    # Create all matrix indices
-    params_idx = [np.unravel_index(i, params_dims) for i in range(P.number_of_combinations)]
-
-    # Load a reference f/f0 into memory
-    P.construct_current_parameters_and_header(0, params)
-    _t, freq_data, _d = read_dataset(path='.', prefix=P.header)
-    reference_f0 = freq_data['f/f0']
-
-    # Load all f/f0 and intensities into memory
-    intensity_data_container = np.empty(params_dims + (reference_f0.size, ), dtype=np.float64)
-    for i, idx in enumerate(params_idx):
-        P.construct_current_parameters_and_header(i, params)
-        # if E0 = [1, 2], chirp = [0, 1]
-        # OrderedDict puts E0 before chirp
-        # E0=1, chirp=0 -> (0, 0), E0=1, chirp=1 -> (0, 1)
-        # E0=2, chirp=0 -> (1, 0), E0=2, chirp=1 -> (1, 1)
-        _t, freq_data, _d = read_dataset(path='.', prefix=P.header)
-        if not np.all(np.equal(reference_f0, freq_data['f/f0'])):
-            raise ValueError("For CEP plots, frequency scales of all parameters need to be equal.")
-        intensity_data_container[idx] = freq_data['I_E_dir'] + freq_data['I_ortho']
-    
-    # the major parameter is the current y-axis of the "cep"-plot
-    # we need to do this plot for every minor parameter (all others) combination
-    for i, major_parameter in enumerate(list_keys.keys()):
-        # Generate index combinations of all minor parameters
-        index_gen = [list(range(gen)) for j, gen in enumerate(params_dims) if j != i]
-        # All indices except the major one
-        idx_minor = np.delete(np.arange(len(params_dims)), i)
-
-        # Index template to access the data array major parameter and data is [:]
-        # if E0 = [1, 2], chirp = [0, 1] and we currently have E0 major
-        # slice_template -> [:, 0, :] -> [:, 1, :]
-        # meaning plot all E0 for chirp[0] -> all E0 for chirp[1]
-        slice_template = np.empty(len(params_dims) + 1, dtype=object)
-        slice_template[i] = slice(None)
-        slice_template[-1] = slice(None)
-        for idx_tuple in product(*index_gen):
-            # Now we create a plot for every minor combination
-            for j, idxm in enumerate(idx_minor):
-                slice_template[idxm] = idx_tuple[j]
-            intensity_data_container[tuple(slice_template.tolist())]
