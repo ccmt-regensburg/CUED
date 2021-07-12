@@ -635,8 +635,8 @@ def write_cep_combinations(P, params):
 
         # Header or column title in the .dat file
         cep_header_name = ['{}={}'.format(major_key, val) for val in params_values[major_key]]
-        cep_header_template = "{:25s}" + "{:27s}"*params_dims[i]
-        cep_header = cep_header_template.format('f/f0', *cep_header_name)
+        cep_header = ("{:25s}" + " {:27s}"*params_dims[i])\
+            .format('f/f0', *cep_header_name)
 
         for idx_tuple in product(*index_gen):
             # idx_tuple only holds combinations of minor (non-cep param) indices
