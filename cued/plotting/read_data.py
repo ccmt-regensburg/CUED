@@ -12,7 +12,7 @@ def read_datasets(subpaths):
 
     for subpath in subpaths:
         print("Evaluating " + subpath + " data", end='\n\n')
-        time_data, freq_data = read_dataset(subpath)
+        time_data, freq_data, dens_data = read_dataset(subpath)
         time_data_container.append(time_data)
         freq_data_container.append(freq_data)
         dens_data_container.append(dens_data)

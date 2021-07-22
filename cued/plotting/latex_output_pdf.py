@@ -1,13 +1,17 @@
 import os
 import shutil
 import numpy as np
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
-matplotlib.use('Agg')
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+mpl.use('Agg')
 import tikzplotlib
 
+from cued.plotting.colormap import whitedarkjet
 from cued.utility import ConversionFactors as CoFa
 from cued.kpoint_mesh import hex_mesh, rect_mesh
+
+plt.rcParams['text.usetex'] = True
 
 def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
 
@@ -186,15 +190,8 @@ def get_time_indices_for_plotting(E_field, time_fs, num_t_points_max):
 
     threshold = 1.0E-3
 
-    for i_counter, E_i in enumerate(E_field):
-        if np.abs(E_i) > threshold*E_max:
-            index_t_plot_start = i_counter
-            break
-
-    for i_counter, E_i in reversed(list(enumerate(E_field))):
-        if np.abs(E_i) > threshold*E_max:
-            index_t_plot_end = i_counter
-            break
+    index_t_plot_start = np.argmax(np.abs(E_field) > threshold*E_max)
+    index_t_plot_end = np.argmax(np.abs(E_field[::-1]) > threshold*E_max)
 
     if index_t_plot_end - index_t_plot_start < num_t_points_max:
         step = 1
@@ -216,17 +213,10 @@ def get_indices_for_plotting_whole(data, num_points_for_plotting, start):
     return idx
 
 
-def get_freq_indices_for_plotting(freq_div_f0, num_points_for_plotting, freq_max):
+def get_freq_indices_for_plotting(freq_div_f0, num_points_for_plotting, freq_min=-1.0E-8, freq_max=30):
 
-    for i_counter, f_i in enumerate(freq_div_f0):
-        if f_i.real > -1.0E-8:
-            index_f_plot_start = i_counter
-            break
-
-    for i_counter, f_i in enumerate(freq_div_f0):
-        if f_i.real > freq_max:
-            index_f_plot_end = i_counter
-            break
+    index_f_plot_start = np.argmax(freq_div_f0 > freq_min)
+    index_f_plot_end = np.argmax(freq_div_f0 > freq_max)
 
     if index_f_plot_end - index_f_plot_start < num_points_for_plotting:
         step = 1
@@ -701,3 +691,59 @@ def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
 
 class BZ_plot_parameters():
     pass
+
+def tikz_screening(S, num_points_for_plotting):
+    '''
+    Plot a screening (like CEP) plot in frequency range given by ff0 and screening_output
+    '''
+    # Find global min and max between 0th and 30th harmonic
+    # Save all relevant outputs to plot in 3 horizontal plots
+    num_subplots = 3
+    fidx = np.empty(num_subplots, dtype=slice) 
+    I_min, I_max = np.empty(num_subplots, dtype=np.float64), np.empty(num_subplots, dtype=np.float64)
+    screening_output = []
+    freq_min = np.array([0, 10, 20])
+    freq_max = freq_min + 10
+    for i in range(freq_min.size):
+        fidx[i] = get_freq_indices_for_plotting(S.ff0, num_points_for_plotting, freq_min[i], freq_max[i])
+        screening_output.append(S.screening_output[:, fidx[i]])
+        I_min[i], I_max[i] = screening_output[i].min(), screening_output[i].max()
+
+    I_min, I_max = I_min.min(), I_max.max()
+    screening_output_norm = np.array(screening_output)/I_max
+    I_min_norm, I_max_norm = I_min/I_max, 1
+    I_min_norm_log, I_max_norm_log = np.log10(I_min_norm), np.log10(I_max_norm)
+
+
+    fig, ax = plt.subplots(num_subplots)
+
+    contourlevels = np.logspace(I_min_norm_log, I_max_norm_log, 1000)
+    mintick, maxtick = int(I_min_norm_log), int(I_max_norm_log)
+    tickposition = np.logspace(mintick, maxtick, num=np.abs(maxtick - mintick) + 1)
+
+    cont = np.empty(3, dtype=object)
+
+    for i, idx in enumerate(fidx):
+        ff0 = S.ff0[idx]
+        F, P = np.meshgrid(ff0, S.screening_parameter_values)
+        cont[i] = ax[i].contourf(F, P, screening_output_norm[i], levels=contourlevels, locator=mpl.ticker.LogLocator(),
+                                 cmap=whitedarkjet, norm=mpl.colors.LogNorm(vmin=I_min_norm, vmax=I_max_norm))
+        ax[i].set_xticks(np.arange(freq_min[i], freq_max[i] + 1))
+        ax[i].set_ylabel(S.screening_parameter_name)
+
+    xlabel = r'Harmonic order = (frequency $f$)/(pulse frequency $f_0$)'
+    ax[-1].set_xlabel(xlabel)
+
+    # Colorbar for ax[0]
+    divider = make_axes_locatable(ax[0])
+    cax = divider.append_axes('top', '7%', pad='2%')
+    cbar = fig.colorbar(cont[0], cax=cax, orientation='horizontal')
+    cax.tick_params(axis='x', which='major', top=True, pad=0.05)
+    cax.xaxis.set_ticks_position('top')
+    cax.set_ylabel('dummy', rotation='horizontal')
+    cbar.set_ticks(tickposition)
+    plt.savefig(S.screening_filename + 'plot')
+
+def write_and_compile_screening_latex_PDF(S):
+    num_points_for_plotting = 960
+    tikz_screening(S, num_points_for_plotting)

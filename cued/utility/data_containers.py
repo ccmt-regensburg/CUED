@@ -51,3 +51,6 @@ class TimeContainers():
 
 class FrequencyContainers():
     pass
+
+class ScreeningContainers():
+    pass

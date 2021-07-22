@@ -1,3 +1,4 @@
+from cued.plotting.latex_output_pdf import write_and_compile_screening_latex_PDF
 from itertools import product
 import time
 import numpy as np
@@ -5,8 +6,8 @@ from numpy.fft import fftshift, fft, ifftshift, ifft, fftfreq
 from scipy.integrate import ode
 from typing import OrderedDict
 
-from cued.utility import FrequencyContainers, TimeContainers, ParamsParser
-from cued.utility import MpiHelpers, mkdir_chdir
+from cued.utility import FrequencyContainers, TimeContainers, ScreeningContainers, ParamsParser
+from cued.utility import MpiHelpers, mkdir_chdir, chdir
 from cued.plotting import write_and_compile_latex_PDF, read_dataset
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 from cued.observables import *
@@ -52,13 +53,8 @@ def sbe_solver(sys, params):
         run_sbe(sys, P, Mpi)
 
     # Wait until all calculations are finished.
-    testflag = False
     if P.save_screening or P.save_latex_pdf:
         write_screening_combinations_mpi(P, params, Mpi)
-    if P.save_latex_pdf and False:
-        # Here comes the call to the screening latex plots
-        print("Not Implemented")
-            
             
                 
 def run_sbe(sys, P, Mpi):
@@ -580,6 +576,9 @@ def write_screening_combinations_mpi(P, params, Mpi):
         write_screening_combinations(P, params)
 
 def write_screening_combinations(P, params):
+    '''
+    Write screening data from output files generated in the main code.
+    '''
     # Check which parameters are given as lists or ndarrays
     # Needs to be Ordered! (see __combine_parameters in params_parser.py)
     # parameter values is an empty Ordered Dictionary
@@ -599,10 +598,12 @@ def write_screening_combinations(P, params):
     # Load a reference f/f0 into memory
     P.construct_current_parameters_and_header(0, params)
     _t, freq_data, _d = read_dataset(path='.', prefix=P.header)
-    reference_f0 = freq_data['f/f0']
+
+    S = ScreeningContainers()
+    S.ff0 = freq_data['f/f0']
 
     # Load all f/f0 and intensities into memory
-    intensity_data_container = np.empty(params_dims + (reference_f0.size, ), dtype=np.float64)
+    intensity_data_container = np.empty(params_dims + (S.ff0.size, ), dtype=np.float64)
     for i, idx in enumerate(params_idx):
         P.construct_current_parameters_and_header(i, params)
         # if E0 = [1, 2], chirp = [0, 1]
@@ -610,11 +611,10 @@ def write_screening_combinations(P, params):
         # E0=1, chirp=0 -> (0, 0), E0=1, chirp=1 -> (0, 1)
         # E0=2, chirp=0 -> (1, 0), E0=2, chirp=1 -> (1, 1)
         _t, freq_data, _d = read_dataset(path='.', prefix=P.header)
-        if not np.all(np.equal(reference_f0, freq_data['f/f0'])):
+        if not np.all(np.equal(S.ff0, freq_data['f/f0'])):
             raise ValueError("For screening plots, frequency scales of all parameters need to be equal.")
         intensity_data_container[idx] = freq_data['I_E_dir'] + freq_data['I_ortho']
     
-    mkdir_chdir('latex_pdf_files')
     # Name elements of output file
     params_name = {}
     # the major parameter is the current y-axis of the screening-plot
@@ -634,11 +634,13 @@ def write_screening_combinations(P, params):
         slice_template[-1] = slice(None)
         # In the file name we call the screening-parameter 'variable'
         params_name[major_key] = 'variable'
+        S.screening_parameter_name = major_key
+        S.screening_parameter_values = params_values[major_key]
 
         # Header or column title in the .dat file
-        screening_header_name = ['{}={}'.format(major_key, val) for val in params_values[major_key]]
-        screening_header = ("{:25s}" + " {:27s}"*params_dims[i])\
-            .format('f/f0', *screening_header_name)
+        screening_file_header_name = ['{}={}'.format(major_key, val) for val in params_values[major_key]]
+        screening_file_header = ("{:25s}" + " {:27s}"*params_dims[i])\
+            .format('f/f0', *screening_file_header_name)
 
         for idx_tuple in product(*index_gen):
             # idx_tuple only holds combinations of minor (non-screening param) indices
@@ -647,11 +649,16 @@ def write_screening_combinations(P, params):
                 minor_key = list(params_values.keys())[idxm]
                 params_name[minor_key] = list(params_values.values())[idxm][idx_tuple[j]]
                 slice_template[idxm] = idx_tuple[j]
-            screening_output = intensity_data_container[tuple(slice_template.tolist())]
-            screening_output = np.hstack((reference_f0[:, np.newaxis], screening_output.T))
-            screening_filename = screening_filename_template.format(**params_name)
-            np.savetxt(screening_filename + 'freq_data.dat', screening_output, header=screening_header, delimiter=' '*3, fmt="%+.18e")
-
+            S.screening_output = intensity_data_container[tuple(slice_template.tolist())]
+            S.screening_filename = screening_filename_template.format(**params_name)
+            if P.save_screening:
+                screening_file_output = np.hstack((S.ff0[:, np.newaxis], S.screening_output.T))
+                np.savetxt(S.screening_filename + 'intensity_freq_data.dat', screening_file_output,
+                    header=screening_file_header, delimiter=' '*3, fmt="%+.18e")
+            # if P.save_latex_pdf:
+                mkdir_chdir(S.screening_filename + 'latex_pdf_files')
+                write_and_compile_screening_latex_PDF(S) 
+                chdir()
 
 
 def write_current_emission_mpi(T, P, W, sys, Mpi):

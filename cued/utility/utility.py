@@ -8,12 +8,24 @@ import sympy as sp
 from sympy.utilities.lambdify import lambdify
 
 def mkdir(dirname):
+    '''
+    Only try to create directory when directory does not exist
+    '''
     if not os.path.exists(dirname):
         os.mkdir(dirname)
 
-def mkdir_chdir(dirname):
-    mkdir(dirname)
+def chdir(dirname='..'):
+    '''
+    Defaults to go back one folder
+    '''
     os.chdir(dirname)
+
+def mkdir_chdir(dirname):
+    '''
+    Create directory and move into it
+    '''
+    mkdir(dirname)
+    chdir(dirname)
 
 class conditional_njit():
     """
