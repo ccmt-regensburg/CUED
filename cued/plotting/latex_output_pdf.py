@@ -191,7 +191,7 @@ def get_time_indices_for_plotting(E_field, time_fs, num_t_points_max):
     threshold = 1.0E-3
 
     index_t_plot_start = np.argmax(np.abs(E_field) > threshold*E_max)
-    index_t_plot_end = np.argmax(np.abs(E_field[::-1]) > threshold*E_max)
+    index_t_plot_end = E_field.size + 1 - np.argmax(np.abs(E_field[::-1]) > threshold*E_max)
 
     if index_t_plot_end - index_t_plot_start < num_t_points_max:
         step = 1
