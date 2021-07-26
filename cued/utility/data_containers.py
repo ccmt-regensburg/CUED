@@ -53,4 +53,28 @@ class FrequencyContainers():
     pass
 
 class ScreeningContainers():
-    pass
+    def __init__(self, ff0, params_dims):
+        # frequencies
+        self.ff0 = ff0
+
+        # All intensity data and current output data
+        self.full_screening_data = np.empty(params_dims + (self.ff0.size, ), dtype=np.float64)
+        self.screening_output = None
+
+        # Parameter to be screened
+        self.screening_parameter_name = None
+        self.screening_parameter_values = None
+
+        # Filenames and LaTeX/Plotting/Saving related params
+        self._screening_filename = None
+        self.screening_filename_plot = None
+        self.I_max_in_plotting_range = None
+
+    @property
+    def screening_filename(self):
+        return self._screening_filename
+
+    @screening_filename.setter
+    def screening_filename(self, filename):
+        self._screening_filename = filename
+        self.screening_filename_plot = filename + 'plot.pdf'

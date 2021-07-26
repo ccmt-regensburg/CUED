@@ -1,5 +1,4 @@
 import os
-import shutil
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -8,10 +7,26 @@ mpl.use('Agg')
 import tikzplotlib
 
 from cued.plotting.colormap import whitedarkjet
-from cued.utility import ConversionFactors as CoFa
+from cued.utility import ConversionFactors as CoFa, rmdir_mkdir_chdir, cued_copy, chdir
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 
-plt.rcParams['text.usetex'] = True
+# LAYOUT
+mpl.rc('figure', figsize=(5.295, 6.0), autolayout=True)
+# LATEX
+mpl.rc('text', usetex=True)
+mpl.rc('text.latex',
+       preamble=r'\usepackage{siunitx}\usepackage{braket}\usepackage{mathtools}\usepackage{amssymb}\usepackage[version=4]{mhchem}\usepackage[super]{nth}')#\sisetup{per-mode=symbol-or-fraction}')
+# FONT
+mpl.rc('font', size=10, family='serif', serif='CMU Serif')
+# mpl.rc('mathtext', fontset='cm')
+# AXES
+mpl.rc('axes', titlesize=10, labelsize=10)
+# LEGEND
+mpl.rc('legend', fancybox=False, fontsize=10, framealpha=1, labelspacing=0.08,
+       borderaxespad=0.05)
+# PGF
+mpl.rc('pgf', texsystem='lualatex',
+       preamble=r'\usepackage{siunitx}\usepackage{braket}\usepackage{mathtools}\usepackage{amssymb}\usepackage[version=4]{mhchem}\usepackage[super]{nth}')#\sisetup{per-mode=symbol-or-fraction}')
 
 def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
 
@@ -28,16 +43,10 @@ def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
 
         latex_dir = P.header + "latex_pdf_files"
 
-        if os.path.exists(latex_dir) and os.path.isdir(latex_dir):
-            shutil.rmtree(latex_dir)
+        rmdir_mkdir_chdir(latex_dir)
 
-        os.mkdir(latex_dir)
-        os.chdir(latex_dir)
-
-        code_path = os.path.dirname(os.path.realpath(__file__))
-
-        shutil.copy(code_path + "/CUED_summary.tex", ".")
-        shutil.copy(code_path + "/../branding/logo.pdf", ".")
+        cued_copy('plotting/CUED_summary.tex', '.')
+        cued_copy('branding/logo.pdf', '.')
 
         write_parameters(P, Mpi)
 
@@ -80,7 +89,7 @@ def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
 
         os.system("pdflatex CUED_summary.tex")
 
-        os.chdir("..")
+        chdir()
 
 
 def write_parameters(P, Mpi):
@@ -142,8 +151,8 @@ def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
     ax1.legend(loc='upper right')
 
     tikzplotlib.save(filename+".tikz",
-                     axis_height='\\figureheight',
-                     axis_width ='\\figurewidth' )
+                     axis_height=r'\figureheight',
+                     axis_width =r'\figurewidth' )
 
 
 def tikz_freq(func_1, func_2, freq_div_f0, f_idx, ylabel, filename, two_func, \
@@ -692,7 +701,7 @@ def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
 class BZ_plot_parameters():
     pass
 
-def tikz_screening(S, num_points_for_plotting):
+def tikz_screening(S, num_points_for_plotting, title):
     '''
     Plot a screening (like CEP) plot in frequency range given by ff0 and screening_output
     '''
@@ -710,6 +719,7 @@ def tikz_screening(S, num_points_for_plotting):
         I_min[i], I_max[i] = screening_output[i].min(), screening_output[i].max()
 
     I_min, I_max = I_min.min(), I_max.max()
+    S.I_max_in_plotting_range = '{:.4e}'.format(I_max)
     screening_output_norm = np.array(screening_output)/I_max
     I_min_norm, I_max_norm = I_min/I_max, 1
     I_min_norm_log, I_max_norm_log = np.log10(I_min_norm), np.log10(I_max_norm)
@@ -728,6 +738,8 @@ def tikz_screening(S, num_points_for_plotting):
         F, P = np.meshgrid(ff0, S.screening_parameter_values)
         cont[i] = ax[i].contourf(F, P, screening_output_norm[i], levels=contourlevels, locator=mpl.ticker.LogLocator(),
                                  cmap=whitedarkjet, norm=mpl.colors.LogNorm(vmin=I_min_norm, vmax=I_max_norm))
+        # Aesthetics
+        contourf_remove_white_lines(cont[i])
         ax[i].set_xticks(np.arange(freq_min[i], freq_max[i] + 1))
         ax[i].set_ylabel(S.screening_parameter_name)
 
@@ -740,10 +752,36 @@ def tikz_screening(S, num_points_for_plotting):
     cbar = fig.colorbar(cont[0], cax=cax, orientation='horizontal')
     cax.tick_params(axis='x', which='major', top=True, pad=0.05)
     cax.xaxis.set_ticks_position('top')
-    cax.set_ylabel('dummy', rotation='horizontal')
+    cax.invert_xaxis()
+    cax.set_ylabel(r'$I_\mathrm{hh}/I_\mathrm{hh}^\mathrm{max}$', rotation='horizontal')
+    cax.yaxis.set_label_coords(-0.1, 1.00)
     cbar.set_ticks(tickposition)
-    plt.savefig(S.screening_filename + 'plot')
+    # Disable every second tick label
+    for label in cbar.ax.xaxis.get_ticklabels()[0::2]:
+        label.set_visible(False)
+    plt.title(title)
+    plt.savefig(S.screening_filename_plot, bbox_inches='tight')
+
+def contourf_remove_white_lines(contour):
+  for c in contour.collections:
+    c.set_edgecolor('face')
+    c.set_linewidth(0.000000000001)
 
 def write_and_compile_screening_latex_PDF(S):
+
     num_points_for_plotting = 960
-    tikz_screening(S, num_points_for_plotting)
+
+    cued_copy('plotting/CUED_screening_summary.tex', '.')
+    cued_copy('branding/logo.pdf', '.')
+
+    tikz_screening(S[0], num_points_for_plotting, title='Intensity E-dir')
+    replace('PH-EDIR-PLOT', S[0].screening_filename_plot, filename="CUED_screening_summary.tex")
+    replace('PH-EDIR-IMAX', S[0].I_max_in_plotting_range, filename="CUED_screening_summary.tex")
+    replace('PH-PARAMETER', S[0].screening_parameter_name, filename="CUED_screening_summary.tex")
+    tikz_screening(S[1], num_points_for_plotting, title='Intensity ortho')
+    replace('PH-ORTHO-PLOT', S[1].screening_filename_plot, filename="CUED_screening_summary.tex")
+    replace('PH-ORTHO-IMAX', S[1].I_max_in_plotting_range, filename="CUED_screening_summary.tex")
+    replace('PH-PARAMETER', S[1].screening_parameter_name, filename="CUED_screening_summary.tex")
+
+    os.system("pdflatex CUED_screening_summary.tex")
+    os.system("pdflatex CUED_screening_summary.tex")

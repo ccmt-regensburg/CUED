@@ -4,8 +4,17 @@ Utility functions needed by functions/methods in the package
 import os
 from numba import njit
 import numpy as np
+import shutil as sh
 import sympy as sp
 from sympy.utilities.lambdify import lambdify
+
+from cued import CUEDPATH
+
+def cued_copy(cued_dir, dest_dir):
+    '''
+    Copies files relative to the cued source path
+    '''
+    sh.copy(CUEDPATH + '/' + cued_dir, dest_dir)
 
 def mkdir(dirname):
     '''
@@ -26,6 +35,16 @@ def mkdir_chdir(dirname):
     '''
     mkdir(dirname)
     chdir(dirname)
+
+def rmdir_mkdir_chdir(dirname):
+    '''
+    If the directory exists remove it first before creating
+    a new one and changing into it.
+    '''
+    if os.path.exists(dirname) and os.path.isdir(dirname):
+        sh.rmtree(dirname)
+
+    mkdir_chdir(dirname)
 
 class conditional_njit():
     """

@@ -1,16 +1,16 @@
-from cued.plotting.latex_output_pdf import write_and_compile_screening_latex_PDF
 from itertools import product
-import time
 import numpy as np
 from numpy.fft import fftshift, fft, ifftshift, ifft, fftfreq
 from scipy.integrate import ode
+import time
 from typing import OrderedDict
 
 from cued.utility import FrequencyContainers, TimeContainers, ScreeningContainers, ParamsParser
-from cued.utility import MpiHelpers, mkdir_chdir, chdir
+from cued.utility import MpiHelpers, rmdir_mkdir_chdir, chdir
 from cued.plotting import write_and_compile_latex_PDF, read_dataset
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 from cued.observables import *
+from cued.plotting import write_and_compile_screening_latex_PDF
 from cued.rhs_ode import *
 
 def sbe_solver(sys, params):
@@ -599,11 +599,12 @@ def write_screening_combinations(P, params):
     P.construct_current_parameters_and_header(0, params)
     _t, freq_data, _d = read_dataset(path='.', prefix=P.header)
 
-    S = ScreeningContainers()
-    S.ff0 = freq_data['f/f0']
+    # First E-dir, then ortho
+    S = np.empty(2, dtype=ScreeningContainers)
+    S[0] = ScreeningContainers(freq_data['f/f0'], params_dims)
+    S[1] = ScreeningContainers(freq_data['f/f0'], params_dims)
 
     # Load all f/f0 and intensities into memory
-    intensity_data_container = np.empty(params_dims + (S.ff0.size, ), dtype=np.float64)
     for i, idx in enumerate(params_idx):
         P.construct_current_parameters_and_header(i, params)
         # if E0 = [1, 2], chirp = [0, 1]
@@ -611,9 +612,10 @@ def write_screening_combinations(P, params):
         # E0=1, chirp=0 -> (0, 0), E0=1, chirp=1 -> (0, 1)
         # E0=2, chirp=0 -> (1, 0), E0=2, chirp=1 -> (1, 1)
         _t, freq_data, _d = read_dataset(path='.', prefix=P.header)
-        if not np.all(np.equal(S.ff0, freq_data['f/f0'])):
+        if not np.all(np.equal(S[0].ff0, freq_data['f/f0'])):
             raise ValueError("For screening plots, frequency scales of all parameters need to be equal.")
-        intensity_data_container[idx] = freq_data['I_E_dir'] + freq_data['I_ortho']
+        S[0].full_screening_data[idx] = freq_data['I_E_dir']
+        S[1].full_screening_data[idx] = freq_data['I_ortho']
     
     # Name elements of output file
     params_name = {}
@@ -634,8 +636,9 @@ def write_screening_combinations(P, params):
         slice_template[-1] = slice(None)
         # In the file name we call the screening-parameter 'variable'
         params_name[major_key] = 'variable'
-        S.screening_parameter_name = major_key
-        S.screening_parameter_values = params_values[major_key]
+        for s in S:
+            s.screening_parameter_name = major_key
+            s.screening_parameter_values = params_values[major_key]
 
         # Header or column title in the .dat file
         screening_file_header_name = ['{}={}'.format(major_key, val) for val in params_values[major_key]]
@@ -649,16 +652,20 @@ def write_screening_combinations(P, params):
                 minor_key = list(params_values.keys())[idxm]
                 params_name[minor_key] = list(params_values.values())[idxm][idx_tuple[j]]
                 slice_template[idxm] = idx_tuple[j]
-            S.screening_output = intensity_data_container[tuple(slice_template.tolist())]
-            S.screening_filename = screening_filename_template.format(**params_name)
+            for s in S:
+                s.screening_output = s.full_screening_data[tuple(slice_template.tolist())]
+            screening_foldername = screening_filename_template.format(**params_name)
+            S[0].screening_filename = screening_foldername + 'E_dir_'
+            S[1].screening_filename = screening_foldername + 'ortho_'
+            rmdir_mkdir_chdir(screening_foldername + 'latex_pdf_files')
             if P.save_screening:
-                screening_file_output = np.hstack((S.ff0[:, np.newaxis], S.screening_output.T))
-                np.savetxt(S.screening_filename + 'intensity_freq_data.dat', screening_file_output,
-                    header=screening_file_header, delimiter=' '*3, fmt="%+.18e")
-            # if P.save_latex_pdf:
-                mkdir_chdir(S.screening_filename + 'latex_pdf_files')
+                for s in S:
+                    np.savetxt(s.screening_filename + 'intensity_freq_data.dat',
+                               np.hstack((s.ff0[:, np.newaxis], s.screening_output.T)),
+                               header=screening_file_header, delimiter=' '*3, fmt="%+.18e")
+            if P.save_latex_pdf:
                 write_and_compile_screening_latex_PDF(S) 
-                chdir()
+            chdir()
 
 
 def write_current_emission_mpi(T, P, W, sys, Mpi):
