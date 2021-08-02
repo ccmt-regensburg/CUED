@@ -17,8 +17,8 @@ class params:
     BZ_type = 'hexagon'
 
     # full BZ parametes
-    Nk1                 = 42       # Number of kpoints in each of the paths
-    Nk2                 = 3         # Number of paths
+    Nk1                 = 420         # Number of kpoints in each of the paths
+    Nk2                 = 42          # Number of paths
 
     # Driving field parameters
     ##########################################################################
@@ -27,7 +27,7 @@ class params:
     f                   = 25.0        # Pulse frequency (THz)
     chirp               = -1.25       # Pulse chirp ratio (chirp = c/w) (THz)
     sigma               = 90          # Gaussian pulse width (femtoseconds)
-    phase               = np.linspace(0, 2*np.pi, 3)
+    phase               = np.linspace(0, 2*np.pi, 40)
 
     # Time scales (all units in femtoseconds)
     ##########################################################################
