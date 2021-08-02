@@ -64,4 +64,7 @@ def read_dataset(path, prefix='', suffix=''):
             print("Reading density:", filepath)
             dens_data = np.genfromtxt(filepath, names=True, encoding='utf8', deletechars='')
 
+    if time_data is None and freq_data is None and dens_data is None:
+        raise RuntimeError("No Data found.")
+
     return time_data, freq_data, dens_data

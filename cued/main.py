@@ -55,8 +55,8 @@ def sbe_solver(sys, params):
     # Wait until all calculations are finished.
     if P.save_screening or P.save_latex_pdf:
         write_screening_combinations_mpi(P, params, Mpi)
-            
-                
+
+
 def run_sbe(sys, P, Mpi):
     """
     line numberSolver for the semiconductor bloch equation ( eq. (39) or (47) in https://arxiv.org/abs/2008.03177)
@@ -616,7 +616,7 @@ def write_screening_combinations(P, params):
             raise ValueError("For screening plots, frequency scales of all parameters need to be equal.")
         S[0].full_screening_data[idx] = freq_data['I_E_dir']
         S[1].full_screening_data[idx] = freq_data['I_ortho']
-    
+
     # Name elements of output file
     params_name = {}
     # the major parameter is the current y-axis of the screening-plot
@@ -664,7 +664,7 @@ def write_screening_combinations(P, params):
                                np.hstack((s.ff0[:, np.newaxis], s.screening_output.T)),
                                header=screening_file_header, delimiter=' '*3, fmt="%+.18e")
             if P.save_latex_pdf:
-                write_and_compile_screening_latex_PDF(S) 
+                write_and_compile_screening_latex_PDF(S)
             chdir()
 
 

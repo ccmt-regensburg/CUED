@@ -62,13 +62,47 @@ class ScreeningContainers():
         self.screening_output = None
 
         # Parameter to be screened
-        self.screening_parameter_name = None
+        self._screening_parameter_name = None
+        self.screening_parameter_name_plot_label = None
         self.screening_parameter_values = None
 
         # Filenames and LaTeX/Plotting/Saving related params
         self._screening_filename = None
         self.screening_filename_plot = None
         self.I_max_in_plotting_range = None
+
+    @property
+    def screening_parameter_name(self):
+        return self._screening_parameter_name
+
+    @screening_parameter_name.setter
+    def screening_parameter_name(self, name):
+        self._screening_parameter_name = name
+
+        # First set to normal name if one of the special cases
+        # is fulfilled change name
+        self.screening_parameter_name_plot_label = name
+        # System parameters
+        if name == 'e_fermi':
+            self.screening_parameter_name_plot_label = r'$\epsilon_{\scriptscriptstyle \mathrm{fermi}}$ in $\si{\electron\volt}$'
+        if name == 'temperature':
+            self.screening_parameter_name_plot_label = r'Temperature in $\si{\electron\volt}$'
+        # Field variables
+        if name == 'E0':
+            self.screening_parameter_name_plot_label = r'$E_0$ in $\si{\mega\volt\per\cm}$'
+        # if name == 'f':
+        #     self.screening_parameter_name_plot_label = r'$f$ in $\si{\tera\hertz}$'
+        if name == 'sigma':
+            self.screening_parameter_name_plot_label = r'$\sigma$ in $\si{\femto\second}$'
+        if name == 'chirp':
+            self.screening_parameter_name_plot_label = r'$\omega_{\scriptscriptstyle \mathrm{chirp}}$ in $\si{\tera\hertz}$'
+        if name == 'phase':
+            self.screening_parameter_name_plot_label = r'phase $\phi$'
+        # Time variables
+        if name == 'T1':
+            self.screening_parameter_name_plot_label = r'$T_1$ in $\si{\femto\second}$'
+        if name == 'T2':
+            self.screening_parameter_name_plot_label = r'$T_2$ in $\si{\femto\second}$'
 
     @property
     def screening_filename(self):

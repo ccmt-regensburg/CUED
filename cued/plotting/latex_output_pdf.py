@@ -708,7 +708,7 @@ def tikz_screening(S, num_points_for_plotting, title):
     # Find global min and max between 0th and 30th harmonic
     # Save all relevant outputs to plot in 3 horizontal plots
     num_subplots = 3
-    fidx = np.empty(num_subplots, dtype=slice) 
+    fidx = np.empty(num_subplots, dtype=slice)
     I_min, I_max = np.empty(num_subplots, dtype=np.float64), np.empty(num_subplots, dtype=np.float64)
     screening_output = []
     freq_min = np.array([0, 10, 20])
@@ -741,7 +741,7 @@ def tikz_screening(S, num_points_for_plotting, title):
         # Aesthetics
         contourf_remove_white_lines(cont[i])
         ax[i].set_xticks(np.arange(freq_min[i], freq_max[i] + 1))
-        ax[i].set_ylabel(S.screening_parameter_name)
+        ax[i].set_ylabel(S.screening_parameter_name_plot_label)
 
     xlabel = r'Harmonic order = (frequency $f$)/(pulse frequency $f_0$)'
     ax[-1].set_xlabel(xlabel)
@@ -763,9 +763,9 @@ def tikz_screening(S, num_points_for_plotting, title):
     plt.savefig(S.screening_filename_plot, bbox_inches='tight')
 
 def contourf_remove_white_lines(contour):
-  for c in contour.collections:
-    c.set_edgecolor('face')
-    c.set_linewidth(0.000000000001)
+    for c in contour.collections:
+        c.set_edgecolor('face')
+        c.set_linewidth(0.000000000001)
 
 def write_and_compile_screening_latex_PDF(S):
 
