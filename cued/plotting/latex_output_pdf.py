@@ -30,66 +30,66 @@ mpl.rc('pgf', texsystem='lualatex',
 
 def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
 
-        t_fs = T.t*CoFa.au_to_fs
-        num_points_for_plotting = 960
+    t_fs = T.t*CoFa.au_to_fs
+    num_points_for_plotting = 960
 
-        t_idx = get_time_indices_for_plotting(T.E_field, t_fs, num_points_for_plotting)
-        f_idx = get_freq_indices_for_plotting(W.freq/P.f, num_points_for_plotting, freq_max=30)
+    t_idx = get_time_indices_for_plotting(T.E_field, t_fs, num_points_for_plotting)
+    f_idx = get_freq_indices_for_plotting(W.freq/P.f, num_points_for_plotting, freq_max=30)
 
-        t_idx_whole = get_indices_for_plotting_whole(t_fs, num_points_for_plotting, start=0)
-        f_idx_whole = get_indices_for_plotting_whole(W.freq, num_points_for_plotting, start=f_idx[0])
+    t_idx_whole = get_indices_for_plotting_whole(t_fs, num_points_for_plotting, start=0)
+    f_idx_whole = get_indices_for_plotting_whole(W.freq, num_points_for_plotting, start=f_idx[0])
 
-        high_symmetry_path_BZ = get_symmetry_path_in_BZ(P, num_points_for_plotting)
+    high_symmetry_path_BZ = get_symmetry_path_in_BZ(P, num_points_for_plotting)
 
-        latex_dir = P.header + "latex_pdf_files"
+    latex_dir = P.header + "latex_pdf_files"
 
-        rmdir_mkdir_chdir(latex_dir)
+    rmdir_mkdir_chdir(latex_dir)
 
-        cued_copy('plotting/CUED_summary.tex', '.')
-        cued_copy('branding/logo.pdf', '.')
+    cued_copy('plotting/CUED_summary.tex', '.')
+    cued_copy('branding/logo.pdf', '.')
 
-        write_parameters(P, Mpi)
+    write_parameters(P, Mpi)
 
-        tikz_time(T.E_field*CoFa.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield")
-        tikz_time(T.A_field*CoFa.au_to_MVpcm*CoFa.au_to_fs, t_fs, t_idx, r"A-field $A(t)$ in MV*fs/cm", "Afield")
+    tikz_time(T.E_field*CoFa.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield")
+    tikz_time(T.A_field*CoFa.au_to_MVpcm*CoFa.au_to_fs, t_fs, t_idx, r"A-field $A(t)$ in MV*fs/cm", "Afield")
 
-        K = BZ_plot(P, T.A_field)
+    K = BZ_plot(P, T.A_field)
 
-        bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, num_points_for_plotting, sys)
+    bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, num_points_for_plotting, sys)
 
-        dipole_quiver_plots(K, P, sys)
+    dipole_quiver_plots(K, P, sys)
 
-        density_matrix_plot(P, T, K)
+    density_matrix_plot(P, T, K)
 
-        tikz_time(T.j_E_dir, t_fs, t_idx, \
-                  r'Current $j_{\parallel}(t)$ parallel to $\bE$ in atomic units', "j_E_dir")
-        tikz_time(T.j_E_dir, t_fs, t_idx_whole, \
-                  r'Current $j_{\parallel}(t)$ parallel to $\bE$ in atomic units', "j_E_dir_whole_time")
-        tikz_time(T.j_ortho, t_fs, t_idx, \
-                  r'Current $j_{\bot}(t)$ orthogonal to $\bE$ in atomic units', "j_ortho")
-        tikz_time(T.j_ortho, t_fs, t_idx_whole, \
-                  r'Current $j_{\bot}(t)$ orthogonal to $\bE$ in atomic units', "j_ortho_whole_time")
-        tikz_freq(W.I_E_dir, W.I_ortho, W.freq/P.f, f_idx_whole, \
-                  r'Emission intensity in atomic units', "Emission_para_ortho_full_range", two_func=True, \
-                  label_1="$\;I_{\parallel}(\omega)$", label_2="$\;I_{\\bot}(\omega)$")
-        tikz_freq(W.I_E_dir, W.I_ortho, W.freq/P.f, f_idx, \
-                  r'Emission intensity in atomic units', "Emission_para_ortho", two_func=True, \
-                  label_1="$\;I_{\parallel}(\omega)$", label_2="$\;I_{\\bot}(\omega)$")
-        tikz_freq(W.I_E_dir+W.I_ortho, None, W.freq/P.f, f_idx, \
-                  r'Emission intensity in atomic units', "Emission_total", two_func=False, \
-                  label_1="$\;I(\omega) = I_{\parallel}(\omega) + I_{\\bot}(\omega)$")
-        tikz_freq(W.I_E_dir_hann+W.I_ortho_hann, W.I_E_dir_parzen+W.I_ortho_parzen, W.freq/P.f, f_idx, \
-                  r'Emission intensity in atomic units', "Emission_total_hann_parzen", two_func=True, \
-                  label_1="$\;I(\omega)$ with $\\bj(\omega)$ computed using the Hann window", \
-                  label_2="$\;I(\omega)$ with $\\bj(\omega)$ computed using the Parzen window", dashed=True)
+    tikz_time(T.j_E_dir, t_fs, t_idx,
+              r'Current $j_{\parallel}(t)$ parallel to $\bE$ in atomic units', "j_E_dir")
+    tikz_time(T.j_E_dir, t_fs, t_idx_whole,
+              r'Current $j_{\parallel}(t)$ parallel to $\bE$ in atomic units', "j_E_dir_whole_time")
+    tikz_time(T.j_ortho, t_fs, t_idx,
+              r'Current $j_{\bot}(t)$ orthogonal to $\bE$ in atomic units', "j_ortho")
+    tikz_time(T.j_ortho, t_fs, t_idx_whole,
+              r'Current $j_{\bot}(t)$ orthogonal to $\bE$ in atomic units', "j_ortho_whole_time")
+    tikz_freq(W.I_E_dir, W.I_ortho, W.freq/P.f, f_idx_whole,
+              r'Emission intensity in atomic units', "Emission_para_ortho_full_range", two_func=True,
+              label_1="$\;I_{\parallel}(\omega)$", label_2="$\;I_{\\bot}(\omega)$")
+    tikz_freq(W.I_E_dir, W.I_ortho, W.freq/P.f, f_idx,
+              r'Emission intensity in atomic units', "Emission_para_ortho", two_func=True,
+              label_1="$\;I_{\parallel}(\omega)$", label_2="$\;I_{\\bot}(\omega)$")
+    tikz_freq(W.I_E_dir + W.I_ortho, None, W.freq/P.f, f_idx,
+              r'Emission intensity in atomic units', "Emission_total", two_func=False,
+              label_1="$\;I(\omega) = I_{\parallel}(\omega) + I_{\\bot}(\omega)$")
+    tikz_freq(W.I_E_dir_hann + W.I_ortho_hann, W.I_E_dir_parzen+W.I_ortho_parzen, W.freq/P.f, f_idx,
+              r'Emission intensity in atomic units', "Emission_total_hann_parzen", two_func=True,
+              label_1="$\;I(\omega)$ with $\\bj(\omega)$ computed using the Hann window",
+              label_2="$\;I(\omega)$ with $\\bj(\omega)$ computed using the Parzen window", dashed=True)
 
-        replace("semithick", "thick", "*")
+    replace("semithick", "thick", "*")
 
-        os.system("pdflatex CUED_summary.tex")
+    os.system("pdflatex CUED_summary.tex")
 
-        os.system("pdflatex CUED_summary.tex")
+    os.system("pdflatex CUED_summary.tex")
 
-        chdir()
+    chdir()
 
 
 def write_parameters(P, Mpi):
@@ -150,9 +150,11 @@ def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
     ax1.set_ylabel(ylabel)
     ax1.legend(loc='upper right')
 
-    tikzplotlib.save(filename+".tikz",
+    tikzplotlib.save(filename + ".tikz",
                      axis_height=r'\figureheight',
                      axis_width =r'\figurewidth' )
+    # Need to explicitly close figure after writing
+    plt.close(_fig)
 
 
 def tikz_freq(func_1, func_2, freq_div_f0, f_idx, ylabel, filename, two_func, \
@@ -163,11 +165,11 @@ def tikz_freq(func_1, func_2, freq_div_f0, f_idx, ylabel, filename, two_func, \
     _fig, (ax1) = plt.subplots(1)
     _lines_exact_E_dir = ax1.semilogy(freq_div_f0[f_idx], func_1[f_idx], marker='', label=label_1)
     if two_func:
-      if dashed:
-       _lines_exact_E_dir = ax1.semilogy(freq_div_f0[f_idx], func_2[f_idx], marker='', label=label_2, \
-               linestyle='--')
-      else:
-       _lines_exact_E_dir = ax1.semilogy(freq_div_f0[f_idx], func_2[f_idx], marker='', label=label_2)
+        if dashed:
+            _lines_exact_E_dir = ax1.semilogy(freq_div_f0[f_idx], func_2[f_idx], marker='', label=label_2, \
+                                              linestyle='--')
+        else:
+            _lines_exact_E_dir = ax1.semilogy(freq_div_f0[f_idx], func_2[f_idx], marker='', label=label_2)
 
 
     f_lims = (freq_div_f0[f_idx[0]], freq_div_f0[f_idx[-1]])
@@ -179,13 +181,15 @@ def tikz_freq(func_1, func_2, freq_div_f0, f_idx, ylabel, filename, two_func, \
     ax1.legend(loc='upper right')
     ax1.set_xticks(np.arange(f_lims[1]+1))
 
-    tikzplotlib.save(filename+".tikz",
+    tikzplotlib.save(filename + ".tikz",
                      axis_height='\\figureheight',
                      axis_width ='\\figurewidth' )
 
     replace("xmax=30,", "xmax=30, xtick={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"+\
             ",21,22,23,24,25,26,27,28,29,30}, xticklabels={,1,,,,5,,,,,10,,,,,15,,,,,20,,,,,25,,,,,30},", \
-            filename=filename+".tikz")
+            filename=filename + ".tikz")
+    # Need to explicitly close figure after writing
+    plt.close(_fig)
 
 
 def replace(old, new, filename="CUED_summary.tex"):
@@ -248,33 +252,33 @@ def get_symmetry_path_in_BZ(P, num_points_for_plotting):
 
     if P.BZ_type == 'hexagon':
 
-         R = 4.0*np.pi/(3*P.a)
-         r = 2.0*np.pi/(np.sqrt(3)*P.a)
-         vec_M = np.array( [ r*np.cos(-np.pi/6), r*np.sin(-np.pi/6) ] )
-         vec_K = np.array( [ R, 0] )
+        R = 4.0*np.pi/(3*P.a)
+        r = 2.0*np.pi/(np.sqrt(3)*P.a)
+        vec_M = np.array( [ r*np.cos(-np.pi/6), r*np.sin(-np.pi/6) ] )
+        vec_K = np.array( [ R, 0] )
 
-         path = []
-         for alpha in pos_array_reverse:
-             kpoint = alpha*vec_K
-             path.append(kpoint)
+        path = []
+        for alpha in pos_array_reverse:
+            kpoint = alpha*vec_K
+            path.append(kpoint)
 
-         for alpha in pos_array_direct:
-             kpoint = alpha*vec_M
-             path.append(kpoint)
+        for alpha in pos_array_direct:
+            kpoint = alpha*vec_M
+            path.append(kpoint)
 
     elif P.BZ_type == 'rectangle':
 
-         vec_k_E_dir = P.length_BZ_E_dir*P.E_dir
-         vec_k_ortho = P.length_BZ_ortho*np.array([P.E_dir[1], -P.E_dir[0]])
+        vec_k_E_dir = P.length_BZ_E_dir*P.E_dir
+        vec_k_ortho = P.length_BZ_ortho*np.array([P.E_dir[1], -P.E_dir[0]])
 
-         path = []
-         for alpha in pos_array_reverse:
-             kpoint = alpha*vec_k_E_dir
-             path.append(kpoint)
+        path = []
+        for alpha in pos_array_reverse:
+            kpoint = alpha*vec_k_E_dir
+            path.append(kpoint)
 
-         for alpha in pos_array_direct:
-             kpoint = alpha*vec_k_ortho
-             path.append(kpoint)
+        for alpha in pos_array_direct:
+            kpoint = alpha*vec_k_ortho
+            path.append(kpoint)
 
     return np.array(path)
 
@@ -390,6 +394,7 @@ def BZ_plot(P, A_field):
     plt.plot(anchor_A_x_array, anchor_A_y_array, color='black', marker="o", linestyle='None')
 
     tikzplotlib.save("BZ.tikz", axis_height='\\figureheight', axis_width ='\\figurewidth' )
+    plt.close()
 
     replace("scale=0.5",   "scale=1",     filename="BZ.tikz")
     replace("mark size=3", "mark size=1", filename="BZ.tikz")
@@ -397,6 +402,9 @@ def BZ_plot(P, A_field):
     replace("PH-SMALLNK2", str(Nk2_plot))
     replace("1.00000000000000000000",  str(ratio_yx))
     replace("figureheight,", "figureheight,  scale only axis=true,", filename="BZ.tikz")
+
+    class BZ_plot_parameters():
+        pass
 
     K = BZ_plot_parameters()
 
@@ -407,96 +415,97 @@ def BZ_plot(P, A_field):
 
     return K
 
+
 def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, num_points_for_plotting, sys):
 
-   Nk1    = P.Nk1
-   P.Nk1  = num_points_for_plotting
+    Nk1    = P.Nk1
+    P.Nk1  = num_points_for_plotting
 
-   path = high_symmetry_path_BZ
+    path = high_symmetry_path_BZ
 
-   sys.eigensystem_dipole_path(path, P)
+    sys.eigensystem_dipole_path(path, P)
 
-   P.Nk1 = Nk1
+    P.Nk1 = Nk1
 
-   abs_k  = np.sqrt(path[:,0]**2 + path[:,1]**2)
+    abs_k  = np.sqrt(path[:,0]**2 + path[:,1]**2)
 
-   k_in_path = np.zeros(num_points_for_plotting)
+    k_in_path = np.zeros(num_points_for_plotting)
 
-   for i_k in range(1,num_points_for_plotting):
-       k_in_path[i_k] = k_in_path[i_k-1] + np.abs( abs_k[i_k] - abs_k[i_k-1] )
+    for i_k in range(1,num_points_for_plotting):
+        k_in_path[i_k] = k_in_path[i_k-1] + np.abs( abs_k[i_k] - abs_k[i_k-1] )
 
-   _fig, (ax1) = plt.subplots(1)
-   for i_band in range(P.n):
-       _lines_exact_E_dir  = ax1.plot(k_in_path, sys.e_in_path[:,i_band]*CoFa.au_to_eV, marker='', \
+    _fig, (ax1) = plt.subplots(1)
+    for i_band in range(P.n):
+        _lines_exact_E_dir  = ax1.plot(k_in_path, sys.e_in_path[:,i_band]*CoFa.au_to_eV, marker='', \
                                       label="$n=$ "+str(i_band))
-   plot_it(P,"Band energy $\epsilon_n(\mathbf{k})$ in eV", "bandstructure.tikz", ax1, k_in_path)
+    plot_it(P, r"Band energy $\epsilon_n(\mathbf{k})$ in eV", "bandstructure.tikz", ax1, k_in_path)
+    plt.close(_fig)
 
-   _fig, (ax2) = plt.subplots(1)
-   d_min = 1.0E-10
-   if P.do_semicl:
-       for i_band in range(P.n):
-           abs_connection = ( np.sqrt( np.abs(sys.Ax_path[:, i_band, i_band])**2 + \
-                                   np.abs(sys.Ay_path[:, i_band, i_band])**2 ) + 1.0e-80)/CoFa.au_to_as
-           _lines_exact_E_dir  = ax2.semilogy(k_in_path, abs_connection, marker='', \
-                                              label="$n=$ "+str(i_band))
-           d_min = max(d_min, np.amin(abs_connection))
-       plot_it(P,"Berry connection $|\mathbf{A}_{n}(\mathbf{k})|$ in 1/\AA","abs_dipole.tikz", ax2, k_in_path, d_min)
+    _fig, (ax2) = plt.subplots(1)
+    d_min = 1.0E-10
+    if P.do_semicl:
+        for i_band in range(P.n):
+            abs_connection = ( np.sqrt( np.abs(sys.Ax_path[:, i_band, i_band])**2 + \
+                                        np.abs(sys.Ay_path[:, i_band, i_band])**2 ) + 1.0e-80)/CoFa.au_to_as
+            _lines_exact_E_dir  = ax2.semilogy(k_in_path, abs_connection, marker='', \
+                                               label="$n=$ "+str(i_band))
+            d_min = max(d_min, np.amin(abs_connection))
+        plot_it(P, r"Berry connection $|\mathbf{A}_{n}(\mathbf{k})|$ in 1/\AA","abs_dipole.tikz", ax2, k_in_path, d_min)
 
-   else:
-       for i_band in range(P.n):
-           for j_band in range(P.n):
-               if j_band >= i_band: continue
-               abs_dipole = ( np.sqrt( np.abs(sys.dipole_path_x[:,i_band,j_band])**2 + \
-                                   np.abs(sys.dipole_path_y[:,i_band,j_band])**2 ) + 1.0e-80)/CoFa.au_to_as
-               _lines_exact_E_dir  = ax2.semilogy(k_in_path, abs_dipole, marker='', \
-                                              label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
-               d_min = max(d_min, np.amin(abs_dipole))
-       plot_it(P,"Dipole $|\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA","abs_dipole.tikz", ax2, k_in_path, d_min)
+    else:
+        for i_band in range(P.n):
+            for j_band in range(P.n):
+                if j_band >= i_band: continue
+                abs_dipole = ( np.sqrt( np.abs(sys.dipole_path_x[:,i_band,j_band])**2 + \
+                                        np.abs(sys.dipole_path_y[:,i_band,j_band])**2 ) + 1.0e-80)/CoFa.au_to_as
+                _lines_exact_E_dir  = ax2.semilogy(k_in_path, abs_dipole, marker='', \
+                                                  label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
+                d_min = max(d_min, np.amin(abs_dipole))
+        plot_it(P, r"Dipole $|\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA","abs_dipole.tikz", ax2, k_in_path, d_min)
+    plt.close(_fig)
 
 
-   _fig, (ax3) = plt.subplots(1)
-   d_min = 1.0E-10
-   if P.do_semicl:
-       for i_band in range(P.n):
-           proj_connection = ( np.abs( sys.Ax_path[:,i_band,i_band]*P.E_dir[0] + \
-                                sys.Ay_path[:, i_band, i_band]*P.E_dir[1] ) + 1.0e-80)/CoFa.au_to_as
-           _lines_exact_E_dir  = ax3.semilogy(k_in_path, proj_connection, marker='', \
-                                           label="$n=$ "+str(i_band))
-           d_min = max(d_min, np.amin(proj_connection))
-       plot_it(P,"$|\hat{e}_\phi\cdot\mathbf{A}_{n}(\mathbf{k})|$ in 1/\AA","proj_dipole.tikz", ax3, k_in_path, d_min)
+    _fig, (ax3) = plt.subplots(1)
+    d_min = 1.0E-10
+    if P.do_semicl:
+        for i_band in range(P.n):
+            proj_connection = ( np.abs( sys.Ax_path[:,i_band,i_band]*P.E_dir[0] + \
+                                        sys.Ay_path[:, i_band, i_band]*P.E_dir[1] ) + 1.0e-80)/CoFa.au_to_as
+            _lines_exact_E_dir  = ax3.semilogy(k_in_path, proj_connection, marker='', \
+                                               label="$n=$ "+str(i_band))
+            d_min = max(d_min, np.amin(proj_connection))
+        plot_it(P, r"$|\hat{e}_\phi\cdot\mathbf{A}_{n}(\mathbf{k})|$ in 1/\AA", "proj_dipole.tikz", ax3, k_in_path, d_min)
 
-   else:
-       for i_band in range(P.n):
-           for j_band in range(P.n):
-               if j_band >= i_band: continue
-               proj_dipole = ( np.abs( sys.dipole_path_x[:,i_band,j_band]*P.E_dir[0] + \
-                                   sys.dipole_path_y[:,i_band,j_band]*P.E_dir[1] ) + 1.0e-80)/CoFa.au_to_as
-               _lines_exact_E_dir  = ax3.semilogy(k_in_path, proj_dipole, marker='', \
-                                           label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
-               d_min = max(d_min, np.amin(proj_dipole))
-       plot_it(P,"$|\hat{e}_\phi\cdot\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA","proj_dipole.tikz", ax3, k_in_path, d_min)
-
+    else:
+        for i_band in range(P.n):
+            for j_band in range(P.n):
+                if j_band >= i_band: continue
+                proj_dipole = ( np.abs( sys.dipole_path_x[:,i_band,j_band]*P.E_dir[0] + \
+                                        sys.dipole_path_y[:,i_band,j_band]*P.E_dir[1] ) + 1.0e-80)/CoFa.au_to_as
+                _lines_exact_E_dir  = ax3.semilogy(k_in_path, proj_dipole, marker='', \
+                                                   label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
+                d_min = max(d_min, np.amin(proj_dipole))
+        plot_it(P, r"$|\hat{e}_\phi\cdot\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA", "proj_dipole.tikz", ax3, k_in_path, d_min)
+    plt.close(_fig)
 
 def plot_it(P, ylabel, filename, ax1, k_in_path, y_min=None):
 
-   num_points_for_plotting = k_in_path.size
-   k_lims = ( k_in_path[0], k_in_path[-1] )
+    num_points_for_plotting = k_in_path.size
+    k_lims = ( k_in_path[0], k_in_path[-1] )
 
-   ax1.grid(True, axis='both', ls='--')
-   ax1.set_ylabel(ylabel)
-   ax1.legend(loc='upper left')
-   ax1.set_xlim(k_lims)
-   if y_min is not None:
-       ax1.set_ylim(bottom=y_min)
-   ax1.set_xticks( [k_in_path[0], k_in_path[num_points_for_plotting//2], k_in_path[-1]] )
-   if P.BZ_type == 'hexagon':
-       ax1.set_xticklabels( ['K','$\Gamma$','M'] )
-   elif P.BZ_type == 'rectangle':
-       ax1.set_xticklabels( ['X','$\Gamma$','Y'] )
+    ax1.grid(True, axis='both', ls='--')
+    ax1.set_ylabel(ylabel)
+    ax1.legend(loc='upper left')
+    ax1.set_xlim(k_lims)
+    if y_min is not None:
+        ax1.set_ylim(bottom=y_min)
+    ax1.set_xticks( [k_in_path[0], k_in_path[num_points_for_plotting//2], k_in_path[-1]] )
+    if P.BZ_type == 'hexagon':
+        ax1.set_xticklabels(['K', r'$\Gamma$', 'M'])
+    elif P.BZ_type == 'rectangle':
+        ax1.set_xticklabels(['X', r'$\Gamma$', 'Y'])
 
-   tikzplotlib.save(filename,
-                    axis_height='\\figureheight',
-                    axis_width ='\\figurewidth' )
+    tikzplotlib.save(filename, axis_height='\\figureheight', axis_width ='\\figurewidth' )
 
 
 def dipole_quiver_plots(K, P, sys):
@@ -544,11 +553,12 @@ def dipole_quiver_plots(K, P, sys):
     for i_band in range(P.n):
         plot_x_index = i_band//2
         plot_y_index = i_band%2
-        title = r"$\mathbf{d}_{" + str(i_band) + str(i_band) + \
-                "}(\mathbf{k})$ (diagonal dipole matrix elements are real)"
-        colbar_title = r"log$_{10}\;|(\mathbf{d}_{"+str(i_band)+str(i_band)+"}(\mathbf{k}))/$\AA$|$"
+        title = r"$\mathbf{d}_{" + str(i_band) + str(i_band) \
+            + r"}(\mathbf{k})$ (diagonal dipole matrix elements are real)"
+        colbar_title = r"log$_{10}\;|(\mathbf{d}_{" + str(i_band) + str(i_band) \
+            + r"}(\mathbf{k}))/$\AA$|$"
 
-        plot_single_dipole(d_x.real, d_y.real, i_band, i_band, plot_x_index, plot_y_index, \
+        plot_single_dipole(d_x.real, d_y.real, i_band, i_band, plot_x_index, plot_y_index,
                            K, k_x, k_y, fig, ax, title, colbar_title)
 
     counter = 0
@@ -575,7 +585,7 @@ def dipole_quiver_plots(K, P, sys):
             counter += 1
             title = r"Im $\mathbf{d}_{" + str(i_band) + str(j_band) + "}(\mathbf{k})$"
             colbar_title = r"log$_{10}\;|\mathrm{Im } (\mathbf{d}_{"+str(i_band)+str(j_band)+\
-                           "}(\mathbf{k}))/$\AA$|$"
+                           r"}(\mathbf{k}))/$\AA$|$"
 
             plot_single_dipole(d_x.imag, d_y.imag, i_band, j_band, plot_x_index, plot_y_index, \
                                K, k_x, k_y, fig, ax, title, colbar_title)
@@ -584,6 +594,7 @@ def dipole_quiver_plots(K, P, sys):
 
     plt.tight_layout()
     plt.savefig(filename, bbox_inches='tight')
+    plt.close(fig)
 
     P.Nk1 = Nk1
     P.Nk2 = Nk2
@@ -606,7 +617,7 @@ def plot_single_dipole(d_x, d_y, i_band, j_band, x, y, K, k_x, k_y, fig, ax, \
 
     ax[x,y].plot(K.kx_BZ, K.ky_BZ, color='gray' )
     plot = ax[x,y].quiver(k_x, k_y, norm_d_x_ij, norm_d_y_ij, np.log10(abs_d_ij),
-                     angles='xy', cmap='coolwarm', width=0.007 )
+                          angles='xy', cmap=whitedarkjet, width=0.007 )
 
     ax[x,y].set_title(title)
     ax[x,y].axis('equal')
@@ -620,37 +631,27 @@ def plot_single_dipole(d_x, d_y, i_band, j_band, x, y, K, k_x, k_y, fig, ax, \
 
 def density_matrix_plot(P, T, K):
 
-    i_band = 1
-    j_band = 1
-
+    i_band, j_band = 1, 1
     reshaped_pdf_dm = np.zeros((P.Nk1*P.Nk2, P.Nt_pdf_densmat, P.n, P.n), dtype=P.type_complex_np)
 
     for i_k1 in range(P.Nk1):
         for j_k2 in range(P.Nk2):
-
             combined_k_index = i_k1 + j_k2*P.Nk1
             reshaped_pdf_dm[combined_k_index, :, :, :] = T.pdf_densmat[i_k1, j_k2, :, :, :]
 
     n_vert = (P.Nt_pdf_densmat+1)//2
-
     for i_band in range(P.n):
-
         filename = 'dm_'+str(i_band)+str(i_band)+'.pdf'
-
         plot_dm_for_all_t(reshaped_pdf_dm.real, P, T, K, i_band, i_band, '', filename, n_vert)
 
     for i_band in range(P.n):
-
         for j_band in range(P.n):
-
             if i_band >= j_band: continue
-
             filename = 'Re_dm_'+str(i_band)+str(j_band)+'.pdf'
             plot_dm_for_all_t(reshaped_pdf_dm.real, P, T, K, i_band, j_band, 'Re', filename, n_vert)
 
             filename = 'Im_dm_'+str(i_band)+str(j_band)+'.pdf'
             plot_dm_for_all_t(reshaped_pdf_dm.imag, P, T, K, i_band, j_band, 'Im', filename, n_vert)
-
 
     replace("bandindex in {0,...,1}", "bandindex in {0,...,"+str(P.n-1)+"}")
 
@@ -675,9 +676,9 @@ def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
 
         if P.Nk2 > 1:
 
-            im = ax[i,j].tricontourf(P.mesh[:,0].astype('float64')/CoFa.au_to_as, P.mesh[:,1].astype('float64')/CoFa.au_to_as, \
-                            reshaped_pdf_dm[:, t_i, i_band, j_band].astype('float64') , \
-                            np.arange(minval,maxval,step), cmap='nipy_spectral')
+            im = ax[i,j].tricontourf(P.mesh[:,0].astype('float64')/CoFa.au_to_as, P.mesh[:,1].astype('float64')/CoFa.au_to_as,
+                                     reshaped_pdf_dm[:, t_i, i_band, j_band].astype('float64'),
+                                     np.arange(minval,maxval,step), cmap=whitedarkjet)
 
             fig.colorbar(im, ax=ax[i,j])
 
@@ -696,10 +697,9 @@ def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
 
     plt.tight_layout()
     plt.savefig(filename, bbox_inches='tight')
+    plt.close(fig)
 
 
-class BZ_plot_parameters():
-    pass
 
 def tikz_screening(S, num_points_for_plotting, title):
     '''
@@ -761,6 +761,7 @@ def tikz_screening(S, num_points_for_plotting, title):
         label.set_visible(False)
     plt.title(title)
     plt.savefig(S.screening_filename_plot, bbox_inches='tight')
+    plt.close(fig)
 
 def contourf_remove_white_lines(contour):
     for c in contour.collections:

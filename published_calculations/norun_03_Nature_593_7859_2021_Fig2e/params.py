@@ -43,3 +43,4 @@ class params:
     fourier_window_function = 'gaussian'
     user_out                = True       # Set to True to get user plotting and progress output
     save_latex_pdf          = True
+    save_screening          = True
