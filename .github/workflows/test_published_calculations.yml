@@ -23,4 +23,4 @@ jobs:
 #    - name: Change test directory
 #      run:  sed -i 's/\/tests/\/published_calculations/g' published_calculations/test_script.py
     - name: Run test script
-      run:  python3 published_calculations/test_script.py published_calculations
+      run:  python3 tests/test_script.py published_calculations
