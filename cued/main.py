@@ -600,9 +600,10 @@ def write_screening_combinations(P, params):
     _t, freq_data, _d = read_dataset(path='.', prefix=P.header)
 
     # First E-dir, then ortho
-    S = np.empty(2, dtype=ScreeningContainers)
+    S = np.empty(3, dtype=ScreeningContainers)
     S[0] = ScreeningContainers(freq_data['f/f0'], params_dims)
     S[1] = ScreeningContainers(freq_data['f/f0'], params_dims)
+    S[2] = ScreeningContainers(freq_data['f/f0'], params_dims)
 
     # Load all f/f0 and intensities into memory
     for i, idx in enumerate(params_idx):
@@ -616,6 +617,7 @@ def write_screening_combinations(P, params):
             raise ValueError("For screening plots, frequency scales of all parameters need to be equal.")
         S[0].full_screening_data[idx] = freq_data['I_E_dir']
         S[1].full_screening_data[idx] = freq_data['I_ortho']
+        S[2].full_screening_data[idx] = freq_data['I_E_dir'] + freq_data['I_ortho']
 
     # Name elements of output file
     params_name = {}
@@ -657,6 +659,7 @@ def write_screening_combinations(P, params):
             screening_foldername = screening_filename_template.format(**params_name)
             S[0].screening_filename = screening_foldername + 'E_dir_'
             S[1].screening_filename = screening_foldername + 'ortho_'
+            S[2].screening_filename = screening_foldername + 'full_'
             rmdir_mkdir_chdir(screening_foldername + 'latex_pdf_files')
             if P.save_screening:
                 for s in S:

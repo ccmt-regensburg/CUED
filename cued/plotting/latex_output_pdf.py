@@ -7,6 +7,7 @@ mpl.use('Agg')
 import tikzplotlib
 
 from cued.plotting.colormap import whitedarkjet
+from cued.plotting import contourf_remove_white_lines, label_inner
 from cued.utility import ConversionFactors as CoFa, rmdir_mkdir_chdir, cued_copy, chdir
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 
@@ -701,7 +702,7 @@ def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
 
 
 
-def tikz_screening(S, num_points_for_plotting, title):
+def tikz_screening_one_color(S, num_points_for_plotting, title):
     '''
     Plot a screening (like CEP) plot in frequency range given by ff0 and screening_output
     '''
@@ -731,7 +732,7 @@ def tikz_screening(S, num_points_for_plotting, title):
     mintick, maxtick = int(I_min_norm_log), int(I_max_norm_log)
     tickposition = np.logspace(mintick, maxtick, num=np.abs(maxtick - mintick) + 1)
 
-    cont = np.empty(3, dtype=object)
+    cont = np.empty(num_subplots, dtype=object)
 
     for i, idx in enumerate(fidx):
         ff0 = S.ff0[idx]
@@ -759,14 +760,69 @@ def tikz_screening(S, num_points_for_plotting, title):
     # Disable every second tick label
     for label in cbar.ax.xaxis.get_ticklabels()[0::2]:
         label.set_visible(False)
-    plt.title(title)
+    plt.suptitle(title)
     plt.savefig(S.screening_filename_plot, bbox_inches='tight')
     plt.close(fig)
 
-def contourf_remove_white_lines(contour):
-    for c in contour.collections:
-        c.set_edgecolor('face')
-        c.set_linewidth(0.000000000001)
+def tikz_screening_per_color(S, num_points_for_plotting, title):
+    '''
+    Plot a screening (like CEP) plot in frequency range given by ff0 and screening_output
+    '''
+    # Find global min and max between 0th and 30th harmonic
+    # Save all relevant outputs to plot in 3 horizontal plots
+    num_subplots = 3
+    fidx = np.empty(num_subplots, dtype=slice)
+    I_min, I_max = np.empty(num_subplots, dtype=np.float64), np.empty(num_subplots, dtype=np.float64)
+    screening_output = []
+    freq_min = np.array([0, 10, 20])
+    freq_max = freq_min + 10
+    for i in range(freq_min.size):
+        fidx[i] = get_freq_indices_for_plotting(S.ff0, num_points_for_plotting, freq_min[i], freq_max[i])
+        screening_output.append(S.screening_output[:, fidx[i]])
+        I_min[i], I_max[i] = screening_output[i].min(), screening_output[i].max()
+
+    S.I_max_in_plotting_range = ['{:.4e}'.format(I_buf) for I_buf in I_max]
+    screening_output_norm = np.array([screening_output[i]/I_max[i] for i in range(num_subplots)])
+    I_min_norm, I_max_norm = I_min/I_max, np.ones(num_subplots)
+    I_min_norm_log, I_max_norm_log = np.log10(I_min_norm), np.log10(I_max_norm)
+
+    fig, ax = plt.subplots(num_subplots)
+    contourlevels = np.logspace(I_min_norm_log, I_max_norm_log, 1000)
+    mintick, maxtick = I_min_norm_log.astype(int), I_max_norm_log.astype(int)
+    tickposition = [np.logspace(mintick[i], maxtick[i], num=np.abs(maxtick[i] - mintick[i]) + 1)
+                    for i in range(num_subplots)]
+
+    for i, idx in enumerate(fidx):
+        ff0 = S.ff0[idx]
+        F, P = np.meshgrid(ff0, S.screening_parameter_values)
+        cont = ax[i].contourf(F, P, screening_output_norm[i], levels=contourlevels[:, i], locator=mpl.ticker.LogLocator(),
+                                 cmap=whitedarkjet, norm=mpl.colors.LogNorm(vmin=I_min_norm[i], vmax=I_max_norm[i]))
+        # Per plot remove white lines
+        contourf_remove_white_lines(cont)
+        ax[i].set_xticks(np.arange(freq_min[i], freq_max[i] + 1))
+        ax[i].set_ylabel(S.screening_parameter_name_plot_label)
+
+        # Per plot axis label
+        label_inner(ax[i], idx=i)
+
+        # Per plot colorbar
+        divider = make_axes_locatable(ax[i])
+        cax = divider.append_axes('right', '7%', pad='2%')
+
+        cbar = fig.colorbar(cont, cax=cax)
+        cax.tick_params(axis='y', which='major', top=False, pad=0.05)
+        # Set label only for first colorbar
+        if i == 0:
+            cax.set_ylabel(r'$I_\mathrm{hh}/I_\mathrm{hh}^\mathrm{max}$', rotation='horizontal')
+            cax.yaxis.set_label_coords(1, 1.19)
+        cbar.set_ticks(tickposition[i])
+
+    ax[-1].set_xlabel(r'Harmonic order = (frequency $f$)/(pulse frequency $f_0$)')
+    ax[0].set_title(title)
+    # Adjust plot name
+    S.screening_filename = S.screening_filename + 'split_'
+    plt.savefig(S.screening_filename_plot, bbox_inches='tight')
+    plt.close(fig)
 
 def write_and_compile_screening_latex_PDF(S):
 
@@ -775,14 +831,40 @@ def write_and_compile_screening_latex_PDF(S):
     cued_copy('plotting/CUED_screening_summary.tex', '.')
     cued_copy('branding/logo.pdf', '.')
 
-    tikz_screening(S[0], num_points_for_plotting, title='Intensity E-dir')
+    # Sets I_max_in_plotting_range to single number
+    tikz_screening_one_color(S[0], num_points_for_plotting, title='Intensity parallel to E-field direction')
     replace('PH-EDIR-PLOT', S[0].screening_filename_plot, filename="CUED_screening_summary.tex")
     replace('PH-EDIR-IMAX', S[0].I_max_in_plotting_range, filename="CUED_screening_summary.tex")
     replace('PH-PARAMETER', S[0].screening_parameter_name, filename="CUED_screening_summary.tex")
-    tikz_screening(S[1], num_points_for_plotting, title='Intensity ortho')
+
+    # Sets I_max_in_plotting_range to list with 3 entries
+    tikz_screening_per_color(S[0], num_points_for_plotting, title='Intensity parallel to E-field direction')
+    replace('PH-EDIR-S-PLOT', S[0].screening_filename_plot, filename="CUED_screening_summary.tex")
+    replace('PH-EDIR-A-IMAX', S[0].I_max_in_plotting_range[0], filename="CUED_screening_summary.tex")
+    replace('PH-EDIR-B-IMAX', S[0].I_max_in_plotting_range[1], filename="CUED_screening_summary.tex")
+    replace('PH-EDIR-C-IMAX', S[0].I_max_in_plotting_range[2], filename="CUED_screening_summary.tex")
+
+    tikz_screening_one_color(S[1], num_points_for_plotting, title='Intensity orthogonal to E-field direction')
     replace('PH-ORTHO-PLOT', S[1].screening_filename_plot, filename="CUED_screening_summary.tex")
     replace('PH-ORTHO-IMAX', S[1].I_max_in_plotting_range, filename="CUED_screening_summary.tex")
     replace('PH-PARAMETER', S[1].screening_parameter_name, filename="CUED_screening_summary.tex")
+
+    tikz_screening_per_color(S[1], num_points_for_plotting, title='Intensity orthogonal to E-field direction')
+    replace('PH-ORTHO-S-PLOT', S[1].screening_filename_plot, filename="CUED_screening_summary.tex")
+    replace('PH-ORTHO-A-IMAX', S[1].I_max_in_plotting_range[0], filename="CUED_screening_summary.tex")
+    replace('PH-ORTHO-B-IMAX', S[1].I_max_in_plotting_range[1], filename="CUED_screening_summary.tex")
+    replace('PH-ORTHO-C-IMAX', S[1].I_max_in_plotting_range[2], filename="CUED_screening_summary.tex")
+
+    tikz_screening_one_color(S[2], num_points_for_plotting, title='Summed Intensity')
+    replace('PH-FULL-PLOT', S[2].screening_filename_plot, filename="CUED_screening_summary.tex")
+    replace('PH-FULL-IMAX', S[2].I_max_in_plotting_range, filename="CUED_screening_summary.tex")
+    replace('PH-PARAMETER', S[2].screening_parameter_name, filename="CUED_screening_summary.tex")
+
+    tikz_screening_per_color(S[2], num_points_for_plotting, title='Summed Intensity')
+    replace('PH-FULL-S-PLOT', S[2].screening_filename_plot, filename="CUED_screening_summary.tex")
+    replace('PH-FULL-A-IMAX', S[2].I_max_in_plotting_range[0], filename="CUED_screening_summary.tex")
+    replace('PH-FULL-B-IMAX', S[2].I_max_in_plotting_range[1], filename="CUED_screening_summary.tex")
+    replace('PH-FULL-C-IMAX', S[2].I_max_in_plotting_range[2], filename="CUED_screening_summary.tex")
 
     os.system("pdflatex CUED_screening_summary.tex")
     os.system("pdflatex CUED_screening_summary.tex")

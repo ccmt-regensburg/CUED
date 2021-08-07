@@ -2,8 +2,10 @@
 \usepackage{xcolor}
 \usepackage[colorlinks=true,allcolors=blue,pdfborder={0 0 0},pdfstartview={FitV},breaklinks,linktocpage]{hyperref}
 \usepackage{color,amsmath,amsfonts,amssymb}
+\usepackage{cleveref}
 \usepackage[utf8]{inputenc}
 \usepackage{enumitem}%für mehrspaltige Aufzählungen
+\usepackage{float}
 \usepackage[ngerman, english]{babel}
 \usepackage{epsfig}
 \usepackage{pstricks}
@@ -12,7 +14,6 @@
 \usepackage{bbm}
 %\usepackage{showlabels}
 \usepackage[labelfont=bf]{caption}
-%\usepackage{nonfloat}
 \usepackage{siunitx}
 \DeclareSIUnit{\atomicunits}{a.u.}
 \usepackage{booktabs}%für Tabellen
@@ -190,15 +191,27 @@ Date of execution: \today
 
 \pagestyle{fancy}
 
-\section{Screening parallel \& orthogonal Emission}
-\begin{figure}
+\section{Screening results parallel Emission}
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{PH-EDIR-PLOT}
     \caption{Screening plot of PH-PARAMETER against frequency. The maximum intensity in electric
       field direction is $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{PH-EDIR-IMAX}{[\atomicunits]}$.}
     \label{fig:sec1_parallel_screening}
 \end{figure}
-\begin{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{PH-EDIR-S-PLOT}
+    \caption{This plot is a repetition of \cref{fig:sec1_parallel_screening} with individual color
+      highlighting per higher harmonic region. The maximum intensity in electric
+      field direction for the plots is (a): $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{PH-EDIR-A-IMAX}{[\atomicunits]}$, 
+      (b): $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{PH-EDIR-B-IMAX}{[\atomicunits]}$ and (c): 
+      $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{PH-EDIR-C-IMAX}{[\atomicunits]}$.}
+    \label{fig:sec1_parallel_screening_s}
+\end{figure}
+
+\section{Screening results orthogonal Emission}
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{PH-ORTHO-PLOT}
     \caption{Screening plot of PH-PARAMETER against frequency. The maximum intensity orthogonal
@@ -206,6 +219,36 @@ Date of execution: \today
     \label{fig:sec1_orthogonal_screening}
 \end{figure}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{PH-ORTHO-S-PLOT}
+    \caption{This plot is a repetition of \cref{fig:sec1_orthogonal_screening} with individual color
+      highlighting per higher harmonic region. The maximum intensity in electric
+      field direction for the plots is (a): $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{PH-ORTHO-A-IMAX}{[\atomicunits]}$, 
+      (b): $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{PH-ORTHO-B-IMAX}{[\atomicunits]}$ and (c): 
+      $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{PH-ORTHO-C-IMAX}{[\atomicunits]}$.}
+    \label{fig:sec1_orthogonal_screening_s}
+\end{figure}
+
+\section{Screening results sum of Emissions}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{PH-FULL-PLOT}
+    \caption{Screening plot of PH-PARAMETER against frequency. The maximum intensity orthogonal
+      to the electric field direction is $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{PH-FULL-IMAX}{[\atomicunits]}$.}
+    \label{fig:sec1_full_screening}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{PH-FULL-S-PLOT}
+    \caption{This plot is a repetition of \cref{fig:sec1_full_screening} with individual color
+      highlighting per higher harmonic region. The maximum intensity in electric
+      field direction for the plots is (a): $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{PH-FULL-A-IMAX}{[\atomicunits]}$, 
+      (b): $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{PH-FULL-B-IMAX}{[\atomicunits]}$ and (c): 
+      $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{PH-FULL-C-IMAX}{[\atomicunits]}$.}
+    \label{fig:sec1_full_screening_s}
+\end{figure}
 
 \section{References}
 When using the CUED software package, please reference to CUED by citing the following publication:
