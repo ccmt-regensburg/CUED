@@ -175,13 +175,15 @@ def check_params_for_print_latex_pdf(print_latex_pdf, params):
 
 def main():
 
+    # Second argument on command line for the test folder
+    testpath = sys.argv[1]
     dirpath = os.getcwd()
 
     print('\n\n=====================================================\n\n SBE CODE TESTER'
           '\n\n Executed in the directory:\n\n '+dirpath+
           '\n\n=====================================================\n\n')
 
-    tests_path = dirpath + '/tests'
+    tests_path = dirpath + '/' + testpath
     count = 0
 
     for cdir in sorted(os.listdir(tests_path)):
