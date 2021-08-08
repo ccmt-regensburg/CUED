@@ -14,13 +14,5 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-#    - name: Copy test file
-#      run:  cp tests/test_script.py published_calculations
-#    - name: Only run on a single CPU
-#      run:  sed -i 's/mpirun -np 2/mpirun -np 1/g' published_calculations/test_script.py
-    - name: Activate testing of Latex pdf
-      run:  sed -i 's/print_latex_pdf       = False/print_latex_pdf       = True/g' published_calculations/test_script.py
-#    - name: Change test directory
-#      run:  sed -i 's/\/tests/\/published_calculations/g' published_calculations/test_script.py
     - name: Run test script
-      run:  python3 tests/test_script.py published_calculations
+      run:  python3 tests/test_script.py --path published_calculations --latex True
