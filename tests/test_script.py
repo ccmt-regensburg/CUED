@@ -7,6 +7,7 @@ import importlib.util
 import importlib.machinery
 import sys
 
+from cued import HEADPATH
 from cued.plotting import read_dataset
 from cued.utility import ParamsParser
 
@@ -20,21 +21,26 @@ from cued.utility import ParamsParser
 print_latex_pdf		  = False
 threshold_rel_error	  = 0.1
 
+time_suffix = "time_data.dat"
+freq_suffix = "frequency_data.dat"
+params_suffix = "params.txt"
+pdf_suffix = "latex_pdf_files"
 
 def check_test(testdir, refdir):
 
 	print('\n\n=====================================================\n\nStart with test:'
-		  '\n\n' + testdir + '\n\n against reference in \n\n' + refdir + '\n\n')
+	      '\n\n' + testdir + '\n\n against reference in \n\n' + refdir + '\n\n')
 
 	filename_params		= testdir + '/params.py'
 	filename_run		= testdir + '/runscript.py'
-	filename_pdf		= testdir + '/latex_pdf_files/CUED_summary.pdf'
 
 	params = import_params(filename_params)
 
 	# Get name of files (needed for MPI-tests)
-	filenames = glob.glob1(refdir, "*frequency_data.dat")
-	number_of_files = len(filenames)
+	freq_filenames = glob.glob1(refdir, "*" + freq_suffix)
+	refe_prefixes = [freq_filename.replace(freq_suffix, "") for freq_filename in freq_filenames]
+	test_prefixes = [prefix.replace('reference_', '') for prefix in refe_prefixes]
+	pdf_foldernames = [prefix + pdf_suffix for prefix in test_prefixes]
 
 	print_latex_pdf_really = check_params_for_print_latex_pdf(print_latex_pdf, params)
 
@@ -47,10 +53,9 @@ def check_test(testdir, refdir):
 	time_data_ref = []
 	freq_data_ref = []
 
-	for i in range(number_of_files):
+	for prefix in refe_prefixes:
 
-		prefix = filenames[i][:-18]
-		time_data_tmp, freq_data_tmp, _dens_data = read_dataset(refdir, prefix=prefix)
+		time_data_tmp, freq_data_tmp, _dens_data = read_dataset(refdir, prefix=prefix, mute=True)
 
 		assert time_data_tmp is not None, 'Reference time_data is missing.'
 		assert freq_data_tmp is not None, 'Reference frequency_data is missing.'
@@ -58,14 +63,18 @@ def check_test(testdir, refdir):
 		time_data_ref.append(time_data_tmp)
 		freq_data_ref.append(freq_data_tmp)
 
+	##################################
+	# Execute script in the testdir
+	##################################
+	prev_dir = os.getcwd()
 	os.chdir(testdir)
-
-	os.system('mpirun -np 2 python3 runscript.py')
+	os.system('mpirun -n 2 python3 -W ignore ' + testdir + '/runscript.py')
+	os.chdir(prev_dir)
+	##################################
 
 	# Reading in generated data
-	for i in range(number_of_files):
-		prefix = filenames[i][10:-18]
-		time_data, freq_data, _dens_data = read_dataset(os.getcwd(), prefix=prefix)
+	for i, prefix in enumerate(test_prefixes):
+		time_data, freq_data, _dens_data = read_dataset(testdir, prefix=prefix, mute=True)
 
 		assert time_data is not None, '"time_data.dat" was not generated from the code'
 		assert freq_data is not None, '"frequency_data.dat" was not generated from the code'
@@ -94,10 +103,10 @@ def check_test(testdir, refdir):
 				I_intra_plus_dtP_E_dir = freq_data['I_intra_plus_dtP_E_dir'][freq_idx]
 				I_intra_plus_dtP_ortho = freq_data['I_intra_plus_dtP_E_dir'][freq_idx]
 				print("\nintra plus dtP E_dir: ", np.amax(np.abs(I_intra_plus_dtP_E_dir_ref)),
-					"\nintra plus dtP ortho: ", np.amax(np.abs(I_intra_plus_dtP_ortho_ref)))
+				      "\nintra plus dtP ortho: ", np.amax(np.abs(I_intra_plus_dtP_ortho_ref)))
 				check_emission(I_intra_plus_dtP_E_dir, I_intra_plus_dtP_ortho,
-							I_intra_plus_dtP_E_dir_ref, I_intra_plus_dtP_ortho_ref,
-							'dtP')
+				               I_intra_plus_dtP_E_dir_ref, I_intra_plus_dtP_ortho_ref,
+				               'dtP')
 
 		if hasattr(params, 'save_anom'):
 			if params.save_anom:
@@ -106,49 +115,45 @@ def check_test(testdir, refdir):
 				I_anom_ortho = freq_data['I_anom_ortho'][freq_idx]
 
 				print("\nintra plus dtP E_dir: ", np.amax(np.abs(I_anom_ortho_ref)))
-				check_emission(I_anom_ortho, I_anom_ortho,
-							I_anom_ortho_ref, I_anom_ortho_ref,
-							'anom')
+				check_emission(I_anom_ortho, I_anom_ortho, I_anom_ortho_ref, I_anom_ortho_ref, 'anom')
 
-		os.remove(testdir + '/' + filenames[i][10:-18] + 'time_data.dat')
-		os.remove(testdir + '/' + filenames[i][10:-18] + 'frequency_data.dat')
-		os.remove(testdir + '/' + filenames[i][10:-18] + 'params.txt')
+		if print_latex_pdf_really:
+			foldername_pdf = testdir + '/' + prefix + pdf_suffix + '/'
+			filename_pdf = foldername_pdf + 'CUED_summary.pdf'
+			assert os.path.isfile(filename_pdf),  "The latex PDF is not there."
+			os.system("sed -i '$ d' " + filename_params)
+			os.rename(filename_pdf, testdir + '/' + prefix + 'CUED_summary.pdf')
+			shutil.rmtree(foldername_pdf)
+
+		os.remove(testdir + '/' + prefix + params_suffix)
+		os.remove(testdir + '/' + prefix + freq_suffix)
+		os.remove(testdir + '/' + prefix + time_suffix)
+
 
 	shutil.rmtree(testdir + '/__pycache__')
 	for E0_dirname	 in glob.glob(testdir + '/E0*'):   shutil.rmtree(E0_dirname)
 	for PATH_dirname in glob.glob(testdir + '/PATH*'): shutil.rmtree(PATH_dirname)
 
-
-	if print_latex_pdf_really:
-		assert os.path.isfile(filename_pdf),  "The latex PDF is not there."
-		os.system("sed -i '$ d' "+filename_params)
-		filename_pdf_final	= testdir + '/CUED_summary_current_version.pdf'
-		shutil.move(filename_pdf, filename_pdf_final)
-		shutil.rmtree(testdir + '/latex_pdf_files')
-
 	print('Test passed successfully.'
-		  '\n\n=====================================================\n\n')
-
-	os.chdir("..")
-	sys.path.append("..")
+	      '\n\n=====================================================\n\n')
 
 def read_data(dir, prefix):
 
 	# Reading in reference data
-	time_data, freq_data, _dens_data = read_dataset(dir, prefix=prefix)
+	time_data, freq_data, _dens_data = read_dataset(dir, prefix=prefix, mute=True)
 
 	return time_data, freq_data
 
 
 def check_emission(I_E_dir, I_ortho, I_E_dir_ref, I_ortho_ref, name):
 	relerror = (np.abs(I_E_dir + I_ortho) + 1.0E-90) / \
-		(np.abs(I_E_dir_ref + I_ortho_ref) + 1.0E-90) - 1
+	           (np.abs(I_E_dir_ref + I_ortho_ref) + 1.0E-90) - 1
 
 	max_relerror = np.amax(np.abs(relerror))
 
 	print("\n\nTesting the \"" + name + "\" emission spectrum I(omega):",
-	  "\n\nThe maximum relative deviation between the computed and the reference spectrum is:", max_relerror,
-		"\nThe threshold is:																 ", threshold_rel_error, "\n")
+	      "\n\nThe maximum relative deviation between the computed and the reference spectrum is:", max_relerror,
+	      "\nThe threshold is:																 ", threshold_rel_error, "\n")
 
 	assert max_relerror < threshold_rel_error, "The \"" + name + "\" emission spectrum is not matching."
 
@@ -163,24 +168,24 @@ def import_params(filename_params):
 
 def check_params_for_print_latex_pdf(print_latex_pdf, params):
 
+	# print_latex_pdf is the global variable
 	if print_latex_pdf == True:
 		if hasattr(params, 'save_latex_pdf'):
 			print_latex_pdf_really = params.save_latex_pdf
 		else:
-			print_latex_pdf_really = True
+			print_latex_pdf_really = print_latex_pdf
 	else:
 		print_latex_pdf_really = False
 
 	return print_latex_pdf_really
 
 def main(testpath):
-	dirpath = os.getcwd()
 
-	print('\n\n=====================================================\n\n SBE CODE TESTER'
-		  '\n\n Executed in the directory:\n\n '+dirpath+
-		  '\n\n=====================================================\n\n')
+	tests_path = HEADPATH + '/' + testpath
+	print('\n\n=====================================================\n\n CUED CODE TESTER'
+	      '\n\n Executing tests in:\n\n '+ tests_path +
+	      '\n\n=====================================================\n\n')
 
-	tests_path = dirpath + '/' + testpath
 	count = 0
 
 	for cdir in sorted(os.listdir(tests_path)):
