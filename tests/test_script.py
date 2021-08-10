@@ -18,8 +18,9 @@ from cued.utility import ParamsParser
 #################################
 # PARAMETERS OF THE TEST SCRIPT #
 #################################
-print_latex_pdf		  = False
-threshold_rel_error	  = 0.1
+default_mpi_jobs = 1
+print_latex_pdf = False
+threshold_rel_error	= 0.1
 
 time_suffix = "time_data.dat"
 freq_suffix = "frequency_data.dat"
@@ -34,7 +35,7 @@ def check_test(testdir, refdir):
 	filename_params		= testdir + '/params.py'
 	filename_run		= testdir + '/runscript.py'
 
-	params = import_params(filename_params)
+	params, current_mpi_jobs = import_params(filename_params)
 
 	# Get name of files (needed for MPI-tests)
 	freq_filenames = glob.glob1(refdir, "*" + freq_suffix)
@@ -68,7 +69,8 @@ def check_test(testdir, refdir):
 	##################################
 	prev_dir = os.getcwd()
 	os.chdir(testdir)
-	os.system('mpirun -n 2 python3 -W ignore ' + testdir + '/runscript.py')
+	print(current_mpi_jobs)
+	os.system('mpirun -n ' + str(current_mpi_jobs) + ' python3 -W ignore ' + testdir + '/runscript.py')
 	os.chdir(prev_dir)
 	##################################
 
@@ -159,12 +161,21 @@ def check_emission(I_E_dir, I_ortho, I_E_dir_ref, I_ortho_ref, name):
 
 
 def import_params(filename_params):
+	"""
+	Imports the file dependent parameter file. If MPI_JOBS is set
+	it changes the number of started jobs for the file.
+	"""
 
 	spec = importlib.util.spec_from_file_location("params", filename_params)
 	params = importlib.util.module_from_spec(spec)
 	spec.loader.exec_module(params)
+	print(hasattr(params, 'MPI_JOBS'))
+	if hasattr(params, 'MPI_JOBS'):
+		current_mpi_jobs = params.MPI_JOBS
+	else:
+		current_mpi_jobs = default_mpi_jobs
 
-	return params.params()
+	return params.params(), current_mpi_jobs
 
 def check_params_for_print_latex_pdf(print_latex_pdf, params):
 
@@ -205,10 +216,13 @@ def parser():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-p", "--path", type=str, help="Relative testpath with respect to top level CUED dir.")
 	parser.add_argument("-l", "--latex", type=bool, help="Latex - PDF compilation.")
+	parser.add_argument("-n", "--mpin", type=int, help="Number of mpi jobs")
 	args = parser.parse_args()
+	print(args.mpin)
+	print(type(args.mpin))
 
-	return args.path, args.latex
+	return args.path, args.latex, args.mpin
 
 if __name__ == "__main__":
-	path, print_latex_pdf = parser()	
+	path, print_latex_pdf, default_mpi_jobs = parser()	
 	main(path)
