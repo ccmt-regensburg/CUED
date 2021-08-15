@@ -825,10 +825,11 @@ def write_efield_afield(T, P, W):
 def fourier_current_intensity(jt, window_function, dt_out, prefac_emission, freq, P):
 
 	ndt_fft = freq.size
+	ndt = np.size(jt, axis=0)
 
-	jt_for_fft = np.empty(ndt_fft, dtype=P.type_real_np)
+	jt_for_fft = np.zeros(ndt_fft, dtype=P.type_real_np)
 	if np.ndim(jt) == 1:
-		jt_for_fft[:] = jt[:]*window_function[:]
+		jt_for_fft[(ndt_fft - ndt)//2:(ndt_fft + ndt)//2] = jt[:]*window_function[:]
 		jw = fourier(dt_out, jt_for_fft)
 		Iw = prefac_emission*(freq**2)*np.abs(jw)**2
 
@@ -838,7 +839,7 @@ def fourier_current_intensity(jt, window_function, dt_out, prefac_emission, freq
 		Iw      = np.empty([ndt_fft, n], dtype=P.type_real_np)
 
 		for i in range(P.n):
-			jt_for_fft[:] = jt[:, i]*window_function[:]
+			jt_for_fft[(ndt_fft - ndt)//2:(ndt_fft + ndt)//2] = jt[:, i]*window_function[:]
 			jw[:, i] = fourier(dt_out, jt_for_fft)
 			Iw[:, i] = prefac_emission*(freq**2)*np.abs(jw[:, i])**2
 
@@ -849,10 +850,9 @@ def fourier_current_intensity(jt, window_function, dt_out, prefac_emission, freq
 
 		for i in range(n):
 			for j in range(n):
-				jt_for_fft[:] = jt[:, i, j]*window_function[:]
+				jt_for_fft[(ndt_fft - ndt)//2:(ndt_fft + ndt)//2] = jt[:, i, j]*window_function[:]
 				jw[:, i, j] = fourier(dt_out, jt_for_fft)
 				Iw[:, i, j] = prefac_emission*(freq**2)*np.abs(jw[:, i, j])**2
-
 
 	return Iw, jw
 
