@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.linalg as lin
 from cued.utility import ConversionFactors as co
 from cued.utility import conditional_njit, evaluate_njit_matrix
 
@@ -589,7 +590,7 @@ def make_polarization_inter_bandstructure(P, sys):
 ##########################################################################################
 
 
-def make_current_exact_path_hderiv(path, P, sys):
+def make_current_exact_path_hderiv_length(path, P, sys):
 
     """
         Function that calculates the exact current via eq. (79)
@@ -640,7 +641,7 @@ def make_current_exact_path_hderiv(path, P, sys):
 
 
     @conditional_njit(type_complex_np)
-    def current_exact_path_hderiv(solution, E_field=0, _A_field=0):
+    def current_exact_path_hderiv_length(solution, E_field, _A_field):
 
         if sheet_current:
 
@@ -679,8 +680,150 @@ def make_current_exact_path_hderiv(path, P, sys):
                         J_exact_ortho += - E_field * Bcurv_path[i_k, i].real * solution[i_k, i, i].real
 
         return J_exact_E_dir, J_exact_ortho
-    return current_exact_path_hderiv
+    return current_exact_path_hderiv_length
 
+
+def make_current_exact_path_hderiv_velocity(path, P, sys):
+
+    """
+        Function that calculates the exact current via eq. (79)
+    """
+
+    E_dir = P.E_dir
+    E_ort = P.E_ort
+
+    Nk1 = P.Nk1
+    n = P.n
+    n_sheets = P.n_sheets
+    type_complex_np = P.type_complex_np
+    type_real_np = P.type_real_np
+    sheet_current= P.sheet_current
+    do_semicl = P.do_semicl
+    degenerate_eigenvalues = sys.degenerate_eigenvalues
+    gidx = P.gidx
+    sheet_current = P.sheet_current
+    #wf_in_path = sys.wf_in_path
+    #Bcurv_path = sys.Bcurv_path
+
+    kx_before_shift = path[:, 0]
+    ky_before_shift = path[:, 1]
+    pathlen = kx_before_shift.size
+
+
+    def current_exact_path_hderiv_velocity(solution, E_field, A_field):
+
+        kx_in_path = kx_before_shift + A_field*E_dir[0]
+        ky_in_path = ky_before_shift + A_field*E_dir[1]
+
+        dhdkx = evaluate_njit_matrix(sys.hderivfjit[0], kx=kx_in_path, ky=ky_in_path, dtype=type_complex_np)
+        dhdky = evaluate_njit_matrix(sys.hderivfjit[1], kx=kx_in_path, ky=ky_in_path, dtype=type_complex_np)
+        
+        h_in_path = np.zeros((pathlen, n, n), dtype=type_complex_np)
+    
+        
+        for i in range(n):
+            for j in range(n):
+                for k in range(pathlen):
+                    kx = kx_in_path[k]
+                    ky = ky_in_path[k]
+                    h_in_path[k, i, j] = sys.hfjit[i][j](kx=kx, ky=ky)
+
+        buf, wf_in_path = diagonalize_h(h_in_path)
+
+        J_exact_E_dir, J_exact_ortho = calculate_current(dhdkx, dhdky, wf_in_path, solution)
+
+        return J_exact_E_dir, J_exact_ortho
+
+
+    @conditional_njit(type_complex_np)
+    def diagonalize_h(h_in_path):       
+
+        e_path = np.empty((pathlen, n), dtype=type_real_np)
+        wf_path = np.empty((pathlen, n, n), dtype=type_complex_np)
+
+        for i in range(pathlen):
+            e_path[i], wf_buff = lin.eigh(h_in_path[i, :, :])
+            if degenerate_eigenvalues:
+                for j in range(int(n/2)):
+                    wf1 = np.copy(wf_buff[:, 2*j])
+                    wf2 = np.copy(wf_buff[:, 2*j+1])
+                    wf_buff[:, 2*j] *= wf2[n-2]
+                    wf_buff[:, 2*j] -= wf1[n-2]*wf2
+                    wf_buff[:, 2*j+1] *= wf1[n-1]
+                    wf_buff[:, 2*j+1] -= wf2[n-1]*wf1
+            wf_gauged_entry = np.copy(wf_buff[gidx, :])
+            wf_buff[gidx, :] = np.abs(wf_gauged_entry)
+            wf_buff[~(np.arange(n) == gidx)] *= np.exp(1j*np.angle(wf_gauged_entry.conj()))
+            wf_path[i] = wf_buff
+
+        return e_path, wf_path
+
+    @conditional_njit(type_complex_np)
+    def calculate_current(dhdkx, dhdky, wf_in_path, solution):
+
+        matrix_element_x = np.zeros((Nk1, n, n), dtype=type_complex_np)
+        matrix_element_y = np.zeros((Nk1, n, n), dtype=type_complex_np)
+
+        if sheet_current:
+            matrix_element_x = dhdkx
+            matrix_element_y = dhdky
+
+        # elif P.do_semicl:
+        #     for i in range(n):
+        #         matrix_element_x[:, i, i] = sys.ederivx_path[:, i]
+        #         matrix_element_y[:, i, i] = sys.ederivy_path[:, i]
+
+        else:
+            for i_k in range(Nk1):
+                buff = dhdkx[i_k, :, :] @ wf_in_path[i_k, :, :]
+                matrix_element_x[i_k, :, :] = np.conjugate(wf_in_path[i_k, :, :].T) @ buff
+
+                buff = dhdky[i_k, :, :] @ wf_in_path[i_k,:,:]
+                matrix_element_y[i_k, :, :] = np.conjugate(wf_in_path[i_k, :, :].T) @ buff
+
+
+        mel_in_path = matrix_element_x * E_dir[0] + matrix_element_y * E_dir[1]
+        mel_ortho = matrix_element_x * E_ort[0] + matrix_element_y * E_ort[1]
+
+        if sheet_current:
+
+            J_exact_E_dir = np.zeros((n_sheets, n_sheets), dtype=type_real_np)
+            J_exact_ortho = np.zeros((n_sheets, n_sheets), dtype=type_real_np)
+
+            n_s = int(n/n_sheets)
+            for i_k in range(Nk1):
+                sol = np.zeros((n,n), dtype=type_complex_np)
+                for z in range(n):
+                    for zprime in range(n):
+                        for n_i in range(n):
+                            for n_j in range(n):
+                                sol[z, zprime] += np.conjugate(wf_in_path[i_k, z, n_i])*wf_in_path[i_k, zprime, n_j]*solution[i_k, n_j, n_i]
+                for s_i in range(n_sheets):
+                    for s_j in range(n_sheets):
+                        for i in range(n_s):
+                            for j in range(n_s):
+                                    J_exact_E_dir[s_i, s_j] += - np.real( mel_in_path[i_k, n_s*s_i + i, n_s*s_j + j] * sol[n_s*s_i + i, n_s*s_j + j] )
+                                    J_exact_ortho[s_i, s_j] += - np.real( mel_ortho[i_k, n_s*s_i + i, n_s*s_j + j] * sol[n_s*s_i + i, n_s*s_j + j] )
+
+        else:
+            J_exact_E_dir = 0
+            J_exact_ortho = 0
+
+            for i_k in range(Nk1):
+                for i in range(n):
+                    J_exact_E_dir += - ( mel_in_path[i_k, i, i].real * solution[i_k, i, i].real )
+                    J_exact_ortho += - ( mel_ortho[i_k, i, i].real * solution[i_k, i, i].real )
+                    for j in range(n):
+                        if i != j:
+                            J_exact_E_dir += - np.real( mel_in_path[i_k, i, j] * solution[i_k, j, i] )
+                            J_exact_ortho += - np.real( mel_ortho[i_k, i, j] * solution[i_k, j, i] )
+
+                    # if do_semicl:
+                    #     J_exact_ortho += - E_field * Bcurv_path[i_k, i].real * solution[i_k, i, i].real
+
+        return J_exact_E_dir, J_exact_ortho
+
+    return current_exact_path_hderiv_velocity
 
 def make_polarization_inter_path(P, sys):
     """

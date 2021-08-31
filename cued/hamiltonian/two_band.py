@@ -49,6 +49,8 @@ class TwoBandHamiltonianSystem():
         self.hsymbols = self.h.free_symbols
         self.hderiv = self.__hamiltonian_derivatives()
 
+        self.degenerate_eigenvalues = False
+
         self.e = None
         self.ederiv = None
 

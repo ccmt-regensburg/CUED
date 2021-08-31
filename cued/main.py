@@ -103,6 +103,7 @@ def run_sbe(sys, P, Mpi):
 	W = FrequencyContainers()
 
 	# Make rhs of ode for 2band or nband solver
+	sys.eigensystem_dipole_path(P.paths[0], P) # change structure, such that hfjit gets calculated first
 	rhs_ode, solver = make_rhs_ode(P, T, sys)
 
 	###########################################################################
@@ -231,7 +232,7 @@ def make_rhs_ode(P, T, sys):
 			rhs_ode = make_rhs_ode_2_band(sys, T.electric_field, P)
 
 	elif P.solver == 'nband':
-		rhs_ode = make_rhs_ode_n_band(T.electric_field, P)
+		rhs_ode = make_rhs_ode_n_band(sys, T.electric_field, P)
 
 	if P.solver_method in ('bdf', 'adams'):
 		solver = ode(rhs_ode, jac=None)\
@@ -255,7 +256,10 @@ def prepare_current_calculations(path, Nk2_idx, P, sys):
 			polarization_inter_path = make_polarization_path(path, P, sys)
 			current_intra_path = make_current_path(path, P, sys)
 	elif sys.system == 'num':
-		current_exact_path = make_current_exact_path_hderiv(path, P, sys)
+		if P.gauge == 'length':
+			current_exact_path = make_current_exact_path_hderiv_length(path, P, sys)
+		if P.gauge == 'velocity':
+			current_exact_path = make_current_exact_path_hderiv_velocity(path, P, sys)
 		if P.split_current:
 			polarization_inter_path = make_polarization_inter_path(P, sys)
 			current_intra_path = make_intraband_current_path(path, P, sys)
