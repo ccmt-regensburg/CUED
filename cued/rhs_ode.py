@@ -292,13 +292,12 @@ def make_rhs_ode_n_band(sys, electric_field, P):
     gauge = P.gauge
     E_dir = P.E_dir
     n = P.n
+    if sys.system == 'ana' or sys.system == 'num':
+        for i in range(P.n):
+            for j in range(P.n):
+                globals()[f"hfjit_{i}{j}"] = sys.hfjit[i][j]
+        degenerate_eigenvalues = sys.degenerate_eigenvalues
 
-    for i in range(P.n):
-        for j in range(P.n):
-            globals()[f"hfjit_{i}{j}"] = sys.hfjit[i][j]
-
-
-    degenerate_eigenvalues = sys.degenerate_eigenvalues
     epsilon = P.epsilon
     gidx = P.gidx
 
