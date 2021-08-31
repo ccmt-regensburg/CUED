@@ -11,9 +11,9 @@ from cued import HEADPATH
 from cued.plotting import read_dataset
 from cued.utility import ParamsParser
 
-######################################################################################################
-# THIS SCRIPT NEEDS TO BE EXECUTED IN THE MAIN GIT DIRECTORY BY CALLING python3 tests/test_script.py #
-######################################################################################################
+#########################################################################################################################################
+# THIS SCRIPT NEEDS TO BE EXECUTED IN THE MAIN GIT DIRECTORY BY CALLING python3 tests/test_script.py --path tests --latex True --mpin 2 #
+#########################################################################################################################################
 
 #################################
 # PARAMETERS OF THE TEST SCRIPT #
