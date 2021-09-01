@@ -16,8 +16,18 @@ class ParamsParser():
 
     def __combine_parameters(self, UP):
 
-        # build dictionary of all parameters, exclude t_pdf_densmat
-        if hasattr(UP, 't_pdf_densmat'):
+        self.parallelize_over_points = None
+
+        # build dictionary of all parameters, exclude t_pdf_densmat and points_to_path
+        if hasattr(UP, 'parallelize_over_points') and hasattr(UP, 't_pdf_densmat'):
+            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__', 'parallelize_over_points', 't_pdf_densmat'})
+            self.t_pdf_densmat = np.array(UP.t_pdf_densmat)*CoFa.fs_to_au
+            self.parallelize_over_points = UP.parallelize_over_points
+        elif hasattr(UP, 'parallelize_over_points'):
+            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__', 'parallelize_over_points'})
+            self.parallelize_over_points = UP.parallelize_over_points
+            self.t_pdf_densmat = np.array([-100, 0, 50, 100])*CoFa.fs_to_au   # Time points for printing density matrix
+        elif hasattr(UP, 't_pdf_densmat'):
             self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__', 't_pdf_densmat'})
             self.t_pdf_densmat = np.array(UP.t_pdf_densmat)*CoFa.fs_to_au
         else:

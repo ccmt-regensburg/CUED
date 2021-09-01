@@ -44,7 +44,7 @@ def sbe_solver(sys, params):
 	#  - Number of tasks % Nk2 = 0
 	#  - Number of params % (number of tasks / Nk2 ) == 0
 	#  - Number of tasks <= Nk2 * number of params
-	if Mpi.size > params.Nk2 and Mpi.size > P.number_of_combinations:
+	if Mpi.size > params.Nk2 and Mpi.size > P.number_of_combinations and not P.parallelize_over_points:
 		if Mpi.size % params.Nk2 == 0 and P.number_of_combinations % (Mpi.size/params.Nk2) == 0 and Mpi.size <= P.number_of_combinations*params.Nk2:			
 			if Mpi.rank == 0:
 				print("Parallelization over paths and parameters")
@@ -65,7 +65,7 @@ def sbe_solver(sys, params):
 			system.exit()
 
 	# Parallelize over parameters if there are more parameter combinations than paths
-	elif P.number_of_combinations >= params.Nk2 or P.path_list:
+	elif P.number_of_combinations >= params.Nk2 or P.path_list and not P.parallelize_over_points:
 		Mpi.mod = None
 		Mpi.local_params_idx_list = Mpi.get_local_idx(P.number_of_combinations)
 		P.path_parallelization = False
@@ -77,6 +77,7 @@ def sbe_solver(sys, params):
 		P.path_parallelization = True
 
 	# make subcommunicator
+	P.Nk1 = params.Nk1
 	P.Nk2 = params.Nk2
 	make_subcommunicators(Mpi, P)
 
@@ -88,6 +89,25 @@ def sbe_solver(sys, params):
 	# Wait until all calculations are finished.
 	if P.save_screening or P.save_latex_pdf:
 		write_screening_combinations_mpi(P, params, Mpi)
+
+def make_subcommunicators(Mpi, P):
+
+	if P.combined_parallelization:
+
+		Mpi.subcomm = Mpi.comm.Split(Mpi.color, Mpi.rank)
+		Mpi.local_Nk2_idx_list = [Mpi.mod]
+	
+	elif P.parallelize_over_points:	#works only for fixed Nk1 and Nk2
+		Mpi.local_Nk2_idx_list = Mpi.get_local_idx(P.Nk2*P.Nk1)
+		Mpi.subcomm = Mpi.comm.Split(0, Mpi.rank)		
+
+	elif P.path_parallelization:
+		Mpi.local_Nk2_idx_list = Mpi.get_local_idx(P.Nk2)
+		Mpi.subcomm = Mpi.comm.Split(0, Mpi.rank)
+
+	else:
+		Mpi.local_Nk2_idx_list = np.arange(P.Nk2)
+		Mpi.subcomm = Mpi.comm.Split(Mpi.rank, Mpi.rank)
 
 
 def run_sbe(sys, P, Mpi):
@@ -230,20 +250,6 @@ def run_sbe(sys, P, Mpi):
 	if P.save_dm_t:
 		np.savez(P.header + 'time_matrix', pdf_densmat=T.pdf_densmat, t_pdf_densmat=T.t_pdf_densmat, A_field=T.A_field)
 
-def make_subcommunicators(Mpi, P):
-
-	if P.combined_parallelization:
-
-		Mpi.subcomm = Mpi.comm.Split(Mpi.color, Mpi.rank)
-		Mpi.local_Nk2_idx_list = [Mpi.mod]
-
-	elif P.path_parallelization:
-		Mpi.local_Nk2_idx_list = Mpi.get_local_idx(P.Nk2)
-		Mpi.subcomm = Mpi.comm.Split(0, Mpi.rank)
-
-	else:
-		Mpi.local_Nk2_idx_list = np.arange(P.Nk2)
-		Mpi.subcomm = Mpi.comm.Split(Mpi.rank, Mpi.rank)
 
 def make_BZ(P):
 		# Form Brillouin Zone
@@ -261,6 +267,21 @@ def make_BZ(P):
 		P.dk, P.kweight, P.paths, P.mesh = rect_mesh(P)
 
 	P.E_ort = np.array([P.E_dir[1], -P.E_dir[0]])
+
+	if P.parallelize_over_points:
+		if P.gauge != 'velocity':
+			system.exit('Parallelization over points can only be used with the velocity gauge')
+		Nk1_buf = np.copy(P.Nk1)
+		Nk2_buf = np.copy(P.Nk2)
+		paths_buf = np.copy(P.paths)
+
+		P.paths = np.empty((Nk1_buf*Nk2_buf, 1, 2))
+		for i in range(Nk2_buf):
+			for j in range(Nk1_buf):
+				P.paths[Nk1_buf*i + j, 0, 0] = paths_buf[i, j, 0]
+				P.paths[Nk1_buf*i + j, 0, 1] = paths_buf[i, j, 1]
+		P.Nk1 = 1
+		P.Nk2 = Nk1_buf * Nk2_buf
 
 def make_rhs_ode(P, T, sys):
 	if P.solver == '2band':
