@@ -13,6 +13,8 @@ from cued.observables import *
 from cued.plotting import write_and_compile_screening_latex_PDF
 from cued.rhs_ode import *
 
+import sys as system
+
 def sbe_solver(sys, params):
 	"""
 	Function that initializes MPI-parallelization and distributes parameters that are given as a
@@ -36,20 +38,51 @@ def sbe_solver(sys, params):
 	if hasattr(sys, 'n_sheets'):
 		P.n_sheets = sys.n_sheets
 
+	P.combined_parallelization = False
+
+	# Parallelize over paths and parameters if the following conditions are met:
+	#  - Number of tasks % Nk2 = 0
+	#  - Number of params % (number of tasks / Nk2 ) == 0
+	#  - Number of tasks <= Nk2 * number of params
+	if Mpi.size > params.Nk2 and Mpi.size > P.number_of_combinations:
+		if Mpi.size % params.Nk2 == 0 and P.number_of_combinations % (Mpi.size/params.Nk2) == 0 and Mpi.size <= P.number_of_combinations*params.Nk2:			
+			if Mpi.rank == 0:
+				print("Parallelization over paths and parameters")
+			Mpi.params_sets = int(Mpi.size/params.Nk2)
+			Mpi.color = Mpi.rank//params.Nk2
+			Mpi.mod = Mpi.rank%params.Nk2
+			Mpi.local_params_idx_list = list(range(P.number_of_combinations))[Mpi.color::Mpi.params_sets]
+			P.combined_parallelization = True
+			P.path_parallelization = True
+		else:
+			ncpu_list = []
+			for i in range(2, 1+P.number_of_combinations):
+				if P.number_of_combinations % (i) == 0:
+					ncpu_list.append(i*params.Nk2)
+			if Mpi.rank == 0:
+				print("For parallelization over paths and parameters, choose "
+						+ "the number of MPI ranks from " + str(ncpu_list) )
+			system.exit()
+
 	# Parallelize over parameters if there are more parameter combinations than paths
-	if P.number_of_combinations >= params.Nk2 or P.path_list:
+	elif P.number_of_combinations >= params.Nk2 or P.path_list:
+		Mpi.mod = None
 		Mpi.local_params_idx_list = Mpi.get_local_idx(P.number_of_combinations)
 		P.path_parallelization = False
+	
 	# Parallelize over paths else
 	else:
+		Mpi.mod = None
 		Mpi.local_params_idx_list = range(P.number_of_combinations)
 		P.path_parallelization = True
 
+	# make subcommunicator
+	P.Nk2 = params.Nk2
+	make_subcommunicators(Mpi, P)
+
 	#run sbe for i'th parameter set
 	for i in Mpi.local_params_idx_list:
-
 		P.distribute_parameters(i, params)
-		make_subcommunicators(Mpi, P)
 		run_sbe(sys, P, Mpi)
 
 	# Wait until all calculations are finished.
@@ -199,7 +232,12 @@ def run_sbe(sys, P, Mpi):
 
 def make_subcommunicators(Mpi, P):
 
-	if P.path_parallelization:
+	if P.combined_parallelization:
+
+		Mpi.subcomm = Mpi.comm.Split(Mpi.color, Mpi.rank)
+		Mpi.local_Nk2_idx_list = [Mpi.mod]
+
+	elif P.path_parallelization:
 		Mpi.local_Nk2_idx_list = Mpi.get_local_idx(P.Nk2)
 		Mpi.subcomm = Mpi.comm.Split(0, Mpi.rank)
 
@@ -678,7 +716,7 @@ def write_screening_combinations(P, params):
 def write_current_emission_mpi(T, P, W, sys, Mpi):
 
 	# only save data from a single MPI rank
-	if Mpi.rank == 0 or not P.path_parallelization:
+	if Mpi.rank == 0 or Mpi.mod == 0 or not P.path_parallelization:
 		write_current_emission(T, P, W, sys, Mpi)
 
 		if P.save_fields:
