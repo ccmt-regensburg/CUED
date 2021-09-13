@@ -3,6 +3,7 @@ from params import params
 
 import cued.hamiltonian
 from cued.main import sbe_solver
+from cued.utility import ConversionFactors as co
 
 def semich_bite():
     # Hamiltonian Parameters
@@ -12,13 +13,9 @@ def semich_bite():
     mx = 0.05*co.eV_to_au
     muz = 0.033
 
-    semich_bite_system = sbe.hamiltonian.Semiconductor(A=A, mz=muz, mx=mx,
-                                                     a=params.a, align=True)
-    h_sym, ef_sym, wf_sym, _ediff_sym = semich_bite_system.eigensystem(gidx=1)
-    semich_bite_dipole = sbe.dipole.SymbolicDipole(h_sym, ef_sym, wf_sym)
-    semich_bite_curvature = sbe.dipole.SymbolicCurvature(h_sym, semich_bite_dipole.Ax, semich_bite_dipole.Ay)
+    semich_bite_system = cued.hamiltonian.Semiconductor(A=A, mz=muz, mx=mx, a=params.a, nature=True)
 
-    return semich_bite_system, semich_bite_dipole, semich_bite_curvature
+    return semich_bite_system
 
 def run(system):
 
