@@ -4,6 +4,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 mpl.use('Agg')
+import shutil
 import tikzplotlib
 
 from cued.plotting.colormap import whitedarkjet
@@ -28,6 +29,24 @@ mpl.rc('legend', fancybox=False, fontsize=10, framealpha=1, labelspacing=0.08,
 # PGF
 mpl.rc('pgf', texsystem='lualatex',
 	   preamble=r'\usepackage{siunitx}\usepackage{braket}\usepackage{mathtools}\usepackage{amssymb}\usepackage[version=4]{mhchem}\usepackage[super]{nth}')#\sisetup{per-mode=symbol-or-fraction}')
+
+
+def conditional_pdflatex(name_data, name_tex):
+	"""
+	Check wheter pdflatex compiler exists before proceeding.
+	"""
+	print("======================")
+	if shutil.which("pdflatex"):
+		print("Creating PDF")
+		print(name_data)
+		os.system("pdflatex " + name_tex + " > /dev/null 2>&1")
+		os.system("pdflatex " + name_tex + " > /dev/null 2>&1")
+		print("Done")
+	else:
+		print("No LaTeX (pdflatex) compiler found, only keeping .tex files and logo.")
+		print("Can be compiled by hand by using 'pdflatex' on the .tex file.")
+	print("======================")
+
 
 def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
 
@@ -86,14 +105,7 @@ def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
 
 	replace("semithick", "thick", "*")
 
-	print("===================")
-	print("Creating Output PDF")
-	print(P.header.replace('_', ' '))
-	os.system("pdflatex CUED_summary.tex > /dev/null 2>&1")
-	os.system("pdflatex CUED_summary.tex > /dev/null 2>&1")
-	print("Done")
-	print("===================")
-
+	conditional_pdflatex(P.header.replace('_', ' '), 'CUED_summary.tex')
 	chdir()
 
 
@@ -703,7 +715,6 @@ def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
 	plt.close(fig)
 
 
-
 def tikz_screening_one_color(S, num_points_for_plotting, title):
 	'''
 	Plot a screening (like CEP) plot in frequency range given by ff0 and screening_output
@@ -868,10 +879,5 @@ def write_and_compile_screening_latex_PDF(S):
 	replace('PH-FULL-B-IMAX', S[2].I_max_in_plotting_range[1], filename="CUED_screening_summary.tex")
 	replace('PH-FULL-C-IMAX', S[2].I_max_in_plotting_range[2], filename="CUED_screening_summary.tex")
 
-	print("======================")
-	print("Creating Screening PDF")
-	print(S[0].screening_filename.replace('_E_dir_split_', '').replace('_', ' '))
-	os.system("pdflatex CUED_screening_summary.tex > /dev/null 2>&1")
-	os.system("pdflatex CUED_screening_summary.tex > /dev/null 2>&1")
-	print("Done")
-	print("======================")
+	conditional_pdflatex(S[0].screening_filename.replace('_E_dir_split_', '').replace('_', ' '),
+	                     'CUED_screening_summary.tex')
