@@ -1,0 +1,266 @@
+\documentclass[11pt, a4paper]{scrartcl}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,allcolors=blue,pdfborder={0 0 0},pdfstartview={FitV},breaklinks,linktocpage]{hyperref}
+\usepackage{color,amsmath,amsfonts,amssymb}
+\usepackage{cleveref}
+\usepackage[utf8]{inputenc}
+\usepackage{enumitem}%für mehrspaltige Aufzählungen
+\usepackage{float}
+\usepackage[ngerman, english]{babel}
+\usepackage{epsfig}
+\usepackage{pstricks}
+\usepackage{graphics}
+\graphicspath{{Figures/}}
+\usepackage{bbm}
+%\usepackage{showlabels}
+\usepackage[labelfont=bf]{caption}
+\usepackage{siunitx}
+\DeclareSIUnit{\atomicunits}{a.u.}
+\usepackage{booktabs}%für Tabellen
+\usepackage{pgffor} %for loops
+\usepackage{ifthen} %for if
+\usepackage{pgfplots} %für Plots
+\pgfplotsset{
+compat=1.5,
+tick label style={font=\small},
+every axis/.append style={line width=0.8pt, tick style={line width=0.7pt}}
+} %für richtigen Abstand der labels
+\usetikzlibrary{shapes,arrows,fit,calc,positioning,arrows}
+\usepackage[
+  textheight=25cm,
+left=2.3cm,
+right=2.3cm,
+headheight=25pt,
+  includehead,includefoot,
+  heightrounded,
+]{geometry}
+\makeatletter
+\def\input@path{{./Figures/}}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyfoot{}
+\fancyhead{}
+% \renewcommand{\chaptermark}[1]
+% {\markboth{{\chaptername\ \thechapter:\  #1}}{}}
+% \renewcommand{\sectionmark}[1]
+% {{\markright{ \thesection\ #1}}} 
+%\renewcommand{\sectionmark}[1]{\markboth{#1}{}}
+
+%\renewcommand\sectionmark[1]{\markright{#1}}
+%\renewcommand{\thesection}{\arabic{section}.}
+\fancyhead[L]{}
+\fancyhead[R]{\thepage}
+\fancyhead[C]{\nouppercase{\leftmark}}
+%\fancyhead[C]{\nouppercase{\rightmark}}
+
+
+%\usepackage{sectsty}
+\usepackage{url}
+%\usepackage{breakurl}
+\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{tikzpagenodes}
+
+\definecolor{darkgreen}{rgb}{0.0,0.6,0.0}
+\definecolor{shadedgreen}{rgb}{0.8,0.95,0.8}
+\definecolor{shadedblue}{rgb}{0.85,0.85,1.0}
+\newlength\figureheight 
+\newlength\figurewidth
+
+
+\usepackage[varg]{txfonts} %font/Schrift
+%\usepackage{csquotes}
+% \usepackage[minnames=3,maxnames=30,backend=biber,natbib=true,sorting=none,citestyle=numeric-comp,giveninits=true]{biblatex}
+% \addbibresource{Literature.bib}
+% %\setlength\bibitemsep{0.5em}
+% \setlength{\biblabelsep}{0.4em}
+
+% \DeclareFieldFormat{pages}{#1}
+% \DeclareFieldFormat{journaltitle}{#1}
+% \DeclareFieldFormat{eprint}{#1}
+% \DeclareFieldFormat[article]{title}{\it#1\isdot}
+
+% \DeclareBibliographyDriver{article}{
+% \printnames{author}, \printfield{title},
+% \href{http://dx.doi.org/\thefield{doi}}
+% {\printfield{journaltitle} 
+% \textbf{\printfield{volume}}, \printfield{pages} 
+% (\printfield{year})}.}
+
+% \DeclareBibliographyDriver{misc}{
+% \printnames{author}, \printfield{title},
+% \href{https://arxiv.org/abs/\thefield{eprint}}{
+% arXiv preprint, arXiv:\printfield{eprint}  (\printfield{year})}.}
+
+% \DeclareBibliographyDriver{inbook}{\hspace{-0.1cm}
+% \printnames{author},
+% \printfield{title},
+% in \printfield{booktitle}.
+% \printlist{publisher}
+% (\printfield{year}).
+% }
+
+
+% \renewbibmacro*{name:andothers}{% Based on name:andothers from biblatex.def
+%   \ifboolexpr{
+%     test {\ifnumequal{\value{listcount}}{\value{liststop}}}
+%     and
+%     test \ifmorenames
+%   }
+%     {\ifnumgreater{\value{liststop}}{1}
+%       {\finalandcomma}
+%       {}%
+%      \andothersdelim\bibstring[\emph]{andothers}}
+%     {}}
+
+\setenumerate[1]{label=[\arabic*],ref=\arabic*}
+\newcommand{\paper}[4]{\item #1, \,\textit{#2}, \,\href{#3}{#4}.\\[-1.4em]}
+
+
+\newcommand{\bE}{\mathbf{E}}
+\newcommand{\bk}{\mathbf{k}}
+\newcommand{\bA}{\mathbf{A}}
+\newcommand{\bj}{\mathbf{j}}
+\newcommand{\bd}{\mathbf{d}}
+\newcommand{\sd}{\hspace{0.05em}}
+\newcommand{\eqt}{\,{=}\,}
+\newcommand{\pt}{\,{+}\,}
+\newcommand{\coloneqqt}{\,{\coloneqq}\,}
+\newcommand{\intbzdkpi}{\int\limits_\text{BZ}\frac{d\bk}{(2\pi)^2}}
+\newcommand{\rhonnprime}{\rho_{nn'}(\bk,t)}
+\newcommand{\rhonprimen}{\rho_{n'n}(\bk,t)}
+\newcommand{\un}{\underline{n}}
+\newcommand{\braunk}{\langle u_{n\bk}|}
+\newcommand{\ketunk}{|u_{n\bk}\rangle}
+\newcommand{\ketunkprime}{|u_{n'\bk}\rangle}
+\newcommand{\timest}{\,{\times}\,}
+
+\definecolor{darkgreen}{rgb}{0.0,0.5,0.0}
+
+
+\begin{document}
+
+\pagenumbering{Roman}
+
+\begin{titlepage}\pdfbookmark[0]{Title}{Title}
+  \sffamily
+  \begin{center}
+{
+\includegraphics[width=9cm]{logo.pdf}
+\\[5em]
+\Huge \bfseries Screening summary of the CUED program}
+\\[3em]\large
+The CUED program is developed and maintained by:
+\\[3em]
+Chair of Computational Condensed Matter Theory
+  \\[0.5em]
+Institute of Theoretical Physics
+  \\[0.5em]
+University of Regensburg
+  \\[0.5em]
+Universitätsstraße 31
+  \\[0.5em]
+D\,-\,93053 Regensburg
+  \\[0.5em]
+Germany
+\\[3em]
+Date of execution: \today
+  \\[0.5em]
+  \end{center}{\large
+  Contact:
+  \\[1em]
+    Jan Wilhelm
+      \\[0.5em]
+    Ferdinand Evers
+  \\[3em]
+  Contributors (in alphabetic order): 
+  \\[1em]
+  Jack Crewse
+  \\[0.5em]
+  Patrick Grössing
+  \\[0.5em]
+  Adrian Seith
+  }
+\end{titlepage}
+
+\pagenumbering{arabic}
+\pagestyle{plain}
+
+\pdfbookmark[0]{Contents}{Contents}
+\tableofcontents
+
+\pagestyle{fancy}
+\section{Information}
+The data presented in this PDF is a collection of the data produced by all parameter combinations.
+It is not new data but only presented in a cohesive form to make it easier to see parametric dependencies.
+
+\section{Screening results parallel Emission}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{phase=variable_E_dir_plot.pdf}
+    \caption{Screening plot of phase against frequency. The maximum intensity in electric
+      field direction is $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{1.2383e-18}{[\atomicunits]}$.}
+    \label{fig:sec1_parallel_screening}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{phase=variable_E_dir_split_plot.pdf}
+    \caption{This plot is a repetition of \cref{fig:sec1_parallel_screening} with individual color
+      highlighting per higher harmonic region. The maximum intensity in electric
+      field direction for the plots is (a): $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{1.2383e-18}{[\atomicunits]}$, 
+      (b): $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{3.2747e-29}{[\atomicunits]}$ and (c): 
+      $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{1.0455e-33}{[\atomicunits]}$.}
+    \label{fig:sec1_parallel_screening_s}
+\end{figure}
+
+\section{Screening results orthogonal Emission}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{phase=variable_ortho_plot.pdf}
+    \caption{Screening plot of phase against frequency. The maximum intensity orthogonal
+      to the electric field direction is $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{2.3378e-35}{[\atomicunits]}$.}
+    \label{fig:sec1_orthogonal_screening}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{phase=variable_ortho_split_plot.pdf}
+    \caption{This plot is a repetition of \cref{fig:sec1_orthogonal_screening} with individual color
+      highlighting per higher harmonic region. The maximum intensity in electric
+      field direction for the plots is (a): $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{2.3378e-35}{[\atomicunits]}$, 
+      (b): $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{9.8288e-37}{[\atomicunits]}$ and (c): 
+      $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{4.4665e-37}{[\atomicunits]}$.}
+    \label{fig:sec1_orthogonal_screening_s}
+\end{figure}
+
+\section{Screening results sum of Emissions}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{phase=variable_full_plot.pdf}
+    \caption{Screening plot of phase against frequency. The maximum intensity orthogonal
+      to the electric field direction is $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{1.2383e-18}{[\atomicunits]}$.}
+    \label{fig:sec1_full_screening}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{phase=variable_full_split_plot.pdf}
+    \caption{This plot is a repetition of \cref{fig:sec1_full_screening} with individual color
+      highlighting per higher harmonic region. The maximum intensity in electric
+      field direction for the plots is (a): $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{1.2383e-18}{[\atomicunits]}$, 
+      (b): $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{3.2747e-29}{[\atomicunits]}$ and (c): 
+      $I_{\mathrm{hh}}^{\mathrm{max}} = \SI{1.0456e-33}{[\atomicunits]}$.}
+    \label{fig:sec1_full_screening_s}
+\end{figure}
+
+\section{References}
+When using the CUED software package, please reference to CUED by citing the following publication:
+\begin{enumerate}[leftmargin=*]
+
+\paper{J.~Wilhelm, P.~Grössing, A.~Seith, J.~Crewse, M.~Nitsch, L.~Weigl, C.~Schmid, and F.~Evers}{Semi\-con\-duc\-tor-Bloch Formalism: Derivation and Application to High-Harmonic Generation from Dirac Fermions}{https://doi.org/10.1103/PhysRevB.103.125419}{ 
+Phys.~Rev.~B~\,\textbf{103}, 125419 (2021)}
+\label{Wilhelm2021}
+
+\end{enumerate}
+
+\end{document}
