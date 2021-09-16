@@ -39,8 +39,7 @@ class params:
 
     # Flags for testing and features
     ##########################################################################
-    gauge         = 'length'   # Gauge of the system
-    solver        = '2band'
-    user_out      = False
-    save_approx   = True
+    gauge          = 'length'   # Gauge of the system
+    solver         = '2band'
+    user_out       = False
 
