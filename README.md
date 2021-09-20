@@ -22,7 +22,7 @@ Change to the directory of the code:
     
 Type ``pwd`` and set the outcome as pythonpath:
 
-    export PYTHONPATH="/path/to/CUED"
+    export PYTHONPATH=$PYTHONPATH:"/path/to/CUED"
 
 Mandatory files for running the code are ``params.py`` containing the parameters of the calculation and the runscript ``runscript.py``. You can find exemplary parameter files and runscripts in the directory ``tests`` and ``published_calculations``. Now, you can run a test, for example
 
