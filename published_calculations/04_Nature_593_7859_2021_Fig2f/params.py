@@ -42,4 +42,5 @@ class params:
     gauge          = 'length'   # Gauge of the system
     solver         = '2band'
     user_out       = False
-    plot_format    = png
+    plot_format    = 'png'
+		save_latex_pdf = True
