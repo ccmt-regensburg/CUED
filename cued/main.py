@@ -662,15 +662,16 @@ def write_screening_combinations(P, params):
 	P.construct_current_parameters_and_header(0, params)
 	_t, freq_data, _d = read_dataset(path='.', prefix=P.header)
 
-	# First E-dir, then ortho
+	# First E-dir, second ortho, third combined data
 	S = np.empty(3, dtype=ScreeningContainers)
-	S[0] = ScreeningContainers(freq_data['f/f0'], params_dims)
-	S[1] = ScreeningContainers(freq_data['f/f0'], params_dims)
-	S[2] = ScreeningContainers(freq_data['f/f0'], params_dims)
+	S[0] = ScreeningContainers(freq_data['f/f0'], params_dims, P.plot_format)
+	S[1] = ScreeningContainers(freq_data['f/f0'], params_dims, P.plot_format)
+	S[2] = ScreeningContainers(freq_data['f/f0'], params_dims, P.plot_format)
 
 	# Load all f/f0 and intensities into memory
 	for i, idx in enumerate(params_idx):
 		P.construct_current_parameters_and_header(i, params)
+		# example:
 		# if E0 = [1, 2], chirp = [0, 1]
 		# OrderedDict puts E0 before chirp
 		# E0=1, chirp=0 -> (0, 0), E0=1, chirp=1 -> (0, 1)

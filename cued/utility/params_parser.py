@@ -174,6 +174,10 @@ class ParamsParser():
         if 'save_screening' in UP:
             self.save_screening = UP['save_screening']
 
+        self.plot_format = 'pdf'
+        if 'plot_format' in UP:
+            self.plot_format = UP['plot_format']
+
         self.do_semicl = False                            # Semiclassical calc. (dipole = 0)
         if 'do_semicl' in UP:
             self.do_semicl = UP['do_semicl']

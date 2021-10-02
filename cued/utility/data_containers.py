@@ -53,9 +53,21 @@ class FrequencyContainers():
 	pass
 
 class ScreeningContainers():
-	def __init__(self, ff0, params_dims):
+	def __init__(self, ff0, params_dims, plot_format):
+		"""
+		Container to generate plots of multiple parameter combinations e.g. CEP plots
+		Parameters
+		----------
+		ff0 : np.ndarray
+		    Frequencies of the system, normalized over the carrier frequency f0
+		params_dims : tuple
+		    Dimensions of screening parameters e.g. 2 E-fields, 2 chirps -> (2, 2)
+		plot_format : string
+		    Should the plot be saved as pdf or png?
+		"""
 		# frequencies
 		self.ff0 = ff0
+		self.plot_format = plot_format
 
 		# All intensity data and current output data
 		self.full_screening_data = np.empty(params_dims + (self.ff0.size, ), dtype=np.float64)
@@ -111,4 +123,4 @@ class ScreeningContainers():
 	@screening_filename.setter
 	def screening_filename(self, filename):
 		self._screening_filename = filename
-		self.screening_filename_plot = filename + 'plot.pdf'
+		self.screening_filename_plot = filename + 'plot.' + self.plot_format
