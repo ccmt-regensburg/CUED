@@ -78,7 +78,7 @@ class ParamsParser():
         for key_idx, key in enumerate(self.user_params):
             current_parameters[key] = self.params_combinations[param_idx][key_idx]
             if type(UP.__dict__[key]) == list or type(UP.__dict__[key]) == np.ndarray:
-                self.header += key + '=' + str(current_parameters[key]) + '_'
+                self.header += key + '={:.4f}_'.format(current_parameters[key])
 
         return current_parameters
 

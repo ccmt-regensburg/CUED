@@ -834,7 +834,6 @@ def tikz_screening_per_color(S, num_points_for_plotting, title):
 	ax[0].set_title(title)
 	# Adjust plot name
 	S.screening_filename = S.screening_filename + 'split_'
-	print(S.screening_filename_plot)
 	plt.savefig(S.screening_filename_plot, bbox_inches='tight')
 	plt.close(fig)
 
