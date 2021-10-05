@@ -69,7 +69,6 @@ def check_test(testdir, refdir):
 	##################################
 	prev_dir = os.getcwd()
 	os.chdir(testdir)
-	print(current_mpi_jobs)
 	os.system('mpirun -n ' + str(current_mpi_jobs) + ' python3 -W ignore ' + testdir + '/runscript.py')
 	os.chdir(prev_dir)
 	##################################
