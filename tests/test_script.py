@@ -217,8 +217,6 @@ def parser():
 	parser.add_argument("-l", "--latex", type=bool, help="Latex - PDF compilation.")
 	parser.add_argument("-n", "--mpin", type=int, help="Number of mpi jobs")
 	args = parser.parse_args()
-	print(args.mpin)
-	print(type(args.mpin))
 
 	return args.path, args.latex, args.mpin
 
