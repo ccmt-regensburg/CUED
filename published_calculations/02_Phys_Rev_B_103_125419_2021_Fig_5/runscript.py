@@ -7,21 +7,21 @@ import numpy as np
 
 def semiconductor():
 
-    a = 6            # lattice constant in atomic units
-    t = 3.0/27.211   # hopping: 3 eV
-    m = 3.0/27.211   # on-site energy difference of two sites: 3 eV
+	a = 6            # lattice constant in atomic units
+	t = 3.0/27.211   # hopping: 3 eV
+	m = 3.0/27.211   # on-site energy difference of two sites: 3 eV
 
-    params.length_BZ_E_dir = 2*np.pi/a
+	params.length_BZ_E_dir = 2*np.pi/a
 
-    semiconductor_system = cued.hamiltonian.two_site_semiconductor(lattice_const=a, hopping=t, onsite_energy_difference=m)
+	semiconductor_system = cued.hamiltonian.two_site_semiconductor(lattice_const=a, hopping=t, onsite_energy_difference=m)
 
-    return semiconductor_system
+	return semiconductor_system
 
 def run(system):
 
-    sbe_solver(system, params)
+	sbe_solver(system, params)
 
-    return 0
+	return 0
 
 if __name__ == "__main__":
-    run(semiconductor())
+	run(semiconductor())
