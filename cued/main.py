@@ -248,7 +248,8 @@ def run_sbe(sys, P, Mpi):
 
 	#save density matrix at given points in time
 	if P.save_dm_t:
-		np.savez(P.header + 'time_matrix', pdf_densmat=T.pdf_densmat, t_pdf_densmat=T.t_pdf_densmat, A_field=T.A_field)
+		np.savez(P.header + 'time_matrix', pdf_densmat=T.pdf_densmat,
+		         t_pdf_densmat=T.t_pdf_densmat, A_field=T.A_field)
 
 
 def make_BZ(P):
@@ -368,9 +369,7 @@ def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, Mpi):
 def store_density_matrix_for_pdf(T, P, Nk2_idx, ti):
 
 	for count, t_pdf_densmat in enumerate(P.t_pdf_densmat):
-
 		if (t_pdf_densmat > T.t[ti-1] and t_pdf_densmat < T.t[ti]) or t_pdf_densmat == T.t[ti]:
-
 			T.pdf_densmat[:, Nk2_idx, count, :, :] = T.solution
 			T.t_pdf_densmat[count] = T.t[ti]
 
