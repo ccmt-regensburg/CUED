@@ -3,33 +3,15 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-mpl.use('Agg')
 import shutil
 import tikzplotlib
 
 from cued.plotting.colormap import whitedarkjet
-from cued.plotting import contourf_remove_white_lines, label_inner
+from cued.plotting import contourf_remove_white_lines, label_inner, init_matplotlib_config, unit, symb
 from cued.utility import ConversionFactors as CoFa, rmdir_mkdir_chdir, cued_copy, chdir
 from cued.kpoint_mesh import hex_mesh, rect_mesh
 
-# LAYOUT
-mpl.rc('figure', figsize=(5.295, 6.0), autolayout=True)
-# LATEX
-mpl.rc('text', usetex=True)
-mpl.rc('text.latex',
-	   preamble=r'\usepackage{siunitx}\usepackage{braket}\usepackage{mathtools}\usepackage{amssymb}\usepackage[version=4]{mhchem}\usepackage[super]{nth}')#\sisetup{per-mode=symbol-or-fraction}')
-# FONT
-mpl.rc('font', size=10, family='serif', serif='CMU Serif')
-# mpl.rc('mathtext', fontset='cm')
-# AXES
-mpl.rc('axes', titlesize=10, labelsize=10)
-# LEGEND
-mpl.rc('legend', fancybox=False, fontsize=10, framealpha=1, labelspacing=0.08,
-	   borderaxespad=0.05)
-# PGF
-mpl.rc('pgf', texsystem='lualatex',
-	   preamble=r'\usepackage{siunitx}\usepackage{braket}\usepackage{mathtools}\usepackage{amssymb}\usepackage[version=4]{mhchem}\usepackage[super]{nth}')#\sisetup{per-mode=symbol-or-fraction}')
-
+init_matplotlib_config()
 
 def conditional_pdflatex(name_data, name_tex):
 	"""
@@ -70,8 +52,8 @@ def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
 
 	write_parameters(P, Mpi)
 
-	tikz_time(T.E_field*CoFa.au_to_MVpcm, t_fs, t_idx, r'E-field $E(t)$ in MV/cm', "Efield")
-	tikz_time(T.A_field*CoFa.au_to_MVpcm*CoFa.au_to_fs, t_fs, t_idx, r"A-field $A(t)$ in MV*fs/cm", "Afield")
+	tikz_time(T.E_field*CoFa.au_to_MVpcm, t_fs, t_idx, r'E-field ' + unit['E'], "Efield")
+	tikz_time(T.A_field*CoFa.au_to_MVpcm*CoFa.au_to_fs, t_fs, t_idx, r'A-field ' + unit['A'], "Afield")
 
 	K = BZ_plot(P, T.A_field)
 
@@ -154,8 +136,6 @@ def write_parameters(P, Mpi):
 
 def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
 
-	xlabel = r'Time in fs'
-
 	_fig, (ax1) = plt.subplots(1)
 	_lines_exact_E_dir = ax1.plot(time_fs[t_idx], func_of_t[t_idx], marker='')
 
@@ -163,12 +143,12 @@ def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
 
 	ax1.grid(True, axis='both', ls='--')
 	ax1.set_xlim(t_lims)
-	ax1.set_xlabel(xlabel)
+	ax1.set_xlabel(unit['t'])
 	ax1.set_ylabel(ylabel)
 	# ax1.legend(loc='upper right')
 
 	tikzplotlib.save(filename + ".tikz", axis_height=r'\figureheight',
-	                 axis_width =r'\figurewidth' )
+	                 axis_width=r'\figurewidth' )
 	# Need to explicitly close figure after writing
 	plt.close(_fig)
 
@@ -176,7 +156,7 @@ def tikz_time(func_of_t, time_fs, t_idx, ylabel, filename):
 def tikz_freq(func_1, func_2, freq_div_f0, f_idx, ylabel, filename, two_func, \
               label_1=None, label_2=None, dashed=False):
 
-	xlabel = r'Harmonic order = (frequency $f$)/(pulse frequency $f_0$)'
+	xlabel = r'Harmonic order = ' + unit['ff0']
 
 	_fig, (ax1) = plt.subplots(1)
 	_lines_exact_E_dir = ax1.semilogy(freq_div_f0[f_idx], func_1[f_idx], marker='', label=label_1)
@@ -305,14 +285,14 @@ def BZ_plot(P, A_field):
 	"""
 	BZ_fig = plt.figure(figsize=(10, 10))
 	plt.plot(np.array([0.0]), np.array([0.0]), color='black', marker="o", linestyle='None')
-	plt.text(0.01, 0.01, r'$\Gamma$')
+	plt.text(0.01, 0.01, symb['G'])
 	default_width = 0.87
 
 	if P.BZ_type == 'hexagon':
 		R = 4.0*np.pi/(3*P.a_angs)
 		r = 2.0*np.pi/(np.sqrt(3)*P.a_angs)
 		plt.plot(np.array([r*np.cos(-np.pi/6)]), np.array([r*np.sin(-np.pi/6)]), color='black', marker="o", linestyle='None')
-		plt.text(r*np.cos(-np.pi/6)+0.01, r*np.sin(-np.pi/6)-0.05, r'M')
+		plt.text(r*np.cos(-np.pi/6)+0.01, r*np.sin(-np.pi/6)-0.05, symb['M'])
 		plt.plot(np.array([R]), np.array([0.0]), color='black', marker="o", linestyle='None')
 		plt.text(R, 0.02, r'K')
 		kx_BZ = R*np.array([1,2,1,0.5,1,	0.5,-0.5,-1,   -0.5,-1,-2,-1,-0.5,-1,	 -0.5,0.5, 1,	  0.5,	1])
@@ -338,8 +318,8 @@ def BZ_plot(P, A_field):
 		Y_x = (kx_BZ[0]+kx_BZ[1])/2
 		Y_y = (ky_BZ[0]+ky_BZ[1])/2
 		plt.plot(np.array([X_x,Y_x]), np.array([X_y,Y_y]), color='black', marker="o", linestyle='None')
-		plt.text( X_x, X_y, r'X')
-		plt.text( Y_x, Y_y, r'Y')
+		plt.text(X_x, X_y, symb['X'])
+		plt.text(Y_x, Y_y, symb['Y'])
 
 		dist_to_border = 0.1*max(np.amax(kx_BZ), np.amax(ky_BZ))
 		length_x = np.amax(kx_BZ) + dist_to_border
@@ -371,8 +351,8 @@ def BZ_plot(P, A_field):
 	plt.xlim(-length_x, length_x)
 	plt.ylim(-length_y, length_y)
 
-	plt.xlabel(r'$k_x$ in 1/\AA')
-	plt.ylabel(r'$k_y$ in 1/\AA')
+	plt.xlabel(unit['kx'])
+	plt.ylabel(unit['ky'])
 
 	for path in printed_paths:
 		num_k				 = np.size(path[:,0])
@@ -454,7 +434,7 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, num_point
 	for i_band in range(P.n):
 		_lines_exact_E_dir = ax1.plot(k_in_path, sys.e_in_path[:,i_band]*CoFa.au_to_eV, marker='', \
 		                              label="$n=$ "+str(i_band))
-	plot_it(P, r"Band energy $\epsilon_n(\mathbf{k})$ in eV", "bandstructure.tikz", ax1, k_in_path)
+	plot_it(P, r"Band energy " + unit['e(k)'], "bandstructure.tikz", ax1, k_in_path)
 	plt.close(_fig)
 
 	_fig, (ax2) = plt.subplots(1)
@@ -462,22 +442,22 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, num_point
 	if P.do_semicl:
 		for i_band in range(P.n):
 			abs_connection = (np.sqrt( np.abs(sys.Ax_path[:, i_band, i_band])**2 + \
-			                  np.abs(sys.Ay_path[:, i_band, i_band])**2 ) + 1.0e-80)/CoFa.au_to_as
+			                  np.abs(sys.Ay_path[:, i_band, i_band])**2 ) + 1.0e-80)*CoFa.au_to_as
 			_lines_exact_E_dir= ax2.semilogy(k_in_path, abs_connection, marker='', \
 			                                 label="$n=$ "+str(i_band))
 			d_min = max(d_min, np.amin(abs_connection))
-		plot_it(P, r"Berry connection $|\mathbf{A}_{n}(\mathbf{k})|$ in 1/\AA","abs_dipole.tikz", ax2, k_in_path, d_min)
+		plot_it(P, r'Berry connection ' + unit['dn'], "abs_dipole.tikz", ax2, k_in_path, d_min)
 
 	else:
 		for i_band in range(P.n):
 			for j_band in range(P.n):
 				if j_band >= i_band: continue
-				abs_dipole = (np.sqrt( np.abs(sys.dipole_path_x[:,i_band,j_band])**2 + \
-				              np.abs(sys.dipole_path_y[:,i_band,j_band])**2) + 1.0e-80)/CoFa.au_to_as
+				abs_dipole = (np.sqrt(np.abs(sys.dipole_path_x[:, i_band, j_band])**2 + \
+				              np.abs(sys.dipole_path_y[:, i_band, j_band])**2) + 1.0e-80)*CoFa.au_to_as
 				_lines_exact_E_dir	= ax2.semilogy(k_in_path, abs_dipole, marker='', \
 				                                   label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
 				d_min = max(d_min, np.amin(abs_dipole))
-		plot_it(P, r"Dipole $|\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA","abs_dipole.tikz", ax2, k_in_path, d_min)
+		plot_it(P, r'Dipole ' + unit['dnm'], "abs_dipole.tikz", ax2, k_in_path, d_min)
 	plt.close(_fig)
 
 
@@ -486,11 +466,11 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, num_point
 	if P.do_semicl:
 		for i_band in range(P.n):
 			proj_connection = (np.abs( sys.Ax_path[:,i_band,i_band]*P.E_dir[0] + \
-			                   sys.Ay_path[:, i_band, i_band]*P.E_dir[1] ) + 1.0e-80)/CoFa.au_to_as
+			                   sys.Ay_path[:, i_band, i_band]*P.E_dir[1] ) + 1.0e-80)*CoFa.au_to_as
 			_lines_exact_E_dir = ax3.semilogy(k_in_path, proj_connection, marker='',
 			                                   label="$n=$ "+str(i_band))
 			d_min = max(d_min, np.amin(proj_connection))
-		plot_it(P, r"$|\hat{e}_\phi\cdot\mathbf{A}_{n}(\mathbf{k})|$ in 1/\AA", "proj_dipole.tikz", ax3, k_in_path, d_min)
+		plot_it(P, unit['ephi_dot_dn'], "proj_dipole.tikz", ax3, k_in_path, d_min)
 
 	else:
 		for i_band in range(P.n):
@@ -501,7 +481,7 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, num_point
 				_lines_exact_E_dir = ax3.semilogy(k_in_path, proj_dipole, marker='', \
 				                                  label="$n=$ "+str(i_band)+", $m=$ "+str(j_band))
 				d_min = max(d_min, np.amin(proj_dipole))
-		plot_it(P, r"$|\hat{e}_\phi\cdot\mathbf{d}_{nm}(\mathbf{k})|$ in 1/\AA", "proj_dipole.tikz", ax3, k_in_path, d_min)
+		plot_it(P, unit['ephi_dot_dnm'], "proj_dipole.tikz", ax3, k_in_path, d_min)
 	plt.close(_fig)
 
 def plot_it(P, ylabel, filename, ax1, k_in_path, y_min=None):
@@ -517,9 +497,9 @@ def plot_it(P, ylabel, filename, ax1, k_in_path, y_min=None):
 		ax1.set_ylim(bottom=y_min)
 	ax1.set_xticks( [k_in_path[0], k_in_path[num_points_for_plotting//2], k_in_path[-1]] )
 	if P.BZ_type == 'hexagon':
-		ax1.set_xticklabels(['K', r'$\Gamma$', 'M'])
+		ax1.set_xticklabels([symb['K'], symb['G'], symb['M']])
 	elif P.BZ_type == 'rectangle':
-		ax1.set_xticklabels(['X', r'$\Gamma$', 'Y'])
+		ax1.set_xticklabels([symb['X'], symb['G'], symb['Y']])
 
 	tikzplotlib.save(filename, axis_height='\\figureheight', axis_width ='\\figurewidth' )
 
@@ -753,8 +733,7 @@ def tikz_screening_one_color(S, num_points_for_plotting, title):
 		ax[i].set_xticks(np.arange(freq_min[i], freq_max[i] + 1))
 		ax[i].set_ylabel(S.screening_parameter_name_plot_label)
 
-	xlabel = r'Harmonic order = (frequency $f$)/(pulse frequency $f_0$)'
-	ax[-1].set_xlabel(xlabel)
+	ax[-1].set_xlabel(r'Harmonic order ' + unit['ff0'])
 
 	# Colorbar for ax[0]
 	divider = make_axes_locatable(ax[0])
@@ -826,7 +805,7 @@ def tikz_screening_per_color(S, num_points_for_plotting, title):
 			cax.yaxis.set_label_coords(1, 1.19)
 		cbar.set_ticks(tickposition[i])
 
-	ax[-1].set_xlabel(r'Harmonic order = (frequency $f$)/(pulse frequency $f_0$)')
+	ax[-1].set_xlabel(r'Harmonic order ' + unit['ff0'])
 	ax[0].set_title(title)
 	# Adjust plot name
 	S.screening_filename = S.screening_filename + 'split_'
