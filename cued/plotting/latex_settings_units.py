@@ -15,13 +15,13 @@ unit = {# Band energy: electronvolts
         # k_y: 1/angström
         'ky': r'$k_y \; (\si{\per\angstrom})$',
         # Berry Connection: e * angström
-        'dn': r'$\lvert \mathbf{A}_{n}(\mathbf{k}) \rvert \; (\si{\elementarycharge\angstrom})',
+        'dn': r'$\lvert \mathbf{A}_{n}(\mathbf{k}) \rvert \; (\si{\elementarycharge\angstrom})$',
         # Dipole Moment: e * angström
-        'dnm': r'$\lvert \mathbf{d}_{nm}(\mathbf{k}) \rvert \; (\si{\elementarycharge\angstrom})',
+        'dnm': r'$\lvert \mathbf{d}_{nm}(\mathbf{k}) \rvert \; (\si{\elementarycharge\angstrom})$',
         # Projected Berry Connection: e * angström
-        'ephi_dot_dn': r'$\lvert \hat{e}_\phi \cdot \mathbf{A}_{n}(\mathbf{k}) \rvert \; (\si{\elementarycharge\angstrom})',
+        'ephi_dot_dn': r'$\lvert \hat{e}_\phi \cdot \mathbf{A}_{n}(\mathbf{k}) \rvert \; (\si{\elementarycharge\angstrom})$',
         # Projected Dipole Moment: e * angström
-        'ephi_dot_dnm': r'$\lvert \hat{e}_\phi \cdot \mathbf{d}_{nm}(\mathbf{k}) \rvert \; (\si{\elementarycharge\angstrom})',
+        'ephi_dot_dnm': r'$\lvert \hat{e}_\phi \cdot \mathbf{d}_{nm}(\mathbf{k}) \rvert \; (\si{\elementarycharge\angstrom})$',
         # Frequency: terahertz
         'f': r'$f \; (\si{\tera\hertz})$',
         # Harmonic Order

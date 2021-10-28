@@ -605,7 +605,7 @@ def plot_single_dipole(d_x, d_y, i_band, j_band, x, y, K, k_x, k_y, fig, ax, \
 	d_x_ij = d_x[:, i_band, j_band]
 	d_y_ij = d_y[:, i_band, j_band]
 
-	abs_d_ij = np.maximum(np.sqrt( d_x_ij**2 + d_y_ij**2 ), 1.0e-10*np.ones(np.shape(d_x_ij)))
+	abs_d_ij = np.maximum(np.sqrt(d_x_ij**2 + d_y_ij**2), 1.0e-10*np.ones(np.shape(d_x_ij)))
 
 	norm_d_x_ij = d_x_ij / abs_d_ij
 	norm_d_y_ij = d_y_ij / abs_d_ij
@@ -616,8 +616,8 @@ def plot_single_dipole(d_x, d_y, i_band, j_band, x, y, K, k_x, k_y, fig, ax, \
 
 	ax[x,y].set_title(title)
 	ax[x,y].axis('equal')
-	ax[x,y].set_xlabel(r'$k_x$ in 1/\AA')
-	ax[x,y].set_ylabel(r'$k_y$ in 1/\AA')
+	ax[x,y].set_xlabel(unit['kx'])
+	ax[x,y].set_ylabel(unit['ky'])
 	ax[x,y].set_xlim(-K.length_x, K.length_x)
 	ax[x,y].set_ylim(-K.length_y, K.length_y)
 
@@ -673,19 +673,19 @@ def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
 			# Aesthetics
 			contourf_remove_white_lines(im)
 
-			fig.colorbar(im, ax=ax[i,j])
+			fig.colorbar(im, ax=ax[i, j])
 			ax[i, j].plot(K.kx_BZ, K.ky_BZ, color='black')
 			ax[i, j].set_ylim(-K.length_y, K.length_y)
-			ax[i, j].set_ylabel(r'$k_y$ in 1/\AA')
+			ax[i, j].set_ylabel(unit['ky'])
 
 		else:
 			im = ax[i,j].plot(P.mesh[:, 0]/CoFa.au_to_as, reshaped_pdf_dm[:, t_i, i_band, j_band])
 
-		ax[i, j].set_xlabel(r'$k_x$ in 1/\AA')
+		ax[i, j].set_xlabel(unit['kx'])
 		ax[i, j].set_xlim(-K.length_x, K.length_x)
-		ax[i, j].set_title(prefix_title+' $\\rho_{' + str(i_band) + ',' +
-		                   str(j_band)+'}(\mathbf{k},t)$ at $t =' +
-		                   '{:.1f}'.format(T.t_pdf_densmat[t_i]*CoFa.au_to_fs) + '$ fs')
+		ax[i, j].set_title(prefix_title +
+		                   r' $\rho_{{{:d},{:d}}}(\mathbf{k},t)$ at $t = {:.1f}\si{{\femto\second}}$'\
+		                   .format(i_band, j_band, T.t_pdf_densmat[t_i]*CoFa.au_to_fs)
 
 	plt.savefig(filename, bbox_inches='tight')
 	plt.close(fig)
