@@ -685,7 +685,7 @@ def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
 		ax[i, j].set_xlim(-K.length_x, K.length_x)
 		ax[i, j].set_title(prefix_title +
 		                   r' $\rho_{{{:d},{:d}}}(\mathbf{k},t)$ at $t = {:.1f}\si{{\femto\second}}$'\
-		                   .format(i_band, j_band, T.t_pdf_densmat[t_i]*CoFa.au_to_fs)
+		                   .format(i_band, j_band, T.t_pdf_densmat[t_i]*CoFa.au_to_fs))
 
 	plt.savefig(filename, bbox_inches='tight')
 	plt.close(fig)
