@@ -47,7 +47,8 @@ def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
 
 	rmdir_mkdir_chdir(latex_dir)
 
-	cued_copy('plotting/CUED_summary.tex', '.')
+	cued_copy('plotting/tex_templates/CUED_summary.tex', '.')
+	cued_copy('plotting/tex_templates/CUED_aliases.tex', '.')
 	cued_copy('branding/logo.pdf', '.')
 
 	write_parameters(P, Mpi)
@@ -544,15 +545,15 @@ def dipole_quiver_plots(K, P, sys):
 	num_plots = P.n**2
 	num_plots_vert = (num_plots+1)//2
 
-	fig, ax = plt.subplots(num_plots_vert, 2, figsize=(15,6.2*num_plots_vert))
+	fig, ax = plt.subplots(num_plots_vert, 2, figsize=(15, 6.2*num_plots_vert))
 
 	for i_band in range(P.n):
 		plot_x_index = i_band//2
 		plot_y_index = i_band%2
-		title = r"$\mathbf{d}_{" + str(i_band) + str(i_band) \
-			+ r"}(\mathbf{k})$ (diagonal dipole matrix elements are real)"
-		colbar_title = r"log$_{10}\;|(\mathbf{d}_{" + str(i_band) + str(i_band) \
-			+ r"}(\mathbf{k}))/$\AA$|$"
+		title = r"$\mb{{d}}_{{{:d}{:d}}}(\mb{{k}})$ (diagonal dipole matrix elements are real)"\
+		    .format(i_band, i_band)
+		colbar_title = r"$\log_{{10}}\; \lvert (\mb{{d}}_{{{:d}{:d}}}(\mb{{k}}))/\si{{\angstrom}} \rvert$"\
+		    .format(i_band, i_band)
 
 		plot_single_dipole(d_x.real, d_y.real, i_band, i_band, plot_x_index, plot_y_index,
 		                   K, k_x, k_y, fig, ax, title, colbar_title)
@@ -568,10 +569,10 @@ def dipole_quiver_plots(K, P, sys):
 			plot_x_index = plot_index//2
 			plot_y_index = plot_index%2
 			counter += 1
-			title = r"Re $\mathbf{d}_{" + str(i_band) + str(j_band) + "}(\mathbf{k})$"
-			colbar_title = r"log$_{10}\;|\mathrm{Re } (\mathbf{d}_{"+str(i_band)+str(j_band)+\
-			               "}(\mathbf{k}))/$\AA$|$"
-
+			title = r"$\rRe \mb{{d}}_{{{:d}{:d}}}(\mb{{k}})$"\
+			    .format(i_band, j_band)
+			colbar_title = r"$\log_{{10}}\; \lvert \rRe(\mb{{d}}_{{{:d}{:d}}}(\mb{{k}}))/\si{{\angstrom}} \rvert$"\
+			    .format(i_band, j_band)
 			plot_single_dipole(d_x.real, d_y.real, i_band, j_band, plot_x_index, plot_y_index, \
 			                   K, k_x, k_y, fig, ax, title, colbar_title)
 
@@ -579,9 +580,10 @@ def dipole_quiver_plots(K, P, sys):
 			plot_x_index = plot_index//2
 			plot_y_index = plot_index%2
 			counter += 1
-			title = r"Im $\mathbf{d}_{" + str(i_band) + str(j_band) + "}(\mathbf{k})$"
-			colbar_title = r"log$_{10}\;|\mathrm{Im } (\mathbf{d}_{"+str(i_band)+str(j_band)+\
-			               r"}(\mathbf{k}))/$\AA$|$"
+			title = r"$\rIm \mb{{d}}_{{{:d}{:d}}}(\mb{{k}})$"\
+			    .format(i_band, j_band)
+			colbar_title = r"$\log_{{10}}\; \lvert \rIm (\mb{{d}}_{{{:d}{:d}}}(\mb{{k}}))/\si{{\angstrom}} \rvert$"\
+			    .format(i_band, j_band)
 
 			plot_single_dipole(d_x.imag, d_y.imag, i_band, j_band, plot_x_index, plot_y_index, \
 			                   K, k_x, k_y, fig, ax, title, colbar_title)
@@ -684,7 +686,7 @@ def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
 		ax[i, j].set_xlabel(unit['kx'])
 		ax[i, j].set_xlim(-K.length_x, K.length_x)
 		ax[i, j].set_title(prefix_title +
-		                   r' $\rho_{{{:d},{:d}}}(\mathbf{k},t)$ at $t = {:.1f}\si{{\femto\second}}$'\
+		                   r' $\rho_{{{:d},{:d}}}(\mb{{k}},t)$ at $t = {:.1f}\si{{\femto\second}}$'\
 		                   .format(i_band, j_band, T.t_pdf_densmat[t_i]*CoFa.au_to_fs))
 
 	plt.savefig(filename, bbox_inches='tight')
@@ -742,7 +744,7 @@ def tikz_screening_one_color(S, num_points_for_plotting, title):
 	cax.tick_params(axis='x', which='major', top=True, pad=0.05)
 	cax.xaxis.set_ticks_position('top')
 	cax.invert_xaxis()
-	cax.set_ylabel(r'$I_\mathrm{hh}/I_\mathrm{hh}^\mathrm{max}$', rotation='horizontal')
+	cax.set_ylabel(r'$I_\mr{hh}/I_\mr{hh}^\mr{max}$', rotation='horizontal')
 	cax.yaxis.set_label_coords(-0.1, 1.00)
 	cbar.set_ticks(tickposition)
 	# Disable every second tick label
@@ -801,7 +803,7 @@ def tikz_screening_per_color(S, num_points_for_plotting, title):
 		cax.tick_params(axis='y', which='major', top=False, pad=0.05)
 		# Set label only for first colorbar
 		if i == 0:
-			cax.set_ylabel(r'$I_\mathrm{hh}/I_\mathrm{hh}^\mathrm{max}$', rotation='horizontal')
+			cax.set_ylabel(r'$I_\mr{hh}/I_\mr{hh}^\mr{max}$', rotation='horizontal')
 			cax.yaxis.set_label_coords(1, 1.19)
 		cbar.set_ticks(tickposition[i])
 
@@ -816,7 +818,8 @@ def write_and_compile_screening_latex_PDF(S):
 
 	num_points_for_plotting = 960
 
-	cued_copy('plotting/CUED_screening_summary.tex', '.')
+	cued_copy('plotting/tex_templates/CUED_screening_summary.tex', '.')
+	cued_copy('plotting/tex_templates/CUED_aliases.tex', '.')
 	cued_copy('branding/logo.pdf', '.')
 
 	# Sets I_max_in_plotting_range to single number
