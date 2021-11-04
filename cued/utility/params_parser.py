@@ -239,8 +239,10 @@ class ParamsParser():
         if self.fourier_window_function == 'gaussian':
             if 'gaussian_window_width' in UP:
                 self.gaussian_window_width = UP['gaussian_window_width']*CoFa.fs_to_au
+                self.gaussian_center       = UP['gaussian_center']*CoFa.fs_to_au
             else:
                 self.gaussian_window_width = None
+                self.gaussian_center       = 0
 
             if self.__user_defined_field and self.gaussian_window_width is None:
                 sys.exit("Gaussian needs a width (gaussian_window_width).")

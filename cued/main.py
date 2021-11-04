@@ -453,12 +453,12 @@ def ifourier(dt, data):
 	return (np.sqrt(2*np.pi)/dt)*fftshift(ifft(ifftshift(data)))
 
 
-def gaussian(t, sigma):
+def gaussian(t, sigma, tau):
 	'''
 	Window function to multiply a Function f(t) before Fourier transform
 	to ensure no step in time between t_final and t_final + delta
 	'''
-	return np.exp(-t**2/sigma**2)
+	return np.exp(-(t-tau)**2/sigma**2)
 
 def hann(t):
 	'''
@@ -543,7 +543,7 @@ def calculate_fourier(T, P, W):
 	W.freq = fftshift(fftfreq(ndt_fft, d=dt_out))
 
 	if P.fourier_window_function == 'gaussian':
-		T.window_function = gaussian(T.t, P.gaussian_window_width)
+		T.window_function = gaussian(T.t, P.gaussian_window_width,P.gaussian_center)
 	elif P.fourier_window_function == 'hann':
 		T.window_function = hann(T.t)
 	elif P.fourier_window_function == 'parzen':
