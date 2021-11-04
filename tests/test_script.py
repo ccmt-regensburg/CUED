@@ -168,7 +168,6 @@ def import_params(filename_params):
 	spec = importlib.util.spec_from_file_location("params", filename_params)
 	params = importlib.util.module_from_spec(spec)
 	spec.loader.exec_module(params)
-	print(hasattr(params, 'MPI_JOBS'))
 	if hasattr(params, 'MPI_JOBS'):
 		current_mpi_jobs = params.MPI_JOBS
 	else:
