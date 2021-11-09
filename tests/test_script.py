@@ -100,14 +100,14 @@ def check_test(testdir, refdir):
 			if params.split_current:
 				# Intra + dtP emission
 				I_intra_plus_dtP_E_dir_ref = freq_data_ref[i]['I_intra_plus_dtP_E_dir'][freq_idx]
-				I_intra_plus_dtP_ortho_ref = freq_data_ref[i]['I_intra_plus_dtP_E_dir'][freq_idx]
+				I_intra_plus_dtP_ortho_ref = freq_data_ref[i]['I_intra_plus_dtP_ortho'][freq_idx]
 				I_intra_plus_dtP_E_dir = freq_data['I_intra_plus_dtP_E_dir'][freq_idx]
-				I_intra_plus_dtP_ortho = freq_data['I_intra_plus_dtP_E_dir'][freq_idx]
+				I_intra_plus_dtP_ortho = freq_data['I_intra_plus_dtP_ortho'][freq_idx]
 				print("\nintra plus dtP E_dir: ", np.amax(np.abs(I_intra_plus_dtP_E_dir_ref)),
 				      "\nintra plus dtP ortho: ", np.amax(np.abs(I_intra_plus_dtP_ortho_ref)))
 				check_emission(I_intra_plus_dtP_E_dir, I_intra_plus_dtP_ortho,
 				               I_intra_plus_dtP_E_dir_ref, I_intra_plus_dtP_ortho_ref,
-				               'dtP')
+				               'intra_plus_dtP')
 
 		if hasattr(params, 'save_anom'):
 			if params.save_anom:
