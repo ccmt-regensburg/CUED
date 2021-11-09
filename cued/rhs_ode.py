@@ -205,7 +205,7 @@ def make_rhs_ode_2_band(sys, electric_field, P):
         """
 
         ecv_in_path, dipole_in_path[:, 0, 1], A_in_path = pre_velocity(kpath, y[-1].real)
-
+ 
         # x != y(t+dt)
         x = np.empty(np.shape(y), dtype=type_complex_np)
 
@@ -300,6 +300,7 @@ def make_rhs_ode_n_band(sys, electric_field, P):
 
     epsilon = P.epsilon
     gidx = P.gidx
+    do_semicl = P.do_semicl
 
     @conditional_njit(type_complex_np)
     def flength(t, y, kpath, dipole_in_path, e_in_path, y0, dk):
@@ -388,10 +389,6 @@ def make_rhs_ode_n_band(sys, electric_field, P):
 
         return x
 
-    #
-    #   Velocity gauge (work in progress)
-    #
-
     @conditional_njit(type_complex_np)
     def __derivative_path(hpex, hmex, hp2ex, hm2ex, hp3ex, hm3ex, hp4ex, hm4ex, hpey, hmey, hp2ey, hm2ey, hp3ey, hm3ey, hp4ey, hm4ey):
 
@@ -459,14 +456,15 @@ def make_rhs_ode_n_band(sys, electric_field, P):
 
         dx_path = np.zeros((pathlen, n, n), dtype=type_complex_np)
         dy_path = np.zeros((pathlen, n, n), dtype=type_complex_np)
+        
+        if not do_semicl:
+            _buf, wf_path = diagonalize_path(h_in_path)
+            dwfkx_path, dwfky_path, _buf, _buf = __derivative_path(hpex, hmex, hp2ex, hm2ex, hp3ex, hm3ex, hp4ex, hm4ex, \
+                                                                        hpey, hmey, hp2ey, hm2ey, hp3ey, hm3ey, hp4ey, hm4ey)
 
-        _buf, wf_path = diagonalize_path(h_in_path)
-        dwfkx_path, dwfky_path, _buf, _buf = __derivative_path(hpex, hmex, hp2ex, hm2ex, hp3ex, hm3ex, hp4ex, hm4ex, \
-                                                                    hpey, hmey, hp2ey, hm2ey, hp3ey, hm3ey, hp4ey, hm4ey)
-
-        for i in range(pathlen):
-            dx_path[i, :, :] = -1j*np.conjugate(wf_path[i, :, :]).T.dot(dwfkx_path[i, :, :])
-            dy_path[i, :, :] = -1j*np.conjugate(wf_path[i, :, :]).T.dot(dwfky_path[i, :, :])
+            for i in range(pathlen):
+                dx_path[i, :, :] = -1j*np.conjugate(wf_path[i, :, :]).T.dot(dwfkx_path[i, :, :])
+                dy_path[i, :, :] = -1j*np.conjugate(wf_path[i, :, :]).T.dot(dwfky_path[i, :, :])
 
         return dx_path, dy_path
 
@@ -491,8 +489,9 @@ def make_rhs_ode_n_band(sys, electric_field, P):
 
         # x != y(t+dt)
         x = np.zeros(np.shape(y), dtype=type_complex_np)
-        # Gradient term coefficient
+
         electric_f = electric_field(t)
+
         Nk_path = kpath.shape[0]
         for k in range(Nk_path):
 
