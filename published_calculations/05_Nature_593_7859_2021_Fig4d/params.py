@@ -6,7 +6,7 @@ MPI_JOBS=8
 
 
 class params:
-	# System parameters
+	# System parameters 
 	#########################################################################
 	a                   = 8.308       # Lattice spacing in atomic units (4.395 A)
 	e_fermi             = 0.00        # Fermi energy in eV
@@ -16,7 +16,6 @@ class params:
 	# Brillouin zone parameters
 	##########################################################################
 	# Type of Brillouin zone
-	# 'full' for full hexagonal BZ, '2line' for two lines with adjustable size
 	BZ_type = 'hexagon'
 
 	# full BZ parametes

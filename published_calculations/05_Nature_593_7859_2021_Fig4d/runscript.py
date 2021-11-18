@@ -4,7 +4,6 @@ from params import params
 import cued.hamiltonian
 from cued.main import sbe_solver
 
-
 def dft():
 	C0 = -0.00647156                  # C0
 	c2 = 0.0117598                    # k^2 coefficient
