@@ -47,7 +47,7 @@ def sbe_solver(sys, params):
 	if Mpi.size > params.Nk2 and Mpi.size > P.number_of_combinations and not P.parallelize_over_points:
 		if Mpi.size % params.Nk2 == 0 and P.number_of_combinations % (Mpi.size/params.Nk2) == 0 and Mpi.size <= P.number_of_combinations*params.Nk2:			
 			if Mpi.rank == 0:
-				print("Parallelization over paths and parameters\n Warning: You need to know what you are doing.)
+				print("Parallelization over paths and parameters\n Warning: You need to know what you are doing.")
 				print("In case you choose "+str(P.number_of_combinations)+" MPI ranks, the parallelization will be much more straightforward.")
 			Mpi.params_sets = int(Mpi.size/params.Nk2)
 			Mpi.color = Mpi.rank//params.Nk2
