@@ -232,6 +232,10 @@ class ParamsParser():
         if 'num_dimensions' in UP:
             self.num_dimensions = UP['num_dimensions']
 
+        self.gabor_transformation = False
+        if 'gabor_transformation' in UP:
+            self.gabor_transformation = UP['gabor_transformation']
+
         self.fourier_window_function = 'hann'             # gaussian, parzen or hann
         if 'fourier_window_function' in UP:
             self.fourier_window_function = UP['fourier_window_function']
@@ -246,7 +250,13 @@ class ParamsParser():
                     self.gaussian_window_width = self.sigma
             
             if 'gaussian_center' in UP:
-                self.gaussian_center       = UP['gaussian_center']*CoFa.fs_to_au
+                if self.gabor_transformation == False:
+                    sys.exit("Centers of gaussian window functions given, but a Gabor transformation has not been requested specifically.")
+                elif np.size(UP['gaussian_center']) > 1:
+                    self.gaussian_center       = [center*CoFa.fs_to_au for center in UP['gaussian_center']]
+                else:
+                    self.gaussian_center = UP['gaussian_center']*CoFa.fs_to_au
+
             else:
                 self.gaussian_center       = 0
             

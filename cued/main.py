@@ -547,6 +547,24 @@ def calculate_fourier(T, P, W):
 	ndt_fft = (T.t.size-1)*P.factor_freq_resolution + 1
 	W.freq = fftshift(fftfreq(ndt_fft, d=dt_out))
 
+	if P.gabor_transformation == True:
+		if np.size(P.gaussian_center) > 1:
+			for center in P.gaussian_center:
+				T.window_function = gaussian(T.t, P.gaussian_window_width,center)
+				W.I_E_dir, W.j_E_dir =\
+					fourier_current_intensity(T.j_E_dir, T.window_function, dt_out, prefac_emission, W.freq, P)
+				W.I_ortho, W.j_ortho =\
+					fourier_current_intensity(T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
+				print(W.I_E_dir)
+		else:
+			T.window_function = gaussian(T.t, P.gaussian_window_width,P.gaussian_center)
+			W.I_E_dir, W.j_E_dir =\
+				fourier_current_intensity(T.j_E_dir, T.window_function, dt_out, prefac_emission, W.freq, P)
+			W.I_ortho, W.j_ortho =\
+				fourier_current_intensity(T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
+			
+
+
 	if P.fourier_window_function == 'gaussian':
 		T.window_function = gaussian(T.t, P.gaussian_window_width,P.gaussian_center)
 	elif P.fourier_window_function == 'hann':
