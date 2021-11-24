@@ -555,7 +555,7 @@ def calculate_fourier(T, P, W):
 					fourier_current_intensity(T.j_E_dir, T.window_function, dt_out, prefac_emission, W.freq, P)
 				W.I_ortho, W.j_ortho =\
 					fourier_current_intensity(T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
-				print(W.I_E_dir)
+				print(W.I_E_dir,type(W.I_E_dir))
 		else:
 			T.window_function = gaussian(T.t, P.gaussian_window_width,P.gaussian_center)
 			W.I_E_dir, W.j_E_dir =\
