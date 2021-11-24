@@ -20,18 +20,18 @@ class ParamsParser():
 
         # build dictionary of all parameters, exclude t_pdf_densmat and points_to_path
         if hasattr(UP, 'parallelize_over_points') and hasattr(UP, 't_pdf_densmat'):
-            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__', 'parallelize_over_points', 't_pdf_densmat','gaussian_center'})
+            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__', 'parallelize_over_points', 't_pdf_densmat'})
             self.t_pdf_densmat = np.array(UP.t_pdf_densmat)*CoFa.fs_to_au
             self.parallelize_over_points = UP.parallelize_over_points
         elif hasattr(UP, 'parallelize_over_points'):
-            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__', 'parallelize_over_points','gaussian_center'})
+            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__', 'parallelize_over_points'})
             self.parallelize_over_points = UP.parallelize_over_points
             self.t_pdf_densmat = np.array([-100, 0, 50, 100])*CoFa.fs_to_au   # Time points for printing density matrix
         elif hasattr(UP, 't_pdf_densmat'):
-            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__', 't_pdf_densmat','gaussian_center'})
+            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__', 't_pdf_densmat'})
             self.t_pdf_densmat = np.array(UP.t_pdf_densmat)*CoFa.fs_to_au
         else:
-            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__','gaussian_center'})
+            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__'})
             self.t_pdf_densmat = np.array([-100, 0, 50, 100])*CoFa.fs_to_au   # Time points for printing density matrix
 
         # build list of parameter lists
@@ -39,7 +39,7 @@ class ParamsParser():
         self.params_lists = []
 
         for key in self.user_params:
-            self.__append_to_list(UP.__dict__[key])
+            self.__append_to_list(UP.__dict__[key], key)
 
         # check, wheter Nk2 is given as a list
         self.path_list = False
@@ -49,9 +49,13 @@ class ParamsParser():
         # Build list with all possible parameter combinations
         self.params_combinations = list(itertools.product(*self.params_lists))
 
-    def __append_to_list(self, param):
-
-        if type(param) == list or type(param) == np.ndarray:
+    def __append_to_list(self, param, key):
+        if key == 'gaussian_center':
+            if np.size(param) > 1:
+                self.params_lists.append(param)
+            else:
+                self.params_lists.append([param])
+        elif type(param) == list or type(param) == np.ndarray:
             if type(param) == np.ndarray:
                 param = param.tolist()
             self.number_of_combinations *= np.size(param)
