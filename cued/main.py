@@ -548,6 +548,7 @@ def calculate_fourier(T, P, W):
 	W.freq = fftshift(fftfreq(ndt_fft, d=dt_out))
 
 	if P.gabor_transformation == True:
+		print("Size of center array",np.size(P.gaussian_center))
 		if np.size(P.gaussian_center) > 1:
 			for center in P.gaussian_center:
 				T.window_function = gaussian(T.t, P.gaussian_window_width,center)
