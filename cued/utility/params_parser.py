@@ -48,10 +48,11 @@ class ParamsParser():
 
         # Build list with all possible parameter combinations
         self.params_combinations = list(itertools.product(*self.params_lists))
-        # Add gaussian_center
-        self.params_combinations = [combi+(UP.__dict__['gaussian_center'],) for combi in self.params_combinations]
-        self.user_params.append('gaussian_center')
-        print(self.params_combinations)
+        # Add gaussian_center in case of given ones
+        if hasattr(UP,'gaussian_center'):
+            self.params_combinations = [combi+(UP.__dict__['gaussian_center'],) for combi in self.params_combinations]
+            self.user_params.append('gaussian_center')
+            print(self.params_combinations)
 
     def __append_to_list(self, param):
         if type(param) == list or type(param) == np.ndarray:
@@ -59,7 +60,6 @@ class ParamsParser():
                 param = param.tolist()
             self.number_of_combinations *= np.size(param)
             self.params_lists.append(param)
-            # add to header
         else:
             self.params_lists.append([param])
 
