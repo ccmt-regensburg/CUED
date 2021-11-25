@@ -253,7 +253,7 @@ class ParamsParser():
                     sys.exit("Gaussian needs a width (gaussian_window_width).")
                 else:
                     self.gaussian_window_width = self.sigma
-            
+
             if 'gaussian_center' in UP:
                 if self.gabor_transformation == False:
                     sys.exit("Centers of gaussian window functions given, but a Gabor transformation has not been requested specifically.")
@@ -266,7 +266,7 @@ class ParamsParser():
 
             else:
                 self.gaussian_center       = 0
-            
+
 
         self.sheet_current = False
         if 'sheet_current' in UP:
