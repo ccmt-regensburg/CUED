@@ -77,6 +77,10 @@ def check_test(testdir, refdir):
 	for i, prefix in enumerate(test_prefixes):
 		time_data, freq_data, _dens_data = read_dataset(testdir, prefix=prefix, mute=True)
 
+		os.remove(testdir + '/' + prefix + params_suffix)
+		os.remove(testdir + '/' + prefix + freq_suffix)
+		os.remove(testdir + '/' + prefix + time_suffix)
+
 		assert time_data is not None, '"time_data.dat" was not generated from the code'
 		assert freq_data is not None, '"frequency_data.dat" was not generated from the code'
 
@@ -125,11 +129,6 @@ def check_test(testdir, refdir):
 			os.system("sed -i '$ d' " + filename_params)
 			os.rename(filename_pdf, testdir + '/' + prefix + 'CUED_summary.pdf')
 			shutil.rmtree(foldername_pdf)
-
-		os.remove(testdir + '/' + prefix + params_suffix)
-		os.remove(testdir + '/' + prefix + freq_suffix)
-		os.remove(testdir + '/' + prefix + time_suffix)
-
 
 	shutil.rmtree(testdir + '/__pycache__')
 	for E0_dirname	 in glob.glob(testdir + '/E0*'):   shutil.rmtree(E0_dirname)
