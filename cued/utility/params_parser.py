@@ -20,18 +20,18 @@ class ParamsParser():
 
         # build dictionary of all parameters, exclude t_pdf_densmat and points_to_path
         if hasattr(UP, 'parallelize_over_points') and hasattr(UP, 't_pdf_densmat'):
-            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__', 'parallelize_over_points', 't_pdf_densmat'})
+            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__', 'parallelize_over_points', 't_pdf_densmat','gaussian_center'})
             self.t_pdf_densmat = np.array(UP.t_pdf_densmat)*CoFa.fs_to_au
             self.parallelize_over_points = UP.parallelize_over_points
         elif hasattr(UP, 'parallelize_over_points'):
-            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__', 'parallelize_over_points'})
+            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__', 'parallelize_over_points','gaussian_center'})
             self.parallelize_over_points = UP.parallelize_over_points
             self.t_pdf_densmat = np.array([-100, 0, 50, 100])*CoFa.fs_to_au   # Time points for printing density matrix
         elif hasattr(UP, 't_pdf_densmat'):
-            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__', 't_pdf_densmat'})
+            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__', 't_pdf_densmat','gaussian_center'})
             self.t_pdf_densmat = np.array(UP.t_pdf_densmat)*CoFa.fs_to_au
         else:
-            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__'})
+            self.user_params = sorted(UP.__dict__.keys() - {'__weakref__', '__doc__', '__dict__', '__module__','gaussian_center'})
             self.t_pdf_densmat = np.array([-100, 0, 50, 100])*CoFa.fs_to_au   # Time points for printing density matrix
 
         # build list of parameter lists
@@ -48,9 +48,12 @@ class ParamsParser():
 
         # Build list with all possible parameter combinations
         self.params_combinations = list(itertools.product(*self.params_lists))
+        # Add gaussian_center
+        self.params_combinations = [combi+(UP.__dict__['gaussian_center'],) for combi in self.params_combinations]
+        self.user_params.append('gaussian_center')
+        print(self.params_combinations)
 
     def __append_to_list(self, param):
-
         if type(param) == list or type(param) == np.ndarray:
             if type(param) == np.ndarray:
                 param = param.tolist()
@@ -75,10 +78,12 @@ class ParamsParser():
 
         current_parameters = {}
         self.header = ''
+
         for key_idx, key in enumerate(self.user_params):
             current_parameters[key] = self.params_combinations[param_idx][key_idx]
             if type(UP.__dict__[key]) == list or type(UP.__dict__[key]) == np.ndarray:
-                self.header += key + '={:.4f}_'.format(current_parameters[key])
+                if key != "gaussian_center":
+                    self.header += key + '={:.4f}_'.format(current_parameters[key])
 
         return current_parameters
 
@@ -232,6 +237,10 @@ class ParamsParser():
         if 'num_dimensions' in UP:
             self.num_dimensions = UP['num_dimensions']
 
+        self.gabor_transformation = False
+        if 'gabor_transformation' in UP:
+            self.gabor_transformation = UP['gabor_transformation']
+
         self.fourier_window_function = 'hann'             # gaussian, parzen or hann
         if 'fourier_window_function' in UP:
             self.fourier_window_function = UP['fourier_window_function']
@@ -244,12 +253,20 @@ class ParamsParser():
                     sys.exit("Gaussian needs a width (gaussian_window_width).")
                 else:
                     self.gaussian_window_width = self.sigma
-            
+
             if 'gaussian_center' in UP:
-                self.gaussian_center       = UP['gaussian_center']*CoFa.fs_to_au
+                if self.gabor_transformation == False:
+                    sys.exit("Centers of gaussian window functions given, but a Gabor transformation has not been requested specifically.")
+                elif self.save_latex_pdf:
+                    sys.exit("Gabor transformation is not compatible with the PDF.")
+                elif np.size(UP['gaussian_center']) > 1:
+                    self.gaussian_center       = [center*CoFa.fs_to_au for center in UP['gaussian_center']]
+                else:
+                    self.gaussian_center = UP['gaussian_center']*CoFa.fs_to_au
+
             else:
                 self.gaussian_center       = 0
-            
+
 
         self.sheet_current = False
         if 'sheet_current' in UP:
