@@ -74,17 +74,17 @@ def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
 	          r'Current $j_{\bot}(t)$ orthogonal to $\bE$ in atomic units', "j_ortho_whole_time")
 	tikz_freq(W.I_E_dir, W.I_ortho, W.freq/P.f, f_idx_whole,
 	          r'Emission intensity in atomic units', "Emission_para_ortho_full_range", two_func=True,
-	          label_1="$\;I_{\parallel}(\omega)$", label_2="$\;I_{\\bot}(\omega)$")
+	          label_1="$\;I_{\parallel}(\w)$", label_2="$\;I_{\\bot}(\w)$")
 	tikz_freq(W.I_E_dir, W.I_ortho, W.freq/P.f, f_idx,
 	          r'Emission intensity in atomic units', "Emission_para_ortho", two_func=True,
-	          label_1="$\;I_{\parallel}(\omega)$", label_2="$\;I_{\\bot}(\omega)$")
+	          label_1="$\;I_{\parallel}(\w)$", label_2="$\;I_{\\bot}(\w)$")
 	tikz_freq(W.I_E_dir + W.I_ortho, None, W.freq/P.f, f_idx,
 	          r'Emission intensity in atomic units', "Emission_total", two_func=False,
-	          label_1="$\;I(\omega) = I_{\parallel}(\omega) + I_{\\bot}(\omega)$")
+	          label_1="$\;I(\w) = I_{\parallel}(\w) + I_{\\bot}(\w)$")
 	tikz_freq(W.I_E_dir_hann + W.I_ortho_hann, W.I_E_dir_parzen+W.I_ortho_parzen, W.freq/P.f, f_idx,
 	          r'Emission intensity in atomic units', "Emission_total_hann_parzen", two_func=True,
-	          label_1="$\;I(\omega)$ with $\\bj(\omega)$ computed using the Hann window",
-	          label_2="$\;I(\omega)$ with $\\bj(\omega)$ computed using the Parzen window", dashed=True)
+	          label_1="$\;I(\w)$ with $\\bj(\w)$ computed using the Hann window",
+	          label_2="$\;I(\w)$ with $\\bj(\w)$ computed using the Parzen window", dashed=True)
 
 	replace("semithick", "thick", "*")
 
@@ -552,7 +552,7 @@ def dipole_quiver_plots(K, P, sys):
 		plot_y_index = i_band%2
 		title = r"$\mb{{d}}_{{{:d}{:d}}}(\mb{{k}})$ (diagonal dipole matrix elements are real)"\
 		    .format(i_band, i_band)
-		colbar_title = r"$\log_{{10}}\; \lvert (\mb{{d}}_{{{:d}{:d}}}(\mb{{k}}))/\si{{\angstrom}} \rvert$"\
+		colbar_title = r"$\log_{{10}}\; \lvert (\mb{{d}}_{{{:d}{:d}}}(\mb{{k}}))/\si{{\As}} \rvert$"\
 		    .format(i_band, i_band)
 
 		plot_single_dipole(d_x.real, d_y.real, i_band, i_band, plot_x_index, plot_y_index,
@@ -571,7 +571,7 @@ def dipole_quiver_plots(K, P, sys):
 			counter += 1
 			title = r"$\rRe \mb{{d}}_{{{:d}{:d}}}(\mb{{k}})$"\
 			    .format(i_band, j_band)
-			colbar_title = r"$\log_{{10}}\; \lvert \rRe(\mb{{d}}_{{{:d}{:d}}}(\mb{{k}}))/\si{{\angstrom}} \rvert$"\
+			colbar_title = r"$\log_{{10}}\; \lvert \rRe(\mb{{d}}_{{{:d}{:d}}}(\mb{{k}}))/\si{{\As}} \rvert$"\
 			    .format(i_band, j_band)
 			plot_single_dipole(d_x.real, d_y.real, i_band, j_band, plot_x_index, plot_y_index, \
 			                   K, k_x, k_y, fig, ax, title, colbar_title)
@@ -582,7 +582,7 @@ def dipole_quiver_plots(K, P, sys):
 			counter += 1
 			title = r"$\rIm \mb{{d}}_{{{:d}{:d}}}(\mb{{k}})$"\
 			    .format(i_band, j_band)
-			colbar_title = r"$\log_{{10}}\; \lvert \rIm (\mb{{d}}_{{{:d}{:d}}}(\mb{{k}}))/\si{{\angstrom}} \rvert$"\
+			colbar_title = r"$\log_{{10}}\; \lvert \rIm (\mb{{d}}_{{{:d}{:d}}}(\mb{{k}}))/\si{{\As}} \rvert$"\
 			    .format(i_band, j_band)
 
 			plot_single_dipole(d_x.imag, d_y.imag, i_band, j_band, plot_x_index, plot_y_index, \
@@ -686,7 +686,7 @@ def plot_dm_for_all_t(reshaped_pdf_dm, P, T, K, i_band, j_band, prefix_title, \
 		ax[i, j].set_xlabel(unit['kx'])
 		ax[i, j].set_xlim(-K.length_x, K.length_x)
 		ax[i, j].set_title(prefix_title +
-		                   r' $\rho_{{{:d},{:d}}}(\mb{{k}},t)$ at $t = {:.1f}\si{{\femto\second}}$'\
+		                   r' $\rho_{{{:d},{:d}}}(\mb{{k}},t)$ at $t = {:.1f}\si{{\fs}}$'\
 		                   .format(i_band, j_band, T.t_pdf_densmat[t_i]*CoFa.au_to_fs))
 
 	plt.savefig(filename, bbox_inches='tight')
