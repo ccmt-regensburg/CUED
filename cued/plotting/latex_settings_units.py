@@ -49,11 +49,11 @@ def parse_cued_aliases():
 
 def init_matplotlib_config():
 	packages = r'\usepackage{siunitx}' + \
-             r'\usepackage{braket}' + \
-             r'\usepackage{mathtools}' + \
-             r'\usepackage{amssymb}' + \
-             r'\usepackage[version=4]{mhchem}' + \
-             r'\usepackage[super]{nth}'
+	           r'\usepackage{braket}' + \
+	           r'\usepackage{mathtools}' + \
+	           r'\usepackage{amssymb}' + \
+	           r'\usepackage[version=4]{mhchem}' + \
+	           r'\usepackage[super]{nth}'
 
 	aliases = parse_cued_aliases()
 
