@@ -326,9 +326,13 @@ def BZ_plot(P, A_field):
 		length_x = np.amax(kx_BZ) + dist_to_border
 		length_y = np.amax(ky_BZ) + dist_to_border
 		ratio_yx = length_y/length_x*default_width
+	if P.gauge == "velocity":
+		Nk1_max = 120
+		Nk2_max = 30
+	else:
+		Nk1_max = 24
+		Nk2_max = 6
 
-	Nk1_max = 24
-	Nk2_max = 6
 	if P.Nk1 <= Nk1_max and P.Nk2 <= Nk2_max:
 		printed_paths = P.paths
 		Nk1_plot = P.Nk1
@@ -364,7 +368,8 @@ def BZ_plot(P, A_field):
 		plot_path_y[0:num_k] = 1/CoFa.au_to_as*path[0:num_k, 1]
 		plot_path_y[num_k]	 = 1/CoFa.au_to_as*path[0, 1]
 
-		plt.plot(plot_path_x, plot_path_y)
+		if P.gauge == "length":
+			plt.plot(plot_path_x, plot_path_y)
 		plt.plot(plot_path_x, plot_path_y, color='gray', marker="o", linestyle='None')
 
 	A_min = np.amin(A_field)/CoFa.au_to_as
