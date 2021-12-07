@@ -162,6 +162,8 @@ Number of used processors: PH-MPIRANKS
   \\[1em]
   Jack Crewse
   \\[0.5em]
+  Maximilian Graml
+  \\[0.5em]
   Patrick Grössing
   \\[0.5em]
   Adrian Seith
@@ -220,7 +222,7 @@ The following parameters are used in the simulation:
     \item PH-EFIELD-DIRECTION
     \item Pulse frequency: $f_0 = PH-FREQ$\,THz
     \item Chirp: $f_\text{chirp} = PH-CHIRP$\,THz
-    \item Carrier-envelope phase: $\phi = PH-CEP$
+    \item Carrier-envelope phase: $\varphi = PH-CEP$
     \item $\sigma = PH-SIGMA$\,fs, full width at half maximum (FWHM) of the Gaussian envelope = PH-FWHM\,fs
 \end{itemize}
 \else 
@@ -409,21 +411,21 @@ Middle and bottom: Emission intensity of the polarization parallel and orthogona
 %
 The data is displayed using two different frequency scales. 
 %
-The frequency is given by $f\eqt\omega/(2\pi)$.
+The frequency is given by $f\eqt\w/(2\pi)$.
 }
     \label{fig:emission}
 \end{figure}
 
 Experiments measure the  frequency resolved emission intensity~$I$, which is computed by Eq.~(53) in Ref.~[\ref{Wilhelm2021}]
 \begin{align}
-I(\omega) &=
-\frac{\omega^2}{3c^3}\,|\bj(\omega)|^2\;, \label{emission}
+I(\w) &=
+\frac{\w^2}{3c^3}\,|\bj(\w)|^2\;, \label{emission}
 \end{align}
-where $c$ is the speed of light and $\bj(\omega)$ is the Fourier transform of the current $\bj(t)$.
+where $c$ is the speed of light and $\bj(\w)$ is the Fourier transform of the current $\bj(t)$.
 %
 Since the current $\bj(t)$ is not periodic in time, short-time Fourier transform (STFT) is used with a window function~$w(t)$,
 \begin{align}
-    \bj(\omega) = \frac{1}{\sqrt{2\pi}}\int\limits_{-t_0}^{t_0}\,w(t)\;\bj(t)\;e^{-i\omega t}\,.
+    \bj(\w) = \frac{1}{\sqrt{2\pi}}\int\limits_{-t_0}^{t_0}\,w(t)\;\bj(t)\;e^{-i\w t}\,.
 \end{align}
 %
 As window, a Hann, Parzen and Gaussian window are available in the code. 
@@ -433,20 +435,20 @@ The emission is sketched in Fig.~\ref{fig:emission}.
 %
 When inserting Eq.~\eqref{currentdecomp} in the frequency domain, we have
 \begin{align}
-I(\omega) &=
-\frac{\omega^2}{3c^3}\,\Big(\,|\,\bj_\parallel(\omega)\sd|^2
-+ |\,\bj_\bot(\omega)\sd|^2 \,\Big)
+I(\w) &=
+\frac{\w^2}{3c^3}\,\Big(\,|\,\bj_\parallel(\w)\sd|^2
++ |\,\bj_\bot(\w)\sd|^2 \,\Big)
 \;, \label{emissiondecomp}
 \end{align}
 that motivates the definitions
 \begin{align}
-I_\parallel(\omega) =
-\frac{\omega^2}{3c^3}\, |\sd\bj_\parallel(\omega)\sd|^2\;,
+I_\parallel(\w) =
+\frac{\w^2}{3c^3}\, |\sd\bj_\parallel(\w)\sd|^2\;,
 \hspace{2em}
-I_\bot(\omega) =
-\frac{\omega^2}{3c^3}\, |\sd\bj_\bot(\omega)\sd|^2\;. \label{emissiondecomp2}
+I_\bot(\w) =
+\frac{\w^2}{3c^3}\, |\sd\bj_\bot(\w)\sd|^2\;. \label{emissiondecomp2}
 \end{align}
-We recover $I(\omega)\eqt I_\parallel(\omega)\,{+}\sd I_\bot(\omega)$.
+We recover $I(\w)\eqt I_\parallel(\w)\,{+}\sd I_\bot(\w)$.
 %
 The emission intensity of parallel and orthogonal polarized light is sketched in Fig.~\ref{fig:emission}.
 

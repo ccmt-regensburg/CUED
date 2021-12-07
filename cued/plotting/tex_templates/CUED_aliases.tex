@@ -2,19 +2,30 @@
 %% The Aliases defined here are used in the LaTeX template files
 %% AND the python options, so that they can be used in python plot
 %% titles and descriptions. See ../latex_settings_units.py
+%% Lines starting with '%' are ignored by the parser.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% New Operators in math mode
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \DeclareMathOperator{\rRe}{Re}
 \DeclareMathOperator{\rIm}{Im}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%$ Roman, Bold etc.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\mc}[1]{\mathcal{#1}}
 \newcommand{\mf}[1]{\mathfrak{#1}}
 \newcommand{\mr}[1]{\mathrm{#1}}
 \newcommand{\mb}[1]{\mathbf{#1}}
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Math symbols
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\bE}{\mb{E}}
 \newcommand{\bk}{\mb{k}}
 \newcommand{\bA}{\mb{A}}
 \newcommand{\bj}{\mb{j}}
 \newcommand{\bd}{\mb{d}}
+\newcommand{\eps}{\epsilon}
+\newcommand{\w}{\omega}
 \newcommand{\sd}{\hspace{0.05em}}
 \newcommand{\eqt}{\,{=}\,}
 \newcommand{\pt}{\,{+}\,}
@@ -27,3 +38,12 @@
 \newcommand{\ketunk}{|u_{n\bk}\rangle}
 \newcommand{\ketunkprime}{|u_{n'\bk}\rangle}
 \newcommand{\timest}{\,{\times}\,}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Units (LaTeX - siunitx)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\fs}{\femto\seconds}
+\newcommand{\As}{\angstrom}
+\newcommand{\eV}{\electronvolt}
+\newcommand{\e}{\elementarycharge}
+\newcommand{\THz}{\tera\hertz}
+\newcommand{\MV}{\mega\volt}
