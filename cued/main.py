@@ -548,30 +548,33 @@ def calculate_fourier(T, P, W):
 	ndt_fft = (T.t.size-1)*P.factor_freq_resolution + 1
 	W.freq = fftshift(fftfreq(ndt_fft, d=dt_out))
 
-	if P.gabor_transformation == True:
-		center_number = np.size(P.gaussian_center)
-		if center_number > 1:
-			W.I_E_dir = []
-			W.j_E_dir = []
-			W.I_ortho = []
-			W.j_ortho = []
-			for center in P.gaussian_center:
-				T.window_function = gaussian(T.t, P.gaussian_window_width,center)
+	if P.gabor_transformation:
+		if not(hasattr(P,"gabor_gaussian_center") and hasattr(P,"gabor_window_width")):
+			system.exit("Either no center(s) or width(s) were given for the invoked Gabor transformation.")
+		W.I_E_dir_GT = []
+		W.j_E_dir_GT = []
+		W.I_ortho_GT = []
+		W.j_ortho_GT = []
+		for center in P.gabor_gaussian_center:
+			W.I_E_dir_CT = []
+			W.j_E_dir_CT = []
+			W.I_ortho_CT = []
+			W.j_ortho_CT = []
+			for window in P.gabor_window_width:
+				T.window_function = gaussian(T.t, window,center)
 				I_E_dir, j_E_dir=\
 					fourier_current_intensity(T.j_E_dir, T.window_function, dt_out, prefac_emission, W.freq, P)
 				I_ortho, j_ortho =\
 					fourier_current_intensity(T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
-				W.I_E_dir.append(I_E_dir)
-				W.j_E_dir.append(j_E_dir)
-				W.I_ortho.append(I_ortho)
-				W.j_ortho.append(j_ortho)
-		else:
-			T.window_function = gaussian(T.t, P.gaussian_window_width,P.gaussian_center)
-			W.I_E_dir, W.j_E_dir =\
-				fourier_current_intensity(T.j_E_dir, T.window_function, dt_out, prefac_emission, W.freq, P)
-			W.I_ortho, W.j_ortho =\
-				fourier_current_intensity(T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
-		return
+				W.I_E_dir_CT.append(I_E_dir)
+				W.j_E_dir_CT.append(j_E_dir)
+				W.I_ortho_CT.append(I_ortho)
+				W.j_ortho_CT.append(j_ortho)
+				print(f"For center={center} and width={window} we have:",W.I_E_dir_CT,W.j_E_dir_CT,W.I_ortho_CT,W.j_ortho_CT)
+			W.I_E_dir_GT.append(W.I_E_dir_CT)
+			W.j_E_dir_GT.append(W.j_E_dir_CT)
+			W.I_ortho_GT.append(W.I_ortho_CT)
+			W.j_ortho_GT.append(W.j_ortho_CT)
 
 
 	if P.fourier_window_function == 'gaussian':
@@ -585,7 +588,7 @@ def calculate_fourier(T, P, W):
 		fourier_current_intensity(T.j_E_dir, T.window_function, dt_out, prefac_emission, W.freq, P)
 	W.I_ortho, W.j_ortho =\
 		fourier_current_intensity(T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
-
+	print("For standard we have:",W.I_E_dir,W.j_E_dir,W.I_ortho,W.j_ortho)
 	# always compute the Fourier transform with hann and parzen window for comparison; this is printed to the latex PDF
 	W.I_E_dir_hann, W.j_E_dir_hann =\
 		fourier_current_intensity(T.j_E_dir, hann(T.t), dt_out, prefac_emission, W.freq, P)
@@ -874,22 +877,6 @@ def write_current_emission(T, P, W, sys, Mpi):
 		freq_output = np.column_stack((freq_output, W.j_E_dir_full.real, W.j_E_dir_full.imag \
 				,W.j_ortho_full.real, W.j_ortho_full.imag, W.I_E_dir_full.real, W.I_ortho_full.real) )
 
-	elif P.gabor_transformation:
-		for i in range(np.size(P.gaussian_center)):
-			freq_header = ("{:25s}" + " {:27s}"*6)\
-				.format("f/f0",
-						"Re[j_E_dir]", "Im[j_E_dir]", "Re[j_ortho]", "Im[j_ortho]",
-						"I_E_dir", "I_ortho")
-			freq_output = np.column_stack([(W.freq/P.f).real,
-										W.j_E_dir[i].real, W.j_E_dir[i].imag, W.j_ortho[i].real, W.j_ortho[i].imag,
-										W.I_E_dir[i].real, W.I_ortho[i].real])
-			# Make the maximum exponent double digits
-			freq_output[np.abs(freq_output) <= 10e-100] = 0
-			freq_output[np.abs(freq_output) >= 1e+100] = np.inf
-
-			np.savetxt(f"gabor_trafo_center={(P.gaussian_center[i]*CoFa.au_to_fs):.4f}fs_"+P.header\
-       			+ 'frequency_data.dat', freq_output, header=freq_header, delimiter=' '*3, fmt="%+.18e")
-		return
 	else:
 		freq_header = ("{:25s}" + " {:27s}"*6)\
 			.format("f/f0",
@@ -906,6 +893,23 @@ def write_current_emission(T, P, W, sys, Mpi):
 
 	np.savetxt(P.header + 'frequency_data.dat', freq_output, header=freq_header, delimiter=' '*3, fmt="%+.18e")
 
+	if P.gabor_transformation:
+		for i in range(np.size(P.gabor_gaussian_center)):
+			for j in range(np.size(P.gabor_window_width)):
+				freq_header = ("{:25s}" + " {:27s}"*6)\
+					.format("f/f0",
+							"Re[j_E_dir]", "Im[j_E_dir]", "Re[j_ortho]", "Im[j_ortho]",
+							"I_E_dir", "I_ortho")
+				freq_output = np.column_stack([(W.freq/P.f).real,
+											W.j_E_dir_GT[i][j].real, W.j_E_dir_GT[i][j].imag, W.j_ortho_GT[i][j].real, W.j_ortho_GT[i][j].imag,
+											W.I_E_dir_GT[i][j].real, W.I_ortho_GT[i][j].real])
+				# Make the maximum exponent double digits
+				freq_output[np.abs(freq_output) <= 10e-100] = 0
+				freq_output[np.abs(freq_output) >= 1e+100] = np.inf
+
+				np.savetxt(f"gabor_trafo_center={(P.gabor_gaussian_center[i]*CoFa.au_to_fs):.4f}fs_width={(P.gabor_window_width[j]*CoFa.au_to_fs):.4f}fs_"+P.header\
+					+ 'frequency_data.dat', freq_output, header=freq_header, delimiter=' '*3, fmt="%+.18e")
+		
 	if P.save_latex_pdf:
 		write_and_compile_latex_PDF(T, W, P, sys, Mpi)
 
