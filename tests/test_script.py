@@ -43,7 +43,7 @@ def check_test(testdir, refdir):
 	test_prefixes = [prefix.replace('reference_', '') for prefix in refe_prefixes]
 	pdf_foldernames = [prefix + pdf_suffix for prefix in test_prefixes]
 
-	if hasattr(params,"gabor_transformation"):
+	if hasattr(params,"gabor_transformation") and params.gabor_transformation == True:
 		gabor_filenames = glob.glob1(refdir, "reference_gabor"+"*" + freq_suffix)
 		gabor_refe_prefixes = [freq_filename.replace(freq_suffix, "") for freq_filename in gabor_filenames]
 		gabor_test_prefixes = [prefix.replace('reference_', '') for prefix in gabor_refe_prefixes]
@@ -70,7 +70,7 @@ def check_test(testdir, refdir):
 		time_data_ref.append(time_data_tmp)
 		freq_data_ref.append(freq_data_tmp)
 
-	if hasattr(params,"gabor_transformation"):
+	if hasattr(params,"gabor_transformation") and params.gabor_transformation == True:
      
 		gabor_freq_data_ref = []
   
@@ -147,30 +147,31 @@ def check_test(testdir, refdir):
 			os.system("sed -i '$ d' " + filename_params)
 			os.rename(filename_pdf, testdir + '/' + prefix + 'CUED_summary.pdf')
 			shutil.rmtree(foldername_pdf)
+   
+	if hasattr(params,"gabor_transformation") and params.gabor_transformation == True:
+		# Reading in generated data from Gabor trafo
+		for i, prefix in enumerate(gabor_test_prefixes):
+			_, freq_data, _ = read_dataset(testdir, prefix=prefix, mute=True)
 
-	# Reading in generated data from Gabor trafo
-	for i, prefix in enumerate(gabor_test_prefixes):
-		_, freq_data, _ = read_dataset(testdir, prefix=prefix, mute=True)
+			os.remove(testdir + '/' + prefix + freq_suffix)
 
-		os.remove(testdir + '/' + prefix + freq_suffix)
+			assert freq_data is not None, '"frequency_data.dat" was not generated from the code'
 
-		assert freq_data is not None, '"frequency_data.dat" was not generated from the code'
+			# Load all relevant files and restrict data to max 10th order
+			freq = freq_data['f/f0']
 
-		# Load all relevant files and restrict data to max 10th order
-		freq = freq_data['f/f0']
+			# All indices between 0 and 10th order
+			freq_idx = np.where(np.logical_and(0 <= freq, freq <= 10))[0]
 
-		# All indices between 0 and 10th order
-		freq_idx = np.where(np.logical_and(0 <= freq, freq <= 10))[0]
-
-		# Emission
-		I_E_dir_ref = gabor_freq_data_ref[i]['I_E_dir'][freq_idx]
-		I_ortho_ref = gabor_freq_data_ref[i]['I_ortho'][freq_idx]
-		I_E_dir = freq_data['I_E_dir'][freq_idx]
-		I_ortho = freq_data['I_ortho'][freq_idx]
-		print("\n\nMaxima of the emission spectra: ",
-			"\nfull	 E_dir: ", np.amax(np.abs(I_E_dir_ref)),
-			"\nfull	 ortho: ", np.amax(np.abs(I_ortho_ref)))
-		check_emission(I_E_dir, I_ortho, I_E_dir_ref, I_ortho_ref, 'full')
+			# Emission
+			I_E_dir_ref = gabor_freq_data_ref[i]['I_E_dir'][freq_idx]
+			I_ortho_ref = gabor_freq_data_ref[i]['I_ortho'][freq_idx]
+			I_E_dir = freq_data['I_E_dir'][freq_idx]
+			I_ortho = freq_data['I_ortho'][freq_idx]
+			print("\n\nMaxima of the emission spectra: ",
+				"\nfull	 E_dir: ", np.amax(np.abs(I_E_dir_ref)),
+				"\nfull	 ortho: ", np.amax(np.abs(I_ortho_ref)))
+			check_emission(I_E_dir, I_ortho, I_E_dir_ref, I_ortho_ref, 'full')
 
 
 	shutil.rmtree(testdir + '/__pycache__')
