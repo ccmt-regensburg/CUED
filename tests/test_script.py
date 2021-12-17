@@ -38,11 +38,17 @@ def check_test(testdir, refdir):
 	params, current_mpi_jobs = import_params(filename_params)
 
 	# Get name of files (needed for MPI-tests)
-	freq_filenames = glob.glob1(refdir, "*" + freq_suffix)
-	refe_prefixes = [freq_filename.replace(freq_suffix, "") for freq_filename in freq_filenames]
+	time_filenames = glob.glob1(refdir, "*" + time_suffix)
+	refe_prefixes = [time_filename.replace(time_suffix, "") for time_filename in time_filenames]
 	test_prefixes = [prefix.replace('reference_', '') for prefix in refe_prefixes]
 	pdf_foldernames = [prefix + pdf_suffix for prefix in test_prefixes]
 
+	if hasattr(params,"gabor_transformation") and params.gabor_transformation == True:
+		gabor_filenames = glob.glob1(refdir, "reference_gabor"+"*" + freq_suffix)
+		gabor_refe_prefixes = [freq_filename.replace(freq_suffix, "") for freq_filename in gabor_filenames]
+		gabor_test_prefixes = [prefix.replace('reference_', '') for prefix in gabor_refe_prefixes]
+
+  
 	print_latex_pdf_really = check_params_for_print_latex_pdf(print_latex_pdf, params)
 
 	if print_latex_pdf_really:
@@ -63,6 +69,18 @@ def check_test(testdir, refdir):
 
 		time_data_ref.append(time_data_tmp)
 		freq_data_ref.append(freq_data_tmp)
+
+	if hasattr(params,"gabor_transformation") and params.gabor_transformation == True:
+     
+		gabor_freq_data_ref = []
+  
+		for prefix in gabor_refe_prefixes:
+      
+			_, freq_data_tmp, _ = read_dataset(refdir, prefix=prefix, mute=True)
+   
+			assert freq_data_tmp is not None, 'Reference frequency_data is missing.'
+   
+			gabor_freq_data_ref.append(freq_data_tmp)
 
 	##################################
 	# Execute script in the testdir
@@ -129,6 +147,32 @@ def check_test(testdir, refdir):
 			os.system("sed -i '$ d' " + filename_params)
 			os.rename(filename_pdf, testdir + '/' + prefix + 'CUED_summary.pdf')
 			shutil.rmtree(foldername_pdf)
+   
+	if hasattr(params,"gabor_transformation") and params.gabor_transformation == True:
+		# Reading in generated data from Gabor trafo
+		for i, prefix in enumerate(gabor_test_prefixes):
+			_, freq_data, _ = read_dataset(testdir, prefix=prefix, mute=True)
+
+			os.remove(testdir + '/' + prefix + freq_suffix)
+
+			assert freq_data is not None, '"frequency_data.dat" was not generated from the code'
+
+			# Load all relevant files and restrict data to max 10th order
+			freq = freq_data['f/f0']
+
+			# All indices between 0 and 10th order
+			freq_idx = np.where(np.logical_and(0 <= freq, freq <= 10))[0]
+
+			# Emission
+			I_E_dir_ref = gabor_freq_data_ref[i]['I_E_dir'][freq_idx]
+			I_ortho_ref = gabor_freq_data_ref[i]['I_ortho'][freq_idx]
+			I_E_dir = freq_data['I_E_dir'][freq_idx]
+			I_ortho = freq_data['I_ortho'][freq_idx]
+			print("\n\nMaxima of the emission spectra: ",
+				"\nfull	 E_dir: ", np.amax(np.abs(I_E_dir_ref)),
+				"\nfull	 ortho: ", np.amax(np.abs(I_ortho_ref)))
+			check_emission(I_E_dir, I_ortho, I_E_dir_ref, I_ortho_ref, 'full')
+
 
 	shutil.rmtree(testdir + '/__pycache__')
 	for E0_dirname	 in glob.glob(testdir + '/E0*'):   shutil.rmtree(E0_dirname)
