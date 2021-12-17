@@ -12,8 +12,8 @@ class params:
 	# Brillouin zone parameters
 	##########################################################################
 	BZ_type             = 'rectangle'
-	Nk1                 = 50                      # Number of kpoints in each of the paths
-	Nk2                 = 4                      # Number of paths
+	Nk1                 = 25                      # Number of kpoints in each of the paths
+	Nk2                 = 2                      # Number of paths
 	length_BZ_E_dir     = 0.5                    # length of BZ in E-field direction
 	length_BZ_ortho     = 0.1                    # length of BZ orthogonal to E-field direction
 	angle_inc_E_field   = 0                      # incoming angle of the E-field in degree
@@ -23,7 +23,7 @@ class params:
 	E0                  = 5.00                   # Pulse amplitude (MV/cm)
 	f                   = 25.0                   # Pulse frequency (THz)
 	chirp               = 0.00                   # Pulse chirp ratio (chirp = c/w) (THz)
-	sigma               = 50.0                   # Gaussian pulse width (femtoseconds)
+	sigma               = 35.0                   # Gaussian pulse width (femtoseconds)
 	phase               = 0.0
 
 	# Time scales (all units in femtoseconds)
@@ -41,6 +41,6 @@ class params:
 	fourier_window_function = 'gaussian'
 	user_out                = True               # True to get user plotting and progress output
 	gabor_transformation	= True
-	gabor_gaussian_center	= np.linspace(-100,100,num=3)
-	gabor_window_width      = [10]
+	gabor_gaussian_center	= np.linspace(-100,100,num=4)
+	gabor_window_width      = [10,35]
 	save_latex_pdf          = False
