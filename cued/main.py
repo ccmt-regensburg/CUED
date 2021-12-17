@@ -551,6 +551,7 @@ def calculate_fourier(T, P, W):
 	if P.gabor_transformation:
 		if not(hasattr(P,"gabor_gaussian_center") and hasattr(P,"gabor_window_width")):
 			system.exit("Either no center(s) or width(s) were given for the invoked Gabor transformation.")
+
 		W.I_E_dir_GT = []
 		W.j_E_dir_GT = []
 		W.I_ortho_GT = []
@@ -570,7 +571,7 @@ def calculate_fourier(T, P, W):
 				W.j_E_dir_CT.append(j_E_dir)
 				W.I_ortho_CT.append(I_ortho)
 				W.j_ortho_CT.append(j_ortho)
-				print(f"For center={center} and width={window} we have:",W.I_E_dir_CT,W.j_E_dir_CT,W.I_ortho_CT,W.j_ortho_CT)
+
 			W.I_E_dir_GT.append(W.I_E_dir_CT)
 			W.j_E_dir_GT.append(W.j_E_dir_CT)
 			W.I_ortho_GT.append(W.I_ortho_CT)
@@ -588,7 +589,7 @@ def calculate_fourier(T, P, W):
 		fourier_current_intensity(T.j_E_dir, T.window_function, dt_out, prefac_emission, W.freq, P)
 	W.I_ortho, W.j_ortho =\
 		fourier_current_intensity(T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
-	print("For standard we have:",W.I_E_dir,W.j_E_dir,W.I_ortho,W.j_ortho)
+
 	# always compute the Fourier transform with hann and parzen window for comparison; this is printed to the latex PDF
 	W.I_E_dir_hann, W.j_E_dir_hann =\
 		fourier_current_intensity(T.j_E_dir, hann(T.t), dt_out, prefac_emission, W.freq, P)
