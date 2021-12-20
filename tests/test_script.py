@@ -97,21 +97,7 @@ def check_test(testdir, refdir):
 		assert time_data is not None, '"time_data.dat" was not generated from the code'
 		assert freq_data is not None, '"frequency_data.dat" was not generated from the code'
 
-		# Load all relevant files and restrict data to max 10th order
-		freq = freq_data['f/f0']
-
-		# All indices between 0 and 10th order
-		freq_idx = np.where(np.logical_and(0 <= freq, freq <= 10))[0]
-
-		# Emission
-		I_E_dir_ref = freq_data_ref[i]['I_E_dir'][freq_idx]
-		I_ortho_ref = freq_data_ref[i]['I_ortho'][freq_idx]
-		I_E_dir = freq_data['I_E_dir'][freq_idx]
-		I_ortho = freq_data['I_ortho'][freq_idx]
-		print("\n\nMaxima of the emission spectra: ",
-			"\nfull	 E_dir: ", np.amax(np.abs(I_E_dir_ref)),
-			"\nfull	 ortho: ", np.amax(np.abs(I_ortho_ref)))
-		check_emission(I_E_dir, I_ortho, I_E_dir_ref, I_ortho_ref, 'full')
+		build_comparable_data(freq_data,freq_data_ref)
 
 		if hasattr(params, 'split_current'):
 			if params.split_current:
@@ -152,21 +138,7 @@ def check_test(testdir, refdir):
 
 			assert gabor_freq_data is not None, f'"{prefix}_frequency_data.dat" was not generated from the code'
 
-			# Load all relevant files and restrict data to max 10th order
-			freq = freq_data['f/f0']
-
-			# All indices between 0 and 10th order
-			freq_idx = np.where(np.logical_and(0 <= freq, freq <= 10))[0]
-
-			# Emission
-			I_E_dir_ref = gabor_freq_data_ref[i]['I_E_dir'][freq_idx]
-			I_ortho_ref = gabor_freq_data_ref[i]['I_ortho'][freq_idx]
-			I_E_dir = freq_data['I_E_dir'][freq_idx]
-			I_ortho = freq_data['I_ortho'][freq_idx]
-			print("\n\nMaxima of the emission spectra: ",
-				"\nfull	 E_dir: ", np.amax(np.abs(I_E_dir_ref)),
-				"\nfull	 ortho: ", np.amax(np.abs(I_ortho_ref)))
-			check_emission(I_E_dir, I_ortho, I_E_dir_ref, I_ortho_ref, 'full')
+			build_comparable_data(gabor_freq_data,gabor_freq_data_ref)
 
 
 	shutil.rmtree(testdir + '/__pycache__')
@@ -183,6 +155,22 @@ def read_data(dir, prefix):
 
 	return time_data, freq_data
 
+def build_comparable_data(freq_data,freq_data_ref):
+	# Load all relevant files and restrict data to max 10th order
+	freq = freq_data['f/f0']
+
+	# All indices between 0 and 10th order
+	freq_idx = np.where(np.logical_and(0 <= freq, freq <= 10))[0]
+
+	# Emission
+	I_E_dir_ref = freq_data_ref[i]['I_E_dir'][freq_idx]
+	I_ortho_ref = freq_data_ref[i]['I_ortho'][freq_idx]
+	I_E_dir = freq_data['I_E_dir'][freq_idx]
+	I_ortho = freq_data['I_ortho'][freq_idx]
+	print("\n\nMaxima of the emission spectra: ",
+		"\nfull	 E_dir: ", np.amax(np.abs(I_E_dir_ref)),
+		"\nfull	 ortho: ", np.amax(np.abs(I_ortho_ref)))
+	check_emission(I_E_dir, I_ortho, I_E_dir_ref, I_ortho_ref, 'full')
 
 def check_emission(I_E_dir, I_ortho, I_E_dir_ref, I_ortho_ref, name):
 	relerror = (np.abs(I_E_dir + I_ortho) + 1.0E-90) / \
