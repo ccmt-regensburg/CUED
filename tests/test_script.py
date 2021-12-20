@@ -97,7 +97,7 @@ def check_test(testdir, refdir):
 		assert time_data is not None, '"time_data.dat" was not generated from the code'
 		assert freq_data is not None, '"frequency_data.dat" was not generated from the code'
 
-		build_comparable_data(i,freq_data,freq_data_ref)
+		freq_idx = build_comparable_data(i,freq_data,freq_data_ref)
 
 		if hasattr(params, 'split_current'):
 			if params.split_current:
@@ -173,6 +173,7 @@ def build_comparable_data(freq_data_index,freq_data,freq_data_ref):
 		"\nfull	 E_dir: ", np.amax(np.abs(I_E_dir_ref)),
 		"\nfull	 ortho: ", np.amax(np.abs(I_ortho_ref)))
 	check_emission(I_E_dir, I_ortho, I_E_dir_ref, I_ortho_ref, 'full')
+	return freq_idx
 
 
 def check_emission(I_E_dir, I_ortho, I_E_dir_ref, I_ortho_ref, name):
