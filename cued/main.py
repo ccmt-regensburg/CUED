@@ -46,7 +46,7 @@ def sbe_solver(sys, params):
 	#  - Number of params % (number of tasks / Nk2 ) == 0
 	#  - Number of tasks <= Nk2 * number of params
 	if Mpi.size > params.Nk2 and Mpi.size > P.number_of_combinations and not P.parallelize_over_points:
-		if Mpi.size % params.Nk2 == 0 and P.number_of_combinations % (Mpi.size/params.Nk2) == 0 and Mpi.size <= P.number_of_combinations*params.Nk2:			
+		if Mpi.size % params.Nk2 == 0 and P.number_of_combinations % (Mpi.size/params.Nk2) == 0 and Mpi.size <= P.number_of_combinations*params.Nk2:
 			if Mpi.rank == 0:
 				print("Parallelization over paths and parameters\n Warning: You need to know what you are doing.")
 				print("In case you choose "+str(P.number_of_combinations)+" MPI ranks, the parallelization will be much more straightforward.")
@@ -71,7 +71,7 @@ def sbe_solver(sys, params):
 		Mpi.mod = None
 		Mpi.local_params_idx_list = Mpi.get_local_idx(P.number_of_combinations)
 		P.path_parallelization = False
-	
+
 	# Parallelize over paths else
 	else:
 		Mpi.mod = None
@@ -98,10 +98,10 @@ def make_subcommunicators(Mpi, P):
 
 		Mpi.subcomm = Mpi.comm.Split(Mpi.color, Mpi.rank)
 		Mpi.local_Nk2_idx_list = [Mpi.mod]
-	
+
 	elif P.parallelize_over_points:	#works only for fixed Nk1 and Nk2
 		Mpi.local_Nk2_idx_list = Mpi.get_local_idx(P.Nk2*P.Nk1)
-		Mpi.subcomm = Mpi.comm.Split(0, Mpi.rank)		
+		Mpi.subcomm = Mpi.comm.Split(0, Mpi.rank)
 
 	elif P.path_parallelization:
 		Mpi.local_Nk2_idx_list = Mpi.get_local_idx(P.Nk2)
@@ -548,34 +548,6 @@ def calculate_fourier(T, P, W):
 	ndt_fft = (T.t.size-1)*P.factor_freq_resolution + 1
 	W.freq = fftshift(fftfreq(ndt_fft, d=dt_out))
 
-	if P.gabor_transformation:
-		if not(hasattr(P,"gabor_gaussian_center") and hasattr(P,"gabor_window_width")):
-			system.exit("Either no center(s) or width(s) were given for the invoked Gabor transformation.")
-
-		W.I_E_dir_GT = []
-		W.j_E_dir_GT = []
-		W.I_ortho_GT = []
-		W.j_ortho_GT = []
-		for center in P.gabor_gaussian_center:
-			W.I_E_dir_CT = []
-			W.j_E_dir_CT = []
-			W.I_ortho_CT = []
-			W.j_ortho_CT = []
-			for window in P.gabor_window_width:
-				T.window_function = gaussian(T.t, window,center)
-				I_E_dir, j_E_dir=\
-					fourier_current_intensity(T.j_E_dir, T.window_function, dt_out, prefac_emission, W.freq, P)
-				I_ortho, j_ortho =\
-					fourier_current_intensity(T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
-				W.I_E_dir_CT.append(I_E_dir)
-				W.j_E_dir_CT.append(j_E_dir)
-				W.I_ortho_CT.append(I_ortho)
-				W.j_ortho_CT.append(j_ortho)
-
-			W.I_E_dir_GT.append(W.I_E_dir_CT)
-			W.j_E_dir_GT.append(W.j_E_dir_CT)
-			W.I_ortho_GT.append(W.I_ortho_CT)
-			W.j_ortho_GT.append(W.j_ortho_CT)
 
 
 	if P.fourier_window_function == 'gaussian':
@@ -634,6 +606,35 @@ def calculate_fourier(T, P, W):
 		W.I_ortho_full, W.j_ortho_full =\
 			fourier_current_intensity(T.j_ortho_full, T.window_function, dt_out, prefac_emission, W.freq, P)
 
+	if P.gabor_transformation:
+		if not(hasattr(P,"gabor_gaussian_center") and hasattr(P,"gabor_window_width")):
+			system.exit("Either no center(s) or width(s) were given for the invoked Gabor transformation.")
+		W.I_E_dir_GT = []
+		W.j_E_dir_GT = []
+		W.I_ortho_GT = []
+		W.j_ortho_GT = []
+
+		for center in P.gabor_gaussian_center:
+			W.I_E_dir_CT = []
+			W.j_E_dir_CT = []
+			W.I_ortho_CT = []
+			W.j_ortho_CT = []
+
+			for window in P.gabor_window_width:
+				T.window_function = gaussian(T.t, window,center)
+				I_E_dir, j_E_dir=\
+					fourier_current_intensity(T.j_E_dir, T.window_function, dt_out, prefac_emission, W.freq, P)
+				I_ortho, j_ortho =\
+					fourier_current_intensity(T.j_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
+				W.I_E_dir_CT.append(I_E_dir)
+				W.j_E_dir_CT.append(j_E_dir)
+				W.I_ortho_CT.append(I_ortho)
+				W.j_ortho_CT.append(j_ortho)
+
+			W.I_E_dir_GT.append(W.I_E_dir_CT)
+			W.j_E_dir_GT.append(W.j_E_dir_CT)
+			W.I_ortho_GT.append(W.I_ortho_CT)
+			W.j_ortho_GT.append(W.j_ortho_CT)
 # def write_full_density_mpi(T, P, sys, Mpi):
 #     relative_dir = 'densities'
 #     if Mpi.rank == 0:
@@ -887,7 +888,7 @@ def write_current_emission(T, P, W, sys, Mpi):
 									   W.j_E_dir.real, W.j_E_dir.imag, W.j_ortho.real, W.j_ortho.imag,
 									   W.I_E_dir.real, W.I_ortho.real])
 
-	
+
 	# Make the maximum exponent double digits
 	freq_output[np.abs(freq_output) <= 10e-100] = 0
 	freq_output[np.abs(freq_output) >= 1e+100] = np.inf
@@ -910,7 +911,7 @@ def write_current_emission(T, P, W, sys, Mpi):
 
 				np.savetxt(f"gabor_trafo_center={(P.gabor_gaussian_center[i]*CoFa.au_to_fs):.4f}fs_width={(P.gabor_window_width[j]*CoFa.au_to_fs):.4f}fs_"+P.header\
 					+ 'frequency_data.dat', freq_output, header=freq_header, delimiter=' '*3, fmt="%+.18e")
-		
+
 	if P.save_latex_pdf:
 		write_and_compile_latex_PDF(T, W, P, sys, Mpi)
 

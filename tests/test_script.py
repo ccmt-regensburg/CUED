@@ -48,7 +48,6 @@ def check_test(testdir, refdir):
 		gabor_refe_prefixes = [freq_filename.replace(freq_suffix, "") for freq_filename in gabor_filenames]
 		gabor_test_prefixes = [prefix.replace('reference_', '') for prefix in gabor_refe_prefixes]
 
-  
 	print_latex_pdf_really = check_params_for_print_latex_pdf(print_latex_pdf, params)
 
 	if print_latex_pdf_really:
@@ -71,15 +70,11 @@ def check_test(testdir, refdir):
 		freq_data_ref.append(freq_data_tmp)
 
 	if hasattr(params,"gabor_transformation") and params.gabor_transformation == True:
-     
 		gabor_freq_data_ref = []
-  
+
 		for prefix in gabor_refe_prefixes:
-      
 			_, freq_data_tmp, _ = read_dataset(refdir, prefix=prefix, mute=True)
-   
 			assert freq_data_tmp is not None, 'Reference frequency_data is missing.'
-   
 			gabor_freq_data_ref.append(freq_data_tmp)
 
 	##################################
@@ -147,15 +142,15 @@ def check_test(testdir, refdir):
 			os.system("sed -i '$ d' " + filename_params)
 			os.rename(filename_pdf, testdir + '/' + prefix + 'CUED_summary.pdf')
 			shutil.rmtree(foldername_pdf)
-   
+
 	if hasattr(params,"gabor_transformation") and params.gabor_transformation == True:
 		# Reading in generated data from Gabor trafo
 		for i, prefix in enumerate(gabor_test_prefixes):
-			_, freq_data, _ = read_dataset(testdir, prefix=prefix, mute=True)
+			_, gabor_freq_data, _ = read_dataset(testdir, prefix=prefix, mute=True)
 
 			os.remove(testdir + '/' + prefix + freq_suffix)
 
-			assert freq_data is not None, '"frequency_data.dat" was not generated from the code'
+			assert gabor_freq_data is not None, f'"{prefix}_frequency_data.dat" was not generated from the code'
 
 			# Load all relevant files and restrict data to max 10th order
 			freq = freq_data['f/f0']
@@ -263,5 +258,5 @@ def parser():
 	return args.path, args.latex, args.mpin
 
 if __name__ == "__main__":
-	path, print_latex_pdf, default_mpi_jobs = parser()	
+	path, print_latex_pdf, default_mpi_jobs = parser()
 	main(path)
