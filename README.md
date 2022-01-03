@@ -1,4 +1,4 @@
-# <img alt="CUED" src="/cued/branding/logo_inverted.png#gh-dark-mode-only" height="100">
+# <img alt="CUED" src="/cued/branding/logo_inverted.svg#gh-dark-mode-only" height="100">
 # <img alt="CUED" src="/cued/branding/logo.png#gh-light-mode-only" height="100">
 
 ![Test workflow](https://github.com/ccmt-regensburg/CUED/actions/workflows/regression_test.yml/badge.svg)
