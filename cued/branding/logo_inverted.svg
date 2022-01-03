@@ -15,7 +15,7 @@
    id="svg7994"
    version="1.1"
    inkscape:version="0.91 r13725"
-   sodipodi:docname="CUED_logo_inverted_no_background.svg"
+   sodipodi:docname="logo_inverted.svg"
    inkscape:export-filename="C:\Users\Jan\Dropbox\Uni\Bewerbungen\7_Uni_Regensburg_W2_Physik\4_Vortrag\Figures\logo_inverted_no_background.png"
    inkscape:export-xdpi="1000.8434"
    inkscape:export-ydpi="1000.8434">
@@ -27,7 +27,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="3.9999998"
-     inkscape:cx="99.852807"
+     inkscape:cx="57.727805"
      inkscape:cy="9.2694042"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
@@ -3640,7 +3640,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -3730,7 +3730,7 @@
        inkscape:export-ydpi="999.88232" />
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:40px;line-height:125%;font-family:'Segoe UI';-inkscape-font-specification:'Segoe UI Bold';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:40px;line-height:125%;font-family:'Segoe UI';-inkscape-font-specification:'Segoe UI Bold';letter-spacing:0px;word-spacing:0px;fill:#a0a0a0;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"
        x="60.584316"
        y="1035.3954"
        id="text5376-5-5-0-2-6-6-8"
@@ -3741,10 +3741,10 @@
          id="tspan5378-07-4-7-7-6-1-0"
          x="60.584316"
          y="1035.3954"
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'Segoe UI';-inkscape-font-specification:'Segoe UI Bold';fill:#ffffff;fill-opacity:1;">CUED</tspan></text>
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'Segoe UI';-inkscape-font-specification:'Segoe UI Bold';fill:#a0a0a0;fill-opacity:1;">CUED</tspan></text>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:10.99588203px;line-height:125%;font-family:'Segoe UI';-inkscape-font-specification:'Segoe UI Bold';text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:10.99588203px;line-height:125%;font-family:'Segoe UI';-inkscape-font-specification:'Segoe UI Bold';text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#a0a0a0;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"
        x="83.131668"
        y="1049.8477"
        id="text5376-5-5-0-2-6-6-8-9"
@@ -3754,7 +3754,7 @@
          sodipodi:role="line"
          x="83.131668"
          y="1049.8477"
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:8.79670525px;font-family:'Segoe UI';-inkscape-font-specification:'Segoe UI Bold';text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:8.79670525px;font-family:'Segoe UI';-inkscape-font-specification:'Segoe UI Bold';text-align:center;text-anchor:middle;fill:#a0a0a0;fill-opacity:1;"
          id="tspan5970">Computing Ultrafast Electron Dynamics</tspan></text>
   </g>
 </svg>
