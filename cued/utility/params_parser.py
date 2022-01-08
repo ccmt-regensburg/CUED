@@ -294,7 +294,7 @@ class ParamsParser():
             print("Error: The following parameters have no effect inside the current run:")
             for param in diff_params:
                 print(param, end=' ')
-
+            print("Please delete them from params.py and rerun CUED. CUED will stop now.")
             print()
             sys.exit()
 
