@@ -38,7 +38,6 @@ class params:
 	##########################################################################
 	gauge                   = 'velocity'         # Gauge of the system
 	gidx                    = 0.4
-	hamiltonian_evaluation  = 'ana'
 	solver                  = '2band'
 	fourier_window_function = 'gaussian'
 	user_out                = False
