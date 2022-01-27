@@ -36,6 +36,7 @@ class ParamsParser():
         # build list of parameter lists
         self.number_of_combinations = 1
         self.params_lists = []
+        self.params_maximum = []
 
         for key in self.user_params:
             self.__append_to_list(UP.__dict__[key])
@@ -53,10 +54,15 @@ class ParamsParser():
         if type(param) == list or type(param) == np.ndarray:
             if type(param) == np.ndarray:
                 param = param.tolist()
+            if not type(param[0]) == str:
+                self.params_maximum.append(np.amax(param))
+            else:
+                self.params_maximum.apend(0)
             self.number_of_combinations *= np.size(param)
             self.params_lists.append(param)
         else:
             self.params_lists.append([param])
+            self.params_maximum.append(0)
 
     def construct_current_parameters_and_header(self, param_idx, UP):
         """
@@ -76,13 +82,15 @@ class ParamsParser():
 
         for key_idx, key in enumerate(self.user_params):
             current_parameters[key] = self.params_combinations[param_idx][key_idx]
+            string_length = len('{:.4f}'.format(self.params_maximum[key_idx]))
             if type(UP.__dict__[key]) == list or type(UP.__dict__[key]) == np.ndarray:
                 if type(current_parameters[key]) == str:
                     self.header += key + '=' + current_parameters[key] + '_'
                 else:
-                    self.header += key + ('={:07.5F}'.format(current_parameters[key])).zfill(8) + '_'
+                    self.header += key + '=' + ('{:.4f}'.format(current_parameters[key])).zfill(string_length) + '_'
 
         return current_parameters
+
 
     def distribute_parameters(self, param_idx, UP): # Take index of parameter (MPI-parallelized) and write current_parameters
 
