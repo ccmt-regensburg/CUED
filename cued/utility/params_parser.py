@@ -77,7 +77,10 @@ class ParamsParser():
         for key_idx, key in enumerate(self.user_params):
             current_parameters[key] = self.params_combinations[param_idx][key_idx]
             if type(UP.__dict__[key]) == list or type(UP.__dict__[key]) == np.ndarray:
-                self.header += key + '={:.4f}_'.format(current_parameters[key])
+                if type(current_parameters[key]) == str:
+                    self.header += key + '=' + current_parameters[key] + '_'
+                else:
+                    self.header += key + ('={:07.5F}'.format(current_parameters[key])).zfill(8) + '_'
 
         return current_parameters
 
@@ -184,10 +187,6 @@ class ParamsParser():
         self.gauge = 'length'                             # Gauge of the SBE Dynamics
         if 'gauge' in UP:
             self.gauge = UP['gauge']
-
-        self.hamiltonian_evaluation = 'num'               # Numerical or analytical calculation of eigenstates and dipoles
-        if 'hamiltonian_evaluation' in UP:
-            self.hamiltonian_evaluation = UP['hamiltonian_evaluation']
 
         self.solver = 'nband'                             # 2 or n band solver
         if 'solver' in UP:
