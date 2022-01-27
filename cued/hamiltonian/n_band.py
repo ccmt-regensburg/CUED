@@ -33,6 +33,8 @@ class NBandHamiltonianSystem():
         self.dipole_in_path = None
         self.dipole_ortho = None
 
+        self.dipole_derivative_in_path = None
+
         self.Bcurv_path = None
 
     def __hamiltonian_derivatives(self):
@@ -190,6 +192,79 @@ class NBandHamiltonianSystem():
 
         return Bcurv
 
+    def __dipole_derivative(self, path, P):
+
+        epsilon = P.epsilon
+        pathlen = path[:, 0].size
+
+        dAydx = np.empty([pathlen, P.n, P.n], dtype=P.type_complex_np)
+        dAxdy = np.empty([pathlen, P.n, P.n], dtype=P.type_complex_np)
+
+        pathplusx = np.copy(path)
+        pathplusx[:, 0] += epsilon
+        pathminusx = np.copy(path)
+        pathminusx[:, 0] -= epsilon
+        pathplusy = np.copy(path)
+        pathplusy[:, 1] += epsilon
+        pathminusy = np.copy(path)
+        pathminusy[:, 1] -= epsilon
+
+        pathplus2x = np.copy(path)
+        pathplus2x[:, 0] += 2*epsilon
+        pathminus2x = np.copy(path)
+        pathminus2x[:, 0] -= 2*epsilon
+        pathplus2y = np.copy(path)
+        pathplus2y[:, 1] += 2*epsilon
+        pathminus2y = np.copy(path)
+        pathminus2y[:, 1] -= 2*epsilon
+
+        pathplus3x = np.copy(path)
+        pathplus3x[:, 0] += 3*epsilon
+        pathminus3x = np.copy(path)
+        pathminus3x[:, 0] -= 3*epsilon
+        pathplus3y = np.copy(path)
+        pathplus3y[:, 1] += 3*epsilon
+        pathminus3y = np.copy(path)
+        pathminus3y[:, 1] -= 3*epsilon
+
+        pathplus4x = np.copy(path)
+        pathplus4x[:, 0] += 4*epsilon
+        pathminus4x = np.copy(path)
+        pathminus4x[:, 0] -= 4*epsilon
+        pathplus4y = np.copy(path)
+        pathplus4y[:, 1] += 4*epsilon
+        pathminus4y = np.copy(path)
+        pathminus4y[:, 1] -= 4*epsilon
+
+        Ax_plusx, Ay_plusx = self.dipole_path(pathplusx, P)
+        Ax_minusx, Ay_minusx = self.dipole_path(pathminusx, P)
+        Ax_plusy, Ay_plusy = self.dipole_path(pathplusy, P)
+        Ax_minusy, Ay_minusy = self.dipole_path(pathminusy, P)
+
+        Ax_plus2x, Ay_plus2x = self.dipole_path(pathplus2x, P)
+        Ax_minus2x, Ay_minus2x = self.dipole_path(pathminus2x, P)
+        Ax_plus2y, Ay_plus2y = self.dipole_path(pathplus2y, P)
+        Ax_minus2y, Ay_minus2y = self.dipole_path(pathminus2y, P)
+
+        Ax_plus3x, Ay_plus3x = self.dipole_path(pathplus3x, P)
+        Ax_minus3x, Ay_minus3x = self.dipole_path(pathminus3x, P)
+        Ax_plus3y, Ay_plus3y = self.dipole_path(pathplus3y, P)
+        Ax_minus3y, Ay_minus3y = self.dipole_path(pathminus3y, P)
+
+        Ax_plus4x, Ay_plus4x = self.dipole_path(pathplus4x, P)
+        Ax_minus4x, Ay_minus4x = self.dipole_path(pathminus4x, P)
+        Ax_plus4y, Ay_plus4y = self.dipole_path(pathplus4y, P)
+        Ax_minus4y, Ay_minus4y = self.dipole_path(pathminus4y, P)
+
+        dAxdx = (1/280*(Ax_minus4x - Ax_plus4x) + 4/105*( Ax_plus3x - Ax_minus3x ) + 1/5*( Ax_minus2x - Ax_plus2x ) + 4/5*( Ax_plusx - Ax_minusx ) )/epsilon
+        dAydy = (1/280*(Ay_minus4y - Ay_plus4y) + 4/105*( Ay_plus3y - Ay_minus3y ) + 1/5*( Ay_minus2y - Ay_plus2y ) + 4/5*( Ay_plusy - Ay_minusy ) )/epsilon
+        dAxdy = (1/280*(Ax_minus4y - Ax_plus4y) + 4/105*( Ax_plus3y - Ax_minus3y ) + 1/5*( Ax_minus2y - Ax_plus2y ) + 4/5*( Ax_plusy - Ax_minusy ) )/epsilon
+        dAydx = (1/280*(Ay_minus4x - Ay_plus4x) + 4/105*( Ay_plus3x - Ay_minus3x ) + 1/5*( Ay_minus2x - Ay_plus2x ) + 4/5*( Ay_plusx - Ay_minusx ) )/epsilon
+
+        dipole_derivative = P.E_dir[0]*P.E_dir[0]*dAxdx + P.E_dir[0]*P.E_dir[1]*(dAxdy + dAydx) + P.E_dir[1]*P.E_dir[1]*dAydy
+
+        return dipole_derivative
+
     def diagonalize_path(self, path, P):
 
         kx_in_path = path[:, 0]
@@ -254,7 +329,7 @@ class NBandHamiltonianSystem():
 
         _buf1, _buf2, self.ederivx_path, self.ederivy_path = self.__derivative_path(path, P)
 
-        if P.do_semicl:
+        if P.dm_dynamics_method == 'semiclassics':
             self.dipole_path_x = np.zeros([pathlen, P.n, P.n], dtype=P.type_complex_np)
             self.dipole_path_y = np.zeros([pathlen, P.n, P.n], dtype=P.type_complex_np)
         else:
@@ -266,3 +341,6 @@ class NBandHamiltonianSystem():
         self.dipole_ortho = P.E_ort[0]*self.dipole_path_x + P.E_ort[1]*self.dipole_path_y
         self.Ax_path, self.Ay_path = self.dipole_path(path, P)
         self.Bcurv_path = self.__berry_curvature(path, P)
+
+        if P.dm_dynamics_method == 'EEA':
+            self.dipole_derivative_in_path = self.__dipole_derivative(path, P)

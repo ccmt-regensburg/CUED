@@ -92,6 +92,10 @@ class TwoBandHamiltonianSystem():
         self.dipole_in_path = None
         self.dipole_ortho = None
 
+        self.dipole_derivative = None
+        self.dipole_derivative_jit = None
+        self.dipole_derivative_in_path = None
+
     def __hamiltonian(self):
         return self.ho*self.so + self.hx*self.sx + self.hy*self.sy \
             + self.hz*self.sz
@@ -184,7 +188,7 @@ class TwoBandHamiltonianSystem():
         pathlen = path[:,0].size
         self.e_in_path = np.zeros([pathlen, P.n], dtype=P.type_real_np)
 
-        if P.do_semicl:
+        if P.dm_dynamics_method == 'semiclassics':
             self.dipole_path_x = np.zeros([pathlen, P.n, P.n], dtype=P.type_complex_np)
             self.dipole_path_y = np.zeros([pathlen, P.n, P.n], dtype=P.type_complex_np)
             self.Ax_path = evaluate_njit_matrix(self.Axfjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
@@ -203,6 +207,10 @@ class TwoBandHamiltonianSystem():
 
         self.dipole_in_path = P.E_dir[0]*self.dipole_path_x + P.E_dir[1]*self.dipole_path_y
         self.dipole_ortho = P.E_ort[0]*self.dipole_path_x + P.E_ort[1]*self.dipole_path_y
+
+        if P.dm_dynamics_method == 'EEA':
+            self.dipole_derivative_in_path = evaluate_njit_matrix(self.dipole_derivative_jit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
+
 
     def make_eigensystem_dipole(self, P):
 
@@ -235,6 +243,12 @@ class TwoBandHamiltonianSystem():
 
         self.B = sp.diff(self.Ax, self.ky) - sp.diff(self.Ay, self.kx)
         self.Bfjit = matrix_to_njit_functions(self.B, self.hsymbols, dtype=P.type_complex_np)
+
+        if P.dm_dynamics_method == 'EEA':
+            self.dipole_derivative = P.E_dir[0] * P.E_dir[0] * sp.diff(self.Ax, self.kx) \
+                + P.E_dir[0] * P.E_dir[1] * ( sp.diff(self.Ax, self.ky) + sp.diff(self.Ay, self.kx) ) \
+                + P.E_dir[1] * P.E_dir[1] * sp.diff(self.Ay, self.ky)
+            self.dipole_derivative_jit = matrix_to_njit_functions(self.dipole_derivative, self.hsymbols, dtype=P.type_complex_np)
 
     def eigensystem(self, P):
         """

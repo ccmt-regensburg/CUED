@@ -42,3 +42,4 @@ class params:
 	fourier_window_function = 'gaussian'
 	user_out                = False
 	save_latex_pdf = True
+	save_latex_pdf = True

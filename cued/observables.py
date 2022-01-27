@@ -249,7 +249,7 @@ def make_emission_exact_path_velocity(path, P, sys):
     U_h_10 = Ujit_h[1][0]
     U_h_11 = Ujit_h[1][1]
 
-    if P.do_semicl:
+    if P.dm_dynamics_method == 'semiclassics':
         Bcurv_00 = sys.Bfjit[0][0]
         Bcurv_11 = sys.Bfjit[1][1]
 
@@ -261,7 +261,7 @@ def make_emission_exact_path_velocity(path, P, sys):
 
     type_complex_np = P.type_complex_np
     symmetric_insulator = P.symmetric_insulator
-    do_semicl = P.do_semicl
+    dm_dynamics_method = P.dm_dynamics_method
     @conditional_njit(type_complex_np)
     def emission_exact_path_velocity(solution, E_field, A_field):
         '''
@@ -301,7 +301,7 @@ def make_emission_exact_path_velocity(path, P, sys):
         ##########################################################
         # Berry curvature container
         ##########################################################
-        if do_semicl:
+        if dm_dynamics_method == 'semiclassics':
             Bcurv = np.empty((pathlen, 2), dtype=type_complex_np)
 
         kx_in_path = kx_in_path_before_shift + A_field*E_dir[0]
@@ -330,7 +330,7 @@ def make_emission_exact_path_velocity(path, P, sys):
         U_h[:, 1, 0] = U_h_10(kx=kx_in_path, ky=ky_in_path)
         U_h[:, 1, 1] = U_h_11(kx=kx_in_path, ky=ky_in_path)
 
-        if do_semicl:
+        if dm_dynamics_method == 'semiclassics':
             Bcurv[:, 0] = Bcurv_00(kx=kx_in_path, ky=ky_in_path)
             Bcurv[:, 1] = Bcurv_11(kx=kx_in_path, ky=ky_in_path)
 
@@ -361,7 +361,7 @@ def make_emission_exact_path_velocity(path, P, sys):
             I_ortho += - U_h_H_U_ortho[1, 1].real * rho_cc[i_k].real
             I_ortho += - 2*np.real(U_h_H_U_ortho[0, 1] * rho_cv[i_k])
 
-            if do_semicl:
+            if dm_dynamics_method == 'semiclassics':
                 # '-' because there is q^2 compared to q only at the SBE current
                 I_ortho += -E_field * Bcurv[i_k, 0].real * rho_vv[i_k].real
                 I_ortho += -E_field * Bcurv[i_k, 1].real * rho_cc[i_k].real
@@ -404,7 +404,7 @@ def make_emission_exact_path_length(path, P, sys):
     ##########################################################
     # Berry curvature container
     ##########################################################
-    if P.do_semicl:
+    if P.dm_dynamics_method == 'semiclassics':
         Bcurv = np.empty((pathlen, 2), dtype=P.type_complex_np)
 
     h_deriv_x = evaluate_njit_matrix(sys.hderivfjit[0], kx=kx_in_path, ky=ky_in_path,
@@ -418,12 +418,12 @@ def make_emission_exact_path_length(path, P, sys):
     U = evaluate_njit_matrix(sys.Ujit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
     U_h = evaluate_njit_matrix(sys.Ujit_h, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
 
-    if P.do_semicl:
+    if P.dm_dynamics_method == 'semiclassics':
         Bcurv[:, 0] = sys.Bfjit[0][0](kx=kx_in_path, ky=ky_in_path)
         Bcurv[:, 1] = sys.Bfjit[1][1](kx=kx_in_path, ky=ky_in_path)
 
     symmetric_insulator = P.symmetric_insulator
-    do_semicl = P.do_semicl
+    dm_dynamics_method = P.dm_dynamics_method
     @conditional_njit(P.type_complex_np)
     def emission_exact_path_length(solution, E_field, A_field):
         '''
@@ -472,7 +472,7 @@ def make_emission_exact_path_length(path, P, sys):
             I_ortho += - U_h_H_U_ortho[1, 1].real * rho_cc[i_k].real
             I_ortho += - 2*np.real(U_h_H_U_ortho[0, 1] * rho_cv[i_k])
 
-            if do_semicl:
+            if dm_dynamics_method == 'semiclassics':
                 # '-' because there is q^2 compared to q only at the SBE current
                 I_ortho += -E_field * Bcurv[i_k, 0].real * rho_vv[i_k].real
                 I_ortho += -E_field * Bcurv[i_k, 1].real * rho_vc[i_k].real
@@ -605,7 +605,7 @@ def make_current_exact_path_hderiv_length(path, P, sys):
     type_complex_np = P.type_complex_np
     type_real_np = P.type_real_np
     sheet_current= P.sheet_current
-    do_semicl = P.do_semicl
+    dm_dynamics_method = P.dm_dynamics_method
     wf_in_path = sys.wf_in_path
     Bcurv_path = sys.Bcurv_path
 
@@ -622,7 +622,7 @@ def make_current_exact_path_hderiv_length(path, P, sys):
         matrix_element_x = dhdkx
         matrix_element_y = dhdky
 
-    elif P.do_semicl:
+    elif P.dm_dynamics_method == 'semiclassics':
         for i in range(n):
             matrix_element_x[:, i, i] = sys.ederivx_path[:, i]
             matrix_element_y[:, i, i] = sys.ederivy_path[:, i]
@@ -676,7 +676,7 @@ def make_current_exact_path_hderiv_length(path, P, sys):
                             J_exact_E_dir += - np.real( mel_in_path[i_k, i, j] * solution[i_k, j, i] )
                             J_exact_ortho += - np.real( mel_ortho[i_k, i, j] * solution[i_k, j, i] )
 
-                    if do_semicl:
+                    if dm_dynamics_method == 'semiclassics':
                         J_exact_ortho += - E_field * Bcurv_path[i_k, i].real * solution[i_k, i, i].real
 
         return J_exact_E_dir, J_exact_ortho
@@ -799,7 +799,7 @@ def make_current_exact_path_hderiv_velocity(path, P, sys):
     type_complex_np = P.type_complex_np
     type_real_np = P.type_real_np
     sheet_current= P.sheet_current
-    do_semicl = P.do_semicl
+    dm_dynamics_method = P.dm_dynamics_method
     degenerate_eigenvalues = sys.degenerate_eigenvalues
     gidx = P.gidx
     sheet_current = P.sheet_current
@@ -819,7 +819,7 @@ def make_current_exact_path_hderiv_velocity(path, P, sys):
         dhdky = evaluate_njit_matrix(sys.hderivfjit[1], kx=kx_in_path, ky=ky_in_path, dtype=type_complex_np)
 
         h_in_path = np.zeros((pathlen, n, n), dtype=type_complex_np)
-        if do_semicl:
+        if dm_dynamics_method == 'semiclassics':
             hpex = np.zeros((pathlen, n, n), dtype=type_complex_np)
             hmex = np.zeros((pathlen, n, n), dtype=type_complex_np)
             hpey = np.zeros((pathlen, n, n), dtype=type_complex_np)
@@ -883,7 +883,7 @@ def make_current_exact_path_hderiv_velocity(path, P, sys):
                     kx = kx_in_path[k]
                     ky = ky_in_path[k]
                     h_in_path[k, i, j] = sys.hfjit[i][j](kx=kx, ky=ky)
-                    if do_semicl:
+                    if dm_dynamics_method == 'semiclassics':
                         hpex[k, i, j] = sys.hfjit[i][j](kx=kx+P.epsilon, ky=ky)
                         hmex[k, i, j] = sys.hfjit[i][j](kx=kx-P.epsilon, ky=ky)
                         hpey[k, i, j] = sys.hfjit[i][j](kx=kx, ky=ky+P.epsilon)
@@ -935,7 +935,7 @@ def make_current_exact_path_hderiv_velocity(path, P, sys):
 
         buf, wf_in_path = diagonalize_h(h_in_path)
 
-        if do_semicl:
+        if dm_dynamics_method == 'semiclassics':
             _buf, _buf, ederivx, ederivy = derivative_path(hpex, hmex, hp2ex, hm2ex, hp3ex, hm3ex, hp4ex, hm4ex, \
                                                                     hpey, hmey, hp2ey, hm2ey, hp3ey, hm3ey, hp4ey, hm4ey)
 
@@ -1071,7 +1071,7 @@ def make_current_exact_path_hderiv_velocity(path, P, sys):
             matrix_element_x = dhdkx
             matrix_element_y = dhdky
 
-        elif do_semicl:
+        elif dm_dynamics_method == 'semiclassics':
             for i in range(n):
                 matrix_element_x[:, i, i] = ederivx[:, i]
                 matrix_element_y[:, i, i] = ederivy[:, i]
@@ -1125,7 +1125,7 @@ def make_current_exact_path_hderiv_velocity(path, P, sys):
                             J_exact_E_dir += - 2*np.real( mel_in_path[i_k, i, j] * solution[i_k, j, i] )
                             J_exact_ortho += - 2*np.real( mel_ortho[i_k, i, j] * solution[i_k, j, i] )
 
-                    if do_semicl:
+                    if dm_dynamics_method == 'semiclassics':
                         J_exact_ortho += - E_field * bcurv[i_k, i].real * solution[i_k, i, i].real
 
         return J_exact_E_dir, J_exact_ortho
@@ -1148,7 +1148,7 @@ def make_polarization_inter_path_velocity(path, P, sys):
     epsilon = P.epsilon
     gidx = P.gidx
     degenerate_eigenvalues = sys.degenerate_eigenvalues
-    do_semicl = P.do_semicl
+    dm_dynamics_method = P.dm_dynamics_method
 
     kx_before_shift = path[:, 0]
     ky_before_shift = path[:, 1]
@@ -1296,7 +1296,7 @@ def make_polarization_inter_path_velocity(path, P, sys):
 
         dx_path = np.zeros((pathlen, n, n), dtype=type_complex_np)
         dy_path = np.zeros((pathlen, n, n), dtype=type_complex_np)
-        if not do_semicl:
+        if not dm_dynamics_method == 'semiclassics':
             _buf, wf_path = diagonalize_path(h_in_path)
             dwfkx_path, dwfky_path, _buf, _buf = __derivative_path(hpex, hmex, hp2ex, hm2ex, hp3ex, hm3ex, hp4ex, hm4ex, \
                                                                         hpey, hmey, hp2ey, hm2ey, hp3ey, hm3ey, hp4ey, hm4ey)

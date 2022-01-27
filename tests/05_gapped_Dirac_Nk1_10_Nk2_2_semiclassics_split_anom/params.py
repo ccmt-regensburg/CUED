@@ -41,7 +41,7 @@ class params:
 	solver                  = '2band'
 	fourier_window_function = 'gaussian'
 	split_current			= True
-	do_semicl               = True
+	dm_dynamics_method      = 'semiclassics'
 	save_anom				= True
 	user_out                = False
 	save_latex_pdf			= True

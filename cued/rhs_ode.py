@@ -38,7 +38,7 @@ def make_rhs_ode_2_band(sys, electric_field, P):
     gamma2 = P.gamma2
     type_complex_np = P.type_complex_np
     dk_order = P.dk_order
-    do_semicl = P.do_semicl
+    dm_dynamics_method = P.dm_dynamics_method
     E_dir = P.E_dir
     gauge = P.gauge
 
@@ -179,7 +179,7 @@ def make_rhs_ode_2_band(sys, electric_field, P):
 
         ecv_in_path = ecf(kx=kx, ky=ky) - evf(kx=kx, ky=ky)
 
-        if do_semicl:
+        if dm_dynamics_method == 'semiclassics':
             zero_arr = np.zeros(kx.size, dtype=type_complex_np)
             dipole_in_path = zero_arr
             A_in_path = zero_arr
@@ -300,7 +300,7 @@ def make_rhs_ode_n_band(sys, electric_field, P):
 
     epsilon = P.epsilon
     gidx = P.gidx
-    do_semicl = P.do_semicl
+    dm_dynamics_method = P.dm_dynamics_method
 
     @conditional_njit(type_complex_np)
     def flength(t, y, kpath, dipole_in_path, e_in_path, y0, dk):
@@ -457,7 +457,7 @@ def make_rhs_ode_n_band(sys, electric_field, P):
         dx_path = np.zeros((pathlen, n, n), dtype=type_complex_np)
         dy_path = np.zeros((pathlen, n, n), dtype=type_complex_np)
         
-        if not do_semicl:
+        if not dm_dynamics_method == 'semiclassics':
             _buf, wf_path = diagonalize_path(h_in_path)
             dwfkx_path, dwfky_path, _buf, _buf = __derivative_path(hpex, hmex, hp2ex, hm2ex, hp3ex, hm3ex, hp4ex, hm4ex, \
                                                                         hpey, hmey, hp2ey, hm2ey, hp3ey, hm3ey, hp4ey, hm4ey)

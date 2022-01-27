@@ -4,6 +4,7 @@ from numpy.fft import fftshift, fft, ifftshift, ifft, fftfreq
 from scipy.integrate import ode
 import time
 from typing import OrderedDict
+from numba import njit
 
 from cued.utility import FrequencyContainers, TimeContainers, ScreeningContainers, ParamsParser
 from cued.utility import ConversionFactors as CoFa
@@ -157,7 +158,7 @@ def run_sbe(sys, P, Mpi):
 	T = TimeContainers(P)
 	W = FrequencyContainers()
 
-	# Make rhs of ode for 2band or nband solver
+	# Make rhs of ode for 2band or nband solver; returns 0 for series expansion
 	sys.eigensystem_dipole_path(P.paths[0], P) # change structure, such that hfjit gets calculated first
 	rhs_ode, solver = make_rhs_ode(P, T, sys)
 
@@ -184,12 +185,15 @@ def run_sbe(sys, P, Mpi):
 		y0 = np.append(y0, [0.0])
 
 		# Set the initual values and function parameters for the current kpath
-		if P.solver_method in ('bdf', 'adams'):
-			solver.set_initial_value(y0, P.t0)\
-				.set_f_params(path, sys.dipole_in_path, sys.e_in_path, y0, P.dk)
-		elif P.solver_method == 'rk4':
-			T.solution_y_vec[:] = y0
-
+		if P.dm_dynamics_method in ('sbe', 'semiclassics'):
+			if P.solver_method in ('bdf', 'adams'):
+				solver.set_initial_value(y0, P.t0)\
+					.set_f_params(path, sys.dipole_in_path, sys.e_in_path, y0, P.dk)
+			elif P.solver_method == 'rk4':
+				T.solution_y_vec[:] = y0
+		elif P.dm_dynamics_method in ('series_expansion', 'EEA'):
+			T.solution_y_vec = np.copy(y0)
+			T.time_integral = np.zeros((P.Nk1, P.n, P.n))
 		# Propagate through time
 		# Index of current integration time step
 		ti = 0
@@ -206,13 +210,17 @@ def run_sbe(sys, P, Mpi):
 			calculate_currents(ti, current_exact_path, polarization_inter_path, current_intra_path, T, P)
 
 			# Integrate one integration time step
-			if P.solver_method in ('bdf', 'adams'):
-				solver.integrate(solver.t + P.dt)
-				solver_successful = solver.successful()
+			if P.dm_dynamics_method in ('sbe', 'semiclassics'):
+				if P.solver_method in ('bdf', 'adams'):
+					solver.integrate(solver.t + P.dt)
+					solver_successful = solver.successful()
 
-			elif P.solver_method == 'rk4':
-				T.solution_y_vec = rk_integrate(T.t[ti], T.solution_y_vec, path, sys,
-												y0, P.dk, P.dt, rhs_ode)
+				elif P.solver_method == 'rk4':
+					T.solution_y_vec = rk_integrate(T.t[ti], T.solution_y_vec, path, sys,
+													y0, P.dk, P.dt, rhs_ode)
+
+			elif P.dm_dynamics_method in ('series_expansion', 'EEA'):
+				T.solution_y_vec[:-1], T.time_integral = von_neumann_series(T.t[ti], T.A_field[ti], T.E_field[ti], path, sys, y0[:-1], T.time_integral, P)
 
 			# Increment time counter
 			ti += 1
@@ -287,19 +295,27 @@ def make_BZ(P):
 		P.Nk2 = Nk1_buf * Nk2_buf
 
 def make_rhs_ode(P, T, sys):
-	if P.solver == '2band':
-		if P.n != 2:
-			raise AttributeError('2-band solver works for 2-band systems only')
+	
+	if P.dm_dynamics_method in ('sbe', 'semiclassics'):	
+		if P.solver == '2band':
+			if P.n != 2:
+				raise AttributeError('2-band solver works for 2-band systems only')
+			else:
+				rhs_ode = make_rhs_ode_2_band(sys, T.electric_field, P)
+
+		elif P.solver == 'nband':
+			rhs_ode = make_rhs_ode_n_band(sys, T.electric_field, P)
 		else:
-			rhs_ode = make_rhs_ode_2_band(sys, T.electric_field, P)
+			rhs_ode = 0
 
-	elif P.solver == 'nband':
-		rhs_ode = make_rhs_ode_n_band(sys, T.electric_field, P)
+		if P.solver_method in ('bdf', 'adams'):
+			solver = ode(rhs_ode, jac=None)\
+				.set_integrator('zvode', method=P.solver_method, max_step=P.dt)
+		else:
+			solver = 0
 
-	if P.solver_method in ('bdf', 'adams'):
-		solver = ode(rhs_ode, jac=None)\
-			.set_integrator('zvode', method=P.solver_method, max_step=P.dt)
-	elif P.solver_method == 'rk4':
+	else:
+		rhs_ode = 0
 		solver = 0
 
 	return rhs_ode, solver
@@ -341,18 +357,31 @@ def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, Mpi):
 
 	is_first_Nk2_idx = (Mpi.local_Nk2_idx_list[0] == Nk2_idx)
 
-	if P.solver_method in ('bdf', 'adams'):
-		# Do not append the last element (A_field)
-		T.solution = solver.y[:-1].reshape(P.Nk1, P.n, P.n)
+	if P.dm_dynamics_method in ('sbe', 'semiclassics'):
+		if P.solver_method in ('bdf', 'adams'):
+			# Do not append the last element (A_field)
+			T.solution = solver.y[:-1].reshape(P.Nk1, P.n, P.n)
 
-		# Construct time array only once
-		if is_first_Nk2_idx:
-			# Construct time and A_field only in first round
-			T.t[ti] = solver.t
-			T.A_field[ti] = solver.y[-1].real
-			T.E_field[ti] = T.electric_field(T.t[ti])
+			# Construct time array only once
+			if is_first_Nk2_idx:
+				# Construct time and A_field only in first round
+				T.t[ti] = solver.t
+				T.A_field[ti] = solver.y[-1].real
+				T.E_field[ti] = T.electric_field(T.t[ti])
 
-	elif P.solver_method == 'rk4':
+		elif P.solver_method == 'rk4':
+			# Do not append the last element (A_field)
+			T.solution = T.solution_y_vec[:-1].reshape(P.Nk1, P.n, P.n)
+
+			# Construct time array only once
+			if is_first_Nk2_idx:
+				# Construct time and A_field only in first round
+				T.t[ti] = ti*P.dt + P.t0
+				T.A_field[ti] = T.solution_y_vec[-1].real
+				T.E_field[ti] = T.electric_field(T.t[ti])
+
+	elif P.dm_dynamics_method in ('series_expansion', 'EEA'):
+
 		# Do not append the last element (A_field)
 		T.solution = T.solution_y_vec[:-1].reshape(P.Nk1, P.n, P.n)
 
@@ -360,8 +389,8 @@ def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, Mpi):
 		if is_first_Nk2_idx:
 			# Construct time and A_field only in first round
 			T.t[ti] = ti*P.dt + P.t0
-			T.A_field[ti] = T.solution_y_vec[-1].real
 			T.E_field[ti] = T.electric_field(T.t[ti])
+			T.A_field[ti] = T.A_field[ti-1] - T.electric_field(T.t[ti])*P.dt
 
 	# Only write full density matrix solution if save_full is True
 	if P.save_full:
@@ -407,6 +436,72 @@ def rk_integrate(t, y, kpath, sys, y0, dk, dt, rhs_ode):
 	ynew = y + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
 
 	return ynew
+
+def von_neumann_series(t, A_field, E_field, path, sys, y0, time_integral, P):
+
+	# rescale solution vector and initial condition to be a matrix
+	y_mat = np.zeros((P.Nk1, P.n, P.n), dtype=P.type_complex_np)
+	y0_mat = y0.reshape(P.Nk1, P.n, P.n)
+
+	# 0th order
+	y_mat[:, :, :] = np.copy(y0_mat[:, :, :])
+
+	if P.dm_dynamics_method == 'EEA':	# Approximate formula for DC remnants (Int(E^2*A), doesn't make sense for finite times!)
+		
+		if P.first_order:
+			print('Warning: first order not implemented yet!')
+		if P.second_order:
+			y_mat, time_integral = second_order_taylor(y_mat, time_integral, y0_mat, E_field, A_field, \
+						 	sys.dipole_in_path, sys.dipole_derivative_in_path, P.T2, P.dt, P.n, P.Nk1)
+
+	elif P.dm_dynamics_method == 'series_expansion':
+		# calculate eigenvalues and dipole elements at current time step (velocity gauge!)
+		path_after_shift = np.copy(path)
+		path_after_shift[:, 0] = path[:, 0] + A_field*P.E_dir[0]
+		path_after_shift[:, 1] = path[:, 1] + A_field*P.E_dir[1]
+
+		sys.eigensystem_dipole_path(path_after_shift, P)
+
+		if P.first_order:
+			y_mat = first_order(y_mat, y0_mat, t, E_field, sys.e_in_path, sys.dipole_in_path, P.T2, P.n)
+
+		if P.second_order:
+			y_mat, time_integral = second_order(y_mat, time_integral, y0_mat, E_field, sys.dipole_in_path, P.T2, P.dt, P.n, P.Nk1)
+
+	return y_mat.flatten('C'), time_integral
+
+@njit
+def second_order_taylor(y_mat, time_integral, y0_mat, E_field, A_field, dipole_in_path, dipole_derivative_in_path, T2, dt, n, Nk1):
+
+	for i in range(n):
+		for k in range(n):
+			for nk in range(Nk1):
+				time_integral[nk, i, k] += E_field**2 * A_field * dt
+				C = 2 * np.real(dipole_in_path[nk, k, i] * dipole_derivative_in_path[nk, k, i])
+				y_mat[nk, i, i] -= T2 * ( y0_mat[nk, i, i] - y0_mat[nk, k, k] ) * C * time_integral[nk, i, k]
+	
+	return y_mat, time_integral
+
+@njit
+def first_order(y_mat, y0_mat, t, E_field, e_in_path, dipole_in_path, T2, n):
+	for i in range(n):
+		for j in range(n):
+			y_mat[:, i, j] -= 1j*T2* ( y0_mat[:, i, i] - y0_mat[:, j, j] ) \
+				* np.exp(1j*t* (e_in_path[:, i] - e_in_path[:, j])) \
+				* E_field * dipole_in_path[:, i, j]
+	
+	return y_mat
+
+@njit
+def second_order(y_mat, time_integral, y0_mat, E_field, dipole_in_path, T2, dt, n, Nk1):
+
+	for i in range(n):
+		for k in range(n):
+			for nk in range(Nk1):
+				time_integral[nk, i, k] += np.abs(E_field * dipole_in_path[nk, k, i])**2 * dt
+				y_mat[nk, i, i] -= T2 * ( y0_mat[nk, i, i] - y0_mat[nk, k, k] ) * time_integral[nk, i, k]
+
+	return y_mat, time_integral
 
 
 def initial_condition(P, e_in_path): # Check if this does what it should!
@@ -982,12 +1077,13 @@ def print_user_info(P, B0=None, mu=None, incident_angle=None):
 
 	print("Input parameters:")
 	print("Brillouin zone                  = " + P.BZ_type)
-	print("Do Semiclassics                 = " + str(P.do_semicl))
-	print("ODE solver method               = " + str(P.solver_method))
-	print("Precision (default = double)    = " + str(P.precision))
 	print("Number of k-points              = " + str(P.Nk))
-	print("Order of k-derivative           = " + str(P.dk_order))
-	print("Right hand side of ODE          = " + str(P.solver))
+	print("Densiy matrix calculation method= " + str(P.dm_dynamics_method))
+	if P.dm_dynamics_method in ('sbe', 'semiclassics'):
+		print("ODE solver method               = " + str(P.solver_method))
+		print("Order of k-derivative           = " + str(P.dk_order))
+		print("Right hand side of ODE          = " + str(P.solver))
+	print("Precision (default = double)    = " + str(P.precision))
 	if P.BZ_type == 'hexagon':
 		print("Driving field alignment         = " + P.align)
 	elif P.BZ_type == 'rectangle':

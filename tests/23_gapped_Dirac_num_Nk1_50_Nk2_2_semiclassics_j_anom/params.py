@@ -40,7 +40,7 @@ class params:
 	gauge                   = 'length'         # Gauge of the system
 	solver                  = '2band'
 	fourier_window_function = 'gaussian'
-	do_semicl               = True
+	dm_dynamics_method      = 'semiclassics'
 	save_anom               = True
 	split_current           = True
 	user_out                = False

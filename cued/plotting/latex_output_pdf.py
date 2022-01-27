@@ -445,7 +445,7 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, num_point
 
 	_fig, (ax2) = plt.subplots(1)
 	d_min = 1.0E-10
-	if P.do_semicl:
+	if P.dm_dynamics_method == 'semiclassics':
 		for i_band in range(P.n):
 			abs_connection = (np.sqrt( np.abs(sys.Ax_path[:, i_band, i_band])**2 + \
 			                  np.abs(sys.Ay_path[:, i_band, i_band])**2 ) + 1.0e-80)*CoFa.au_to_as
@@ -469,7 +469,7 @@ def bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, num_point
 
 	_fig, (ax3) = plt.subplots(1)
 	d_min = 1.0E-10
-	if P.do_semicl:
+	if P.dm_dynamics_method == 'semiclassics':
 		for i_band in range(P.n):
 			proj_connection = (np.abs( sys.Ax_path[:,i_band,i_band]*P.E_dir[0] + \
 			                   sys.Ay_path[:, i_band, i_band]*P.E_dir[1] ) + 1.0e-80)*CoFa.au_to_as

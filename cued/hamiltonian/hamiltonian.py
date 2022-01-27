@@ -243,6 +243,31 @@ class BiTe_num(NBandHamiltonianSystem):
 
         super().__init__(h)
 
+class BiTeResummed_num(TwoBandHamiltonianSystem):
+    """
+    Bismuth Telluride topological insulator model
+    """
+
+    def __init__(self, C0=sp.Symbol('C0', real=True),
+                 c2=sp.Symbol('c2', real=True),
+                 A=sp.Symbol('A', real=True),
+                 r=sp.Symbol('r', real=True),
+                 ksym=sp.Symbol('ksym', real=True),
+                 kasym=sp.Symbol('kasym', real=True)):
+
+        k = sp.sqrt(self.kx**2 + self.ky**2)
+        C2 = (c2/ksym**2)/(1+(k/ksym)**2)
+        R = (r/kasym**2)/(1+(k/kasym)**4)
+        ho = C0 + C2*(self.kx**2 + self.ky**2)
+        hx = A*self.ky
+        hy = -A*self.kx
+        hz = 2*R*self.kx*(self.kx**2 - 3*self.ky**2)
+
+        h = ho*so + hx*sx + hy*sy + hz*sz
+
+        super().__init__(h)
+
+
 class BiTe_num_3_bands(NBandHamiltonianSystem):
     '''
         Artificial 3Band model with Dirac cone for first two bands, zero else

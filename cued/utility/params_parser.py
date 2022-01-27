@@ -188,10 +188,6 @@ class ParamsParser():
         if 'plot_format' in UP:
             self.plot_format = UP['plot_format']
 
-        self.do_semicl = False                            # Semiclassical calc. (dipole = 0)
-        if 'do_semicl' in UP:
-            self.do_semicl = UP['do_semicl']
-
         self.gauge = 'length'                             # Gauge of the SBE Dynamics
         if 'gauge' in UP:
             self.gauge = UP['gauge']
@@ -212,9 +208,33 @@ class ParamsParser():
         if 'save_anom' in UP:
             self.save_anom = UP['save_anom']
 
-        self.solver_method = 'bdf'                        # 'adams' non-stiff, 'bdf' stiff, 'rk4' Runge-Kutta 4th order
-        if 'solver_method' in UP:
-            self.solver_method = UP['solver_method']
+        self.dm_dynamics_method = 'sbe'
+        if 'dm_dynamics_method' in UP:
+            self.dm_dynamics_method = UP['dm_dynamics_method']
+
+            if self.dm_dynamics_method in ('series_expansion', 'EEA') and self.gauge == 'length':
+                print('Warning: Series expansion only works with velocity gauge. Changing to velocity gauge...')
+                self.gauge = 'velocity'
+
+        if self.dm_dynamics_method in ('sbe', 'semiclassics'):
+            self.solver_method = 'bdf'                        # 'adams' non-stiff, 'bdf' stiff, 'rk4' Runge-Kutta 4th order
+            if 'solver_method' in UP:
+                self.solver_method = UP['solver_method']
+
+            self.dk_order = 8                                 # Accuracy order of density-matrix k-deriv.
+            if 'dk_order' in UP:
+                self.dk_order = UP['dk_order']                   # with length gauge (avail: 2,4,6,8)
+                if self.dk_order not in [2, 4, 6, 8]:
+                    sys.exit("dk_order needs to be either 2, 4, 6, or 8.")
+
+        if self.dm_dynamics_method in ('series_expansion', 'EEA'):
+            self.first_order = True
+            if 'first_order' in UP:
+                self.first_order = UP['first_order']
+
+            self.second_order = True
+            if 'second_order' in UP:
+                self.second_order = UP['second_order']
 
         self.precision = 'double'                         # Quadruple for reducing numerical noise
         if 'precision' in UP:
@@ -223,12 +243,6 @@ class ParamsParser():
         self.symmetric_insulator = False                  # Special flag for accurate insulator calc.
         if 'symmetric_insulator' in UP:
             self.symmetric_insulator = UP['symmetric_insulator']
-
-        self.dk_order = 8                                 # Accuracy order of density-matrix k-deriv.
-        if 'dk_order' in UP:
-            self.dk_order = UP['dk_order']                   # with length gauge (avail: 2,4,6,8)
-            if self.dk_order not in [2, 4, 6, 8]:
-                sys.exit("dk_order needs to be either 2, 4, 6, or 8.")
 
         self.factor_freq_resolution = 1
         if 'factor_freq_resolution' in UP:
@@ -363,15 +377,5 @@ class ParamsParser():
         self.Nk = self.Nk1 * self.Nk2
         if self.BZ_type == 'hexagon':
             self.a_angs = self.a*CoFa.au_to_as
-
-        # Filename tail
-        if self.user_defined_field:
-            self.tail = 'user_defined'
-        else:
-            self.tail =\
-                'E_{:.4f}_w_{:.1f}_a_{:.1f}_{}_t0_{:.1f}_dt_{:.6f}_NK1-{}_NK2-{}_T1_{:.1f}_T2_{:.1f}_chirp_{:.3f}_ph_{:.2f}_solver_{:s}_dk_order{}'\
-                .format(self.E0_MVpcm, self.f_THz, self.sigma_fs, self.gauge, self.t0_fs, self.dt_fs,
-                        self.Nk1, self.Nk2, self.T1_fs, self.T2_fs, self.chirp_THz, self.phase,
-                        self.solver_method, self.dk_order)
 
         self.Nt_pdf_densmat = np.size(self.t_pdf_densmat)
