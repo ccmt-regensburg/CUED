@@ -12,8 +12,8 @@ class params:
 	# Brillouin zone parameters
 	##########################################################################
 	BZ_type           = 'rectangle'              # rectangle or hexagon
-	Nk1               = 800                       # Number of kpoints in each of the paths
-	Nk2               = 60                        # Number of paths
+	Nk1               = 50                       # Number of kpoints in each of the paths
+	Nk2               = 4                        # Number of paths
 	length_BZ_E_dir   = 5.0                      # length of BZ in E-field direction
 	length_BZ_ortho   = 0.2                      # length of BZ orthogonal to E-field direction
 	angle_inc_E_field = 0                        # incoming angle of the E-field in degree

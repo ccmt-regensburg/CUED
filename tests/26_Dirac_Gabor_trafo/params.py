@@ -38,7 +38,7 @@ class params:
 	gauge                   = 'velocity'          # Gauge of the system
 	solver                  = '2band'
 	fourier_window_function = 'gaussian'
-	user_out                = True               # True to get user plotting and progress output
+	user_out                = False               # True to get user plotting and progress output
 	gabor_transformation	= True
 	gabor_gaussian_center	= np.linspace(-100,100,num=4)
 	gabor_window_width      = [10,35]
