@@ -37,8 +37,8 @@ class params:
 	##########################################################################
 	gauge                   = 'velocity'           # Gauge of the system
 	fourier_window_function = 'gaussian'
-	user_out                = True
+	user_out                = False
 	dm_dynamics_method      = 'series_expansion'
 	first_order				= True
 	second_order			= False
-	save_latex_pdf			= True
+
