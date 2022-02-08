@@ -265,8 +265,8 @@ def get_symmetry_path_in_BZ(P, num_points_for_plotting):
 
 	elif P.BZ_type == 'rectangle':
 
-		vec_k_E_dir = P.length_BZ_E_dir*P.E_dir
-		vec_k_ortho = P.length_BZ_ortho*np.array([P.E_dir[1], -P.E_dir[0]])
+		vec_k_E_dir = 0.5*P.length_BZ_E_dir*P.E_dir
+		vec_k_ortho = 0.5*P.length_BZ_ortho*np.array([P.E_dir[1], -P.E_dir[0]])
 
 		path = []
 		for alpha in pos_array_reverse:
