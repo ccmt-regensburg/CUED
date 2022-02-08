@@ -242,10 +242,10 @@ def get_symmetry_path_in_BZ(P, num_points_for_plotting):
 	Nk_per_line = num_points_for_plotting//2
 
 	delta = 1/(2*Nk_per_line)
-	neg_array_direct  = np.linspace(-0.5+delta,	 0.0-delta, num=Nk_per_line)
-	neg_array_reverse = np.linspace( 0.0+delta, -0.5-delta, num=Nk_per_line)
-	pos_array_direct  = np.linspace( 0.0+delta,	 0.5-delta, num=Nk_per_line)
-	pos_array_reverse = np.linspace( 0.5-delta,	 0.0+delta, num=Nk_per_line)
+	neg_array_direct  = np.linspace(-1.0+delta, 0.0-delta, num=Nk_per_line)
+	neg_array_reverse = np.linspace( 0.0+delta, -1.0-delta, num=Nk_per_line)
+	pos_array_direct  = np.linspace( 0.0+delta, 1.0-delta, num=Nk_per_line)
+	pos_array_reverse = np.linspace( 1.0-delta, 0.0+delta, num=Nk_per_line)
 
 	if P.BZ_type == 'hexagon':
 
