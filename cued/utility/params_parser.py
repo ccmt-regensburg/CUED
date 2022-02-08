@@ -57,7 +57,7 @@ class ParamsParser():
             if not type(param[0]) == str:
                 self.params_maximum.append(np.amax(param))
             else:
-                self.params_maximum.apend(0)
+                self.params_maximum.append(0)
             self.number_of_combinations *= np.size(param)
             self.params_lists.append(param)
         else:
