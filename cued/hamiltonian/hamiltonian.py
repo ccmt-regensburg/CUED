@@ -361,6 +361,16 @@ class DiracConeNSheets(NBandHamiltonianSystem):
 
         super().__init__(h, n_sheets)
 
+class DiracConeAna(NBandHamiltonianSystem):
+
+    def __init__(self, vF=sp.Symbol('vF', real=True)):
+
+        h = vF * sp.Matrix([[0, self.kx - sp.I * self.ky],[self.kx + sp.I * self.ky, 0]])
+        ana_e = sp.Matrix([vF*(self.kx**2 + self.ky**2)**(1/2), -vF*(self.kx**2 + self.ky**2)**(1/2)])
+        #ana_wf = sp.Matrix([[ (self.kx - sp.I * self.ky)/((2*self.kx**2 + 2*self.ky**2)**(1/2)),  - (self.kx - sp.I * self.ky)/((2*self.kx**2 + 2*self.ky**2)**(1/2))], [2**(-1/2), 2**(-1/2)]])
+        ana_wf = sp.Matrix([[ (self.kx - sp.I * self.ky)/((self.kx**2 + self.ky**2)**(1/2)),  - (self.kx - sp.I * self.ky)/((self.kx**2 + self.ky**2)**(1/2))], [ 1 , 1 ]])
+        super().__init__(h, 1, False, ana_e, ana_wf)
+
 class AIIIHamiltonian(NBandHamiltonianSystem):
 
     def __init__(self,
@@ -430,7 +440,7 @@ class BiTeBandstructure(NBandBandstructureDipoleSystem):
 
 class fully_flexible_bandstructure_dipoles(NBandBandstructureDipoleSystem):
 
-    def __init__(self, 
+    def __init__(self,
                  ev = sp.Symbol('ev', real=True),
                  ec = sp.Symbol('ec', real=True),
                  dipole_x = sp.Symbol('dipole_x'),
@@ -440,7 +450,7 @@ class fully_flexible_bandstructure_dipoles(NBandBandstructureDipoleSystem):
         n = 2
 
         super().__init__(e, dipole_x, dipole_y, n, flag)
-        
+
 class ExampleThreeBand(NBandBandstructureDipoleSystem):
 
     def __init__(self,

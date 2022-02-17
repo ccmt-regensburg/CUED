@@ -3,6 +3,7 @@ import sympy as sp
 import numpy.linalg as lin
 import math
 from sympy.physics.quantum import TensorProduct
+from sympy.physics.quantum.dagger import Dagger
 from cued.utility import evaluate_njit_matrix, list_to_njit_functions, matrix_to_njit_functions
 
 class NBandHamiltonianSystem():
@@ -10,7 +11,7 @@ class NBandHamiltonianSystem():
     kx = sp.Symbol('kx', real=True)
     ky = sp.Symbol('ky', real=True)
 
-    def __init__(self, h, n_sheets=1, degenerate_eigenvalues=False):
+    def __init__(self, h, n_sheets=1, degenerate_eigenvalues=False, ana_e=None, ana_wf=None):
 
         self.system = 'num'
 
@@ -19,6 +20,21 @@ class NBandHamiltonianSystem():
         self.h = h
         self.hsymbols = None    # set when eigensystem_dipole_path is called
         self.hderiv = None   # set when eigensystem_dipole_path is called
+        self.ana_e = ana_e
+        self.ederivx = None
+        self.ederivy = None
+        self.ana_wf = ana_wf
+        self.dipole_x = None
+        self.dipole_y = None
+        self.B = None
+
+        self.efjit = None
+        self.ederivfjit = None
+        self.wfjit = None
+        self.wfcjit = None
+        self.dipolexjit = None
+        self.dipoleyjit = None
+        self.Bcurvjit = None
 
         self.n = h.shape[0]
 
@@ -40,7 +56,36 @@ class NBandHamiltonianSystem():
     def __hamiltonian_derivatives(self):
         return [sp.diff(self.h, self.kx), sp.diff(self.h, self.ky)]
 
-    def __isZeeman(self,mag_strength):
+    def __energy_derivatives(self):
+        """
+        Calculate the derivative of the energy bands. Order is
+        de[0]/dkx, de[0]/dky, de[1]/dkx, de[1]/dky
+        """
+        edx = []
+        edy = []
+        for e in self.ana_e:
+            edx.append(sp.diff(e, self.kx))
+            edy.append(sp.diff(e, self.ky))
+        return edx, edy
+
+    def __normalize_eigenvectors(self):
+
+        for i in range(self.n):
+            norm = 0
+            for j in range(self.n):
+                norm += sp.Abs(self.ana_wf[j, i])**2
+            self.ana_wf[:, i] *= norm**(-1/2)
+
+    def __fields(self):
+        dUx = sp.diff(self.ana_wf, self.kx)
+        dUy = sp.diff(self.ana_wf, self.ky)
+        # Minus sign is the charge
+        return -sp.I*(self.ana_wf.H) * dUx, -sp.I*(self.ana_wf.H) * dUy
+
+    def __ana_berry_curvature(self):
+        return sp.diff(self.dipole_x, self.kx) - sp.diff(self.dipole_y, self.kx)
+
+    def __isZeeman(self, mag_strength):
         s_z = sp.Matrix([[1,0],[0,-1]])
         self.n = self.h.shape[0]
         return mag_strength*TensorProduct(s_z,sp.eye(int(self.n/2)))
@@ -113,7 +158,6 @@ class NBandHamiltonianSystem():
         yderivative = (1/280*(wfminus4y - wfplus4y) + 4/105*( wfplus3y - wfminus3y ) + 1/5*( wfminus2y - wfplus2y ) + 4/5*( wfplusy - wfminusy ) )/epsilon
         ederivx = (1/280*(eminus4x - eplus4x) + 4/105*( eplus3x - eminus3x ) + 1/5*( eminus2x - eplus2x ) + 4/5*( eplusx - eminusx) )/epsilon
         ederivy = (1/280*(eminus4y - eplus4y) + 4/105*( eplus3y - eminus3y ) + 1/5*( eminus2y - eplus2y ) + 4/5*( eplusy - eminusy ) )/epsilon
-
 
         return xderivative, yderivative, ederivx, ederivy
 
@@ -323,15 +367,54 @@ class NBandHamiltonianSystem():
             self.hfjit = matrix_to_njit_functions(self.h, self.hsymbols, dtype=P.type_complex_np)
             self.hderivfjit = [matrix_to_njit_functions(hd, self.hsymbols, dtype=P.type_complex_np)
                             for hd in self.hderiv]
+            
+            if self.ana_e is not None:
+                self.__normalize_eigenvectors()
+                self.ederivx, self.ederivy = self.__energy_derivatives()
+                self.dipole_x, self.dipole_y = self.__fields()
+                self.B = self.__ana_berry_curvature()
+
+                self.efjit = list_to_njit_functions(self.ana_e, self.hsymbols, dtype=P.type_complex_np)
+                self.ederivxfjit = list_to_njit_functions(self.ederivx, self.hsymbols, dtype=P.type_complex_np)
+                self.ederivyfjit = list_to_njit_functions(self.ederivy, self.hsymbols, dtype=P.type_complex_np)
+                self.wfjit = matrix_to_njit_functions(self.ana_wf, self.hsymbols, dtype=P.type_complex_np)
+                self.dipolexjit = matrix_to_njit_functions(self.dipole_x, self.hsymbols, dtype=P.type_complex_np)
+                self.dipoleyjit = matrix_to_njit_functions(self.dipole_y, self.hsymbols, dtype=P.type_complex_np)
+                self.Bcurvjit = matrix_to_njit_functions(self.B, self.hsymbols, dtype=P.type_complex_np)
 
         pathlen = path[:, 0].size
-        e_path, wf_path = self.diagonalize_path(path, P)
 
-        _buf1, _buf2, self.ederivx_path, self.ederivy_path = self.__derivative_path(path, P)
+        if self.ana_e is not None:
+
+            kx_in_path = path[:, 0]
+            ky_in_path = path[:, 1]
+            e_path = np.zeros([pathlen, P.n], dtype=P.type_real_np)
+            edx_path = np.zeros([pathlen, P.n], dtype=P.type_real_np)
+            edy_path = np.zeros([pathlen, P.n], dtype=P.type_real_np)
+            
+            for n, e in enumerate(self.efjit):
+                e_path[:, n] = e(kx=kx_in_path, ky=ky_in_path)
+            for n, e in enumerate(self.ederivxfjit):
+                edx_path[:, n] = e(kx=kx_in_path, ky=ky_in_path)            
+            for n, e in enumerate(self.ederivyfjit):
+                edy_path[:, n] = e(kx=kx_in_path, ky=ky_in_path)
+
+            wf_path = evaluate_njit_matrix(self.wfjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
+            self.ederivx_path = edx_path
+            self.ederivy_path = edy_path
+        
+        else:
+            e_path, wf_path = self.diagonalize_path(path, P)
+            _buf1, _buf2, self.ederivx_path, self.ederivy_path = self.__derivative_path(path, P)
 
         if P.dm_dynamics_method == 'semiclassics':
             self.dipole_path_x = np.zeros([pathlen, P.n, P.n], dtype=P.type_complex_np)
             self.dipole_path_y = np.zeros([pathlen, P.n, P.n], dtype=P.type_complex_np)
+
+        elif self.ana_e is not None:
+            self.dipole_path_x = evaluate_njit_matrix(self.dipolexjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
+            self.dipole_path_y = evaluate_njit_matrix(self.dipoleyjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
+
         else:
             self.dipole_path_x, self.dipole_path_y = self.dipole_path(path, P)
 
@@ -339,8 +422,15 @@ class NBandHamiltonianSystem():
         self.wf_in_path = wf_path
         self.dipole_in_path = P.E_dir[0]*self.dipole_path_x + P.E_dir[1]*self.dipole_path_y
         self.dipole_ortho = P.E_ort[0]*self.dipole_path_x + P.E_ort[1]*self.dipole_path_y
-        self.Ax_path, self.Ay_path = self.dipole_path(path, P)
-        self.Bcurv_path = self.__berry_curvature(path, P)
+        
+        if self.ana_e is not None:
+            B_path = np.zeros([pathlen, P.n], dtype=P.type_complex_np)
+            for n, b in enumerate(self.Bcurvjit):
+                B_path[:, n] = b[n](kx=kx_in_path, ky=ky_in_path)        
+            self.Bcurv_path = B_path
+        else:    
+            self.Ax_path, self.Ay_path = self.dipole_path(path, P)
+            self.Bcurv_path = self.__berry_curvature(path, P)
 
         if P.dm_dynamics_method == 'EEA':
             self.dipole_derivative_in_path = self.__dipole_derivative(path, P)
