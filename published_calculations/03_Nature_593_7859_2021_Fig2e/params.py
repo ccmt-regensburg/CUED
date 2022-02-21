@@ -16,8 +16,7 @@ class params:
 	# Brillouin zone parameters
 	##########################################################################
 	# Type of Brillouin zone
-	# 'full' for full hexagonal BZ, '2line' for two lines with adjustable size
-	BZ_type = 'hexagon'
+	BZ_type = 'hexagon'				  # rectangle or hexagon
 
 	# full BZ parametes
 	Nk1                 = 420         # Number of kpoints in each of the paths

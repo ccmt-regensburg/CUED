@@ -14,11 +14,10 @@ class params:
 	# Brillouin zone parameters
 	##########################################################################
 	# Type of Brillouin zone
-	# 'full' for full hexagonal BZ, '2line' for two lines with adjustable size
-	BZ_type = 'hexagon'
+	BZ_type = 'hexagon'				 # rectangle or hexagon
 
 	# full BZ parametes
-	Nk1                 = 450       # Number of kpoints in each of the paths
+	Nk1                 = 450        # Number of kpoints in each of the paths
 	Nk2                 = 42         # Number of paths
 
 	# Driving field parameters
@@ -26,7 +25,7 @@ class params:
 	align               = 'K'         # E-field direction (gamma-'K' or gamma-'M')
 	E0                  = 3.0         # Pulse amplitude (MV/cm)
 	f                   = 40.0        # Pulse frequency (THz)
-	chirp               = 0.90       # Pulse chirp ratio (chirp = c/w) (THz)
+	chirp               = 0.90        # Pulse chirp ratio (chirp = c/w) (THz)
 	sigma               = 50          # Gaussian pulse width (femtoseconds)
 	phase               = np.linspace(0, 2*np.pi, 16)
 
