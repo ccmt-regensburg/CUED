@@ -193,7 +193,7 @@ def run_sbe(sys, P, Mpi):
 				T.solution_y_vec[:] = y0
 		elif P.dm_dynamics_method in ('series_expansion', 'EEA'):
 			T.solution_y_vec = np.copy(y0)
-			T.time_integral = np.zeros((P.Nk1, P.n, P.n))
+			T.time_integral = np.zeros((P.Nk1, P.n, P.n), dtype=P.type_complex_np)
 		# Propagate through time
 		# Index of current integration time step
 		ti = 0
@@ -446,10 +446,11 @@ def von_neumann_series(t, A_field, E_field, path, sys, y0, time_integral, P):
 	# 0th order
 	y_mat[:, :, :] = np.copy(y0_mat[:, :, :])
 
-	if P.dm_dynamics_method == 'EEA':	# Approximate formula for DC remnants (Int(E^2*A), doesn't make sense for finite times!)
-		
+	if P.dm_dynamics_method == 'EEA':	# Approximate formula for DC remnants (Int(E^2*A), needs velocity gauge to make sense for finite times!)
+
 		if P.first_order:
-			print('Warning: first order not implemented yet!')
+			y_mat = first_order_taylor(y_mat, y0_mat, t, E_field, A_field, sys.dipole_in_path, sys.e_in_path, \
+							sys.dipole_derivative_in_path, sys.bandstructure_derivative_in_path, P.T2, P.n)
 		if P.second_order:
 			y_mat, time_integral = second_order_taylor(y_mat, time_integral, y0_mat, E_field, A_field, \
 						 	sys.dipole_in_path, sys.dipole_derivative_in_path, P.T2, P.dt, P.n, P.Nk1)
@@ -457,43 +458,49 @@ def von_neumann_series(t, A_field, E_field, path, sys, y0, time_integral, P):
 	elif P.dm_dynamics_method == 'series_expansion':
 		# calculate eigenvalues and dipole elements at current time step (velocity gauge!)
 		path_after_shift = np.copy(path)
-		path_after_shift[:, 0] = path[:, 0] + A_field*P.E_dir[0]
-		path_after_shift[:, 1] = path[:, 1] + A_field*P.E_dir[1]
+		
+		if not P.linear_response:
+			path_after_shift[:, 0] = path[:, 0] + A_field*P.E_dir[0]
+			path_after_shift[:, 1] = path[:, 1] + A_field*P.E_dir[1]
 
 		sys.eigensystem_dipole_path(path_after_shift, P)
 
 		if P.first_order:
-			y_mat = first_order(y_mat, y0_mat, t, E_field, sys.e_in_path, sys.dipole_in_path, P.T2, P.n)
-
+			if P.high_damping:
+				y_mat = first_order_high_damping(y_mat, y0_mat, t, E_field, sys.e_in_path, sys.dipole_in_path, P.T2, P.n)
+			else:
+				y_mat, time_integral = first_order(y_mat, time_integral, y0_mat, t, E_field, sys.e_in_path, sys.dipole_in_path, P.T2, P.dt, P.n)
 		if P.second_order:
-			y_mat, time_integral = second_order(y_mat, time_integral, y0_mat, E_field, sys.dipole_in_path, P.T2, P.dt, P.n, P.Nk1)
-
+			if P.high_damping:
+				y_mat, time_integral = second_order(y_mat, time_integral, y0_mat, E_field, sys.dipole_in_path, P.T2, P.dt, P.n, P.Nk1)
+			else:
+				print('Warning: second order without high damping not implemented yet!')
 	return y_mat.flatten('C'), time_integral
 
 @njit
-def second_order_taylor(y_mat, time_integral, y0_mat, E_field, A_field, dipole_in_path, dipole_derivative_in_path, T2, dt, n, Nk1):
+def first_order(y_mat, time_integral, y0_mat, t, E_field, e_in_path, dipole_in_path, T2, dt, n):
 
-	for i in range(n):
-		for k in range(n):
-			for nk in range(Nk1):
-				time_integral[nk, i, k] += E_field**2 * A_field * dt
-				C = 2 * np.real(dipole_in_path[nk, k, i] * dipole_derivative_in_path[nk, k, i])
-				y_mat[nk, i, i] -= T2 * ( y0_mat[nk, i, i] - y0_mat[nk, k, k] ) * C * time_integral[nk, i, k]
-	
-	return y_mat, time_integral
-
-@njit
-def first_order(y_mat, y0_mat, t, E_field, e_in_path, dipole_in_path, T2, n):
 	for i in range(n):
 		for j in range(n):
-			y_mat[:, i, j] -= 1j*T2* ( y0_mat[:, i, i] - y0_mat[:, j, j] ) \
-				* np.exp(1j*t* (e_in_path[:, i] - e_in_path[:, j])) \
-				* E_field * dipole_in_path[:, i, j]
-	
+			time_integral[:, i, j] += np.exp( t * ( (1/T2) + 1j * ( e_in_path[:, i] - e_in_path[:, j] ) ) ) * E_field * dipole_in_path[:, i, j] * dt
+			if i != j:
+				y_mat[:, i, j] -= 1j * time_integral[:, i, j] * (y0_mat[:, i, i] - y0_mat[:, j, j]) * np.exp( - t * ( (1+0j)*(1/T2) + 1j * ( e_in_path[:, i] - e_in_path[:, j] ) ) )
+
+	return y_mat, time_integral
+
+
+@njit
+def first_order_high_damping(y_mat, y0_mat, t, E_field, e_in_path, dipole_in_path, T2, n):
+	for i in range(n):
+		for j in range(n):
+			if i!= j:
+				y_mat[:, i, j] -= 1j * T2 * ( y0_mat[:, i, i] - y0_mat[:, j, j] ) \
+					* E_field * dipole_in_path[:, i, j] 
+
 	return y_mat
 
 @njit
-def second_order(y_mat, time_integral, y0_mat, E_field, dipole_in_path, T2, dt, n, Nk1):
+def second_order_high_damping(y_mat, time_integral, y0_mat, E_field, dipole_in_path, T2, dt, n, Nk1):
 
 	for i in range(n):
 		for k in range(n):
@@ -503,8 +510,40 @@ def second_order(y_mat, time_integral, y0_mat, E_field, dipole_in_path, T2, dt, 
 
 	return y_mat, time_integral
 
+@njit
+def first_order_taylor(y_mat, y0_mat, t, E_field, A_field, dipole_in_path, e_in_path, dipole_derivative_in_path, bandstructure_derivative_in_path, T2, n):
 
-def initial_condition(P, e_in_path): # Check if this does what it should!
+	for i in range(n):
+		for j in range(n):
+			# first order of taylor expansion
+			y_mat[:, i, j] -= 1j / (1/T2 + 1j*( e_in_path[:, i] - e_in_path[:, j] )) * ( y0_mat[:, i, i] - y0_mat[:, j, j] ) \
+				* E_field * dipole_in_path[:, i, j] #* np.exp(1j * t * ( e_in_path[:, i] - e_in_path[:, j] ) ) \
+				
+
+			# first order of taylor expansion
+			#y_mat[:, i, j] += dipole_derivative_in_path[:, k, i] * E_field * A_field \
+			#	* 1j * t * E_field * A_field * dipole_in_path[:, i, j] \
+			#	* ( bandstructure_derivative_in_path[:, i] - bandstructure_derivative_in_path[:, i] )
+
+	return y_mat
+
+@njit
+def second_order_taylor(y_mat, time_integral, y0_mat, E_field, A_field, dipole_in_path, dipole_derivative_in_path, T2, dt, n, Nk1):
+
+	for i in range(n):
+		for k in range(n):
+			for nk in range(Nk1):
+				# first order of taylor expansion
+				# time_integral[nk, i, k] += np.abs(E_field * dipole_in_path[nk, i, k])**2
+
+				# second order of taylor expansion
+				C = 2 * np.real(dipole_in_path[nk, k, i] * dipole_derivative_in_path[nk, k, i])
+				time_integral[nk, i, k] += C * E_field**2 * A_field * dt
+				y_mat[nk, i, i] -= T2 * ( y0_mat[nk, i, i] - y0_mat[nk, k, k] ) * time_integral[nk, i, k]
+
+	return y_mat, time_integral
+
+def initial_condition(P, e_in_path):
 	'''
 	Occupy conduction band according to inital Fermi energy and temperature
 	'''

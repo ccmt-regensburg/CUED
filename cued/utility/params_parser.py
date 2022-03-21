@@ -228,6 +228,11 @@ class ParamsParser():
                     sys.exit("dk_order needs to be either 2, 4, 6, or 8.")
 
         if self.dm_dynamics_method in ('series_expansion', 'EEA'):
+
+            self.high_damping = False
+            if 'high_damping' in UP:
+                self.high_damping = UP['high_damping']
+
             self.first_order = True
             if 'first_order' in UP:
                 self.first_order = UP['first_order']
@@ -235,6 +240,10 @@ class ParamsParser():
             self.second_order = True
             if 'second_order' in UP:
                 self.second_order = UP['second_order']
+
+            self.linear_response = False
+            if 'linear_response' in UP:
+                self.linear_response = UP['linear_response']
 
         self.precision = 'double'                         # Quadruple for reducing numerical noise
         if 'precision' in UP:
