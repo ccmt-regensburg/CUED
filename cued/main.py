@@ -987,16 +987,16 @@ def write_current_emission(T, P, W, sys, Mpi):
 	# Time data save
 	##################################################
 	if P.split_current:
-		time_header = ("{:25s}" + " {:27s}"*8)\
+		time_header = ("{:25s}" + " {:27s}"*10)\
 			.format("t",
 					"j_E_dir", "j_ortho",
 					"j_intra_E_dir", "j_intra_ortho",
-					"dtP_E_dir", "dtP_ortho",
+					"dtP_E_dir", "dtP_ortho", "j_deph_E_dir", "j_deph_ortho",
 					"j_intra_plus_dtP_E_dir", "j_intra_plus_dtP_ortho")
 		time_output = np.column_stack([T.t.real,
 									   T.j_E_dir.real, T.j_ortho.real,
 									   T.j_intra_E_dir.real, T.j_intra_ortho.real,
-									   T.dtP_E_dir.real, T.dtP_ortho.real,
+									   T.dtP_E_dir.real, T.dtP_ortho.real, T.j_deph_E_dir.real, T.j_deph_ortho.real,
 									   T.j_intra_plus_dtP_E_dir.real, T.j_intra_plus_dtP_ortho.real])
 		if P.save_anom:
 			for i in range(P.n):
