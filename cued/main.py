@@ -220,7 +220,7 @@ def run_sbe(sys, P, Mpi):
 													y0, P.dk, P.dt, rhs_ode)
 
 			elif P.dm_dynamics_method in ('series_expansion', 'EEA'):
-				T.solution_y_vec[:-1], T.time_integral = von_neumann_series(T.t[ti], T.A_field[ti], T.E_field[ti], path, sys, y0[:-1], T.time_integral, P)
+				T.solution_y_vec[:-1], T.time_integral = von_neumann_series(T.t[ti], T.A_field[ti], T.E_field[ti], path, sys, y0[:-1], T.time_integral, P, ti)
 
 			# Increment time counter
 			ti += 1
@@ -259,7 +259,7 @@ def run_sbe(sys, P, Mpi):
 	#save density matrix at given points in time
 	if P.save_dm_t:
 		np.savez(P.header + 'time_matrix', pdf_densmat=T.pdf_densmat,
-		         t_pdf_densmat=T.t_pdf_densmat, A_field=T.A_field)
+			 t_pdf_densmat=T.t_pdf_densmat, A_field=T.A_field)
 
 
 def make_BZ(P):
@@ -295,8 +295,8 @@ def make_BZ(P):
 		P.Nk2 = Nk1_buf * Nk2_buf
 
 def make_rhs_ode(P, T, sys):
-	
-	if P.dm_dynamics_method in ('sbe', 'semiclassics'):	
+
+	if P.dm_dynamics_method in ('sbe', 'semiclassics'):
 		if P.solver == '2band':
 			if P.n != 2:
 				raise AttributeError('2-band solver works for 2-band systems only')
@@ -437,7 +437,64 @@ def rk_integrate(t, y, kpath, sys, y0, dk, dt, rhs_ode):
 
 	return ynew
 
-def von_neumann_series(t, A_field, E_field, path, sys, y0, time_integral, P):
+@njit
+def y0deriv(y, dk, Nk_path, n, dk_order, type_complex_np):
+
+	diffy0 = np.zeros((Nk_path, n, n), dtype=type_complex_np)
+	for i in range(n):
+		for k in range(Nk_path):
+			right4 = (k+4)
+			right3 = (k+3)
+			right2 = (k+2)
+			right  = (k+1)
+			left   = (k-1)
+			left2  = (k-2)
+			left3  = (k-3)
+			left4  = (k-4)
+			if k == 0:
+				left   = (Nk_path-1)
+				left2  = (Nk_path-2)
+				left3  = (Nk_path-3)
+				left4  = (Nk_path-4)
+			elif k == 1 and dk_order >= 4:
+				left2  = (Nk_path-1)
+				left3  = (Nk_path-2)
+				left4  = (Nk_path-3)
+			elif k == 2 and dk_order >= 6:
+				left3  = (Nk_path-1)
+				left4  = (Nk_path-2)
+			elif k == 3 and dk_order >= 8:
+				left4  = (Nk_path-1)
+			elif k == Nk_path-1:
+				right4 = 3
+				right3 = 2
+				right2 = 1
+				right  = 0
+			elif k == Nk_path-2 and dk_order >= 4:
+				right4 = 2
+				right3 = 1
+				right2 = 0
+			elif k == Nk_path-3 and dk_order >= 6:
+				right4 = 1
+				right3 = 0
+			elif k == Nk_path-4 and dk_order >= 8:
+				right4 = 0
+
+			if dk_order == 2:
+				diffy0[k, i, i]   += ( y[right, i, i]/2   - y[left, i, i]/2  ) / dk
+			elif dk_order == 4:
+				diffy0[k, i, i]   += (- y[right2, i, i]/12   + 2/3*y[right, i, i]   - 2/3*y[left, i, i]   + y[left2, i, i]/12 ) / dk
+			elif dk_order == 6:
+				diffy0[k, i, i]   += (  y[right3, i, i]/60   - 3/20*y[right2, i, i]   + 3/4*y[right, i, i] \
+					- y[left3, i, i]/60    + 3/20*y[left2, i, i]    - 3/4*y[left, i, i] ) / dk
+			elif dk_order == 8:
+				diffy0[k, i, i]   += (- y[right4, i, i]/280   + 4/105*y[right3, i, i]   - 1/5*y[right2, i, i]   + 4/5*y[right, i, i] \
+					+ y[left4, i, i] /280   - 4/105*y[left3, i, i]    + 1/5*y[left2, i, i]    - 4/5*y[left, i, i] ) / dk
+
+
+	return diffy0
+
+def von_neumann_series(t, A_field, E_field, path, sys, y0, time_integral, P, ti):
 
 	# rescale solution vector and initial condition to be a matrix
 	y_mat = np.zeros((P.Nk1, P.n, P.n), dtype=P.type_complex_np)
@@ -446,30 +503,34 @@ def von_neumann_series(t, A_field, E_field, path, sys, y0, time_integral, P):
 	# 0th order
 	y_mat[:, :, :] = np.copy(y0_mat[:, :, :])
 
-	if P.dm_dynamics_method == 'EEA':	# Approximate formula for DC remnants (Int(E^2*A), needs velocity gauge to make sense for finite times!)
+	if P.dm_dynamics_method == 'EEA':       # Approximate formula for DC remnants (Int(E^2*A), needs velocity gauge to make sense for finite times!)
 
 		if P.first_order:
 			y_mat = first_order_taylor(y_mat, y0_mat, t, E_field, A_field, sys.dipole_in_path, sys.e_in_path, \
 							sys.dipole_derivative_in_path, sys.bandstructure_derivative_in_path, P.T2, P.n)
 		if P.second_order:
 			y_mat, time_integral = second_order_taylor(y_mat, time_integral, y0_mat, E_field, A_field, \
-						 	sys.dipole_in_path, sys.dipole_derivative_in_path, P.T2, P.dt, P.n, P.Nk1)
+							sys.dipole_in_path, sys.dipole_derivative_in_path, P.T2, P.dt, P.n, P.Nk1)
 
 	elif P.dm_dynamics_method == 'series_expansion':
 		# calculate eigenvalues and dipole elements at current time step (velocity gauge!)
 		path_after_shift = np.copy(path)
-		
-		if not P.linear_response:
+
+		if not P.gauge == 'length' or not P.linear_response:
 			path_after_shift[:, 0] = path[:, 0] + A_field*P.E_dir[0]
 			path_after_shift[:, 1] = path[:, 1] + A_field*P.E_dir[1]
 
-		sys.eigensystem_dipole_path(path_after_shift, P)
+			sys.eigensystem_dipole_path(path_after_shift, P)
+
+		if P.gauge == 'length' :
+			if ti == 0:
+				P.diffy0 = y0deriv(y0_mat, P.dk, P.Nk1, P.n, P.dk_order, P.type_complex_np)
 
 		if P.first_order:
 			if P.high_damping:
 				y_mat = first_order_high_damping(y_mat, y0_mat, t, E_field, sys.e_in_path, sys.dipole_in_path, P.T2, P.n)
 			else:
-				y_mat, time_integral = first_order(y_mat, time_integral, y0_mat, t, E_field, sys.e_in_path, sys.dipole_in_path, P.T2, P.dt, P.n)
+				y_mat, time_integral = first_order(y_mat, time_integral, y0_mat, t, E_field, A_field, sys.e_in_path, sys.dipole_in_path, P.T2, P.dt, P.n, P.gauge, P.diffy0)
 		if P.second_order:
 			if P.high_damping:
 				y_mat, time_integral = second_order(y_mat, time_integral, y0_mat, E_field, sys.dipole_in_path, P.T2, P.dt, P.n, P.Nk1)
@@ -477,14 +538,19 @@ def von_neumann_series(t, A_field, E_field, path, sys, y0, time_integral, P):
 				print('Warning: second order without high damping not implemented yet!')
 	return y_mat.flatten('C'), time_integral
 
+
 @njit
-def first_order(y_mat, time_integral, y0_mat, t, E_field, e_in_path, dipole_in_path, T2, dt, n):
+def first_order(y_mat, time_integral, y0_mat, t, E_field, A_field, e_in_path, dipole_in_path, T2, dt, n, gauge, diffy0):
+
+	if gauge == 'length':
+		for i in range(n):
+			y_mat[:, i, i] -= diffy0[:, i, i] * A_field
 
 	for i in range(n):
 		for j in range(n):
-			time_integral[:, i, j] += np.exp( t * ( (1/T2) + 1j * ( e_in_path[:, i] - e_in_path[:, j] ) ) ) * E_field * dipole_in_path[:, i, j] * dt
+			time_integral[:, i, j] += np.exp( t * ( 1j * ( e_in_path[:, i] - e_in_path[:, j] ) +  1/T2  ) ) * E_field * dipole_in_path[:, i, j] * dt
 			if i != j:
-				y_mat[:, i, j] -= 1j * time_integral[:, i, j] * (y0_mat[:, i, i] - y0_mat[:, j, j]) * np.exp( - t * ( (1+0j)*(1/T2) + 1j * ( e_in_path[:, i] - e_in_path[:, j] ) ) )
+				y_mat[:, i, j] -= 1j * time_integral[:, i, j] * (y0_mat[:, i, i] - y0_mat[:, j, j]) * np.exp( - t * ( 1j * ( e_in_path[:, i] - e_in_path[:, j] ) + 1/T2  ) )
 
 	return y_mat, time_integral
 

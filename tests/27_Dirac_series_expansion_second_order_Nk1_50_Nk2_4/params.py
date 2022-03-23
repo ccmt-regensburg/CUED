@@ -5,8 +5,8 @@ import numpy as np
 class params:
         # System parameters
         #########################################################################
-        e_fermi           = 0.0                      # Fermi energy in eV
-        temperature       = 0.0                      # Temperature in eV
+        e_fermi           = 0.5                      # Fermi energy in eV
+        temperature       = 0.02                      # Temperature in eV
 
         # Model Hamiltonian parameters
         # Brillouin zone parameters
@@ -27,7 +27,7 @@ class params:
         phase             = 0.0
 
         # Time scales (all units in femtoseconds)
-        ##########################################################################
+        #########################################################################
         T1                = 1000                     # Phenomenological diagonal damping time
         T2                = 1                        # Phenomenological polarization damping time
         t0                = -500                    # Start time *pulse centered @ t=0, use t0 << 0
@@ -35,10 +35,10 @@ class params:
 
         # Flags for testing and features
         ##########################################################################
-        gauge                   = 'velocity'           # Gauge of the system
+        gauge                   = 'length'           # Gauge of the system
         fourier_window_function = 'gaussian'
         user_out                = False
         dm_dynamics_method      = 'series_expansion'
         first_order             = True
         second_order            = False
-        save_latex_pdf          = True
+

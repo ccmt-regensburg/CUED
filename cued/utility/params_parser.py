@@ -212,20 +212,17 @@ class ParamsParser():
         if 'dm_dynamics_method' in UP:
             self.dm_dynamics_method = UP['dm_dynamics_method']
 
-            if self.dm_dynamics_method in ('series_expansion', 'EEA') and self.gauge == 'length':
-                print('Warning: Series expansion only works with velocity gauge. Changing to velocity gauge...')
-                self.gauge = 'velocity'
 
         if self.dm_dynamics_method in ('sbe', 'semiclassics'):
             self.solver_method = 'bdf'                        # 'adams' non-stiff, 'bdf' stiff, 'rk4' Runge-Kutta 4th order
             if 'solver_method' in UP:
                 self.solver_method = UP['solver_method']
 
-            self.dk_order = 8                                 # Accuracy order of density-matrix k-deriv.
-            if 'dk_order' in UP:
-                self.dk_order = UP['dk_order']                   # with length gauge (avail: 2,4,6,8)
-                if self.dk_order not in [2, 4, 6, 8]:
-                    sys.exit("dk_order needs to be either 2, 4, 6, or 8.")
+        self.dk_order = 8                                 # Accuracy order of density-matrix k-deriv.
+        if 'dk_order' in UP:
+            self.dk_order = UP['dk_order']                   # with length gauge (avail: 2,4,6,8)
+            if self.dk_order not in [2, 4, 6, 8]:
+                sys.exit("dk_order needs to be either 2, 4, 6, or 8.")
 
         if self.dm_dynamics_method in ('series_expansion', 'EEA'):
 
@@ -237,7 +234,7 @@ class ParamsParser():
             if 'first_order' in UP:
                 self.first_order = UP['first_order']
 
-            self.second_order = True
+            self.second_order = False 
             if 'second_order' in UP:
                 self.second_order = UP['second_order']
 
