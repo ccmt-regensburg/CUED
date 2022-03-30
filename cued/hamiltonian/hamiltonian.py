@@ -371,6 +371,28 @@ class DiracConeAna(NBandHamiltonianSystem):
         ana_wf = sp.Matrix([[ (self.kx - sp.I * self.ky)/((self.kx**2 + self.ky**2)**(1/2)),  - (self.kx - sp.I * self.ky)/((self.kx**2 + self.ky**2)**(1/2))], [ 1 , 1 ]])
         super().__init__(h, 1, False, ana_e, ana_wf)
 
+class KM4bandAna(NBandHamiltonianSystem):
+
+    def __init__(self, a=sp.Symbol('a'), t1=sp.Symbol('t1'), lso=sp.Symbol('lso'), lv=sp.Symbol('lv')):
+
+        kx = self.kx
+        ky = self.ky
+
+        x = 1/2 * kx * a
+        y = sp.sqrt(3)/2 * ky * a
+
+        hx = t1 * (1+2*sp.cos(x)*sp.cos(y))
+        hy = 2*t1 * (sp.cos(x)*sp.sin(y))
+        hz_plus = lv + lso * (2*sp.sin(2*x)-4*sp.sin(x)*sp.cos(y))
+        hz_minus = lv - lso * (2*sp.sin(2*x)-4*sp.sin(x)*sp.cos(y))
+        en_plus = sp.sqrt(hx*hx+hy*hy+hz_plus*hz_plus)
+        en_minus = sp.sqrt(hx*hx+hy*hy+hz_minus*hz_minus)
+
+        h = sp.Matrix([[hz_plus, hx - sp.I * hy, 0, 0],[hx + sp.I * hy, -hz_plus, 0, 0],[0, 0, hz_minus, hx - sp.I * hy],[0, 0, hx + sp.I * hy, -hz_minus]])
+        ana_e = sp.Matrix([en_plus, -en_plus, en_minus, -en_minus])
+        ana_wf = sp.Matrix([[hx - sp.I * hy, en_plus - hz_plus, 0, 0], [en_plus - hz_plus , -hx - sp.I * hy, 0, 0], [0, 0, hx - sp.I * hy, en_minus - hz_minus], [0, 0, en_minus - hz_minus , -hx - sp.I * hy]])
+        super().__init__(h, 1, False, ana_e, ana_wf)            
+
 class AIIIHamiltonian(NBandHamiltonianSystem):
 
     def __init__(self,
