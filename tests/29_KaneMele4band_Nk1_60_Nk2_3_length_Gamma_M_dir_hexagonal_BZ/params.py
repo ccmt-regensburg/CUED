@@ -15,7 +15,7 @@ class params:
 	# Type of Brillouin zone
 	# 'hexagon' for full hexagonal BZ, 'rectangle' for rectangle with adjustable size
 	BZ_type = 'hexagon'
-	path_type = 'KGM'
+	# path_type = 'KGM'
 
 	# hexagonal BZ parameters
 	Nk1                 = 60                 # Number of kpoints in each of the paths
