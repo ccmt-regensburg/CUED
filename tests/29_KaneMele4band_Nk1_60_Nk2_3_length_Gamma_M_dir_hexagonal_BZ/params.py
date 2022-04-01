@@ -47,3 +47,4 @@ class params:
 	user_out                = True
 	save_latex_pdf          = True
 	path_parallelization    = True
+	
