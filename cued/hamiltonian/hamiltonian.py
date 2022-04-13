@@ -32,6 +32,25 @@ class Haldane(TwoBandHamiltonianSystem):
 
         super().__init__(ho, hx, hy, hz)
 
+class Graphene_twoband(TwoBandHamiltonianSystem):
+    """
+    Simple tight-binding next-neighbor hopping Hamiltonian of Graphene
+    """
+
+    def __init__(self, a=sp.Symbol('a'), t=sp.Symbol('t')):
+
+        kx = self.kx
+        ky = self.ky
+
+        x = 1/2 * kx * a
+        y = sp.sqrt(3)/2 * ky * a
+
+        ho = 0
+        hx = t * (1+2*sp.cos(x)*sp.cos(y))
+        hy = 2 * t * (sp.cos(x)*sp.sin(y))
+        hz = 0
+        
+        super().__init__(ho, hx, hy, hz) 
 
 class two_site_semiconductor(TwoBandHamiltonianSystem):
     """
