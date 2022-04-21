@@ -1,6 +1,7 @@
 # Input parameters for SBE.py
 import numpy as np
 
+MPI_JOBS=4
 
 class params:
 	# System parameters
