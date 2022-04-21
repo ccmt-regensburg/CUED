@@ -1,3 +1,4 @@
+from numpy import pi
 import scipy.constants as sco
 from scipy.constants import physical_constants as psco
 
@@ -51,6 +52,19 @@ class ConversionFactors:
 	##################################################
 	# SI conversions
 	##################################################
-	# (1THz = 241.7991 eV)
+	## Frequency conversions
+	# (1 eV = 241.7991 THz)
 	eV_to_THz = 241.7991
 	THz_to_eV = 1/eV_to_THz
+
+	# (1 eV = 0.2417991 PHz) Petahertz is relevant for T2 times in fs
+	eV_to_PHz = 0.2417991
+	PHz_to_eV = 1/eV_to_PHz
+
+	## Angular Frequency conversions
+	eV_to_angular_THz = 2*pi*eV_to_THz
+	angular_THz_to_eV = 1/eV_to_angular_THz
+
+	eV_to_angular_PHz = 2*pi*eV_to_PHz
+	angular_PHz_to_eV = 1/eV_to_angular_PHz
+
