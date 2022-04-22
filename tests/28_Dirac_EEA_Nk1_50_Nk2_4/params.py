@@ -41,5 +41,5 @@ class params:
 	dm_dynamics_method      = 'EEA'
 	first_order				= False
 	second_order			= True
-	save_latex_pdf          = True
+	save_latex_pdf          = False
 

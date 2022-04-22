@@ -46,6 +46,6 @@ class params:
 	solver_method           = 'bdf'
 	fourier_window_function = 'gaussian'
 	user_out                = True
-	save_latex_pdf          = True
+	save_latex_pdf          = False
 	path_parallelization    = True
 	

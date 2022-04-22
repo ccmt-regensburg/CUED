@@ -41,3 +41,4 @@ class params:
 	dm_dynamics_method      = 'series_expansion'
 	first_order             = True
 	second_order            = False
+	save_latex_pdf			= False

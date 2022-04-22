@@ -42,4 +42,4 @@ class params:
 	fourier_window_function = 'gaussian'
 	user_out                = False               # True to get user plotting and progress output
 	parallelize_over_points = True
-	save_latex_pdf = True
+	save_latex_pdf 			= False
