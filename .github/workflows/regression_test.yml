@@ -11,7 +11,8 @@ jobs:
   build:
 
     runs-on: self-hosted
-
+    timeout-minutes: 1440
+    
     steps:
     - uses: actions/checkout@v2
     - name: Run test script
