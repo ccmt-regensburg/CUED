@@ -748,8 +748,6 @@ def calculate_fourier(T, P, W):
 	ndt_fft = (T.t.size-1)*P.factor_freq_resolution + 1
 	W.freq = fftshift(fftfreq(ndt_fft, d=dt_out))
 
-
-
 	if P.fourier_window_function == 'gaussian':
 		T.window_function = gaussian(T.t, P.gaussian_window_width,P.gaussian_center)
 	elif P.fourier_window_function == 'hann':
@@ -791,6 +789,12 @@ def calculate_fourier(T, P, W):
 			fourier_current_intensity(T.dtP_E_dir, T.window_function, dt_out, prefac_emission, W.freq, P)
 		W.I_dtP_ortho, W.dtP_ortho =\
 			fourier_current_intensity(T.dtP_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
+
+		# Dephasing current and emission intensity
+		W.I_deph_E_dir, W.j_deph_E_dir =\
+			fourier_current_intensity(T.j_deph_E_dir, T.window_function, dt_out, prefac_emission, W.freq, P)
+		W.I_deph_ortho, W.j_deph_ortho =\
+			fourier_current_intensity(T.j_deph_ortho, T.window_function, dt_out, prefac_emission, W.freq, P)
 
 		# Anomalous current, intraband current (de/dk-related) + anomalous current; and emission int.
 		W.I_anom_ortho, W.j_anom_ortho =\
@@ -1053,7 +1057,9 @@ def write_current_emission(T, P, W, sys, Mpi):
 									   W.dtP_E_dir.real, W.dtP_E_dir.imag, W.dtP_ortho.real, W.dtP_ortho.imag,
 									   W.I_dtP_E_dir.real, W.I_dtP_ortho.real,
 									   W.j_intra_plus_dtP_E_dir.real, W.j_intra_plus_dtP_E_dir.imag, W.j_intra_plus_dtP_ortho.real, W.j_intra_plus_dtP_ortho.imag,
-									   W.I_intra_plus_dtP_E_dir.real, W.I_intra_plus_dtP_ortho.real])
+									   W.I_intra_plus_dtP_E_dir.real, W.I_intra_plus_dtP_ortho.real,
+										 W.j_deph_E_dir.real, W.j_deph_E_dir.imag, W.j_deph_ortho.real, W.j_deph_ortho.imag,
+										 W.I_deph_E_dir.real, W.I_deph_ortho.real])
 		if P.save_anom:
 			for i in range(P.n):
 				freq_header += (" {:27s}"*3).format(f"Re[j_anom_ortho[{i}]]", f"Im[j_anom_ortho[{i}]", \
