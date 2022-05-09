@@ -22,7 +22,7 @@ class params:
 
 	# Driving field parameters
 	##########################################################################
-	E0                = 5.00                     # Pulse amplitude (MV/cm)
+	E0                = 10.00                     # Pulse amplitude (MV/cm)
 	f                 = 25.0                     # Pulse frequency (THz)
 	chirp             = 0.00                     # Pulse chirp ratio (chirp = c/w) (THz)
 	sigma             = 50.0                     # Gaussian pulse width (femtoseconds)
