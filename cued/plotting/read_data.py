@@ -64,6 +64,7 @@ def read_dataset(path, prefix='', suffix='', mute=False):
 
 		# Density data
 		if (filename.startswith(dens_string) and '.dat' in filename):
+			print("Warning: Density as text file is still not implemented.")
 			if not mute:
 				print("Reading density:", filepath)
 			dens_data = np.genfromtxt(filepath, names=True, encoding='utf8', deletechars='')

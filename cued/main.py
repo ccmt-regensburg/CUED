@@ -244,7 +244,7 @@ def run_sbe(sys, P, Mpi):
 	exceptions = {'__weakref__', '__doc__', '__dict__', '__module__', \
 				'_ParamsParser__user_defined_field', 'header', 'mesh', 'number_of_combinations', \
 				'params_combinations', 'params_lists', 'path_list', 'paths', 'run_time', \
-				't_pdf_densmat', 'tail', 'type_complex_np', 'type_real_np', 'user_params'}
+				't_pdf_densmat', 'type_complex_np', 'type_real_np', 'user_params'}
 	for key in sorted(P.__dict__.keys() - exceptions):
 		paramsfile.write(str(key) + ' = ' + str(P.__dict__[key]) + "\n")
 
@@ -252,14 +252,14 @@ def run_sbe(sys, P, Mpi):
 
 	if P.save_full:
 		# write_full_density_mpi(T, P, sys, Mpi)
-		S_name = 'Sol_' + P.tail
+		S_name = P.header + 'dens'
 		np.savez(S_name, t=T.t, solution_full=T.solution_full, paths=P.paths,
-				 electric_field=T.electric_field(T.t), A_field=T.A_field)
+		         electric_field=T.electric_field(T.t), A_field=T.A_field)
 
 	#save density matrix at given points in time
 	if P.save_dm_t:
 		np.savez(P.header + 'time_matrix', pdf_densmat=T.pdf_densmat,
-			 t_pdf_densmat=T.t_pdf_densmat, A_field=T.A_field)
+		         t_pdf_densmat=T.t_pdf_densmat, A_field=T.A_field)
 
 
 def make_BZ(P):
@@ -269,12 +269,12 @@ def make_BZ(P):
 			P.E_dir = np.array([1, 0], P.type_real_np)
 		elif P.align == 'M':
 			P.E_dir = np.array([np.cos(np.radians(-30)),
-									np.sin(np.radians(-30))], dtype=P.type_real_np)
+			                    np.sin(np.radians(-30))], dtype=P.type_real_np)
 		P.dk, P.kweight, P.paths, P.mesh = hex_mesh(P)
 
 	elif P.BZ_type == 'rectangle':
 		P.E_dir = np.array([np.cos(np.radians(P.angle_inc_E_field)),
-								np.sin(np.radians(P.angle_inc_E_field))], dtype=P.type_real_np)
+		                    np.sin(np.radians(P.angle_inc_E_field))], dtype=P.type_real_np)
 		P.dk, P.kweight, P.paths, P.mesh = rect_mesh(P)
 
 	P.E_ort = np.array([P.E_dir[1], -P.E_dir[0]])
@@ -309,8 +309,7 @@ def make_rhs_ode(P, T, sys):
 			rhs_ode = 0
 
 		if P.solver_method in ('bdf', 'adams'):
-			solver = ode(rhs_ode, jac=None)\
-				.set_integrator('zvode', method=P.solver_method, max_step=P.dt)
+			solver = ode(rhs_ode, jac=None).set_integrator('zvode', method=P.solver_method, max_step=P.dt)
 		else:
 			solver = 0
 
@@ -1057,9 +1056,7 @@ def write_current_emission(T, P, W, sys, Mpi):
 									   W.dtP_E_dir.real, W.dtP_E_dir.imag, W.dtP_ortho.real, W.dtP_ortho.imag,
 									   W.I_dtP_E_dir.real, W.I_dtP_ortho.real,
 									   W.j_intra_plus_dtP_E_dir.real, W.j_intra_plus_dtP_E_dir.imag, W.j_intra_plus_dtP_ortho.real, W.j_intra_plus_dtP_ortho.imag,
-									   W.I_intra_plus_dtP_E_dir.real, W.I_intra_plus_dtP_ortho.real,
-										 W.j_deph_E_dir.real, W.j_deph_E_dir.imag, W.j_deph_ortho.real, W.j_deph_ortho.imag,
-										 W.I_deph_E_dir.real, W.I_deph_ortho.real])
+									   W.I_intra_plus_dtP_E_dir.real, W.I_intra_plus_dtP_ortho.real])
 		if P.save_anom:
 			for i in range(P.n):
 				freq_header += (" {:27s}"*3).format(f"Re[j_anom_ortho[{i}]]", f"Im[j_anom_ortho[{i}]", \
