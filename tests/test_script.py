@@ -82,7 +82,7 @@ def check_test(testdir, refdir):
 	##################################
 	prev_dir = os.getcwd()
 	os.chdir(testdir)
-	os.system('mpirun -n ' + str(current_mpi_jobs) + ' python3 -W ignore ' + testdir + '/runscript.py')
+	os.system('mpirun -n ' + str(current_mpi_jobs) + ' python -W ignore ' + testdir + '/runscript.py')
 	os.chdir(prev_dir)
 	##################################
 
@@ -97,7 +97,7 @@ def check_test(testdir, refdir):
 		assert time_data is not None, '"time_data.dat" was not generated from the code'
 		assert freq_data is not None, '"frequency_data.dat" was not generated from the code'
 
-		freq_idx = build_comparable_data(i,freq_data,freq_data_ref)
+		freq_idx = build_comparable_data(i, freq_data, freq_data_ref)
 
 		if hasattr(params, 'split_current'):
 			if params.split_current:
@@ -157,7 +157,7 @@ def read_data(dir, prefix):
 	return time_data, freq_data
 
 
-def build_comparable_data(freq_data_index,freq_data,freq_data_ref):
+def build_comparable_data(freq_data_index, freq_data, freq_data_ref):
 	# Load all relevant files and restrict data to max 10th order
 	freq = freq_data['f/f0']
 
