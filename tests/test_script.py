@@ -29,8 +29,8 @@ pdf_suffix = "latex_pdf_files"
 
 def check_test(testdir, refdir):
 
-	print('\n\n=====================================================\n\nStart with test:'
-	      '\n\n' + testdir + '\n\n against reference in \n\n' + refdir + '\n\n')
+	print('=====================================================\n'
+				'Start with test:\n' + testdir + '\n against reference in \n' + refdir)
 
 	filename_params		= testdir + '/params.py'
 	filename_run		= testdir + '/runscript.py'
@@ -218,37 +218,75 @@ def check_params_for_print_latex_pdf(print_latex_pdf, params):
 
 	return print_latex_pdf_really
 
-def main(testpath):
+def create_reference_data(testdir):
+	print('=====================================================\n'
+				'Create reference data in:\n' + testdir + '\n'
+	      '=====================================================\n')
 
-	tests_path = HEADPATH + '/' + testpath
-	print('\n\n=====================================================\n\n CUED CODE TESTER'
-	      '\n\n Executing tests in:\n\n '+ tests_path +
-	      '\n\n=====================================================\n\n')
+	filename_params		= testdir + '/params.py'
+	filename_run		= testdir + '/runscript.py'
 
+	params, current_mpi_jobs = import_params(filename_params)
+
+	print_latex_pdf_really = check_params_for_print_latex_pdf(print_latex_pdf, params)
+
+	if print_latex_pdf_really:
+		os.system("echo '	save_latex_pdf = True' >> "+filename_params)
+
+	assert os.path.isfile(filename_params),	 'params.py is missing.'
+	assert os.path.isfile(filename_run),	 'runscript.py is missing.'
+
+	##################################
+	# Execute script in the testdir
+	##################################
+	prev_dir = os.getcwd()
+	os.chdir(testdir)
+	os.system('python -W ignore ' + testdir + '/runscript.py')
+	os.chdir(prev_dir)
+	##################################
+
+def tester(testpath, test_type):
+
+	testpath = HEADPATH + '/' + testpath
+	if (test_type == 'test'):
+		print('=====================================================\n'
+		      'CUED CODE TESTER\n'
+		      'Executing tests in:\n' + testpath + '\n'
+		      '=====================================================')
+	elif (test_type == 'reference'):
+		print('=====================================================\n'
+		      'Creating referece data in:\n' + testpath + '\n'
+		      '=====================================================')
 	count = 0
 
-	for cdir in sorted(os.listdir(tests_path)):
-		testdir = tests_path + '/' + cdir
+	for cdir in sorted(os.listdir(testpath)):
+		testdir = testpath + '/' + cdir
 		if os.path.isdir(testdir) and not cdir.startswith('norun') and not cdir.startswith('crosstest', 3):
 			count += 1
-			check_test(testdir, testdir)
+			if (test_type == 'test'):
+				check_test(testdir, testdir)
+			elif (test_type == 'reference'):
+				create_reference_data(testdir)
 		if os.path.isdir(testdir) and cdir.startswith('crosstest', 3):
-			for dummydir in sorted(os.listdir(tests_path)):
+			for dummydir in sorted(os.listdir(testpath)):
 				if dummydir.startswith(cdir[-2:]):
-					refdir = tests_path + '/' + dummydir
-			check_test(testdir, refdir)
+					refdir = testpath + '/' + dummydir
+			if (test_type == 'test'):
+				check_test(testdir, refdir)
 
-	assert count > 0, 'There are tests in directory ' + tests_path
+	assert count > 0, 'There are tests in directory ' + testpath
+
 
 def parser():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-p", "--path", type=str, help="Relative testpath with respect to top level CUED dir.")
 	parser.add_argument("-l", "--latex", type=bool, help="Latex - PDF compilation.")
 	parser.add_argument("-n", "--mpin", type=int, help="Number of mpi jobs")
+	parser.add_argument("-t", "--test_type", type=str, default="test", help="Do 'test' or redo 'reference' files.")
 	args = parser.parse_args()
 
-	return args.path, args.latex, args.mpin
+	return args.path, args.latex, args.mpin, args.test_type
 
 if __name__ == "__main__":
-	path, print_latex_pdf, default_mpi_jobs = parser()
-	main(path)
+	path, print_latex_pdf, default_mpi_jobs, test_type = parser()
+	tester(path, test_type)
