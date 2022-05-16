@@ -303,9 +303,11 @@ class ParamsParser():
             self.path_parallelization = UP['path_parallelization']
 
         #Add user defined header
+        self.user_defined_header = ''
         if 'user_defined_header' in UP:
             self.user_defined_header = UP['user_defined_header']
             self.header = UP['user_defined_header'] + "_" + self.header
+
 
     def __check_user_params_for_wrong_arguments(self, UP):
         """

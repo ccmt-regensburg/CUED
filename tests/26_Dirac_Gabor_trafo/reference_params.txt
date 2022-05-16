@@ -1,4 +1,4 @@
-Runtime: 76.9490112389999581 s 
+Runtime: 29.0612716237083077 s 
 
 BZ_type = rectangle
 E0 = 0.0009723451905
@@ -23,7 +23,7 @@ combined_parallelization = False
 degenerate_evals = False
 dk = 0.02
 dk_order = 8
-do_semicl = False
+dm_dynamics_method = sbe
 dt = 20.670686675
 dt_fs = 0.5
 e_fermi = 0.0
@@ -45,7 +45,6 @@ gauge = velocity
 gaussian_center = 0
 gaussian_window_width = 1446.94806725
 gidx = 1
-hamiltonian_evaluation = ana
 kweight = 2.5330295910584444e-05
 length_BZ_E_dir = 0.5
 length_BZ_ortho = 0.1
@@ -53,6 +52,7 @@ n = 2
 n_sheets = 1
 num_dimensions = automatic
 parallelize_over_points = None
+params_maximum = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 path_parallelization = True
 phase = 0.0
 plot_format = pdf
@@ -77,5 +77,6 @@ temperature_eV = 0.0
 tf = 16536.549339999998
 tf_fs = 400
 user_defined_field = False
-user_out = True
+user_defined_header = 
+user_out = False
 zeeman_strength = 0.0

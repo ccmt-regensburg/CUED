@@ -966,7 +966,7 @@ def write_screening_combinations(P, params):
 			rmdir_mkdir_chdir(screening_foldername + 'latex_pdf_files')
 			if P.save_screening:
 				for s in S:
-					np.savetxt(s.screening_filename + 'intensity_freq_data.dat',
+					np.savetxt(P.user_defined_header + s.screening_filename + 'intensity_freq_data.dat',
 							   np.hstack((s.ff0[:, np.newaxis], s.screening_output.T)),
 							   header=screening_file_header, delimiter=' '*3, fmt="%+.18e")
 			if P.save_latex_pdf:
@@ -1043,6 +1043,8 @@ def write_current_emission(T, P, W, sys, Mpi):
 					"I_intra_E_dir", "I_intra_ortho",
 					"Re[dtP_E_dir]", "Im[dtP_E_dir]", "Re[dtP_ortho]", "Im[dtP_ortho]",
 					"I_dtP_E_dir", "I_dtP_ortho",
+					"Re[j_deph_E_dir]", "Im[j_deph_E_dir]", "Re[j_deph_ortho]", "Im[j_deph_ortho]",
+					"I_deph_E_dir", "I_deph_ortho",
 					"Re[j_intra_plus_dtP_E_dir]", "Im[j_intra_plus_dtP_E_dir]", "Re[j_intra_plus_dtP_ortho]", "Im[j_intra_plus_dtP_ortho]",
 					"I_intra_plus_dtP_E_dir", "I_intra_plus_dtP_ortho")
 
@@ -1055,6 +1057,8 @@ def write_current_emission(T, P, W, sys, Mpi):
 									   W.I_intra_E_dir.real, W.I_intra_ortho.real,
 									   W.dtP_E_dir.real, W.dtP_E_dir.imag, W.dtP_ortho.real, W.dtP_ortho.imag,
 									   W.I_dtP_E_dir.real, W.I_dtP_ortho.real,
+										 W.j_deph_E_dir.real, W.j_deph_E_dir.imag, W.j_deph_ortho.real, W.j_deph_ortho.imag,
+										 W.I_deph_E_dir, W.I_deph_ortho,
 									   W.j_intra_plus_dtP_E_dir.real, W.j_intra_plus_dtP_E_dir.imag, W.j_intra_plus_dtP_ortho.real, W.j_intra_plus_dtP_ortho.imag,
 									   W.I_intra_plus_dtP_E_dir.real, W.I_intra_plus_dtP_ortho.real])
 		if P.save_anom:
@@ -1112,7 +1116,7 @@ def write_current_emission(T, P, W, sys, Mpi):
 				freq_output[np.abs(freq_output) <= 10e-100] = 0
 				freq_output[np.abs(freq_output) >= 1e+100] = np.inf
 
-				np.savetxt(f"gabor_trafo_center={(P.gabor_gaussian_center[i]*CoFa.au_to_fs):.4f}fs_width={(P.gabor_window_width[j]*CoFa.au_to_fs):.4f}fs_"+P.header\
+				np.savetxt(f"gabor_trafo_center={(P.gabor_gaussian_center[i]*CoFa.au_to_fs):.4f}fs_width={(P.gabor_window_width[j]*CoFa.au_to_fs):.4f}fs_" + P.header\
 					+ 'frequency_data.dat', freq_output, header=freq_header, delimiter=' '*3, fmt="%+.18e")
 
 	if P.save_latex_pdf:

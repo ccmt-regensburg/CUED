@@ -241,7 +241,11 @@ def create_reference_data(testdir):
 	##################################
 	prev_dir = os.getcwd()
 	os.chdir(testdir)
-	os.system('python -W ignore ' + testdir + '/runscript.py')
+	os.system('mpirun -n ' + str(current_mpi_jobs) + ' python -W ignore ' + testdir + '/runscript.py')
+	for output_file in os.listdir(testdir):
+		if not output_file.startswith('reference_') and ( output_file.endswith('.dat') or 
+		                                                  output_file.endswith('.txt') ):
+			os.rename(testdir + '/' + output_file, testdir + '/' + 'reference_' + output_file)
 	os.chdir(prev_dir)
 	##################################
 
@@ -255,7 +259,7 @@ def tester(testpath, test_type):
 		      '=====================================================')
 	elif (test_type == 'reference'):
 		print('=====================================================\n'
-		      'Creating referece data in:\n' + testpath + '\n'
+		      'Create all referece data in:\n' + testpath + '\n'
 		      '=====================================================')
 	count = 0
 
