@@ -1,4 +1,4 @@
-Runtime: 32.6792077310383320 s 
+Runtime: 32.3985888231545687 s 
 
 BZ_type = rectangle
 E_dir = [1. 0.]
@@ -24,7 +24,7 @@ dt = 4.134137335
 dt_fs = 0.1
 e_fermi = 0.0
 e_fermi_eV = 0.0
-electric_field_function = CPUDispatcher(<function make_gaussian.<locals>.electric_field at 0x7f00c1bcf700>)
+electric_field_function = CPUDispatcher(<function make_gaussian.<locals>.electric_field at 0x7f2483b2a700>)
 epsilon = 2e-05
 f = 0.0012094421633
 f_THz = 50.0

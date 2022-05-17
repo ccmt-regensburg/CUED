@@ -122,22 +122,22 @@ def run_sbe(sys, P, Mpi):
 	Parameters
 	----------
 	sys : class
-		Symbolic Hamiltonian of the system
+	    Symbolic Hamiltonian of the system
 	P : class
-		Default parameters combined with user parameters from the params.py file
+	    Default parameters combined with user parameters from the params.py file
 	Mpi : class
-		Information needed for MPI-parallel runs
+	    Information needed for MPI-parallel runs
 
 	Returns
 	-------
 	params.txt
-		.txt file containing the parameters of the calculation
+	    .txt file containing the parameters of the calculation
 
 	time_data.dat
-		.dat file containing the time-dependent observables
+	    .dat file containing the time-dependent observables
 
 	frequency_data.dat
-		.dat file containing the frequency-dependent observables
+	    .dat file containing the frequency-dependent observables
 
 	"""
 	# Start time of sbe_solver
@@ -177,7 +177,7 @@ def run_sbe(sys, P, Mpi):
 
 		# Prepare calculations of observables
 		current_exact_path, polarization_inter_path, current_intra_path =\
-			prepare_current_calculations(path, Nk2_idx, P, sys)
+		    prepare_current_calculations(path, Nk2_idx, P, sys)
 
 		# Initialize the values of of each k point vector
 
@@ -188,7 +188,7 @@ def run_sbe(sys, P, Mpi):
 		if P.dm_dynamics_method in ('sbe', 'semiclassics'):
 			if P.solver_method in ('bdf', 'adams'):
 				solver.set_initial_value(y0, P.t0)\
-					.set_f_params(path, sys.dipole_in_path, sys.e_in_path, y0, P.dk)
+				    .set_f_params(path, sys.dipole_in_path, sys.e_in_path, y0, P.dk)
 			elif P.solver_method == 'rk4':
 				T.solution_y_vec[:] = y0
 		elif P.dm_dynamics_method in ('series_expansion', 'EEA'):
@@ -217,7 +217,7 @@ def run_sbe(sys, P, Mpi):
 
 				elif P.solver_method == 'rk4':
 					T.solution_y_vec = rk_integrate(T.t[ti], T.solution_y_vec, path, sys,
-													y0, P.dk, P.dt, rhs_ode)
+					                                y0, P.dk, P.dt, rhs_ode)
 
 			elif P.dm_dynamics_method in ('series_expansion', 'EEA'):
 				T.solution_y_vec[:-1], T.time_integral = von_neumann_series(T.t[ti], T.A_field[ti], T.E_field[ti], path, sys, y0[:-1], T.time_integral, P, ti)
@@ -242,9 +242,9 @@ def run_sbe(sys, P, Mpi):
 	paramsfile = open(params_name, 'w')
 	paramsfile.write("Runtime: {:.16f} s \n\n".format(P.run_time))
 	exceptions = {'__weakref__', '__doc__', '__dict__', '__module__', \
-				'_ParamsParser__user_defined_field', 'header', 'mesh', 'number_of_combinations', \
-				'params_combinations', 'params_lists', 'path_list', 'paths', 'run_time', \
-				't_pdf_densmat', 'type_complex_np', 'type_real_np', 'user_params'}
+	              '_ParamsParser__user_defined_field', 'header', 'mesh', 'number_of_combinations', \
+	              'params_combinations', 'params_lists', 'path_list', 'paths', 'run_time', \
+	              't_pdf_densmat', 'type_complex_np', 'type_real_np', 'user_params'}
 	for key in sorted(P.__dict__.keys() - exceptions):
 		paramsfile.write(str(key) + ' = ' + str(P.__dict__[key]) + "\n")
 
@@ -506,10 +506,10 @@ def von_neumann_series(t, A_field, E_field, path, sys, y0, time_integral, P, ti)
 
 		if P.first_order:
 			y_mat = first_order_taylor(y_mat, y0_mat, t, E_field, A_field, sys.dipole_in_path, sys.e_in_path, \
-							sys.dipole_derivative_in_path, sys.bandstructure_derivative_in_path, P.T2, P.n)
+			                           sys.dipole_derivative_in_path, sys.bandstructure_derivative_in_path, P.T2, P.n)
 		if P.second_order:
 			y_mat, time_integral = second_order_taylor(y_mat, time_integral, y0_mat, E_field, A_field, \
-							sys.dipole_in_path, sys.dipole_derivative_in_path, P.T2, P.dt, P.n, P.Nk1)
+			                                           sys.dipole_in_path, sys.dipole_derivative_in_path, P.T2, P.dt, P.n, P.Nk1)
 
 	elif P.dm_dynamics_method == 'series_expansion':
 		# calculate eigenvalues and dipole elements at current time step (velocity gauge!)
@@ -547,7 +547,7 @@ def first_order(y_mat, time_integral, y0_mat, t, E_field, A_field, e_in_path, di
 
 	for i in range(n):
 		for j in range(n):
-			time_integral[:, i, j] += np.exp( t * ( 1j * ( e_in_path[:, i] - e_in_path[:, j] ) +  1/T2  ) ) * E_field * dipole_in_path[:, i, j] * dt
+			time_integral[:, i, j] += np.exp(t * (1j * (e_in_path[:, i] - e_in_path[:, j]) + 1/T2)) * E_field * dipole_in_path[:, i, j] * dt
 			if i != j:
 				y_mat[:, i, j] -= 1j * time_integral[:, i, j] * (y0_mat[:, i, i] - y0_mat[:, j, j]) * np.exp( - t * ( 1j * ( e_in_path[:, i] - e_in_path[:, j] ) + 1/T2  ) )
 
@@ -560,7 +560,7 @@ def first_order_high_damping(y_mat, y0_mat, t, E_field, e_in_path, dipole_in_pat
 		for j in range(n):
 			if i!= j:
 				y_mat[:, i, j] -= 1j * T2 * ( y0_mat[:, i, i] - y0_mat[:, j, j] ) \
-					* E_field * dipole_in_path[:, i, j] 
+				                  * E_field * dipole_in_path[:, i, j] 
 
 	return y_mat
 
@@ -989,8 +989,13 @@ def write_current_emission(T, P, W, sys, Mpi):
 	##################################################
 	# Time data save
 	##################################################
+	tff_header_format = "{:25s}"
+	dat_header_format = " {:27s}"
+	dat_delimiter_format = " "*3
+	dat_precision_format = "%+.18e"
+
 	if P.split_current:
-		time_header = ("{:25s}" + " {:27s}"*10)\
+		time_header = (tff_header_format + dat_header_format*10)\
 			.format("t",
 					"j_E_dir", "j_ortho",
 					"j_intra_E_dir", "j_intra_ortho",
@@ -1003,24 +1008,24 @@ def write_current_emission(T, P, W, sys, Mpi):
 									   T.j_intra_plus_dtP_E_dir.real, T.j_intra_plus_dtP_ortho.real])
 		if P.save_anom:
 			for i in range(P.n):
-				time_header += (" {:27s}").format(f"j_anom_ortho[{i}]")
+				time_header += dat_header_format.format(f"j_anom_ortho[{i}]")
 				time_output = np.column_stack((time_output, T.j_anom_ortho[:, i].real))
-			time_header += (" {:27s}"*2).format("j_anom_ortho", "j_intra_plus_anom_ortho")
+			time_header += (dat_header_format*2).format("j_anom_ortho", "j_intra_plus_anom_ortho")
 			time_output = np.column_stack((time_output, T.j_anom_ortho_full.real, T.j_intra_plus_anom_ortho.real))
 
 	elif P.sheet_current:
 
-		time_header =("{:25s}").format('t')
+		time_header = tff_header_format.format('t')
 		time_output = T.t.real
 
 		for i in range(P.n_sheets):
 			for j in range(P.n_sheets):
-				time_header += (" {:27s}"*2).format(f"j_E_dir[{i},{j}]", f"j_ortho[{i},{j}]")
+				time_header += (dat_header_format*2).format(f"j_E_dir[{i},{j}]", f"j_ortho[{i},{j}]")
 				time_output = np.column_stack((time_output, T.j_E_dir[:, i, j].real, T.j_ortho[:, i, j].real) )
-			time_header += (" {:27s}"*2).format("j_E_dir", "j_ortho")
+			time_header += (dat_header_format*2).format("j_E_dir", "j_ortho")
 			time_output = np.column_stack((time_output, T.j_E_dir_full.real, T.j_ortho_full.real) )
 	else:
-		time_header = ("{:25s}" + " {:27s}"*2)\
+		time_header = (tff_header_format + dat_header_format*2)\
 			.format("t", "j_E_dir", "j_ortho")
 		time_output = np.column_stack([T.t.real,
 									   T.j_E_dir.real, T.j_ortho.real])
@@ -1029,13 +1034,13 @@ def write_current_emission(T, P, W, sys, Mpi):
 	time_output[np.abs(time_output) <= 10e-100] = 0
 	time_output[np.abs(time_output) >= 1e+100] = np.inf
 
-	np.savetxt(P.header + 'time_data.dat', time_output, header=time_header, delimiter=' '*3, fmt="%+.18e")
+	np.savetxt(P.header + 'time_data.dat', time_output, header=time_header, delimiter=dat_delimiter_format, fmt=dat_precision_format)
 
 	##################################################
 	# Frequency data save
 	##################################################
 	if P.split_current:
-		freq_header = ("{:25s}" + " {:27s}"*24)\
+		freq_header = (tff_header_format + dat_header_format*30)\
 			.format("f/f0",
 					"Re[j_E_dir]", "Im[j_E_dir]", "Re[j_ortho]", "Im[j_ortho]",
 					"I_E_dir", "I_ortho",
@@ -1063,31 +1068,31 @@ def write_current_emission(T, P, W, sys, Mpi):
 									   W.I_intra_plus_dtP_E_dir.real, W.I_intra_plus_dtP_ortho.real])
 		if P.save_anom:
 			for i in range(P.n):
-				freq_header += (" {:27s}"*3).format(f"Re[j_anom_ortho[{i}]]", f"Im[j_anom_ortho[{i}]", \
+				freq_header += (dat_header_format*3).format(f"Re[j_anom_ortho[{i}]]", f"Im[j_anom_ortho[{i}]", \
 											f"I_anom_ortho[{i}]")
 				freq_output = np.column_stack((freq_output, W.j_anom_ortho[:, i].real, W.j_anom_ortho[:, i].imag, W.I_anom_ortho[:, i].real) )
-			freq_header += (" {:27s}"*6).format("Re[j_anom_ortho]", "Im[j_anom_ortho]", "I_anom_ortho", "Re[j_intra_plus_anom_ortho]", "Im[j_intra_plus_anom_ortho]", "I_intra_plus_anom_ortho")
+			freq_header += (dat_header_format*6).format("Re[j_anom_ortho]", "Im[j_anom_ortho]", "I_anom_ortho", "Re[j_intra_plus_anom_ortho]", "Im[j_intra_plus_anom_ortho]", "I_intra_plus_anom_ortho")
 			freq_output = np.column_stack((freq_output, W.j_anom_ortho_full.real, W.j_anom_ortho_full.imag, W.I_anom_ortho_full, W.j_intra_plus_anom_ortho.real, W.j_intra_plus_anom_ortho.imag, W.I_intra_plus_anom_ortho.real))
 
 	elif P.sheet_current:
 
-		freq_header =("{:25s}").format('f/f0')
+		freq_header =tff_header_format.format('f/f0')
 		freq_output = (W.freq/P.f).real
 
 		for i in range(P.n_sheets):
 			for j in range(P.n_sheets):
-				freq_header += (" {:27s}"*6).format(f"Re[j_E_dir[{i},{j}]]", f"Im[j_E_dir[{i},{j}]]", \
+				freq_header += (dat_header_format*6).format(f"Re[j_E_dir[{i},{j}]]", f"Im[j_E_dir[{i},{j}]]", \
 					f"Re[j_ortho[{i},{j}]]", f"Im[j_ortho[{i},{j}]]", f"I_E_dir[{i},{j}]", f"I_ortho[{i},{j}]")
 				freq_output = np.column_stack((freq_output, W.j_E_dir[:, i, j].real, W.j_E_dir[:, i, j].imag \
 					,W.j_ortho[:, i, j].real, W.j_ortho[:, i, j].imag, W.I_E_dir[:, i, j].real, W.I_ortho[:, i, j].real) )
 
-		freq_header += (" {:27s}"*6).format("Re[j_E_dir]", "Im[j_E_dir]", \
+		freq_header += (dat_header_format*6).format("Re[j_E_dir]", "Im[j_E_dir]", \
 				"Re[j_ortho]", "Im[j_ortho]", "I_E_dir", "I_ortho")
 		freq_output = np.column_stack((freq_output, W.j_E_dir_full.real, W.j_E_dir_full.imag \
 				,W.j_ortho_full.real, W.j_ortho_full.imag, W.I_E_dir_full.real, W.I_ortho_full.real) )
 
 	else:
-		freq_header = ("{:25s}" + " {:27s}"*6)\
+		freq_header = (tff_header_format + dat_header_format*6)\
 			.format("f/f0",
 					"Re[j_E_dir]", "Im[j_E_dir]", "Re[j_ortho]", "Im[j_ortho]",
 					"I_E_dir", "I_ortho")
@@ -1100,12 +1105,12 @@ def write_current_emission(T, P, W, sys, Mpi):
 	freq_output[np.abs(freq_output) <= 10e-100] = 0
 	freq_output[np.abs(freq_output) >= 1e+100] = np.inf
 
-	np.savetxt(P.header + 'frequency_data.dat', freq_output, header=freq_header, delimiter=' '*3, fmt="%+.18e")
+	np.savetxt(P.header + 'frequency_data.dat', freq_output, header=freq_header, delimiter=dat_delimiter_format, fmt=dat_precision_format)
 
 	if P.gabor_transformation:
 		for i in range(np.size(P.gabor_gaussian_center)):
 			for j in range(np.size(P.gabor_window_width)):
-				freq_header = ("{:25s}" + " {:27s}"*6)\
+				freq_header = (tff_header_format + dat_header_format*6)\
 					.format("f/f0",
 							"Re[j_E_dir]", "Im[j_E_dir]", "Re[j_ortho]", "Im[j_ortho]",
 							"I_E_dir", "I_ortho")
@@ -1117,7 +1122,7 @@ def write_current_emission(T, P, W, sys, Mpi):
 				freq_output[np.abs(freq_output) >= 1e+100] = np.inf
 
 				np.savetxt(f"gabor_trafo_center={(P.gabor_gaussian_center[i]*CoFa.au_to_fs):.4f}fs_width={(P.gabor_window_width[j]*CoFa.au_to_fs):.4f}fs_" + P.header\
-					+ 'frequency_data.dat', freq_output, header=freq_header, delimiter=' '*3, fmt="%+.18e")
+					+ 'frequency_data.dat', freq_output, header=freq_header, delimiter=' '*3, fmt=dat_precision_format)
 
 	if P.save_latex_pdf:
 		write_and_compile_latex_PDF(T, W, P, sys, Mpi)

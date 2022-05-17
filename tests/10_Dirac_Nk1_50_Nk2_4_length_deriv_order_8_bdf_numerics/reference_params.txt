@@ -1,4 +1,4 @@
-Runtime: 28.3387418361380696 s 
+Runtime: 28.0493751373142004 s 
 
 BZ_type = rectangle
 E0 = 0.0009723451905

@@ -44,14 +44,14 @@ def check_test(testdir, refdir):
 	pdf_foldernames = [prefix + pdf_suffix for prefix in test_prefixes]
 
 	if hasattr(params,"gabor_transformation") and params.gabor_transformation == True:
-		gabor_filenames = glob.glob1(refdir, "reference_gabor"+"*" + freq_suffix)
+		gabor_filenames = glob.glob1(refdir, "reference_gabor" + "*" + freq_suffix)
 		gabor_refe_prefixes = [freq_filename.replace(freq_suffix, "") for freq_filename in gabor_filenames]
 		gabor_test_prefixes = [prefix.replace('reference_', '') for prefix in gabor_refe_prefixes]
 
 	print_latex_pdf_really = check_params_for_print_latex_pdf(print_latex_pdf, params)
 
 	if print_latex_pdf_really:
-		os.system("echo '	save_latex_pdf = True' >> "+filename_params)
+		os.system("echo '	save_latex_pdf = True' >> " + filename_params)
 
 	assert os.path.isfile(filename_params),	 'params.py is missing.'
 	assert os.path.isfile(filename_run),	 'runscript.py is missing.'
