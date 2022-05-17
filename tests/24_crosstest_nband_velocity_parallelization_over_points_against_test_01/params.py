@@ -2,7 +2,7 @@
 import numpy as np
 
 # Variable for test_script.py
-MPI_JOBS=4
+MPI_NUM_PROCS=4
 
 class params:
 	# System parameters

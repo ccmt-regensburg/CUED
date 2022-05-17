@@ -35,7 +35,7 @@ def check_test(testdir, refdir):
 	filename_params		= testdir + '/params.py'
 	filename_run		= testdir + '/runscript.py'
 
-	params, current_mpi_jobs = import_params(filename_params)
+	params, current_mpi_num_procs = import_params(filename_params)
 
 	# Get name of files (needed for MPI-tests)
 	time_filenames = glob.glob1(refdir, "*" + time_suffix)
@@ -82,7 +82,7 @@ def check_test(testdir, refdir):
 	##################################
 	prev_dir = os.getcwd()
 	os.chdir(testdir)
-	os.system('mpirun -n ' + str(current_mpi_jobs) + ' python -W ignore ' + testdir + '/runscript.py')
+	os.system('mpirun -n ' + str(current_mpi_num_procs) + ' python -W ignore ' + testdir + '/runscript.py')
 	os.chdir(prev_dir)
 	##################################
 
@@ -191,19 +191,19 @@ def check_emission(I_E_dir, I_ortho, I_E_dir_ref, I_ortho_ref, name):
 
 def import_params(filename_params):
 	"""
-	Imports the file dependent parameter file. If MPI_JOBS is set
+	Imports the file dependent parameter file. If MPI_NUM_PROCS is set
 	it changes the number of started jobs for the file.
 	"""
 
 	spec = importlib.util.spec_from_file_location("params", filename_params)
 	params = importlib.util.module_from_spec(spec)
 	spec.loader.exec_module(params)
-	if hasattr(params, 'MPI_JOBS'):
-		current_mpi_jobs = params.MPI_JOBS
+	if hasattr(params, 'MPI_NUM_PROCS'):
+		current_mpi_num_procs = params.MPI_NUM_PROCS
 	else:
-		current_mpi_jobs = default_mpi_jobs
+		current_mpi_num_procs = default_mpi_jobs
 
-	return params.params(), current_mpi_jobs
+	return params.params(), current_mpi_num_procs
 
 def check_params_for_print_latex_pdf(print_latex_pdf, params):
 
@@ -226,7 +226,7 @@ def create_reference_data(testdir):
 	filename_params		= testdir + '/params.py'
 	filename_run		= testdir + '/runscript.py'
 
-	params, current_mpi_jobs = import_params(filename_params)
+	params, current_mpi_num_procs = import_params(filename_params)
 
 	print_latex_pdf_really = check_params_for_print_latex_pdf(print_latex_pdf, params)
 
@@ -241,7 +241,7 @@ def create_reference_data(testdir):
 	##################################
 	prev_dir = os.getcwd()
 	os.chdir(testdir)
-	os.system('mpirun -n ' + str(current_mpi_jobs) + ' python -W ignore ' + testdir + '/runscript.py')
+	os.system('mpirun -n ' + str(current_mpi_num_procs) + ' python -W ignore ' + testdir + '/runscript.py')
 	for output_file in os.listdir(testdir):
 		if not output_file.startswith('reference_') and ( output_file.endswith('.dat') or 
 		                                                  output_file.endswith('.txt') ):
