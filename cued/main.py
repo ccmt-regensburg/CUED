@@ -253,8 +253,7 @@ def run_sbe(sys, P, Mpi):
 	if P.save_full:
 		# write_full_density_mpi(T, P, sys, Mpi)
 		S_name = P.header + 'dens'
-		np.savez(S_name, t=T.t, solution_full=T.solution_full, paths=P.paths,
-		         electric_field=T.electric_field(T.t), A_field=T.A_field)
+		np.savez(S_name, t=T.t, solution_full=T.solution_full, paths=P.paths)
 
 	#save density matrix at given points in time
 	if P.save_dm_t:
