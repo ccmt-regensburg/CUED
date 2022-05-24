@@ -207,7 +207,8 @@ def run_sbe(sys, P, Mpi):
 			calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, Mpi)
 
 			# Calculate the currents at the timestep ti
-			calculate_currents(ti, current_exact_path, polarization_inter_path, current_intra_path, T, P)
+			calculate_currents(Nk2_idx, ti, current_exact_path, polarization_inter_path, current_intra_path,
+			                   T, P)
 
 			# Integrate one integration time step
 			if P.dm_dynamics_method in ('sbe', 'semiclassics'):
@@ -325,9 +326,9 @@ def prepare_current_calculations(path, Nk2_idx, P, sys):
 	current_intra_path = None
 	if sys.system == 'ana':
 		if P.gauge == 'length':
-			current_exact_path = make_emission_exact_path_length(path, P, sys)
+			current_exact_path = make_current_exact_path_length(path, P, sys)
 		if P.gauge == 'velocity':
-			current_exact_path = make_emission_exact_path_velocity(path, P, sys)
+			current_exact_path = make_current_exact_path_velocity(path, P, sys)
 		if P.split_current:
 			polarization_inter_path = make_polarization_path(path, P, sys)
 			current_intra_path = make_current_path(path, P, sys)
@@ -407,9 +408,19 @@ def store_density_matrix_for_pdf(T, P, Nk2_idx, ti):
 			T.t_pdf_densmat[count] = T.t[ti]
 
 
-def calculate_currents(ti, current_exact_path, polarization_inter_path, current_intra_path, T, P):
+def calculate_currents(Nk2_idx, ti, current_exact_path, polarization_inter_path, current_intra_path,
+                       T, P):
 
-	j_E_dir_buf, j_ortho_buf = current_exact_path(T.solution, T.E_field[ti], T.A_field[ti])
+	if (P.save_full == True and P.gauge == 'length'):
+		# j_k_E_dir_path & j_k_ortho_path are containers for the full k-grid current
+		# if save_full is True, i.e. all densities and the full k-grid current should
+		# be written to disk
+		j_E_dir_buf, j_ortho_buf = current_exact_path(T.solution, T.E_field[ti], T.A_field[ti],
+		                                              T.j_k_E_dir_path, T.j_k_ortho_path)
+		T.j_k_E_dir[:, Nk2_idx, ti] = T.j_k_E_dir_path
+		T.j_k_ortho[:, Nk2_idx, ti] = T.j_k_ortho_path
+	else:
+		j_E_dir_buf, j_ortho_buf = current_exact_path(T.solution, T.E_field[ti], T.A_field[ti])
 
 	T.j_E_dir[ti] += j_E_dir_buf
 	T.j_ortho[ti] += j_ortho_buf

@@ -283,10 +283,14 @@ def tester(testpath, test_type):
 
 def parser():
 	parser = argparse.ArgumentParser()
-	parser.add_argument("-p", "--path", type=str, help="Relative testpath with respect to top level CUED dir.")
-	parser.add_argument("-l", "--latex", type=bool, help="Latex - PDF compilation.")
-	parser.add_argument("-n", "--mpin", type=int, help="Number of mpi jobs")
-	parser.add_argument("-t", "--test_type", type=str, default="test", help="Do 'test' or redo 'reference' files.")
+	parser.add_argument("-p", "--path", type=str, default='tests',
+	                    help="Relative testpath with respect to top level CUED dir.")
+	parser.add_argument("-l", "--latex", type=bool, default=True,
+	                    help="Latex - PDF compilation.")
+	parser.add_argument("-n", "--mpin", type=int, default=2,
+	                    help="Number of mpi jobs")
+	parser.add_argument("-t", "--test_type", type=str, default="test",
+	                    help="Do 'test' or redo 'reference' files.")
 	args = parser.parse_args()
 
 	return args.path, args.latex, args.mpin, args.test_type

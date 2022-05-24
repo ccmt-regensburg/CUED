@@ -12,7 +12,20 @@ class TimeContainers():
 		self.solution_y_vec = np.zeros((((P.n)**2)*(P.Nk1)+1), dtype=P.type_complex_np)
 
 		if P.save_full:
+			# Container for the full k-grid densities
 			self.solution_full = np.empty((P.Nk1, P.Nk2, P.Nt, P.n, P.n), dtype=P.type_complex_np)
+			# Like the full solution this saves the full k-grid currents
+			self.j_k_E_dir = np.empty((P.Nk1, P.Nk2, P.Nt), dtype=P.type_real_np)
+			self.j_k_ortho = np.empty((P.Nk1, P.Nk2, P.Nt), dtype=P.type_real_np)
+			# Buffer to save the currents for one time-step and one path
+			self.j_k_E_dir_path = np.empty(P.Nk1, dtype=P.type_real_np)
+			self.j_k_ortho_path = np.empty(P.Nk1, dtype=P.type_real_np)
+		else:
+			self.solution_full = None
+			self.j_k_E_dir = None
+			self.j_k_ortho = None
+			self.j_k_E_dir_path = None
+			self.j_k_ortho_path = None
 
 		self.A_field = np.zeros(P.Nt, dtype=P.type_real_np)
 		self.E_field = np.zeros(P.Nt, dtype=P.type_real_np)

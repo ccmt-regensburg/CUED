@@ -200,9 +200,9 @@ def make_current_path(path, P, sys):
 	return current_path
 
 
-def make_emission_exact_path_velocity(path, P, sys):
+def make_current_exact_path_velocity(path, P, sys):
 	"""
-	Construct a function that calculates the emission for the system solution per path
+	Construct a function that calculates the current for the system solution per path
 	Works for velocity gauge.
 
 	Parameters
@@ -220,7 +220,7 @@ def make_emission_exact_path_velocity(path, P, sys):
 
 	Returns
 	-------
-	emision_kernel : function
+	current_kernel : function
 	    Calculates per timestep current of a path
 	"""
 	E_dir = P.E_dir
@@ -263,7 +263,7 @@ def make_emission_exact_path_velocity(path, P, sys):
 	symmetric_insulator = P.symmetric_insulator
 	dm_dynamics_method = P.dm_dynamics_method
 	@conditional_njit(type_complex_np)
-	def emission_exact_path_velocity(solution, E_field, A_field):
+	def current_exact_path_velocity(solution, E_field, A_field):
 		'''
 		Calculates current from the system density matrix
 
@@ -368,12 +368,12 @@ def make_emission_exact_path_velocity(path, P, sys):
 
 		return I_E_dir, I_ortho
 
-	return emission_exact_path_velocity
+	return current_exact_path_velocity
 
 
-def make_emission_exact_path_length(path, P, sys):
+def make_current_exact_path_length(path, P, sys):
 	"""
-	Construct a function that calculates the emission for the system solution per path.
+	Construct a function that calculates the current for the system solution per path.
 	Works for length gauge.
 
 	Parameters
@@ -391,7 +391,7 @@ def make_emission_exact_path_length(path, P, sys):
 
 	Returns:
 	--------
-	emission_kernel : function
+	current_kernel : function
 	    Calculates per timestep current of a path
 	"""
 	E_dir = P.E_dir
@@ -425,7 +425,7 @@ def make_emission_exact_path_length(path, P, sys):
 	symmetric_insulator = P.symmetric_insulator
 	dm_dynamics_method = P.dm_dynamics_method
 	@conditional_njit(P.type_complex_np)
-	def emission_exact_path_length(solution, E_field, A_field):
+	def current_exact_path_length(solution, E_field, A_field):
 		'''
 		Parameters:
 		-----------
@@ -435,6 +435,8 @@ def make_emission_exact_path_length(path, P, sys):
 		    Per timestep E_field
 		_A_field : dummy
 		    In the length gauge this is just a dummy variable
+		j_k_E_dir_path
+
 
 		Returns:
 		--------
@@ -444,7 +446,6 @@ def make_emission_exact_path_length(path, P, sys):
 		    Orthogonal to electric field component of current
 		'''
 		solution = solution.reshape(pathlen, 4)
-
 		I_E_dir = 0
 		I_ortho = 0
 
@@ -457,29 +458,77 @@ def make_emission_exact_path_length(path, P, sys):
 			rho_vv = -rho_cc
 
 		for i_k in range(pathlen):
+			U_h_H_U_E_dir = U_h[i_k] @ (h_deriv_E_dir[i_k] @ U[i_k])
+			U_h_H_U_ortho = U_h[i_k] @ (h_deriv_ortho[i_k] @ U[i_k])
 
-			dH_U_E_dir = h_deriv_E_dir[i_k] @ U[i_k]
-			U_h_H_U_E_dir = U_h[i_k] @ dH_U_E_dir
+			I_E_dir -= U_h_H_U_E_dir[0, 0].real * rho_vv[i_k].real \
+			         + U_h_H_U_E_dir[1, 1].real * rho_cc[i_k].real \
+			         + 2*np.real(U_h_H_U_E_dir[0, 1] * rho_cv[i_k])
 
-			dH_U_ortho = h_deriv_ortho[i_k] @ U[i_k]
-			U_h_H_U_ortho = U_h[i_k] @ dH_U_ortho
-
-			I_E_dir += - U_h_H_U_E_dir[0, 0].real * rho_vv[i_k].real
-			I_E_dir += - U_h_H_U_E_dir[1, 1].real * rho_cc[i_k].real
-			I_E_dir += - 2*np.real(U_h_H_U_E_dir[0, 1] * rho_cv[i_k])
-
-			I_ortho += - U_h_H_U_ortho[0, 0].real * rho_vv[i_k].real
-			I_ortho += - U_h_H_U_ortho[1, 1].real * rho_cc[i_k].real
-			I_ortho += - 2*np.real(U_h_H_U_ortho[0, 1] * rho_cv[i_k])
+			I_ortho -= U_h_H_U_ortho[0, 0].real * rho_vv[i_k].real \
+			         + U_h_H_U_ortho[1, 1].real * rho_cc[i_k].real \
+			         + 2*np.real(U_h_H_U_ortho[0, 1] * rho_cv[i_k])
 
 			if dm_dynamics_method == 'semiclassics':
 				# '-' because there is q^2 compared to q only at the SBE current
-				I_ortho += -E_field * Bcurv[i_k, 0].real * rho_vv[i_k].real
-				I_ortho += -E_field * Bcurv[i_k, 1].real * rho_vc[i_k].real
+				I_ortho -= E_field * Bcurv[i_k, 0].real * rho_vv[i_k].real \
+				         + E_field * Bcurv[i_k, 1].real * rho_vc[i_k].real
 
 		return I_E_dir, I_ortho
 
-	return emission_exact_path_length
+	if P.save_full:
+		@conditional_njit(P.type_complex_np)
+		def current_exact_path_length(solution, E_field, A_field, j_k_E_dir_path, j_k_ortho_path):
+			'''
+			Parameters:
+			-----------
+			solution : np.ndarray [type_complex_np]
+					Per timestep solution, idx 0 is k; idx 1 is fv, pvc, pcv, fc
+			E_field : type_real_np
+					Per timestep E_field
+			_A_field : dummy
+					In the length gauge this is just a dummy variable
+
+			Returns:
+			--------
+			I_E_dir : type_real_np
+					Parallel to electric field component of current
+			I_ortho : type_real_np
+					Orthogonal to electric field component of current
+			'''
+			solution = solution.reshape(pathlen, 4)
+			I_E_dir = 0
+			I_ortho = 0
+
+			rho_vv = solution[:, 0]
+			rho_vc = solution[:, 1]
+			rho_cv = solution[:, 2]
+			rho_cc = solution[:, 3]
+
+			if symmetric_insulator:
+				rho_vv = -rho_cc
+
+			for i_k in range(pathlen):
+
+				U_h_H_U_E_dir = U_h[i_k] @ (h_deriv_E_dir[i_k] @ U[i_k])
+				U_h_H_U_ortho = U_h[i_k] @ (h_deriv_ortho[i_k] @ U[i_k])
+
+				j_k_E_dir_path[i_k] = - U_h_H_U_E_dir[0, 0].real * rho_vv[i_k].real \
+				                      - U_h_H_U_E_dir[1, 1].real * rho_cc[i_k].real \
+															- 2*np.real(U_h_H_U_E_dir[0, 1] * rho_cv[i_k])
+
+				j_k_ortho_path[i_k] = - U_h_H_U_ortho[0, 0].real * rho_vv[i_k].real \
+				                      - U_h_H_U_ortho[1, 1].real * rho_cc[i_k].real \
+				                      - 2*np.real(U_h_H_U_ortho[0, 1] * rho_cv[i_k])
+
+				if dm_dynamics_method == 'semiclassics':
+					# '-' because there is q^2 compared to q only at the SBE current
+					j_k_ortho_path[i_k] = - E_field * Bcurv[i_k, 0].real * rho_vv[i_k].real \
+					                      - E_field * Bcurv[i_k, 1].real * rho_vc[i_k].real
+
+			return np.sum(j_k_E_dir_path), np.sum(j_k_ortho_path)
+
+	return current_exact_path_length
 
 ##########################################################################################
 ### Observables from given bandstructures
