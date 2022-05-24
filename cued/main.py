@@ -255,6 +255,8 @@ def run_sbe(sys, P, Mpi):
 		# write_full_density_mpi(T, P, sys, Mpi)
 		S_name = P.header + 'dens'
 		np.savez(S_name, t=T.t, solution_full=T.solution_full, paths=P.paths)
+		J_name = P.header + 'j_k'
+		np.savez(J_name, t=T.t, j_k_E_dir=T.j_k_E_dir, j_k_ortho=T.j_k_ortho)
 
 	#save density matrix at given points in time
 	if P.save_dm_t:
