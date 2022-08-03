@@ -25,7 +25,7 @@ class params:
 	align               = 'K'         # E-field direction (gamma-'K' or gamma-'M')
 	E0                  = 3.0         # Pulse amplitude (MV/cm)
 	f                   = 40.0        # Pulse frequency (THz)
-	chirp               = 0.90        # Pulse chirp ratio (chirp = c/w) (THz)
+	chirp               = 0.90        # chirp (THz)
 	sigma               = 50          # Gaussian pulse width (femtoseconds)
 	phase               = np.linspace(0, 2*np.pi, 16)
 
