@@ -52,7 +52,7 @@ def check_test(testdir, refdir):
     print_latex_pdf_really = check_params_for_print_latex_pdf(print_latex_pdf, params)
 
     if print_latex_pdf_really:
-        os.system("echo '   save_latex_pdf = True' >> " + filename_params)
+        os.system("echo '    save_latex_pdf = True' >> " + filename_params)
 
     assert os.path.isfile(filename_params),  'params.py is missing.'
     assert os.path.isfile(filename_run),     'runscript.py is missing.'
