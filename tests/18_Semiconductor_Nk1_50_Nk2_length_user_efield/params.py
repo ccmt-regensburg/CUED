@@ -1,6 +1,8 @@
 # Input parameters for SBE.py
 import numpy as np
 
+# Variable for test_script.py
+NUM_TESTED_ORDERS=2
 
 class params:
 	# System parameters
