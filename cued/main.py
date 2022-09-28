@@ -68,7 +68,7 @@ def sbe_solver(sys, params):
 			system.exit()
 
 	# Parallelize over parameters if there are more parameter combinations than paths
-	elif P.number_of_combinations >= params.Nk2 or P.path_list and not P.parallelize_over_points:
+	elif (P.number_of_combinations >= params.Nk2 or P.path_list) and not P.parallelize_over_points:
 		Mpi.mod = None
 		Mpi.local_params_idx_list = Mpi.get_local_idx(P.number_of_combinations)
 		P.path_parallelization = False
