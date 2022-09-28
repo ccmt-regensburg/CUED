@@ -712,7 +712,7 @@ def mpi_sum_currents(T, P, Mpi):
 		T.P_E_dir       = Mpi.sync_and_sum(T.P_E_dir)
 		T.P_ortho       = Mpi.sync_and_sum(T.P_ortho)
 		T.j_anom_ortho  = Mpi.sync_and_sum(T.j_anom_ortho)
-	if P.save_latex_pdf:
+	if P.save_latex_pdf or P.save_dm_t:
 		T.pdf_densmat   = Mpi.sync_and_sum(T.pdf_densmat)
 
 def update_currents_with_kweight(T, P):
