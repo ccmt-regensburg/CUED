@@ -21,6 +21,7 @@ from cued.utility import ParamsParser
 default_mpi_jobs = 1
 print_latex_pdf = False
 threshold_rel_error = 0.1
+threshold_wrong_points = 0.01
 default_tested_orders = 10
 
 time_suffix = "time_data.dat"
@@ -163,7 +164,7 @@ def build_comparable_data(freq_data_index, freq_data, freq_data_ref, num_tested_
     # Load all relevant files and restrict data to max 10th order
     freq = freq_data['f/f0']
     print('Number of tested orders: ' + str(num_tested_orders))
-    
+
     # All indices between 0 and 10th order
     freq_idx = np.where(np.logical_and(0 <= freq, freq <= num_tested_orders))[0]
 
@@ -183,18 +184,23 @@ def check_emission(I_E_dir, I_ortho, I_E_dir_ref, I_ortho_ref, name):
     relerror = (np.abs(I_E_dir + I_ortho) + 1.0E-90) / \
                (np.abs(I_E_dir_ref + I_ortho_ref) + 1.0E-90) - 1
 
+    error_list = [err for err in relerror if np.abs(err) >= threshold_rel_error]
+    wrong_points = len(error_list)/len(relerror)
+
     max_relerror = np.amax(np.abs(relerror))
 
     print("\n\nTesting the \"" + name + "\" emission spectrum I(omega):",
           "\n\nThe maximum relative deviation between the computed and the reference spectrum is:", max_relerror,
-          "\nThe threshold is:                                                               ", threshold_rel_error, "\n")
+          "\nThe threshold is:                                                               ", threshold_rel_error, "\n"
+          "\nThe relative deviation is above the threshold for " + str(wrong_points) + " percent of the spectrum \n"
+          "\nThe threshold is:                                                               ", threshold_wrong_points, "\n")
 
-    assert max_relerror < threshold_rel_error, "The \"" + name + "\" emission spectrum is not matching."
+    assert wrong_points < threshold_wrong_points, "The \"" + name + "\" emission spectrum is not matching."
 
 
 def import_params(filename_params):
     """
-    Imports the file dependent parameter file. If MPI_NUM_PROCS is set
+    Imports the file dependent parameter file. If M/PI_NUM_PROCS is set
     it changes the number of started jobs for the file.
     """
 
