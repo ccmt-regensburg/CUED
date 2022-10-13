@@ -127,9 +127,9 @@ def hex_mesh(P):
         if P.Nk1%3 != 0 or P.Nk1%2 != 0:
             raise RuntimeError("Nk1: " + "{:d}".format(P.Nk1) +
                                " needs to be divisible by 3 and even")
-        if P.Nk2%3 != 0:
+        if P.Nk2%3 != 0 or P.Nk2%2 != 0:
             raise RuntimeError("Nk2: " + "{:d}".format(P.Nk2) +
-                               " needs to be divisible by 3")
+                               " needs to be divisible by 3 and even")
         b_a1 = 8*np.pi/(P.a*3)*np.array([1, 0], dtype=P.type_real_np)
         b_a2 = 4*np.pi/(P.a*3)*np.array([0, np.sqrt(3)], dtype=P.type_real_np)
         # Extend over half of the b2 direction and 1.5x the b1 direction
