@@ -111,13 +111,13 @@ def __to_njit_function_k(sf, hsymbols, kx, ky, dtype=np.complex128):
 	if contains_k:
 		# All free Hamiltonian symbols get function parameters
 		if dtype == np.complex256:
-			return lambdify(list(hsymbols), sf, "numpy")
-		return njit(lambdify(list(hsymbols), sf, "numpy"))
+			return lambdify(list(hsymbols), sf, np)
+		return njit(lambdify(list(hsymbols), sf, np))
 	# Here we have non k variables in sf. Expand sf by 0*kx*ky
 	sf = sf + kx*ky*sp.UnevaluatedExpr(0)
 	if dtype == np.complex256:
-		return lambdify(list(hsymbols), sf, "numpy")
-	return njit(lambdify(list(hsymbols), sf, "numpy"))
+		return lambdify(list(hsymbols), sf, np)
+	return njit(lambdify(list(hsymbols), sf, np))
 
 
 def __to_njit_function_kp(sf, hsymbols, kx, ky, kxp, kyp, dtype=np.complex128):
@@ -128,13 +128,13 @@ def __to_njit_function_kp(sf, hsymbols, kx, ky, kxp, kyp, dtype=np.complex128):
 	if contains_k:
 		# All free Hamiltonian symbols get function parameters
 		if dtype == np.complex256:
-			return lambdify(list(hsymbols), sf, "numpy")
-		return njit(lambdify(list(hsymbols), sf, "numpy"))
+			return lambdify(list(hsymbols), sf, np)
+		return njit(lambdify(list(hsymbols), sf, np))
 
 	sf = sf + kx*ky*kxp*kyp*sp.UnevaluatedExpr(0)
 	if dtype == np.complex256:
-		return lambdify(list(hsymbols), sf, "numpy")
-	return njit(lambdify(list(hsymbols), sf, "numpy"))
+		return lambdify(list(hsymbols), sf, np)
+	return njit(lambdify(list(hsymbols), sf, np))
 
 
 def evaluate_njit_matrix(mjit, kx=np.empty(1), ky=np.empty(1), dtype=np.complex128, **fkwargs):
