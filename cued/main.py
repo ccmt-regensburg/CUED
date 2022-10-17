@@ -347,10 +347,15 @@ def prepare_current_calculations(path, Nk2_idx, P, sys):
 				polarization_inter_path = make_polarization_inter_path_velocity(path, P, sys)
 				current_intra_path = make_intraband_current_path_velocity(path, P, sys)
 	else:
-		current_exact_path = make_current_exact_bandstructure(path, P, sys)
-		if P.split_current:
-			polarization_inter_path = make_polarization_inter_bandstructure(P, sys)
-			current_intra_path = make_intraband_current_bandstructure(path, P, sys)
+		if P.gauge == 'length':
+			current_exact_path = make_current_exact_bandstructure(path, P, sys)
+			if P.split_current:
+				polarization_inter_path = make_polarization_inter_bandstructure(P, sys)
+				current_intra_path = make_intraband_current_bandstructure(path, P, sys)
+		elif P.gauge == 'velocity':
+			current_exact_path = make_current_exact_bandstructure_velocity(path, P, sys)
+
+
 	return current_exact_path, polarization_inter_path, current_intra_path
 
 

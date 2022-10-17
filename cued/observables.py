@@ -533,7 +533,78 @@ def make_current_exact_path_length(path, P, sys):
 ##########################################################################################
 ### Observables from given bandstructures
 ##########################################################################################
-def make_current_exact_bandstructure(path, P, sys):
+def make_current_exact_bandstructure_velocity(path, P, sys):
+
+	Nk1 = P.Nk1
+	n = P.n
+	E_dir = P.E_dir
+	E_ort = np.array([E_dir[1], -E_dir[0]])
+
+	#wire matrix elements
+	mel00x = sys.melxjit[0][0]
+	mel01x = sys.melxjit[0][1]
+	mel10x = sys.melxjit[1][0]
+	mel11x = sys.melxjit[1][1]
+
+	mel00y = sys.melyjit[0][0]
+	mel01y = sys.melyjit[0][1]
+	mel10y = sys.melyjit[1][0]
+	mel11y = sys.melyjit[1][1]
+
+	kx_in_path_before_shift = path[:, 0]
+	ky_in_path_before_shift = path[:, 1]
+	pathlen = kx_in_path_before_shift.size
+
+	type_complex_np = P.type_complex_np
+
+	# mel_x = evaluate_njit_matrix(sys.melxjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
+	# mel_y = evaluate_njit_matrix(sys.melyjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
+
+	# mel_in_path = P.E_dir[0]*mel_x + P.E_dir[1]*mel_y
+	# mel_ortho = P.E_ort[0]*mel_x + P.E_ort[1]*mel_y
+
+	@conditional_njit(P.type_complex_np)
+	def current_exact_path(solution, E_field=0, A_field=0):
+
+		kx_in_path = kx_in_path_before_shift + A_field*E_dir[0]
+		ky_in_path = ky_in_path_before_shift + A_field*E_dir[1]
+
+		mel_x = np.empty((pathlen, 2, 2), dtype=type_complex_np)
+		mel_y = np.empty((pathlen, 2, 2), dtype=type_complex_np)
+
+		mel_x[:, 0, 0] = mel00x(kx=kx_in_path, ky=ky_in_path)
+		mel_x[:, 0, 1] = mel01x(kx=kx_in_path, ky=ky_in_path)
+		mel_x[:, 1, 0] = mel10x(kx=kx_in_path, ky=ky_in_path)
+		mel_x[:, 1, 1] = mel11x(kx=kx_in_path, ky=ky_in_path)
+
+		mel_y[:, 0, 0] = mel00y(kx=kx_in_path, ky=ky_in_path)
+		mel_y[:, 0, 1] = mel01y(kx=kx_in_path, ky=ky_in_path)
+		mel_y[:, 1, 0] = mel10y(kx=kx_in_path, ky=ky_in_path)
+		mel_y[:, 1, 1] = mel11y(kx=kx_in_path, ky=ky_in_path)
+
+		mel_in_path = E_dir[0]*mel_x + E_dir[1]*mel_y
+		mel_ortho = E_ort[0]*mel_x + E_ort[1]*mel_y
+
+		J_exact_E_dir = 0
+		J_exact_ortho = 0
+
+		rho_vv = solution[:, 0, 0]
+		# rho_vc = solution[:, 1]
+		rho_cv = solution[:, 1, 0]
+		rho_cc = solution[:, 1, 1]
+
+		for i_k in range(pathlen):
+			J_exact_E_dir += - mel_in_path[i_k, 0, 0].real * (rho_vv[i_k].real - 1)
+			J_exact_E_dir += - mel_in_path[i_k, 1, 1].real * rho_cc[i_k].real
+			J_exact_E_dir += - 2*np.real( mel_in_path[i_k, 0, 1] * rho_cv[i_k] )
+
+			J_exact_ortho += - mel_ortho[i_k, 0, 0].real * (rho_vv[i_k].real - 1)
+			J_exact_ortho += - mel_ortho[i_k, 1, 1].real * rho_cc[i_k].real
+			J_exact_ortho += - 2*np.real( mel_ortho[i_k, 0, 1] * rho_cv[i_k] )
+		return J_exact_E_dir, J_exact_ortho
+	return current_exact_path
+
+def make_current_exact_path_bandstructure(path, P, sys):
 
 	Nk1 = P.Nk1
 	n = P.n
@@ -545,10 +616,11 @@ def make_current_exact_bandstructure(path, P, sys):
 	mel_y = evaluate_njit_matrix(sys.melyjit, kx=kx_in_path, ky=ky_in_path, dtype=P.type_complex_np)
 
 	mel_in_path = P.E_dir[0]*mel_x + P.E_dir[1]*mel_y
-	mel_ortho = P.E_ort[0]*mel_x + P.E_ort[1]*mel_y
+	mel_ortho = P.E_ort[0]*mel_x + P.E_ort[1]*mel_y	
 
 	@conditional_njit(P.type_complex_np)
 	def current_exact_path(solution, _E_field=0, _A_field=0):
+
 
 		J_exact_E_dir = 0
 		J_exact_ortho = 0
@@ -563,8 +635,8 @@ def make_current_exact_bandstructure(path, P, sys):
 						J_exact_ortho -= np.real(mel_ortho[i_k, i, j] * solution[i_k, j, i])
 
 		return J_exact_E_dir, J_exact_ortho
-	return current_exact_path
 
+	return current_exact_path
 
 def make_intraband_current_bandstructure(path, P, sys):
 	"""

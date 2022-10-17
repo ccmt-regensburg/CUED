@@ -27,16 +27,16 @@ class NBandBandstructureDipoleSystem():
         self.dipole_x, self.dipole_y = self.dipole_elements()
         self.matrix_element_x, self.matrix_element_y = self.matrix_elements()
 
-        self.efjit = list_to_njit_functions(self.e, self.freesymbols)
+        self.efjit = None
         
-        self.dkxejit = list_to_njit_functions(self.dkxe, self.freesymbols)
-        self.dkyejit = list_to_njit_functions(self.dkye, self.freesymbols)
+        self.dkxejit = None
+        self.dkyejit = None
         
-        self.dipole_xfjit = matrix_to_njit_functions(self.dipole_x, self.freesymbols)
-        self.dipole_yfjit = matrix_to_njit_functions(self.dipole_y, self.freesymbols)
+        self.dipole_xfjit = None
+        self.dipole_yfjit = None
 
-        self.melxjit = matrix_to_njit_functions(self.matrix_element_x, self.freesymbols)
-        self.melyjit = matrix_to_njit_functions(self.matrix_element_y, self.freesymbols)
+        self.melxjit = None
+        self.melyjit = None
 
         self.U = None             # Normalised eigenstates
         self.wf_in_path = None
@@ -84,6 +84,9 @@ class NBandBandstructureDipoleSystem():
 
     def eigensystem_dipole_path(self, path, P):
 
+        if self.efjit == None:
+            self.make_eigensystem_dipole(P)
+            
         # Retrieve the set of k-points for the current path
         kx_in_path = path[:, 0]
         ky_in_path = path[:, 1]
@@ -99,6 +102,18 @@ class NBandBandstructureDipoleSystem():
         self.dipole_in_path = P.E_dir[0]*self.dipole_path_x + P.E_dir[1]*self.dipole_path_y
         self.dipole_ortho = P.E_ort[0]*self.dipole_path_x + P.E_ort[1]*self.dipole_path_y        
 
+    def make_eigensystem_dipole(self, P):
+
+        self.efjit = list_to_njit_functions(self.e, self.freesymbols, dtype=P.type_complex_np)
+        
+        self.dkxejit = list_to_njit_functions(self.dkxe, self.freesymbols, dtype=P.type_complex_np)
+        self.dkyejit = list_to_njit_functions(self.dkye, self.freesymbols, dtype=P.type_complex_np)
+        
+        self.dipole_xfjit = matrix_to_njit_functions(self.dipole_x, self.freesymbols, dtype=P.type_complex_np)
+        self.dipole_yfjit = matrix_to_njit_functions(self.dipole_y, self.freesymbols, dtype=P.type_complex_np)
+
+        self.melxjit = matrix_to_njit_functions(self.matrix_element_x, self.freesymbols, dtype=P.type_complex_np)
+        self.melyjit = matrix_to_njit_functions(self.matrix_element_y, self.freesymbols, dtype=P.type_complex_np)
 
     def matrix_elements(self):
 

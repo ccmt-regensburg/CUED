@@ -205,7 +205,6 @@ def make_rhs_ode_2_band(sys, electric_field, P):
         """
 
         ecv_in_path, dipole_in_path[:, 0, 1], A_in_path = pre_velocity(kpath, y[-1].real)
- 
         # x != y(t+dt)
         x = np.empty(np.shape(y), dtype=type_complex_np)
 
@@ -290,17 +289,111 @@ def make_rhs_ode_n_band(sys, electric_field, P):
     type_real_np = P.type_real_np
     dk_order = P.dk_order
     gauge = P.gauge
+    system = sys.system
     E_dir = P.E_dir
     n = P.n
-    if sys.system == 'ana' or sys.system == 'num':
+    if system == 'ana' or system == 'num':
         for i in range(P.n):
             for j in range(P.n):
                 globals()[f"hfjit_{i}{j}"] = sys.hfjit[i][j]
         degenerate_eigenvalues = sys.degenerate_eigenvalues
 
+    if system == 'bandstructure' and gauge == 'velocity':
+        if n != 2:
+            raise AttributeError("Velocity gauge for custom bandstructures only works for 2 band systems")
+        ########################################
+        # Wire the energies
+        ########################################
+        evf = sys.efjit[0]
+        ecf = sys.efjit[1]
+
+        ########################################
+        # Wire the dipoles
+        ########################################
+        # kx-parameter
+        di_00xf = sys.dipole_xfjit[0][0]
+        di_01xf = sys.dipole_xfjit[0][1]
+        di_11xf = sys.dipole_xfjit[1][1]
+
+        # ky-parameter
+        di_00yf = sys.dipole_yfjit[0][0]
+        di_01yf = sys.dipole_yfjit[0][1]
+        di_11yf = sys.dipole_yfjit[1][1]       
+
     epsilon = P.epsilon
     gidx = P.gidx
     dm_dynamics_method = P.dm_dynamics_method
+
+    @conditional_njit(type_complex_np)
+    def fvelocity_custom_bs(t, y, kpath, dipole_in_path, e_in_path, y0, dk):
+        """
+        Velocity gauge needs a recalculation of energies and dipoles as k
+        is shifted according to the vector potential A
+        """
+
+        ecv_in_path, dipole_in_path[:, 0, 1], A_in_path = pre_velocity_custom_bs(kpath, y[-1].real)
+
+        # x != y(t+dt)
+        x = np.empty(np.shape(y), dtype=type_complex_np)
+
+        electric_f = electric_field(t)
+
+        # Update the solution vector
+        Nk_path = kpath.shape[0]
+        for k in range(Nk_path):
+            i = 4*k
+            # Energy term eband(i,k) the energy of band i at point k
+            ecv = ecv_in_path[k]
+
+            # Rabi frequency: w_R = d_12(k).E(t)
+            # Rabi frequency conjugate
+            wr = dipole_in_path[k, 0, 1]*electric_f
+            wr_c = wr.conjugate()
+
+            # Rabi frequency: w_R = (d_11(k) - d_22(k))*E(t)
+            # wr_d_diag   = A_in_path[k]*D
+            wr_d_diag = A_in_path[k]*electric_f
+
+            # Update each component of the solution vector
+            # i = f_v, i+1 = p_vc, i+2 = p_cv, i+3 = f_c
+            x[i] = 2*(y[i+1]*wr_c).imag - gamma1*(y[i]-y0[i])
+
+            x[i+1] = (1j*ecv - gamma2 + 1j*wr_d_diag)*y[i+1] - 1j*wr*(y[i]-y[i+3])
+
+            x[i+2] = x[i+1].conjugate()
+
+            x[i+3] = -2*(y[i+1]*wr_c).imag - gamma1*(y[i+3]-y0[i+3])
+
+        x[-1] = -electric_f
+    
+        return x
+
+    @conditional_njit(P.type_complex_np)
+    def pre_velocity_custom_bs(kpath, k_shift):
+        # First round k_shift is zero, consequently we just recalculate
+        # the original data ecv_in_path, dipole_in_path, A_in_path
+        kx = kpath[:, 0] + E_dir[0]*k_shift
+        ky = kpath[:, 1] + E_dir[1]*k_shift
+
+        ecv_in_path = ecf(kx=kx, ky=ky) - evf(kx=kx, ky=ky)
+
+        if dm_dynamics_method == 'semiclassics':
+            zero_arr = np.zeros(kx.size, dtype=type_complex_np)
+            dipole_in_path = zero_arr
+            A_in_path = zero_arr
+        else:
+            di_00x = di_00xf(kx=kx, ky=ky)
+            di_01x = di_01xf(kx=kx, ky=ky)
+            di_11x = di_11xf(kx=kx, ky=ky)
+            di_00y = di_00yf(kx=kx, ky=ky)
+            di_01y = di_01yf(kx=kx, ky=ky)
+            di_11y = di_11yf(kx=kx, ky=ky)
+
+            dipole_in_path = E_dir[0]*di_01x + E_dir[1]*di_01y
+            A_in_path = E_dir[0]*di_00x + E_dir[1]*di_00y \
+                - (E_dir[0]*di_11x + E_dir[1]*di_11y)
+
+        return ecv_in_path, dipole_in_path, A_in_path
 
     @conditional_njit(type_complex_np)
     def flength(t, y, kpath, dipole_in_path, e_in_path, y0, dk):
@@ -576,7 +669,10 @@ def make_rhs_ode_n_band(sys, electric_field, P):
         return x
 
     freturn = None
-    if gauge == 'length':
+    if system == 'bandstructure' and gauge == 'velocity':
+        print("Using velocity gauge")
+        freturn = fvelocity_custom_bs
+    elif gauge == 'length':
         print("Using length gauge")
         freturn = flength
     elif gauge == 'velocity':
