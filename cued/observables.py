@@ -604,7 +604,7 @@ def make_current_exact_bandstructure_velocity(path, P, sys):
 		return J_exact_E_dir, J_exact_ortho
 	return current_exact_path
 
-def make_current_exact_path_bandstructure(path, P, sys):
+def make_current_exact_bandstructure(path, P, sys):
 
 	Nk1 = P.Nk1
 	n = P.n
