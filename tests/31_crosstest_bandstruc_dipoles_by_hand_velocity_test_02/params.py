@@ -39,3 +39,4 @@ class params:
 	solver                  = '2band'
 	fourier_window_function = 'gaussian'
 	user_out                = False
+	save_latex_pdf		= False
