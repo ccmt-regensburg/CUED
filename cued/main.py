@@ -1142,6 +1142,8 @@ def write_current_emission(T, P, W, sys, Mpi):
 					+ 'frequency_data.dat', freq_output, header=freq_header, delimiter=' '*3, fmt=dat_precision_format)
 
 	if P.save_latex_pdf:
+		if P.parallelize_over_points:
+			print("WARNING: Parallelization over points causes problems when printing the PDF. Usage of other parallelization methods is recommended.")
 		write_and_compile_latex_PDF(T, W, P, sys, Mpi)
 
 
