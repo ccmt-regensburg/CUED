@@ -1,6 +1,7 @@
 # Input parameters for SBE.py
 import numpy as np
 
+MPI_NUM_PROCS = 2
 
 class params:
     # System parameters
@@ -41,4 +42,3 @@ class params:
     split_current           = True
     user_out                = False               # True to get user plotting and progress output
     save_latex_pdf          = False
-

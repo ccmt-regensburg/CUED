@@ -210,8 +210,17 @@ def import_params(filename_params):
     if hasattr(params, 'MPI_NUM_PROCS'):
         current_mpi_num_procs = params.MPI_NUM_PROCS
     else:
-        current_mpi_num_procs = default_mpi_jobs
+        if params.params().gauge == "velocity":
+            num_ranks = params.params().Nk1 * params.params().Nk2
+            os.system("echo '    parallelize_over_points = True' >> "+filename_params)
+        else:
+            num_ranks = params.params().Nk2
 
+        if num_ranks < default_mpi_jobs:
+            current_mpi_num_procs = num_ranks
+        else:
+            current_mpi_num_procs = default_mpi_jobs
+    print(f"MG - Debug: Used {current_mpi_num_procs} ranks for {filename_params}")
     if hasattr(params, 'NUM_TESTED_ORDERS'):
         current_tested_orders = params.NUM_TESTED_ORDERS
     else:
@@ -245,7 +254,7 @@ def create_reference_data(testdir):
     print_latex_pdf_really = check_params_for_print_latex_pdf(print_latex_pdf, params)
 
     if print_latex_pdf_really:
-        os.system("echo '   save_latex_pdf = True' >> "+filename_params)
+        os.system("echo '    save_latex_pdf = True' >> "+filename_params)
 
     assert os.path.isfile(filename_params),  'params.py is missing.'
     assert os.path.isfile(filename_run),     'runscript.py is missing.'
@@ -290,7 +299,10 @@ def tester(testpath, test_type):
                 if dummydir.startswith(cdir[-2:]):
                     refdir = testpath + '/' + dummydir
             if (test_type == 'test'):
-                check_test(testdir, refdir)
+                try:
+                    check_test(testdir, refdir)
+                except UnboundLocalError:
+                    raise FileNotFoundError(f"Directory with number {cdir[-2:]} for crosstest was not found in {testpath}")
 
     assert count > 0, 'There are tests in directory ' + testpath
 
@@ -301,7 +313,7 @@ def parser():
                         help="Relative testpath with respect to top level CUED dir.")
     parser.add_argument("-l", "--latex", type=bool, default=True,
                         help="Latex - PDF compilation.")
-    parser.add_argument("-n", "--mpin", type=int, default=2,
+    parser.add_argument("-n", "--mpin", type=int, default=os.cpu_count()//2,
                         help="Number of mpi jobs")
     parser.add_argument("-t", "--test_type", type=str, default="test",
                         help="Do 'test' or redo 'reference' files.")
