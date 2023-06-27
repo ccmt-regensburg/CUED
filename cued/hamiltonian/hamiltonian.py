@@ -185,6 +185,69 @@ class Dirac(TwoBandHamiltonianSystem):
         super().__init__(ho, hx, hy, hz)
 
 
+class Dirac_Inversion_Broken(TwoBandHamiltonianSystem):
+    """
+    Generic Dirac cone Hamiltonian with inversion broken- differnt velocities for right and left movers.
+    """
+
+    def __init__(self, vx=sp.Symbol('vx'), vy=sp.Symbol('vy'),
+                 m=sp.Symbol('m'), gamma=sp.Symbol('gamma')):
+
+        ho = 0
+        hx = vx  * (1 + gamma*np.sign(self.kx)) *self.kx
+        hy = vy*self.ky
+        hz = m
+
+        super().__init__(ho, hx, hy, hz)
+
+
+class Chern_Insulator(TwoBandHamiltonianSystem):
+    """
+    Generic Massive Dirac Hamiltonian regularized on a lattice.
+    """
+
+    def __init__(self, vx=sp.Symbol('vx'), vy=sp.Symbol('vy'),
+                 m=sp.Symbol('m')):
+
+        ho = 0
+        hx = vx* sp.sin(self.kx)
+        hy = vy* sp.sin(self.ky)
+        hz = 2-m-sp.cos(self.kx)-sp.cos(self.ky)
+
+        super().__init__(ho, hx, hy, hz)
+
+
+class Chern_Insulator_Inversion_Broken(TwoBandHamiltonianSystem):
+    """
+    Massive Dirac Hamiltonian regularized on a lattice with inversion broken -differnt velocities for right and left movers.
+    """
+
+    def __init__(self, vx=sp.Symbol('vx'), vy=sp.Symbol('vy'),
+                 m=sp.Symbol('m'), gamma=sp.Symbol('gamma')):
+
+        ho = 0
+        hx = vx* (1 + gamma*np.sign(self.kx)) * sp.sin(self.kx)
+        hy = vy* sp.sin(self.ky)
+        hz = 2-m-sp.cos(self.kx)-sp.cos(self.ky)
+
+        super().__init__(ho, hx, hy, hz)
+
+class Tilted_Dirac(TwoBandHamiltonianSystem):
+    """
+    Generic Dirac cone Hamiltonian
+    """
+
+    def __init__(self, vx=sp.Symbol('vx'), vy=sp.Symbol('vy'),
+                 m=sp.Symbol('m'), gamma=sp.Symbol('gamma')):
+
+        ho = gamma*self.kx
+        hx = vx*self.kx
+        hy = vy*self.ky
+        hz = m
+
+        super().__init__(ho, hx, hy, hz)        
+
+
 class Test(TwoBandHamiltonianSystem):
     def __init__(self, A=sp.Symbol('A', real=True),
                  a=sp.Symbol('a', real=True),
