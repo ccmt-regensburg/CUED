@@ -16,4 +16,4 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Run test script
-      run:  python3 tests/test_script.py --path tests --latex True --mpin 6
+      run:  conda activate cloned_special && python3 tests/test_script.py --path tests --latex True --mpin 2
