@@ -43,6 +43,8 @@ def make_rhs_ode_2_band(sys, electric_field, P):
     gauge = P.gauge
     do_fock = P.do_fock
     Nk2 = P.Nk2
+    split_paths = P.split_paths
+    split_order = P.split_order
 
     if sys.system == 'ana':
 
@@ -264,11 +266,20 @@ def make_rhs_ode_2_band(sys, electric_field, P):
             if do_fock:
                 for kprime_y_idx in range(Nk2):
                     for kprime_x_idx in range(Nk_path):
-
-                    kx_idx_old = k 
-                    kprime_x_idx_old = kprime_x_idx
-                    ky_idx_old = Nk2_idx
-                    kprime_y_idx_old = kprime_y_idx
+                        if split_paths:
+                            for o in range(split_order):
+                                if Nk2_idx % split_order == o:
+                                    kx_idx_old = k + o*Nk_path
+                                    ky_idx_old = int( (Nk2_idx - o) / split_order )
+                                if kprime_y_idx % split_order == o:
+                                    kprime_x_idx_old = kprime_x_idx + o*Nk_path
+                                    kprime_y_idx_old = int( (kprime_y_idx - o) / split_order )
+                            
+                        else:
+                            kx_idx_old = k 
+                            kprime_x_idx_old = kprime_x_idx
+                            ky_idx_old = Nk2_idx
+                            kprime_y_idx_old = kprime_y_idx
 
                         dist_kx_idx = int(np.abs(kx_idx_old - kprime_x_idx_old))
                         dist_ky_idx = int(np.abs(ky_idx_old - kprime_y_idx_old))

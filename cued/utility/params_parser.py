@@ -17,6 +17,8 @@ class ParamsParser():
     def __combine_parameters(self, UP):
 
         self.parallelize_over_points = None
+        self.split_paths = None
+        self.split_order = 1
 
         # build dictionary of all parameters, exclude t_pdf_densmat, points_to_path and parameters of Gabor transformation
         excl_set = {'__weakref__', '__doc__', '__dict__', '__module__',"t_pdf_densmat","parallelize_over_points",'gabor_gaussian_center','gabor_window_width'}
@@ -25,6 +27,8 @@ class ParamsParser():
         self.t_pdf_densmat = np.array([-100, 0, 50, 100])*CoFa.fs_to_au   # Time points for printing density matrix
         if hasattr(UP, 'parallelize_over_points'):
             self.parallelize_over_points = UP.parallelize_over_points
+        if hasattr(UP, 'split_paths'):
+            self.split_paths = UP.split_paths
         if hasattr(UP, 't_pdf_densmat'):
             self.t_pdf_densmat = np.array(UP.t_pdf_densmat)*CoFa.fs_to_au # Time points for printing density matrix
         if hasattr(UP,'gabor_gaussian_center'):
@@ -312,6 +316,12 @@ class ParamsParser():
         self.do_fock = False
         if 'do_fock' in UP:
             self.do_fock = UP['do_fock']
+        
+        if self.do_fock = True  #split_paths = True and parallelize_over_points = False as default for Fock calculations
+            if not 'split_paths' in UP:
+                self.split_paths = True
+            if not 'parallelize_over_points' in UP:
+                self.parallelize_over_points = False
 
 
     def __check_user_params_for_wrong_arguments(self, UP):
@@ -338,6 +348,10 @@ class ParamsParser():
         that the code would not work or would use features that are
         not implemented yet
         """
+
+        if self.split_paths == True:
+            if self.parallelize_over_points = True:
+                sys.exit('Paths can not be split if point parallelization is enabled')
 
         if self.do_fock == True:
             if self.solver_method != 'rk4':

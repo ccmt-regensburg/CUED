@@ -46,7 +46,7 @@ def sbe_solver(sys, params):
 	#  - Number of tasks % Nk2 = 0
 	#  - Number of params % (number of tasks / Nk2 ) == 0
 	#  - Number of tasks <= Nk2 * number of params
-	if Mpi.size > params.Nk2 and Mpi.size > P.number_of_combinations and not P.parallelize_over_points:
+	if Mpi.size > params.Nk2 and Mpi.size > P.number_of_combinations and not (P.parallelize_over_points or P.split_paths) :
 		if Mpi.size % params.Nk2 == 0 and P.number_of_combinations % (Mpi.size/params.Nk2) == 0 and Mpi.size <= P.number_of_combinations*params.Nk2:
 			if Mpi.rank == 0:
 				print("Parallelization over paths and parameters\n Warning: You need to know what you are doing.")
@@ -68,7 +68,7 @@ def sbe_solver(sys, params):
 			system.exit()
 
 	# Parallelize over parameters if there are more parameter combinations than paths
-	elif (P.number_of_combinations >= params.Nk2 or P.path_list) and not P.parallelize_over_points:
+	elif (P.number_of_combinations >= params.Nk2 or P.path_list) and not (P.parallelize_over_points or P.split_paths):
 		Mpi.mod = None
 		Mpi.local_params_idx_list = Mpi.get_local_idx(P.number_of_combinations)
 		P.path_parallelization = False
@@ -102,6 +102,14 @@ def make_subcommunicators(Mpi, P):
 
 	elif P.parallelize_over_points:	#works only for fixed Nk1 and Nk2
 		Mpi.local_Nk2_idx_list = Mpi.get_local_idx(P.Nk2*P.Nk1)
+		Mpi.subcomm = Mpi.comm.Split(0, Mpi.rank)
+
+	elif P.split_paths:
+		if Mpi.size % P.Nk2 != 0:
+			system.exit('Paths can only be split if the number of ranks is an integer multiple of Nk2')
+		P.split_order = int( Mpi.size / P.Nk2 )
+
+		Mpi.local_Nk2_idx_list = Mpi.get_local_idx(P.split_order*P.Nk2)
 		Mpi.subcomm = Mpi.comm.Split(0, Mpi.rank)
 
 	elif P.path_parallelization:
@@ -317,6 +325,27 @@ def make_BZ(P, Mpi):
 				P.paths[j + P.Nk1_buf*i, 0, 1] = paths_buf[i, j, 1]
 		P.Nk1 = 1
 		P.Nk2 = P.Nk1_buf * P.Nk2_buf
+
+	elif P.split_paths:
+		if P.gauge != 'velocity':
+			system.exit('Paths can only be split in velocity gauge')
+		if P.Nk1%P.split_order != 0:
+			system.exit('Paths can only be split if Nk1 is divisible by Mpi.size/Nk2')
+		P.Nk1_buf = np.copy(P.Nk1)
+		P.Nk2_buf = np.copy(P.Nk2)
+		paths_buf = np.copy(P.paths)
+
+		P.Nk1 = int(P.Nk1_buf/P.split_order)
+		P.Nk2 = int(P.Nk2_buf*P.split_order)
+		P.paths = np.empty((P.Nk2, P.Nk1, 2))
+
+		for kx_idx_old in range(P.Nk1_buf):
+			for ky_idx_old in range(P.Nk2_buf):
+				for o in range(P.split_order):
+					if kx_idx_old >= o * P.Nk1 and kx_idx_old < (o+1) * P.Nk1:
+
+						P.paths[P.split_order * ky_idx_old + o, kx_idx_old - o * P.Nk1 , 0] = paths_buf[ky_idx_old, kx_idx_old, 0]
+						P.paths[P.split_order * ky_idx_old + o, kx_idx_old - o * P.Nk1 , 1] = paths_buf[ky_idx_old, kx_idx_old, 1]
 
 def make_rhs_ode(P, T, sys):
 
