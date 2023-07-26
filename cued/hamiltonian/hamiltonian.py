@@ -99,7 +99,7 @@ class BiTe(TwoBandHamiltonianSystem):
                  C2=sp.Symbol('C2', real=True),
                  A=sp.Symbol('A', real=True),
                  R=sp.Symbol('R', real=True),
-                 kcut=0, mz=0):
+                 kcut=0, mz=0, interaction_strength=1):
 
         ho = C0 + C2*(self.kx**2 + self.ky**2)
         hx = A*self.ky
@@ -111,7 +111,7 @@ class BiTe(TwoBandHamiltonianSystem):
             cutfactor = 1/(1+(ratio))
             hz *= cutfactor
 
-        super().__init__(ho, hx, hy, hz)
+        super().__init__(ho, hx, hy, hz, interaction_strength=interaction_strength)
 
 
 class BiTePeriodic(TwoBandHamiltonianSystem):

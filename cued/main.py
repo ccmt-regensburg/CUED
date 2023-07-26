@@ -144,7 +144,12 @@ def run_sbe(sys, P, Mpi):
 	start_time = time.perf_counter()
 
 	# Make Brillouin zone (saved in P)
-	make_BZ(P)
+	make_BZ(P, Mpi)
+
+	# Make sure that for correlated calculations, we parallelize over every path:
+	if P.do_fock:
+		if Mpi.size != P.Nk2:
+			system.exit('Fock calculations need parallel execution of every path (Mpi.size=Nk2)')
 
 	# USER OUTPUT
 	###########################################################################
@@ -161,6 +166,17 @@ def run_sbe(sys, P, Mpi):
 	# Make rhs of ode for 2band or nband solver; returns 0 for series expansion
 	sys.eigensystem_dipole_path(P.paths[0], P) # change structure, such that hfjit gets calculated first
 	rhs_ode, solver = make_rhs_ode(P, T, sys)
+
+	# create array of initial occupation
+	rho_0 = np.zeros((P.Nk1, P.Nk2, P.n, P.n), dtype=P.type_complex_np)
+
+	T.densmat_container_fock = np.zeros((P.Nk1, P.Nk2, P.n, P.n), dtype=P.type_complex_np)
+
+	for Nk2_idx in range(P.Nk2):
+		path = P.paths[Nk2_idx]
+		buf_, rho_0[:, Nk2_idx, :, :] = initial_condition(P, sys.e_in_path)
+
+	T.densmat_container_fock = rho_0
 
 	###########################################################################
 	# SOLVING
@@ -181,14 +197,14 @@ def run_sbe(sys, P, Mpi):
 
 		# Initialize the values of of each k point vector
 
-		y0 = initial_condition(P, sys.e_in_path)
+		y0, _buf = initial_condition(P, sys.e_in_path)
 		y0 = np.append(y0, [0.0])
 
 		# Set the initual values and function parameters for the current kpath
 		if P.dm_dynamics_method in ('sbe', 'semiclassics'):
 			if P.solver_method in ('bdf', 'adams'):
 				solver.set_initial_value(y0, P.t0)\
-				    .set_f_params(path, sys.dipole_in_path, sys.e_in_path, y0, P.dk)
+				    .set_f_params(path, sys.dipole_in_path, sys.e_in_path, y0, P.dk, T.densmat_container_fock, Nk2_idx)
 			elif P.solver_method == 'rk4':
 				T.solution_y_vec[:] = y0
 		elif P.dm_dynamics_method in ('series_expansion', 'EEA'):
@@ -197,6 +213,7 @@ def run_sbe(sys, P, Mpi):
 		# Propagate through time
 		# Index of current integration time step
 		ti = 0
+
 		solver_successful = True
 
 		while solver_successful and ti < P.Nt:
@@ -218,12 +235,17 @@ def run_sbe(sys, P, Mpi):
 
 				elif P.solver_method == 'rk4':
 					T.solution_y_vec = rk_integrate(T.t[ti], T.solution_y_vec, path, sys,
-					                                y0, P.dk, P.dt, rhs_ode)
+					                                y0, P.dk, P.dt, rhs_ode, T.densmat_container_fock, Nk2_idx)
 
 			elif P.dm_dynamics_method in ('series_expansion', 'EEA'):
-				T.solution_y_vec[:-1], T.time_integral = von_neumann_series(T.t[ti], T.A_field[ti], T.E_field[ti], path, sys, y0[:-1], T.time_integral, P, ti)
+				T.solution_y_vec[:-1], T.time_integral = von_neumann_series(T.t[ti], T.A_field[ti], T.E_field[ti], path, sys, y0[:-1], T.time_integral, P)
 
-			# Increment time counter
+
+
+			if P.do_fock:
+				mpi_sum_density_matrix(T, P, Mpi, Nk2_idx, ti)
+
+			# increment time counter
 			ti += 1
 
 	# in case of MPI-parallel execution: mpi sum
@@ -264,7 +286,7 @@ def run_sbe(sys, P, Mpi):
 		         t_pdf_densmat=T.t_pdf_densmat, A_field=T.A_field)
 
 
-def make_BZ(P):
+def make_BZ(P, Mpi):
 		# Form Brillouin Zone
 	if P.BZ_type == 'hexagon':
 		if P.align == 'K':
@@ -284,17 +306,17 @@ def make_BZ(P):
 	if P.parallelize_over_points:
 		if P.gauge != 'velocity':
 			system.exit('Parallelization over points can only be used with the velocity gauge')
-		Nk1_buf = np.copy(P.Nk1)
-		Nk2_buf = np.copy(P.Nk2)
+		P.Nk1_buf = np.copy(P.Nk1)
+		P.Nk2_buf = np.copy(P.Nk2)
 		paths_buf = np.copy(P.paths)
 
-		P.paths = np.empty((Nk1_buf*Nk2_buf, 1, 2))
-		for i in range(Nk2_buf):
-			for j in range(Nk1_buf):
-				P.paths[Nk1_buf*i + j, 0, 0] = paths_buf[i, j, 0]
-				P.paths[Nk1_buf*i + j, 0, 1] = paths_buf[i, j, 1]
+		P.paths = np.empty((P.Nk1_buf*P.Nk2_buf, 1, 2))
+		for j in range(P.Nk1_buf):
+			for i in range(P.Nk2_buf):
+				P.paths[j + P.Nk1_buf*i, 0, 0] = paths_buf[i, j, 0]
+				P.paths[j + P.Nk1_buf*i, 0, 1] = paths_buf[i, j, 1]
 		P.Nk1 = 1
-		P.Nk2 = Nk1_buf * Nk2_buf
+		P.Nk2 = P.Nk1_buf * P.Nk2_buf
 
 def make_rhs_ode(P, T, sys):
 
@@ -443,12 +465,12 @@ def calculate_currents(Nk2_idx, ti, current_exact_path, polarization_inter_path,
 		T.j_intra_ortho[ti] += j_intra_ortho_buf
 		T.j_anom_ortho[ti, :] += j_anom_ortho_buf
 
-def rk_integrate(t, y, kpath, sys, y0, dk, dt, rhs_ode):
+def rk_integrate(t, y, kpath, sys, y0, dk, dt, rhs_ode, rho, Nk2_idx):
 
-	k1 = rhs_ode(t,          y,          kpath, sys.dipole_in_path, sys.e_in_path, y0, dk)
-	k2 = rhs_ode(t + 0.5*dt, y + 0.5*k1, kpath, sys.dipole_in_path, sys.e_in_path, y0, dk)
-	k3 = rhs_ode(t + 0.5*dt, y + 0.5*k2, kpath, sys.dipole_in_path, sys.e_in_path, y0, dk)
-	k4 = rhs_ode(t +     dt, y +     k3, kpath, sys.dipole_in_path, sys.e_in_path, y0, dk)
+	k1 = rhs_ode(t,          y,          kpath, sys.dipole_in_path, sys.e_in_path, y0, dk, rho, Nk2_idx)
+	k2 = rhs_ode(t + 0.5*dt, y + 0.5*k1, kpath, sys.dipole_in_path, sys.e_in_path, y0, dk, rho, Nk2_idx)
+	k3 = rhs_ode(t + 0.5*dt, y + 0.5*k2, kpath, sys.dipole_in_path, sys.e_in_path, y0, dk, rho, Nk2_idx)
+	k4 = rhs_ode(t +     dt, y +     k3, kpath, sys.dipole_in_path, sys.e_in_path, y0, dk, rho, Nk2_idx)
 
 	ynew = y + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
 
@@ -642,7 +664,7 @@ def initial_condition(P, e_in_path):
 
 	for k in range(num_kpoints):
 		initial_condition[k, :, :] = np.diag(distrib_bands[k, :])
-	return initial_condition.flatten('C')
+	return initial_condition.flatten('C'), initial_condition
 
 
 def diff(x, y):
@@ -707,6 +729,15 @@ def parzen(t):
 	parzen[n_t//2]        = 1.0
 
 	return parzen
+
+def mpi_sum_density_matrix(T, P, Mpi, Nk2_idx, ti):
+
+	T.densmat_container_fock = np.zeros((P.Nk1, P.Nk2, P.n, P.n), dtype=P.type_complex_np)
+
+	local_array = np.zeros((P.Nk1, P.Nk2, P.n, P.n), dtype=P.type_complex_np)
+	local_array[:, Nk2_idx, :, :] = T.solution
+
+	T.densmat_container_fock = Mpi.sync_and_sum(local_array)
 
 def mpi_sum_currents(T, P, Mpi):
 

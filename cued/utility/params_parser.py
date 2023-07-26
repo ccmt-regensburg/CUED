@@ -104,6 +104,7 @@ class ParamsParser():
 
         # Check if user params has any ill-defined parameters
         self.__check_user_params_for_wrong_arguments(current_parameters)
+        self.__check_for_conflicting_parameter_cominations(current_parameters)
         self.__append_derived_parameters(current_parameters)
 
 
@@ -308,6 +309,10 @@ class ParamsParser():
             self.user_defined_header = UP['user_defined_header']
             self.header = UP['user_defined_header'] + "_" + self.header
 
+        self.do_fock = False
+        if 'do_fock' in UP:
+            self.do_fock = UP['do_fock']
+
 
     def __check_user_params_for_wrong_arguments(self, UP):
         """
@@ -326,6 +331,19 @@ class ParamsParser():
             print("Please delete them from params.py and rerun CUED. CUED will stop now.")
             print()
             sys.exit()
+
+    def __check_for_conflicting_parameter_cominations(self, UP):
+        """
+        Give a warning and halt code if parameters are chosen such,
+        that the code would not work or would use features that are
+        not implemented yet
+        """
+
+        if self.do_fock == True:
+            if self.solver_method != 'rk4':
+                sys.exit('Fock calculations only run with unge-Kutta 4 ODE solver.')
+            if self.solver != '2band':
+                sys.exit('Fock calculations are only implemented for 2 band solver so far.')
 
     def __append_derived_parameters(self, UP):
         ##################################################

@@ -3,7 +3,7 @@ import sympy as sp
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # NOQA
 
-from cued.utility import list_to_njit_functions, matrix_to_njit_functions
+from cued.utility import list_to_njit_functions, matrix_to_njit_functions, to_njit_function
 from cued.utility import evaluate_njit_matrix
 plt.rcParams['figure.figsize'] = [12, 15]
 plt.rcParams['text.usetex'] = True
@@ -22,7 +22,7 @@ class TwoBandHamiltonianSystem():
     m_zee_y = sp.Symbol('m_zee_y', real=True)
     m_zee_z = sp.Symbol('m_zee_z', real=True)
 
-    def __init__(self, ho, hx, hy, hz, offdiagonal_k=False, test=False, kdotp=None):
+    def __init__(self, ho, hx, hy, hz, offdiagonal_k=False, test=False, kdotp=None, interaction_strength=1):
         """
         Generates the symbolic Hamiltonian, wave functions and
         energies.
@@ -95,6 +95,11 @@ class TwoBandHamiltonianSystem():
         self.dipole_derivative = None
         self.dipole_derivative_jit = None
         self.dipole_derivative_in_path = None
+
+        self.v_k_kprime = None
+
+        self.coulomb_1d = 2 * ( np.euler_gamma + sp.log(  self.kx  ) ) * interaction_strength
+        self.coulomb_2d = - 2 * np.pi / self.kx * interaction_strength
 
     def __hamiltonian(self):
         return self.ho*self.so + self.hx*self.sx + self.hy*self.sy \
@@ -227,6 +232,11 @@ class TwoBandHamiltonianSystem():
 
         self.eigensystem(P)
 
+        if P.num_dimensions == 1:
+            self.coulomb_matrix_jit = to_njit_function(self.coulomb_1d, self.hsymbols, dtype=P.type_complex_np)
+        else:
+            self.coulomb_matrix_jit = to_njit_function(self.coulomb_2d, self.hsymbols, dtype=P.type_complex_np)
+
         if self.kdotp is None:
             self.Ax, self.Ay = self.__fields(self.U, self.U_h)
         else:
@@ -250,6 +260,38 @@ class TwoBandHamiltonianSystem():
                 + P.E_dir[1] * P.E_dir[1] * sp.diff(self.Ay, self.ky)
             self.dipole_derivative_jit = matrix_to_njit_functions(self.dipole_derivative, self.hsymbols, dtype=P.type_complex_np)
 
+        if P.do_fock:
+            self.v_k_kprime = np.zeros((P.Nk1, P.Nk2), dtype=P.type_real_np)
+            if P.parallelize_over_points or P.split_paths:
+                dkx = P.length_BZ_E_dir/P.Nk1_buf
+                dky = P.length_BZ_ortho/P.Nk2_buf
+            else:
+                dkx = P.length_BZ_E_dir/P.Nk1
+                if P.num_dimensions == 1:
+                    dky = 0
+                else:
+                    dky = P.length_BZ_ortho/P.Nk2
+
+            if P.split_paths:
+                self.v_k_kprime = np.zeros((P.Nk1_buf, P.Nk2_buf), dtype=P.type_real_np)
+                for i in range(P.Nk1_buf):
+                    for j in range(P.Nk2_buf):
+                        dist_k = np.sqrt((i*dkx)**2 + (j*dky)**2)
+                        if not ( i == 0 and j == 0):
+                            self.v_k_kprime[i, j] = P.kweight * self.coulomb_matrix_jit(kx=dist_k, ky=0)
+                                                        
+            else:
+                for i in range(P.Nk1):
+                    for j in range(P.Nk2):
+                        if P.parallelize_over_points:
+                            kx_idx = j%P.Nk1_buf
+                            ky_idx = j//P.Nk1_buf
+                            dist_k = np.sqrt((kx_idx*dkx)**2 + (ky_idx*dky)**2)
+                        else:
+                            dist_k = np.sqrt((i*dkx)**2 + (j*dky)**2)
+                        if not ( i == 0 and j == 0 ):
+                            self.v_k_kprime[i, j] = P.kweight * self.coulomb_matrix_jit(kx=dist_k, ky=0)
+                        
     def eigensystem(self, P):
         """
         Generic form of Hamiltonian, energies and wave functions in a two band

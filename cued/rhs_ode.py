@@ -41,6 +41,8 @@ def make_rhs_ode_2_band(sys, electric_field, P):
     dm_dynamics_method = P.dm_dynamics_method
     E_dir = P.E_dir
     gauge = P.gauge
+    do_fock = P.do_fock
+    Nk2 = P.Nk2
 
     if sys.system == 'ana':
 
@@ -65,8 +67,11 @@ def make_rhs_ode_2_band(sys, electric_field, P):
         di_01yf = sys.Ayfjit[0][1]
         di_11yf = sys.Ayfjit[1][1]
 
+        # Coulomb-interaction matrix
+        v_k_kprime = sys.v_k_kprime   
+      
     @conditional_njit(P.type_complex_np)
-    def flength(t, y, kpath, dipole_in_path, e_in_path, y0, dk):
+    def flength(t, y, kpath, dipole_in_path, e_in_path, y0, dk, rho, Nk2_idx):
         """
         Length gauge doesn't need recalculation of energies and dipoles.
         The length gauge is evaluated on a constant pre-defined k-grid.
@@ -165,7 +170,27 @@ def make_rhs_ode_2_band(sys, electric_field, P):
                 x[i+3] += D*(- y[right4+3]/280 + 4/105*y[right3+3] - 1/5*y[right2+3] + 4/5*y[right+3] \
                              + y[left4+3] /280 - 4/105*y[left3+3]  + 1/5*y[left2+3]  - 4/5*y[left+3] )
 
-            x[i+2] = x[i+1].conjugate()
+            # additional fock terms
+            if do_fock:
+                for kprime_y_idx in range(Nk2):
+                    for kprime_x_idx in range(Nk_path):
+
+                        kx_idx_old = k 
+                        kprime_x_idx_old = kprime_x_idx
+                        ky_idx_old = Nk2_idx
+                        kprime_y_idx_old = kprime_y_idx
+
+                        dist_kx_idx = int(np.abs(kx_idx_old - kprime_x_idx_old))
+                        dist_ky_idx = int(np.abs(ky_idx_old - kprime_y_idx_old))
+
+                        if dist_kx_idx != 0 or dist_ky_idx != 0: 
+
+                            x[i]   += 2 * v_k_kprime[dist_kx_idx, dist_ky_idx] * ( y[i+2] * rho[kprime_x_idx, kprime_y_idx, 0, 1] ).imag
+
+                            x[i+1] += 1j*v_k_kprime[dist_kx_idx, dist_ky_idx] * ( y[i+1] * (rho[kprime_x_idx, kprime_y_idx, 0, 0] - 1 - rho[kprime_x_idx, kprime_y_idx, 1, 1] ) \
+                                                                    - ( y[i] -1 - y[i+3] ) * rho[kprime_x_idx, kprime_y_idx, 0, 1] )
+
+                            x[i+3] += - 2 * v_k_kprime[dist_kx_idx, dist_ky_idx] * ( y[i+2] * rho[kprime_x_idx, kprime_y_idx, 0, 1] ).imag
 
         x[-1] = -electric_f
         return x
@@ -198,7 +223,7 @@ def make_rhs_ode_2_band(sys, electric_field, P):
         return ecv_in_path, dipole_in_path, A_in_path
 
     @conditional_njit(P.type_complex_np)
-    def fvelocity(t, y, kpath, dipole_in_path, e_in_path, y0, dk):
+    def fvelocity(t, y, kpath, dipole_in_path, e_in_path, y0, dk, rho, Nk2_idx):
         """
         Velocity gauge needs a recalculation of energies and dipoles as k
         is shifted according to the vector potential A
@@ -212,6 +237,7 @@ def make_rhs_ode_2_band(sys, electric_field, P):
 
         # Update the solution vector
         Nk_path = kpath.shape[0]
+        interaction_term = np.zeros((4*Nk_path))
         for k in range(Nk_path):
             i = 4*k
             # Energy term eband(i,k) the energy of band i at point k
@@ -232,11 +258,33 @@ def make_rhs_ode_2_band(sys, electric_field, P):
 
             x[i+1] = (1j*ecv - gamma2 + 1j*wr_d_diag)*y[i+1] - 1j*wr*(y[i]-y[i+3])
 
-            x[i+2] = x[i+1].conjugate()
-
             x[i+3] = -2*(y[i+1]*wr_c).imag - gamma1*(y[i+3]-y0[i+3])
 
-        x[-1] = -electric_f
+            # additional fock terms
+            if do_fock:
+                for kprime_y_idx in range(Nk2):
+                    for kprime_x_idx in range(Nk_path):
+
+                    kx_idx_old = k 
+                    kprime_x_idx_old = kprime_x_idx
+                    ky_idx_old = Nk2_idx
+                    kprime_y_idx_old = kprime_y_idx
+
+                        dist_kx_idx = int(np.abs(kx_idx_old - kprime_x_idx_old))
+                        dist_ky_idx = int(np.abs(ky_idx_old - kprime_y_idx_old))
+
+                        if dist_kx_idx != 0 or dist_ky_idx != 0: 
+
+                            x[i]   += 2 * v_k_kprime[dist_kx_idx, dist_ky_idx] * ( y[i+2] * rho[kprime_x_idx, kprime_y_idx, 0, 1] ).imag
+
+                            x[i+1] += 1j*v_k_kprime[dist_kx_idx, dist_ky_idx] * ( y[i+1] * (rho[kprime_x_idx, kprime_y_idx, 0, 0] - 1 - rho[kprime_x_idx, kprime_y_idx, 1, 1] ) \
+                                                                    - ( y[i] -1 - y[i+3] ) * rho[kprime_x_idx, kprime_y_idx, 0, 1] )
+
+                            x[i+3] += - 2 * v_k_kprime[dist_kx_idx, dist_ky_idx] * ( y[i+2] * rho[kprime_x_idx, kprime_y_idx, 0, 1] ).imag
+
+            x[i+2] = x[i+1].conjugate()
+
+        x[-1] = - electric_f
 
         return x
 
@@ -252,8 +300,8 @@ def make_rhs_ode_2_band(sys, electric_field, P):
 
 
     # The python solver does not directly accept jitted functions so we wrap it
-    def f(t, y, kpath, dipole_in_path, e_in_path, y0, dk):
-        return freturn(t, y, kpath, dipole_in_path, e_in_path, y0, dk)
+    def f(t, y, kpath, dipole_in_path, e_in_path, y0, dk, rho, Nk2_idx):
+        return freturn(t, y, kpath, dipole_in_path, e_in_path, y0, dk, rho, Nk2_idx)
 
     return f
 
