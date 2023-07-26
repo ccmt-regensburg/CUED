@@ -211,8 +211,9 @@ def import_params(filename_params):
         current_mpi_num_procs = params.MPI_NUM_PROCS
     else:
         if params.params().gauge == "velocity":
-            num_ranks = params.params().Nk1 * params.params().Nk2
-            os.system("echo '    parallelize_over_points = True' >> "+filename_params)
+            if params.params().split_paths == False:
+                num_ranks = params.params().Nk1 * params.params().Nk2
+                os.system("echo '    parallelize_over_points = True' >> "+filename_params)
         else:
             num_ranks = params.params().Nk2
 

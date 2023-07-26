@@ -384,7 +384,7 @@ def make_rhs_ode_n_band(sys, electric_field, P):
     dm_dynamics_method = P.dm_dynamics_method
 
     @conditional_njit(type_complex_np)
-    def fvelocity_custom_bs(t, y, kpath, dipole_in_path, e_in_path, y0, dk):
+    def fvelocity_custom_bs(t, y, kpath, dipole_in_path, e_in_path, y0, dk, rho, Nk2_idx):
         """
         Velocity gauge needs a recalculation of energies and dipoles as k
         is shifted according to the vector potential A
@@ -455,7 +455,7 @@ def make_rhs_ode_n_band(sys, electric_field, P):
         return ecv_in_path, dipole_in_path, A_in_path
 
     @conditional_njit(type_complex_np)
-    def flength(t, y, kpath, dipole_in_path, e_in_path, y0, dk):
+    def flength(t, y, kpath, dipole_in_path, e_in_path, y0, dk, rho, Nk2_idx):
         """
             function that multiplies the block-structure of the matrices of the RHS
             of the SBE with the solution vector
@@ -669,7 +669,7 @@ def make_rhs_ode_n_band(sys, electric_field, P):
         return x
 
     #@conditional_njit(type_complex_np)
-    def fvelocity(t, y, kpath, dipole_in_path, e_in_path, y0, dk):
+    def fvelocity(t, y, kpath, dipole_in_path, e_in_path, y0, dk, rho, Nk2_idx):
         """
             function that multiplies the block-structure of the matrices of the RHS
             of the SBE with the solution vector
@@ -740,7 +740,7 @@ def make_rhs_ode_n_band(sys, electric_field, P):
     else:
         raise AttributeError("You have to either assign velocity or length gauge")
 
-    def f(t, y, kpath, dipole_in_path, e_in_path, y0, dk):
-        return freturn(t, y, kpath, dipole_in_path, e_in_path, y0, dk)
+    def f(t, y, kpath, dipole_in_path, e_in_path, y0, dk, rho, Nk2_idx):
+        return freturn(t, y, kpath, dipole_in_path, e_in_path, y0, dk, rho, Nk2_idx)
 
     return f

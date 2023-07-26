@@ -317,7 +317,7 @@ class ParamsParser():
         if 'do_fock' in UP:
             self.do_fock = UP['do_fock']
         
-        if self.do_fock = True  #split_paths = True and parallelize_over_points = False as default for Fock calculations
+        if self.do_fock == True:  # split_paths = True and parallelize_over_points = False as default for Fock calculations
             if not 'split_paths' in UP:
                 self.split_paths = True
             if not 'parallelize_over_points' in UP:
@@ -350,7 +350,7 @@ class ParamsParser():
         """
 
         if self.split_paths == True:
-            if self.parallelize_over_points = True:
+            if self.parallelize_over_points == True:
                 sys.exit('Paths can not be split if point parallelization is enabled')
 
         if self.do_fock == True:
