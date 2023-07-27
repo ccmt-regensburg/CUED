@@ -43,4 +43,4 @@ class params:
     split_current           = True
     split_paths             = True
     user_out                = False               # True to get user plotting and progress output
-    save_latex_pdf          = True
+    save_latex_pdf          = False

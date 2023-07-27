@@ -42,6 +42,6 @@ class params:
     gauge                   = 'length'           # Gauge of the system
     solver                  = '2band'
     fourier_window_function = 'gaussian'
-    user_out                = True
+    user_out                = False
     save_latex_pdf          = False
     path_parallelization    = True

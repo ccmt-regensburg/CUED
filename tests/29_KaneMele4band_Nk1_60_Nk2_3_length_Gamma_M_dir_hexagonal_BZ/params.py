@@ -45,7 +45,7 @@ class params:
     solver                  = 'nband'
     solver_method           = 'bdf'
     fourier_window_function = 'gaussian'
-    user_out                = True
+    user_out                = False
     save_latex_pdf          = False
     path_parallelization    = True
     

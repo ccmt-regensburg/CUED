@@ -45,8 +45,5 @@ class params:
     solver                  = '2band'
     fourier_window_function = 'gaussian'
     user_out                = False
-    do_fock = True
-    save_latex_pdf = True
-    save_latex_pdf = True
-    save_latex_pdf = True
-    save_latex_pdf = True
+    do_fock                 = True
+    save_latex_pdf          = False
