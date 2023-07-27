@@ -70,8 +70,8 @@ def make_rhs_ode_2_band(sys, electric_field, P):
         di_11yf = sys.Ayfjit[1][1]
 
         # Coulomb-interaction matrix
-        v_k_kprime = sys.v_k_kprime   
-      
+        v_k_kprime = sys.v_k_kprime
+
     @conditional_njit(P.type_complex_np)
     def flength(t, y, kpath, dipole_in_path, e_in_path, y0, dk, rho, Nk2_idx):
         """
@@ -177,7 +177,7 @@ def make_rhs_ode_2_band(sys, electric_field, P):
                 for kprime_y_idx in range(Nk2):
                     for kprime_x_idx in range(Nk_path):
 
-                        kx_idx_old = k 
+                        kx_idx_old = k
                         kprime_x_idx_old = kprime_x_idx
                         ky_idx_old = Nk2_idx
                         kprime_y_idx_old = kprime_y_idx
@@ -185,7 +185,7 @@ def make_rhs_ode_2_band(sys, electric_field, P):
                         dist_kx_idx = int(np.abs(kx_idx_old - kprime_x_idx_old))
                         dist_ky_idx = int(np.abs(ky_idx_old - kprime_y_idx_old))
 
-                        if dist_kx_idx != 0 or dist_ky_idx != 0: 
+                        if dist_kx_idx != 0 or dist_ky_idx != 0:
 
                             x[i]   += 2 * v_k_kprime[dist_kx_idx, dist_ky_idx] * ( y[i+2] * rho[kprime_x_idx, kprime_y_idx, 0, 1] ).imag
 
@@ -193,6 +193,8 @@ def make_rhs_ode_2_band(sys, electric_field, P):
                                                                     - ( y[i] -1 - y[i+3] ) * rho[kprime_x_idx, kprime_y_idx, 0, 1] )
 
                             x[i+3] += - 2 * v_k_kprime[dist_kx_idx, dist_ky_idx] * ( y[i+2] * rho[kprime_x_idx, kprime_y_idx, 0, 1] ).imag
+
+            x[i+2] = x[i+1].conjugate()
 
         x[-1] = -electric_f
         return x
@@ -274,9 +276,9 @@ def make_rhs_ode_2_band(sys, electric_field, P):
                                 if kprime_y_idx % split_order == o:
                                     kprime_x_idx_old = kprime_x_idx + o*Nk_path
                                     kprime_y_idx_old = int( (kprime_y_idx - o) / split_order )
-                            
+
                         else:
-                            kx_idx_old = k 
+                            kx_idx_old = k
                             kprime_x_idx_old = kprime_x_idx
                             ky_idx_old = Nk2_idx
                             kprime_y_idx_old = kprime_y_idx
@@ -284,7 +286,7 @@ def make_rhs_ode_2_band(sys, electric_field, P):
                         dist_kx_idx = int(np.abs(kx_idx_old - kprime_x_idx_old))
                         dist_ky_idx = int(np.abs(ky_idx_old - kprime_y_idx_old))
 
-                        if dist_kx_idx != 0 or dist_ky_idx != 0: 
+                        if dist_kx_idx != 0 or dist_ky_idx != 0:
 
                             x[i]   += 2 * v_k_kprime[dist_kx_idx, dist_ky_idx] * ( y[i+2] * rho[kprime_x_idx, kprime_y_idx, 0, 1] ).imag
 
@@ -377,7 +379,7 @@ def make_rhs_ode_n_band(sys, electric_field, P):
         # ky-parameter
         di_00yf = sys.dipole_yfjit[0][0]
         di_01yf = sys.dipole_yfjit[0][1]
-        di_11yf = sys.dipole_yfjit[1][1]       
+        di_11yf = sys.dipole_yfjit[1][1]
 
     epsilon = P.epsilon
     gidx = P.gidx
@@ -424,7 +426,7 @@ def make_rhs_ode_n_band(sys, electric_field, P):
             x[i+3] = -2*(y[i+1]*wr_c).imag - gamma1*(y[i+3]-y0[i+3])
 
         x[-1] = -electric_f
-    
+
         return x
 
     @conditional_njit(P.type_complex_np)
@@ -608,7 +610,7 @@ def make_rhs_ode_n_band(sys, electric_field, P):
 
         dx_path = np.zeros((pathlen, n, n), dtype=type_complex_np)
         dy_path = np.zeros((pathlen, n, n), dtype=type_complex_np)
-        
+
         if not dm_dynamics_method == 'semiclassics':
             _buf, wf_path = diagonalize_path(h_in_path)
             dwfkx_path, dwfky_path, _buf, _buf = __derivative_path(hpex, hmex, hp2ex, hm2ex, hp3ex, hm3ex, hp4ex, hm4ex, \

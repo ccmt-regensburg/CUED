@@ -246,7 +246,7 @@ def run_sbe(sys, P, Mpi):
 					                                y0, P.dk, P.dt, rhs_ode, T.densmat_container_fock, Nk2_idx)
 
 			elif P.dm_dynamics_method in ('series_expansion', 'EEA'):
-				T.solution_y_vec[:-1], T.time_integral = von_neumann_series(T.t[ti], T.A_field[ti], T.E_field[ti], path, sys, y0[:-1], T.time_integral, P)
+				T.solution_y_vec[:-1], T.time_integral = von_neumann_series(T.t[ti], T.A_field[ti], T.E_field[ti], path, sys, y0[:-1], T.time_integral, P, ti)
 
 
 
