@@ -41,4 +41,3 @@ class params:
     split_current           = True
     user_out                = False
     save_latex_pdf          = False
-    
