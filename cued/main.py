@@ -301,7 +301,13 @@ def make_BZ(P, Mpi):
 			P.E_dir = np.array([1, 0], P.type_real_np)
 		elif P.align == 'M':
 			P.E_dir = np.array([np.cos(np.radians(-30)),
-			                    np.sin(np.radians(-30))], dtype=P.type_real_np)
+			                	np.sin(np.radians(-30))], dtype=P.type_real_np)
+		else:
+			if P.gauge == 'length':
+				system.exit('For a hexagonal BZ, variation o fthe electric field angle is only possible with the velocity gauge')
+			P.align = 'K'
+			P.E_dir = np.array([np.cos(np.radians(P.angle_inc_E_field)),
+		                    	np.sin(np.radians(P.angle_inc_E_field))], dtype=P.type_real_np)
 		P.dk, P.kweight, P.paths, P.mesh = hex_mesh(P)
 
 	elif P.BZ_type == 'rectangle':

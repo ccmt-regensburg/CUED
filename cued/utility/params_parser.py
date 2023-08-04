@@ -148,8 +148,14 @@ class ParamsParser():
         self.Nk2 = UP['Nk2']                                 # kpoints in b2 direction
 
         if self.BZ_type == 'hexagon':
-            self.align = UP['align']                         # E-field alignment
-            self.angle_inc_E_field = None
+            if 'align' in UP:
+                self.align = UP['align']                         # E-field alignment
+                self.angle_inc_E_field = None
+            elif 'angle_inc_E_field' in UP:
+                self.align = None
+                self.angle_inc_E_field = UP['angle_inc_E_field']
+            else:
+                sys.exit("For a hexagonal BZ, you need to specify either the angle of the incoming field or the alignment ('K' or 'M')")
             self.a = UP['a']                                 # Lattice spacing
         elif self.BZ_type == 'rectangle':
             self.align = None
