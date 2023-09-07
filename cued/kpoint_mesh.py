@@ -95,6 +95,48 @@ def hex_mesh(P):
     # Containers for the mesh, and BZ directional paths
     mesh = []
     paths = []
+    P.angle = np.radians(0)
+
+    if P.angle_inc_E_field != None:
+        if P.angle_inc_E_field <= 15:
+            P.align = 'K'
+            angle = np.radians(0)
+        elif P.angle_inc_E_field <= 45:
+            P.align = 'M'
+            angle = np.radians(60)
+        elif P.angle_inc_E_field <= 75:
+            P.align = 'K'
+            angle = np.radians(60)
+        elif P.angle_inc_E_field <= 105:
+            P.align = 'M'
+            angle = np.radians(120)
+        elif P.angle_inc_E_field <= 135:
+            P.align = 'K'
+            angle = np.radians(120)
+        elif P.angle_inc_E_field <= 165:
+            P.align = 'M'
+            angle = np.radians(180)
+        elif P.angle_inc_E_field <= 195:
+            P.align = 'K'
+            angle = np.radians(180)
+        elif P.angle_inc_E_field <= 225:
+            P.align = 'M'
+            angle = np.radians(240)
+        elif P.angle_inc_E_field <= 255:
+            P.align = 'K'
+            angle = np.radians(240)
+        elif P.angle_inc_E_field <= 285:
+            P.align = 'M'
+            angle = np.radians(300)
+        elif P.angle_inc_E_field <= 315:
+            P.align = 'K'
+            angle = np.radians(300)
+        elif P.angle_inc_E_field <= 345:
+            P.align = 'M'
+            angle = np.radians(0)           
+        else:
+            P.algin = 'K'
+            angle = np.radians(0)
 
     # Create the Monkhorst-Pack mesh
     if P.align == 'M':
@@ -105,12 +147,15 @@ def hex_mesh(P):
         b_a2 = (2*np.pi/(3*P.a))*np.array([1, np.sqrt(3)], dtype=P.type_real_np)
         alpha1 = np.linspace(-0.5 + (1/(2*P.Nk1)), 0.5 - (1/(2*P.Nk1)), num=P.Nk1, dtype=P.type_real_np)
         alpha2 = np.linspace(-1.0 + (1.5/(2*P.Nk2)), 0.5 - (1.5/(2*P.Nk2)), num=P.Nk2, dtype=P.type_real_np)
+        rotation_matrix = np.array([[np.cos(angle), -np.sin(angle)],[np.sin(angle), np.cos(angle)]])
+        b_a1 = np.dot(rotation_matrix, b_a1)
+        b_a2 = np.dot(rotation_matrix, b_a2)
         for a2 in alpha2:
             # Container for a single gamma-M path
             path_M = []
             for a1 in alpha1:
                 # Create a k-point
-                kpoint = a1*b1 + a2*b_a2
+                kpoint = a1*b_a1 + a2*b_a2
                 # If current point is in BZ, append it to the mesh and path_M
                 if is_in_hex(kpoint):
                     mesh.append(kpoint)
@@ -135,23 +180,27 @@ def hex_mesh(P):
                                " needs to be divisible by 3 and even")
         b_a1 = 8*np.pi/(P.a*3)*np.array([1, 0], dtype=P.type_real_np)
         b_a2 = 4*np.pi/(P.a*3)*np.array([0, np.sqrt(3)], dtype=P.type_real_np)
+        rotation_matrix = np.array([[np.cos(angle), -np.sin(angle)],[np.sin(angle), np.cos(angle)]])
+        b_a1 = np.dot(rotation_matrix, b_a1)
+        b_a2 = np.dot(rotation_matrix, b_a2)
         # Extend over half of the b2 direction and 1.5x the b1 direction
         # (extending into the 2nd BZ to get correct boundary conditions)
-        alpha1 = np.linspace(-0.5 + (1.5/(2*P.Nk1)), 1.0 - (1.5/(2*P.Nk1)), P.Nk1, dtype=P.type_real_np)
-        alpha2 = np.linspace(0 + (0.5/(2*P.Nk2)), 0.5 - (0.5/(2*P.Nk2)), P.Nk2, dtype=P.type_real_np)
+        alpha1 = np.linspace(0 + (0.75/(2*P.Nk1)), 0.75 - (0.75/(2*P.Nk1)), P.Nk1, dtype=P.type_real_np)
+        alpha2 = np.linspace(0 + (1/(2*P.Nk2)), 1 - (1/(2*P.Nk2)), P.Nk2, dtype=P.type_real_np)
+     
         for a2 in alpha2:
             path_K = []
             for a1 in alpha1:
                 kpoint = a1*b_a1 + a2*b_a2
                 if is_in_hex(kpoint):
-                    mesh.append(kpoint)
-                    path_K.append(kpoint)
+                   mesh.append(kpoint)
+                   path_K.append(kpoint)
                 else:
-                    while not is_in_hex(kpoint):
-                        kpoint = reflect_point(kpoint)
-                    # kpoint -= (2*np.pi/a) * np.array([1, 1/np.sqrt(3)])
-                    mesh.append(kpoint)
-                    path_K.append(kpoint)
+                   while not is_in_hex(kpoint):
+                       kpoint = reflect_point(kpoint)
+                   # kpoint -= (2*np.pi/a) * np.array([1, 1/np.sqrt(3)])
+                   mesh.append(kpoint)
+                   path_K.append(kpoint)
             paths.append(path_K)
         dk = np.linalg.norm(1.5*b_a1)/P.Nk1
 
