@@ -95,7 +95,7 @@ def hex_mesh(P):
     # Containers for the mesh, and BZ directional paths
     mesh = []
     paths = []
-    angle = np.radians(0)
+    angle = 0
 
     if P.angle_inc_E_field != None:
         if P.angle_inc_E_field <= 15:
@@ -133,7 +133,7 @@ def hex_mesh(P):
             angle = np.radians(300)
         elif P.angle_inc_E_field <= 345:
             P.align = 'M'
-            angle = np.radians(0)           
+            angle = np.radians(0)
         else:
             P.algin = 'K'
             angle = np.radians(0)
@@ -185,9 +185,12 @@ def hex_mesh(P):
         b_a2 = np.dot(rotation_matrix, b_a2)
         # Extend over half of the b2 direction and 1.5x the b1 direction
         # (extending into the 2nd BZ to get correct boundary conditions)
-        alpha1 = np.linspace(0 + (0.75/(2*P.Nk1)), 0.75 - (0.75/(2*P.Nk1)), P.Nk1, dtype=P.type_real_np)
-        alpha2 = np.linspace(0 + (1/(2*P.Nk2)), 1 - (1/(2*P.Nk2)), P.Nk2, dtype=P.type_real_np)
-     
+        if angle == 0:
+            alpha1 = np.linspace(-0.5 + (1.5/(2*P.Nk1)), 1.0 - (1.5/(2*P.Nk1)), P.Nk1, dtype=P.type_real_np)
+            alpha2 = np.linspace(0 + (0.5/(2*P.Nk2)), 0.5 - (0.5/(2*P.Nk2)), P.Nk2, dtype=P.type_real_np)
+        else:
+            alpha1 = np.linspace(0 + (0.75/(2*P.Nk1)), 0.75 - (0.75/(2*P.Nk1)), P.Nk1, dtype=P.type_real_np)
+            alpha2 = np.linspace(0 + (1/(2*P.Nk2)), 1 - (1/(2*P.Nk2)), P.Nk2, dtype=P.type_real_np)
         for a2 in alpha2:
             path_K = []
             for a1 in alpha1:
