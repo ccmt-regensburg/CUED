@@ -95,7 +95,7 @@ def hex_mesh(P):
     # Containers for the mesh, and BZ directional paths
     mesh = []
     paths = []
-    P.angle = np.radians(0)
+    angle = np.radians(0)
 
     if P.angle_inc_E_field != None:
         if P.angle_inc_E_field <= 15:
