@@ -13,6 +13,6 @@ jobs:
     runs-on: self-hosted
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3.0.2
     - name: Run test script
       run:  python3 tests/test_script.py --path published_calculations --latex True --mpin 1
