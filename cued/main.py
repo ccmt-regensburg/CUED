@@ -265,7 +265,8 @@ def run_sbe(sys, P, Mpi):
 
 	# calculate and write solutions
 	update_currents_with_kweight(T, P)
-	calculate_fourier(T, P, W)
+	if not P.only_save_time_data:
+		calculate_fourier(T, P, W)
 	write_current_emission_mpi(T, P, W, sys, Mpi)
 
 	# Save the parameters of the calculation
@@ -1120,95 +1121,96 @@ def write_current_emission(T, P, W, sys, Mpi):
 	##################################################
 	# Frequency data save
 	##################################################
-	if P.split_current:
-		freq_header = (tff_header_format + dat_header_format*30)\
-			.format("f/f0",
-					"Re[j_E_dir]", "Im[j_E_dir]", "Re[j_ortho]", "Im[j_ortho]",
-					"I_E_dir", "I_ortho",
-					"Re[j_intra_E_dir]", "Im[j_intra_E_dir]", "Re[j_intra_ortho]", "Im[j_intra_ortho]",
-					"I_intra_E_dir", "I_intra_ortho",
-					"Re[dtP_E_dir]", "Im[dtP_E_dir]", "Re[dtP_ortho]", "Im[dtP_ortho]",
-					"I_dtP_E_dir", "I_dtP_ortho",
-					"Re[j_deph_E_dir]", "Im[j_deph_E_dir]", "Re[j_deph_ortho]", "Im[j_deph_ortho]",
-					"I_deph_E_dir", "I_deph_ortho",
-					"Re[j_intra_plus_dtP_E_dir]", "Im[j_intra_plus_dtP_E_dir]", "Re[j_intra_plus_dtP_ortho]", "Im[j_intra_plus_dtP_ortho]",
-					"I_intra_plus_dtP_E_dir", "I_intra_plus_dtP_ortho")
+	if not P.only_save_time_data:
+		if P.split_current:
+			freq_header = (tff_header_format + dat_header_format*30)\
+				.format("f/f0",
+						"Re[j_E_dir]", "Im[j_E_dir]", "Re[j_ortho]", "Im[j_ortho]",
+						"I_E_dir", "I_ortho",
+						"Re[j_intra_E_dir]", "Im[j_intra_E_dir]", "Re[j_intra_ortho]", "Im[j_intra_ortho]",
+						"I_intra_E_dir", "I_intra_ortho",
+						"Re[dtP_E_dir]", "Im[dtP_E_dir]", "Re[dtP_ortho]", "Im[dtP_ortho]",
+						"I_dtP_E_dir", "I_dtP_ortho",
+						"Re[j_deph_E_dir]", "Im[j_deph_E_dir]", "Re[j_deph_ortho]", "Im[j_deph_ortho]",
+						"I_deph_E_dir", "I_deph_ortho",
+						"Re[j_intra_plus_dtP_E_dir]", "Im[j_intra_plus_dtP_E_dir]", "Re[j_intra_plus_dtP_ortho]", "Im[j_intra_plus_dtP_ortho]",
+						"I_intra_plus_dtP_E_dir", "I_intra_plus_dtP_ortho")
 
-		# Current same order as in time output, always real and imaginary part
-		# next column -> corresponding intensities
-		freq_output = np.column_stack([(W.freq/P.f).real,
-									   W.j_E_dir.real, W.j_E_dir.imag, W.j_ortho.real, W.j_ortho.imag,
-									   W.I_E_dir.real, W.I_ortho.real,
-									   W.j_intra_E_dir.real, W.j_intra_E_dir.imag, W.j_intra_ortho.real, W.j_intra_ortho.imag,
-									   W.I_intra_E_dir.real, W.I_intra_ortho.real,
-									   W.dtP_E_dir.real, W.dtP_E_dir.imag, W.dtP_ortho.real, W.dtP_ortho.imag,
-									   W.I_dtP_E_dir.real, W.I_dtP_ortho.real,
-										 W.j_deph_E_dir.real, W.j_deph_E_dir.imag, W.j_deph_ortho.real, W.j_deph_ortho.imag,
-										 W.I_deph_E_dir, W.I_deph_ortho,
-									   W.j_intra_plus_dtP_E_dir.real, W.j_intra_plus_dtP_E_dir.imag, W.j_intra_plus_dtP_ortho.real, W.j_intra_plus_dtP_ortho.imag,
-									   W.I_intra_plus_dtP_E_dir.real, W.I_intra_plus_dtP_ortho.real])
-		if P.save_anom:
-			for i in range(P.n):
-				freq_header += (dat_header_format*3).format(f"Re[j_anom_ortho[{i}]]", f"Im[j_anom_ortho[{i}]", \
-											f"I_anom_ortho[{i}]")
-				freq_output = np.column_stack((freq_output, W.j_anom_ortho[:, i].real, W.j_anom_ortho[:, i].imag, W.I_anom_ortho[:, i].real) )
-			freq_header += (dat_header_format*6).format("Re[j_anom_ortho]", "Im[j_anom_ortho]", "I_anom_ortho", "Re[j_intra_plus_anom_ortho]", "Im[j_intra_plus_anom_ortho]", "I_intra_plus_anom_ortho")
-			freq_output = np.column_stack((freq_output, W.j_anom_ortho_full.real, W.j_anom_ortho_full.imag, W.I_anom_ortho_full, W.j_intra_plus_anom_ortho.real, W.j_intra_plus_anom_ortho.imag, W.I_intra_plus_anom_ortho.real))
+			# Current same order as in time output, always real and imaginary part
+			# next column -> corresponding intensities
+			freq_output = np.column_stack([(W.freq/P.f).real,
+										W.j_E_dir.real, W.j_E_dir.imag, W.j_ortho.real, W.j_ortho.imag,
+										W.I_E_dir.real, W.I_ortho.real,
+										W.j_intra_E_dir.real, W.j_intra_E_dir.imag, W.j_intra_ortho.real, W.j_intra_ortho.imag,
+										W.I_intra_E_dir.real, W.I_intra_ortho.real,
+										W.dtP_E_dir.real, W.dtP_E_dir.imag, W.dtP_ortho.real, W.dtP_ortho.imag,
+										W.I_dtP_E_dir.real, W.I_dtP_ortho.real,
+											W.j_deph_E_dir.real, W.j_deph_E_dir.imag, W.j_deph_ortho.real, W.j_deph_ortho.imag,
+											W.I_deph_E_dir, W.I_deph_ortho,
+										W.j_intra_plus_dtP_E_dir.real, W.j_intra_plus_dtP_E_dir.imag, W.j_intra_plus_dtP_ortho.real, W.j_intra_plus_dtP_ortho.imag,
+										W.I_intra_plus_dtP_E_dir.real, W.I_intra_plus_dtP_ortho.real])
+			if P.save_anom:
+				for i in range(P.n):
+					freq_header += (dat_header_format*3).format(f"Re[j_anom_ortho[{i}]]", f"Im[j_anom_ortho[{i}]", \
+												f"I_anom_ortho[{i}]")
+					freq_output = np.column_stack((freq_output, W.j_anom_ortho[:, i].real, W.j_anom_ortho[:, i].imag, W.I_anom_ortho[:, i].real) )
+				freq_header += (dat_header_format*6).format("Re[j_anom_ortho]", "Im[j_anom_ortho]", "I_anom_ortho", "Re[j_intra_plus_anom_ortho]", "Im[j_intra_plus_anom_ortho]", "I_intra_plus_anom_ortho")
+				freq_output = np.column_stack((freq_output, W.j_anom_ortho_full.real, W.j_anom_ortho_full.imag, W.I_anom_ortho_full, W.j_intra_plus_anom_ortho.real, W.j_intra_plus_anom_ortho.imag, W.I_intra_plus_anom_ortho.real))
 
-	elif P.sheet_current:
+		elif P.sheet_current:
 
-		freq_header =tff_header_format.format('f/f0')
-		freq_output = (W.freq/P.f).real
+			freq_header =tff_header_format.format('f/f0')
+			freq_output = (W.freq/P.f).real
 
-		for i in range(P.n_sheets):
-			for j in range(P.n_sheets):
-				freq_header += (dat_header_format*6).format(f"Re[j_E_dir[{i},{j}]]", f"Im[j_E_dir[{i},{j}]]", \
-					f"Re[j_ortho[{i},{j}]]", f"Im[j_ortho[{i},{j}]]", f"I_E_dir[{i},{j}]", f"I_ortho[{i},{j}]")
-				freq_output = np.column_stack((freq_output, W.j_E_dir[:, i, j].real, W.j_E_dir[:, i, j].imag \
-					,W.j_ortho[:, i, j].real, W.j_ortho[:, i, j].imag, W.I_E_dir[:, i, j].real, W.I_ortho[:, i, j].real) )
+			for i in range(P.n_sheets):
+				for j in range(P.n_sheets):
+					freq_header += (dat_header_format*6).format(f"Re[j_E_dir[{i},{j}]]", f"Im[j_E_dir[{i},{j}]]", \
+						f"Re[j_ortho[{i},{j}]]", f"Im[j_ortho[{i},{j}]]", f"I_E_dir[{i},{j}]", f"I_ortho[{i},{j}]")
+					freq_output = np.column_stack((freq_output, W.j_E_dir[:, i, j].real, W.j_E_dir[:, i, j].imag \
+						,W.j_ortho[:, i, j].real, W.j_ortho[:, i, j].imag, W.I_E_dir[:, i, j].real, W.I_ortho[:, i, j].real) )
 
-		freq_header += (dat_header_format*6).format("Re[j_E_dir]", "Im[j_E_dir]", \
-				"Re[j_ortho]", "Im[j_ortho]", "I_E_dir", "I_ortho")
-		freq_output = np.column_stack((freq_output, W.j_E_dir_full.real, W.j_E_dir_full.imag \
-				,W.j_ortho_full.real, W.j_ortho_full.imag, W.I_E_dir_full.real, W.I_ortho_full.real) )
+			freq_header += (dat_header_format*6).format("Re[j_E_dir]", "Im[j_E_dir]", \
+					"Re[j_ortho]", "Im[j_ortho]", "I_E_dir", "I_ortho")
+			freq_output = np.column_stack((freq_output, W.j_E_dir_full.real, W.j_E_dir_full.imag \
+					,W.j_ortho_full.real, W.j_ortho_full.imag, W.I_E_dir_full.real, W.I_ortho_full.real) )
 
-	else:
-		freq_header = (tff_header_format + dat_header_format*6)\
-			.format("f/f0",
-					"Re[j_E_dir]", "Im[j_E_dir]", "Re[j_ortho]", "Im[j_ortho]",
-					"I_E_dir", "I_ortho")
-		freq_output = np.column_stack([(W.freq/P.f).real,
-									   W.j_E_dir.real, W.j_E_dir.imag, W.j_ortho.real, W.j_ortho.imag,
-									   W.I_E_dir.real, W.I_ortho.real])
+		else:
+			freq_header = (tff_header_format + dat_header_format*6)\
+				.format("f/f0",
+						"Re[j_E_dir]", "Im[j_E_dir]", "Re[j_ortho]", "Im[j_ortho]",
+						"I_E_dir", "I_ortho")
+			freq_output = np.column_stack([(W.freq/P.f).real,
+										W.j_E_dir.real, W.j_E_dir.imag, W.j_ortho.real, W.j_ortho.imag,
+										W.I_E_dir.real, W.I_ortho.real])
 
 
-	# Make the maximum exponent double digits
-	freq_output[np.abs(freq_output) <= 10e-100] = 0
-	freq_output[np.abs(freq_output) >= 1e+100] = np.inf
+		# Make the maximum exponent double digits
+		freq_output[np.abs(freq_output) <= 10e-100] = 0
+		freq_output[np.abs(freq_output) >= 1e+100] = np.inf
 
-	np.savetxt(P.header + 'frequency_data.dat', freq_output, header=freq_header, delimiter=dat_delimiter_format, fmt=dat_precision_format)
+		np.savetxt(P.header + 'frequency_data.dat', freq_output, header=freq_header, delimiter=dat_delimiter_format, fmt=dat_precision_format)
 
-	if P.gabor_transformation:
-		for i in range(np.size(P.gabor_gaussian_center)):
-			for j in range(np.size(P.gabor_window_width)):
-				freq_header = (tff_header_format + dat_header_format*6)\
-					.format("f/f0",
-							"Re[j_E_dir]", "Im[j_E_dir]", "Re[j_ortho]", "Im[j_ortho]",
-							"I_E_dir", "I_ortho")
-				freq_output = np.column_stack([(W.freq/P.f).real,
-											W.j_E_dir_GT[i][j].real, W.j_E_dir_GT[i][j].imag, W.j_ortho_GT[i][j].real, W.j_ortho_GT[i][j].imag,
-											W.I_E_dir_GT[i][j].real, W.I_ortho_GT[i][j].real])
-				# Make the maximum exponent double digits
-				freq_output[np.abs(freq_output) <= 10e-100] = 0
-				freq_output[np.abs(freq_output) >= 1e+100] = np.inf
+		if P.gabor_transformation:
+			for i in range(np.size(P.gabor_gaussian_center)):
+				for j in range(np.size(P.gabor_window_width)):
+					freq_header = (tff_header_format + dat_header_format*6)\
+						.format("f/f0",
+								"Re[j_E_dir]", "Im[j_E_dir]", "Re[j_ortho]", "Im[j_ortho]",
+								"I_E_dir", "I_ortho")
+					freq_output = np.column_stack([(W.freq/P.f).real,
+												W.j_E_dir_GT[i][j].real, W.j_E_dir_GT[i][j].imag, W.j_ortho_GT[i][j].real, W.j_ortho_GT[i][j].imag,
+												W.I_E_dir_GT[i][j].real, W.I_ortho_GT[i][j].real])
+					# Make the maximum exponent double digits
+					freq_output[np.abs(freq_output) <= 10e-100] = 0
+					freq_output[np.abs(freq_output) >= 1e+100] = np.inf
 
-				np.savetxt(f"gabor_trafo_center={(P.gabor_gaussian_center[i]*CoFa.au_to_fs):.4f}fs_width={(P.gabor_window_width[j]*CoFa.au_to_fs):.4f}fs_" + P.header\
-					+ 'frequency_data.dat', freq_output, header=freq_header, delimiter=' '*3, fmt=dat_precision_format)
+					np.savetxt(f"gabor_trafo_center={(P.gabor_gaussian_center[i]*CoFa.au_to_fs):.4f}fs_width={(P.gabor_window_width[j]*CoFa.au_to_fs):.4f}fs_" + P.header\
+						+ 'frequency_data.dat', freq_output, header=freq_header, delimiter=' '*3, fmt=dat_precision_format)
 
-	if P.save_latex_pdf:
-		if P.parallelize_over_points:
-			print("WARNING: Parallelization over points causes problems when printing the PDF. Usage of other parallelization methods is recommended.")
-		write_and_compile_latex_PDF(T, W, P, sys, Mpi)
+		if P.save_latex_pdf:
+			if P.parallelize_over_points:
+				print("WARNING: Parallelization over points causes problems when printing the PDF. Usage of other parallelization methods is recommended.")
+			write_and_compile_latex_PDF(T, W, P, sys, Mpi)
 
 
 def write_efield_afield(T, P, W):

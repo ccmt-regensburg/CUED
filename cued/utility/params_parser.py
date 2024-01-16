@@ -203,7 +203,7 @@ class ParamsParser():
         if 'gauge' in UP:
             self.gauge = UP['gauge']
 
-        self.solver = 'nband'                             # 2 or n band solver
+        self.solver = '2band'                             # 2 or n band solver
         if 'solver' in UP:
             self.solver = UP['solver']
 
@@ -222,6 +222,10 @@ class ParamsParser():
         self.dm_dynamics_method = 'sbe'
         if 'dm_dynamics_method' in UP:
             self.dm_dynamics_method = UP['dm_dynamics_method']
+
+        self.only_save_time_data = 'False'
+        if 'only_save_time_data' in UP:
+            self.only_save_time_data = UP['only_save_time_data']
 
 
         if self.dm_dynamics_method in ('sbe', 'semiclassics'):
