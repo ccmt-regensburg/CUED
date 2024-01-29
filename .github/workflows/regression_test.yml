@@ -16,4 +16,4 @@ jobs:
     steps:
     - uses: actions/checkout@v3.0.2
     - name: Run test script
-      run:  python3 tests/test_script.py --path tests --latex True --mpin 6
+      run:  python3 tests/test_script.py --path tests --latex True --mpin 4
