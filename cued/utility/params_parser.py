@@ -223,7 +223,7 @@ class ParamsParser():
         if 'dm_dynamics_method' in UP:
             self.dm_dynamics_method = UP['dm_dynamics_method']
 
-        self.only_save_time_data = 'False'
+        self.only_save_time_data = False
         if 'only_save_time_data' in UP:
             self.only_save_time_data = UP['only_save_time_data']
 
