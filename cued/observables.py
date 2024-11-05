@@ -50,7 +50,7 @@ def make_polarization_path(path, P, sys):
 	type_complex_np = P.type_complex_np
 	gauge = P.gauge
 	@conditional_njit(type_complex_np)
-	def polarization_path(solution, E_field, A_field):
+	def polarization_path(solution, E_field_in_path, E_field_ortho, A_field_in_path, A_field_ortho):
 		##################################################
 		# Dipole container
 		##################################################
@@ -66,8 +66,8 @@ def make_polarization_path(path, P, sys):
 			kx_shift = 0
 			ky_shift = 0
 		if gauge == 'velocity':
-			kx_shift = A_field*E_dir[0]
-			ky_shift = A_field*E_dir[1]
+			kx_shift = A_field_in_path*E_dir[0] + A_field_ortho*E_ort[0]
+			ky_shift = A_field_in_path*E_dir[1] + A_field_ortho*E_ort[1]
 
 		kx_in_path = kx_in_path_before_shift + kx_shift
 		ky_in_path = ky_in_path_before_shift + ky_shift
@@ -135,7 +135,7 @@ def make_current_path(path, P, sys):
 	gauge = P.gauge
 	save_anom = P.save_anom
 	@conditional_njit(type_complex_np)
-	def current_path(solution, E_field, A_field):
+	def current_path(solution, E_field_in_path, E_field_ortho, A_field_in_path, A_field_ortho):
 
 		rho_vv = solution[:, 0, 0]
 		rho_cc = solution[:, 1, 1]
@@ -157,8 +157,8 @@ def make_current_path(path, P, sys):
 			ky_shift = 0
 			rho_vv_subs = 0
 		if gauge == 'velocity':
-			kx_shift = A_field*E_dir[0]
-			ky_shift = A_field*E_dir[1]
+			kx_shift = A_field_in_path*E_dir[0] + A_field_ortho*E_ort[0]
+			ky_shift = A_field_in_path*E_dir[1] + A_field_ortho*E_ort[1]
 			rho_vv_subs = 1
 
 		kx_in_path = kx_in_path_before_shift + kx_shift
@@ -190,8 +190,8 @@ def make_current_path(path, P, sys):
 			Bcurv_v = Bcurv_00(kx=kx_in_path, ky=ky_in_path)
 			Bcurv_c = Bcurv_11(kx=kx_in_path, ky=ky_in_path)
 
-			J_anom_ortho[0] = -E_field * np.sum(Bcurv_v.real * rho_vv.real)
-			J_anom_ortho[1] += -E_field * np.sum(Bcurv_c.real * rho_cc.real)
+			J_anom_ortho[0] = -E_field_in_path * np.sum(Bcurv_v.real * rho_vv.real)
+			J_anom_ortho[1] += -E_field_in_path * np.sum(Bcurv_c.real * rho_cc.real)
 		else:
 			J_anom_ortho = 0
 
@@ -263,7 +263,7 @@ def make_current_exact_path_velocity(path, P, sys):
 	symmetric_insulator = P.symmetric_insulator
 	dm_dynamics_method = P.dm_dynamics_method
 	@conditional_njit(type_complex_np)
-	def current_exact_path_velocity(solution, E_field, A_field):
+	def current_exact_path_velocity(solution, E_field_in_path, E_field_ortho, A_field_in_path, A_field_ortho):
 		'''
 		Calculates current from the system density matrix
 
@@ -304,8 +304,8 @@ def make_current_exact_path_velocity(path, P, sys):
 		if dm_dynamics_method == 'semiclassics':
 			Bcurv = np.empty((pathlen, 2), dtype=type_complex_np)
 
-		kx_in_path = kx_in_path_before_shift + A_field*E_dir[0]
-		ky_in_path = ky_in_path_before_shift + A_field*E_dir[1]
+		kx_in_path = kx_in_path_before_shift + A_field_in_path*E_dir[0] + A_field_ortho*E_ort[0]
+		ky_in_path = ky_in_path_before_shift + A_field_in_path*E_dir[1] + A_field_ortho*E_ort[1]
 
 		h_deriv_x[:, 0, 0] = hdx_00(kx=kx_in_path, ky=ky_in_path)
 		h_deriv_x[:, 0, 1] = hdx_01(kx=kx_in_path, ky=ky_in_path)
@@ -363,8 +363,8 @@ def make_current_exact_path_velocity(path, P, sys):
 
 			if dm_dynamics_method == 'semiclassics':
 				# '-' because there is q^2 compared to q only at the SBE current
-				I_ortho += -E_field * Bcurv[i_k, 0].real * rho_vv[i_k].real
-				I_ortho += -E_field * Bcurv[i_k, 1].real * rho_cc[i_k].real
+				I_ortho += -E_field_in_path * Bcurv[i_k, 0].real * rho_vv[i_k].real
+				I_ortho += -E_field_in_path * Bcurv[i_k, 1].real * rho_cc[i_k].real
 
 		return I_E_dir, I_ortho
 
@@ -425,7 +425,7 @@ def make_current_exact_path_length(path, P, sys):
 	symmetric_insulator = P.symmetric_insulator
 	dm_dynamics_method = P.dm_dynamics_method
 	@conditional_njit(P.type_complex_np)
-	def current_exact_path_length(solution, E_field, A_field):
+	def current_exact_path_length(solution, E_field_in_path, E_field_ortho, A_field_in_path, A_field_ortho):
 		'''
 		Parameters:
 		-----------
@@ -471,64 +471,12 @@ def make_current_exact_path_length(path, P, sys):
 
 			if dm_dynamics_method == 'semiclassics':
 				# '-' because there is q^2 compared to q only at the SBE current
-				I_ortho -= E_field * Bcurv[i_k, 0].real * rho_vv[i_k].real \
-				         + E_field * Bcurv[i_k, 1].real * rho_vc[i_k].real
+				I_ortho += -E_field_in_path * Bcurv[i_k, 0].real * rho_vv[i_k].real
+				I_ortho += -E_field_in_path * Bcurv[i_k, 1].real * rho_vc[i_k].real
 
 		return I_E_dir, I_ortho
 
-	if P.save_full:
-		@conditional_njit(P.type_complex_np)
-		def current_exact_path_length(solution, E_field, A_field, j_k_E_dir_path, j_k_ortho_path):
-			'''
-			Parameters:
-			-----------
-			solution : np.ndarray [type_complex_np]
-					Per timestep solution, idx 0 is k; idx 1 is fv, pvc, pcv, fc
-			E_field : type_real_np
-					Per timestep E_field
-			_A_field : dummy
-					In the length gauge this is just a dummy variable
-
-			Returns:
-			--------
-			I_E_dir : type_real_np
-					Parallel to electric field component of current
-			I_ortho : type_real_np
-					Orthogonal to electric field component of current
-			'''
-			solution = solution.reshape(pathlen, 4)
-			I_E_dir = 0
-			I_ortho = 0
-
-			rho_vv = solution[:, 0]
-			rho_vc = solution[:, 1]
-			rho_cv = solution[:, 2]
-			rho_cc = solution[:, 3]
-
-			if symmetric_insulator:
-				rho_vv = -rho_cc
-
-			for i_k in range(pathlen):
-
-				U_h_H_U_E_dir = U_h[i_k] @ (h_deriv_E_dir[i_k] @ U[i_k])
-				U_h_H_U_ortho = U_h[i_k] @ (h_deriv_ortho[i_k] @ U[i_k])
-
-				j_k_E_dir_path[i_k] = - U_h_H_U_E_dir[0, 0].real * rho_vv[i_k].real \
-				                      - U_h_H_U_E_dir[1, 1].real * rho_cc[i_k].real \
-															- 2*np.real(U_h_H_U_E_dir[0, 1] * rho_cv[i_k])
-
-				j_k_ortho_path[i_k] = - U_h_H_U_ortho[0, 0].real * rho_vv[i_k].real \
-				                      - U_h_H_U_ortho[1, 1].real * rho_cc[i_k].real \
-				                      - 2*np.real(U_h_H_U_ortho[0, 1] * rho_cv[i_k])
-
-				if dm_dynamics_method == 'semiclassics':
-					# '-' because there is q^2 compared to q only at the SBE current
-					j_k_ortho_path[i_k] = - E_field * Bcurv[i_k, 0].real * rho_vv[i_k].real \
-					                      - E_field * Bcurv[i_k, 1].real * rho_vc[i_k].real
-
-			return np.sum(j_k_E_dir_path), np.sum(j_k_ortho_path)
-
-	return current_exact_path_length
+	return emission_exact_path_length
 
 ##########################################################################################
 ### Observables from given bandstructures
@@ -564,10 +512,10 @@ def make_current_exact_bandstructure_velocity(path, P, sys):
 	# mel_ortho = P.E_ort[0]*mel_x + P.E_ort[1]*mel_y
 
 	@conditional_njit(P.type_complex_np)
-	def current_exact_path(solution, E_field=0, A_field=0):
+	def current_exact_path(solution, E_field_in_path, E_field_ortho, A_field_in_path, A_field_ortho):
 
-		kx_in_path = kx_in_path_before_shift + A_field*E_dir[0]
-		ky_in_path = ky_in_path_before_shift + A_field*E_dir[1]
+		kx_in_path = kx_in_path_before_shift + A_field_in_path*E_dir[0]
+		ky_in_path = ky_in_path_before_shift + A_field_in_path*E_dir[1]
 
 		mel_x = np.empty((pathlen, 2, 2), dtype=type_complex_np)
 		mel_y = np.empty((pathlen, 2, 2), dtype=type_complex_np)
@@ -619,8 +567,7 @@ def make_current_exact_bandstructure(path, P, sys):
 	mel_ortho = P.E_ort[0]*mel_x + P.E_ort[1]*mel_y	
 
 	@conditional_njit(P.type_complex_np)
-	def current_exact_path(solution, _E_field=0, _A_field=0):
-
+	def current_exact_path(solution, E_field_in_path, E_field_ortho, A_field_in_path, A_field_ortho):
 
 		J_exact_E_dir = 0
 		J_exact_ortho = 0
@@ -664,10 +611,10 @@ def make_intraband_current_bandstructure_velocity(path, P, sys):
 
 
 	@conditional_njit(P.type_complex_np)
-	def current_intra_path(solution, E_field, A_field):
+	def current_intra_path(solution, E_field_in_path, E_field_ortho, A_field_in_path, A_field_ortho):
 
-		kx_in_path = kx_in_path_before_shift + A_field*E_dir[0]
-		ky_in_path = ky_in_path_before_shift + A_field*E_dir[1]
+		kx_in_path = kx_in_path_before_shift + A_field_in_path*E_dir[0]
+		ky_in_path = ky_in_path_before_shift + A_field_in_path*E_dir[1]
 
 		ederivx = np.empty((pathlen, 2), dtype=type_complex_np)
 		ederivy = np.empty((pathlen, 2), dtype=type_complex_np)
@@ -725,7 +672,7 @@ def make_intraband_current_bandstructure(path, P, sys):
 	ederiv_ortho = P.E_ort[0]*ederivx + P.E_ort[1]*ederivy
 
 	@conditional_njit(P.type_complex_np)
-	def current_intra_path(solution, E_field, A_field):
+	def current_intra_path(solution, E_field_in_path, E_field_ortho, A_field_in_path, A_field_ortho):
 
 		J_intra_E_dir = 0
 		J_intra_ortho = 0
@@ -733,8 +680,8 @@ def make_intraband_current_bandstructure(path, P, sys):
 
 		for k in range(Nk1):
 			for i in range(n):
-				J_intra_E_dir -= ederiv_in_path[k, i] * solution[k, i, i].real
-				J_intra_ortho -= ederiv_ortho[k, i] * solution[k, i, i].real
+				J_intra_E_dir += - ederiv_in_path[k, i] * solution[k, i, i].real
+				J_intra_ortho += - ederiv_ortho[k, i] * solution[k, i, i].real
 
 				if save_anom:
 					J_anom_ortho += 0
@@ -743,74 +690,10 @@ def make_intraband_current_bandstructure(path, P, sys):
 		return J_intra_E_dir, J_intra_ortho, J_anom_ortho
 	return current_intra_path
 
-def make_polarization_inter_bandstructure_velocity(path, P, sys):
-	"""
-	    Function that calculates the interband polarization from eq. (74)
-	"""
-	dipole_in_path = sys.dipole_in_path
-	dipole_ortho = sys.dipole_ortho
-
-	Nk1 = P.Nk1
-	n = P.n
-	save_anom = P.save_anom
-	E_dir = P.E_dir
-	E_ort = np.array([E_dir[1], -E_dir[0]])
-	#wire dipoles
-
-	dipole00x = sys.dipole_xfjit[0][0]
-	dipole01x = sys.dipole_xfjit[0][1]
-	dipole10x = sys.dipole_xfjit[1][0]
-	dipole11x = sys.dipole_xfjit[1][1]
-	dipole00y = sys.dipole_yfjit[0][0]
-	dipole01y = sys.dipole_yfjit[0][1]
-	dipole10y = sys.dipole_yfjit[1][0]
-	dipole11y = sys.dipole_yfjit[1][1]		
-
-	kx_in_path_before_shift = path[:, 0]
-	ky_in_path_before_shift = path[:, 1]
-	pathlen = kx_in_path_before_shift.size
-
-	type_complex_np = P.type_complex_np
-
-
-	@conditional_njit(type_complex_np)
-	def polarization_inter_path(solution, E_field, A_field):
-
-		kx_in_path = kx_in_path_before_shift + A_field*E_dir[0]
-		ky_in_path = ky_in_path_before_shift + A_field*E_dir[1]
-
-		dipole_x = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-		dipole_y = np.empty((pathlen, 2, 2), dtype=type_complex_np)
-
-		dipole_x[:, 0, 0] = dipole00x(kx=kx_in_path, ky=ky_in_path)
-		dipole_x[:, 0, 1] = dipole01x(kx=kx_in_path, ky=ky_in_path)
-		dipole_x[:, 1, 0] = dipole10x(kx=kx_in_path, ky=ky_in_path)
-		dipole_x[:, 1, 1] = dipole11x(kx=kx_in_path, ky=ky_in_path)
-
-		dipole_y[:, 0, 0] = dipole00y(kx=kx_in_path, ky=ky_in_path)
-		dipole_y[:, 0, 1] = dipole01y(kx=kx_in_path, ky=ky_in_path)
-		dipole_y[:, 1, 0] = dipole10y(kx=kx_in_path, ky=ky_in_path)
-		dipole_y[:, 1, 1] = dipole11y(kx=kx_in_path, ky=ky_in_path)
-
-		dipole_in_path = E_dir[0]*dipole_x + E_dir[1]*dipole_y
-		dipole_ortho = E_ort[0]*dipole_x + E_ort[1]*dipole_y
-
-		P_inter_E_dir = 0
-		P_inter_ortho = 0
-
-		for k in range(Nk1):
-			for i in range(n):
-				for j in range(n):
-					if i > j:
-						P_inter_E_dir += 2*np.real(dipole_in_path[k, i, j]*solution[k, j, i])
-						P_inter_ortho += 2*np.real(dipole_ortho[k, i, j]*solution[k, j, i])
-		return P_inter_E_dir, P_inter_ortho
-	return polarization_inter_path
-
 
 def make_polarization_inter_bandstructure(P, sys):
 	"""
-	    Function that calculates the interband polarization from eq. (74)
+		Function that calculates the interband polarization from eq. (74)
 	"""
 	dipole_in_path = sys.dipole_in_path
 	dipole_ortho = sys.dipole_ortho
@@ -819,7 +702,7 @@ def make_polarization_inter_bandstructure(P, sys):
 	type_complex_np = P.type_complex_np
 
 	@conditional_njit(type_complex_np)
-	def polarization_inter_path(solution, E_field, A_field):
+	def polarization_inter_path(solution, E_field_in_path, E_field_ortho, A_field_in_path, A_field_ortho):
 
 		P_inter_E_dir = 0
 		P_inter_ortho = 0
@@ -841,7 +724,7 @@ def make_polarization_inter_bandstructure(P, sys):
 def make_current_exact_path_hderiv_length(path, P, sys):
 
 	"""
-	    	Function that calculates the exact current via eq. (79)
+		Function that calculates the exact current via eq. (79)
 	"""
 
 	E_dir = P.E_dir
@@ -889,7 +772,7 @@ def make_current_exact_path_hderiv_length(path, P, sys):
 
 
 	@conditional_njit(type_complex_np)
-	def current_exact_path_hderiv_length(solution, E_field, _A_field):
+	def current_exact_path_hderiv_length(solution, E_field_in_path, E_field_ortho, A_field_in_path, A_field_ortho):
 
 		if sheet_current:
 
@@ -908,8 +791,8 @@ def make_current_exact_path_hderiv_length(path, P, sys):
 					for s_j in range(n_sheets):
 						for i in range(n_s):
 							for j in range(n_s):
-									J_exact_E_dir[s_i, s_j] -= np.real(mel_in_path[i_k, n_s*s_i + i, n_s*s_j + j] * sol[n_s*s_i + i, n_s*s_j + j])
-									J_exact_ortho[s_i, s_j] -= np.real(mel_ortho[i_k, n_s*s_i + i, n_s*s_j + j] * sol[n_s*s_i + i, n_s*s_j + j])
+									J_exact_E_dir[s_i, s_j] += - np.real( mel_in_path[i_k, n_s*s_i + i, n_s*s_j + j] * sol[n_s*s_i + i, n_s*s_j + j] )
+									J_exact_ortho[s_i, s_j] += - np.real( mel_ortho[i_k, n_s*s_i + i, n_s*s_j + j] * sol[n_s*s_i + i, n_s*s_j + j] )
 
 		else:
 			J_exact_E_dir = 0
@@ -917,15 +800,15 @@ def make_current_exact_path_hderiv_length(path, P, sys):
 
 			for i_k in range(Nk1):
 				for i in range(n):
-					J_exact_E_dir -= mel_in_path[i_k, i, i].real * solution[i_k, i, i].real
-					J_exact_ortho -= mel_ortho[i_k, i, i].real * solution[i_k, i, i].real
+					J_exact_E_dir += - ( mel_in_path[i_k, i, i].real * solution[i_k, i, i].real )
+					J_exact_ortho += - ( mel_ortho[i_k, i, i].real * solution[i_k, i, i].real )
 					for j in range(n):
 						if i != j:
-							J_exact_E_dir -= np.real(mel_in_path[i_k, i, j] * solution[i_k, j, i])
-							J_exact_ortho -= np.real(mel_ortho[i_k, i, j] * solution[i_k, j, i])
+							J_exact_E_dir += - np.real( mel_in_path[i_k, i, j] * solution[i_k, j, i] )
+							J_exact_ortho += - np.real( mel_ortho[i_k, i, j] * solution[i_k, j, i] )
 
 					if dm_dynamics_method == 'semiclassics':
-						J_exact_ortho -= E_field * Bcurv_path[i_k, i].real * solution[i_k, i, i].real
+						J_exact_ortho += - E_field_in_path * Bcurv_path[i_k, i].real * solution[i_k, i, i].real
 
 		return J_exact_E_dir, J_exact_ortho
 	return current_exact_path_hderiv_length
@@ -933,7 +816,7 @@ def make_current_exact_path_hderiv_length(path, P, sys):
 
 def make_polarization_inter_path_length(P, sys):
 	"""
-	    Function that calculates the interband polarization from eq. (74)
+		Function that calculates the interband polarization from eq. (74)
 	"""
 	dipole_in_path = sys.dipole_in_path
 	dipole_ortho = sys.dipole_ortho
@@ -942,7 +825,7 @@ def make_polarization_inter_path_length(P, sys):
 	type_complex_np = P.type_complex_np
 
 	@conditional_njit(type_complex_np)
-	def polarization_inter_path_length(solution, E_field, A_field):
+	def polarization_inter_path_length(solution, E_field_in_path, E_field_ortho, A_field_in_path, A_field_ortho):
 
 		P_inter_E_dir = 0
 		P_inter_ortho = 0
@@ -959,8 +842,8 @@ def make_polarization_inter_path_length(P, sys):
 
 def make_intraband_current_path_length(path, P, sys):
 	"""
-	    Function that calculates the intraband current from eq. (76 and 77) with or without the
-	    anomalous contribution via the Berry curvature
+		Function that calculates the intraband current from eq. (76 and 77) with or without the
+		anomalous contribution via the Berry curvature
 	"""
 	E_dir = P.E_dir
 	E_ort = P.E_ort
@@ -1003,8 +886,8 @@ def make_intraband_current_path_length(path, P, sys):
 	eplus2y, wfplus2y = sys.diagonalize_path(pathplus2y, P)
 	eminus2y, wfminus2y = sys.diagonalize_path(pathminus2y, P)
 
-	ederivx = (-eplus2x + 8*eplusx - 8*eminusx + eminus2x)/(12*epsilon)
-	ederivy = (-eplus2y + 8*eplusy - 8*eminusy + eminus2y)/(12*epsilon)
+	ederivx = ( - eplus2x + 8 * eplusx - 8 * eminusx + eminus2x ) / (12*epsilon)
+	ederivy = ( - eplus2y + 8 * eplusy - 8 * eminusy + eminus2y ) / (12*epsilon)
 
 	# In E-field direction and orthogonal
 
@@ -1012,7 +895,7 @@ def make_intraband_current_path_length(path, P, sys):
 	ederiv_ortho = E_ort[0] * ederivx + E_ort[1] * ederivy
 
 	@conditional_njit(type_complex_np)
-	def current_intra_path_length(solution, E_field=0, A_field=0):
+	def current_intra_path_length(solution, E_field_in_path, E_field_ortho, A_field_in_path, A_field_ortho):
 
 		J_intra_E_dir = 0
 		J_intra_ortho = 0
@@ -1020,11 +903,11 @@ def make_intraband_current_path_length(path, P, sys):
 
 		for k in range(Nk1):
 			for i in range(n):
-				J_intra_E_dir -= ederiv_in_path[k, i] * solution[k, i, i].real
-				J_intra_ortho -= ederiv_ortho[k, i] * solution[k, i, i].real
+				J_intra_E_dir += - ederiv_in_path[k, i] * solution[k, i, i].real
+				J_intra_ortho += - ederiv_ortho[k, i] * solution[k, i, i].real
 
 				if save_anom:
-					J_anom_ortho[i] -= E_field * Bcurv_path[k, i].real * solution[k, i, i].real
+					J_anom_ortho[i] += - E_field_in_path * Bcurv_path[k, i].real * solution[k, i, i].real
 
 		return J_intra_E_dir, J_intra_ortho, J_anom_ortho
 	return current_intra_path_length
@@ -1035,7 +918,7 @@ def make_intraband_current_path_length(path, P, sys):
 def make_current_exact_path_hderiv_velocity(path, P, sys):
 
 	"""
-	    Function that calculates the exact current via eq. (79)
+		Function that calculates the exact current via eq. (79)
 	"""
 
 	E_dir = P.E_dir
@@ -1058,10 +941,10 @@ def make_current_exact_path_hderiv_velocity(path, P, sys):
 	pathlen = kx_before_shift.size
 
 
-	def current_exact_path_hderiv_velocity(solution, E_field, A_field):
+	def current_exact_path_hderiv_velocity(solution, E_field_in_path, E_field_ortho, A_field_in_path, A_field_ortho):
 
-		kx_in_path = kx_before_shift + A_field*E_dir[0]
-		ky_in_path = ky_before_shift + A_field*E_dir[1]
+		kx_in_path = kx_before_shift + A_field_in_path*E_dir[0]
+		ky_in_path = ky_before_shift + A_field_in_path*E_dir[1]
 
 		dhdkx = evaluate_njit_matrix(sys.hderivfjit[0], kx=kx_in_path, ky=ky_in_path, dtype=type_complex_np)
 		dhdky = evaluate_njit_matrix(sys.hderivfjit[1], kx=kx_in_path, ky=ky_in_path, dtype=type_complex_np)
@@ -1192,7 +1075,7 @@ def make_current_exact_path_hderiv_velocity(path, P, sys):
 					hmexpey, hmexp2ey, hmexp3ey, hmexp4ey, hmexmey, hmexm2ey, hmexm3ey, hmexm4ey, hp2expey, hp3expey, hp4expey, hm2expey, \
 					hm3expey, hm4expey, hp2exmey, hp3exmey, hp4exmey, hm2exmey, hm3exmey, hm4exmey)
 
-			J_exact_E_dir, J_exact_ortho = calculate_current(dhdkx, dhdky, wf_in_path, solution, ederivx=ederivx, ederivy=ederivy, bcurv=Bcurv_path, E_field=E_field)            
+			J_exact_E_dir, J_exact_ortho = calculate_current(dhdkx, dhdky, wf_in_path, solution, ederivx=ederivx, ederivy=ederivy, bcurv=Bcurv_path, E_field_in_path=E_field_in_path)            
 		
 		else:
 			J_exact_E_dir, J_exact_ortho = calculate_current(dhdkx, dhdky, wf_in_path, solution)
@@ -1310,7 +1193,7 @@ def make_current_exact_path_hderiv_velocity(path, P, sys):
 
 
 	@conditional_njit(type_complex_np)
-	def calculate_current(dhdkx, dhdky, wf_in_path, solution, ederivx=0, ederivy=0, bcurv=0, E_field=0):
+	def calculate_current(dhdkx, dhdky, wf_in_path, solution, ederivx=0, ederivy=0, bcurv=0, E_field_in_path=0):
 
 		matrix_element_x = np.zeros((Nk1, n, n), dtype=type_complex_np)
 		matrix_element_y = np.zeros((Nk1, n, n), dtype=type_complex_np)
@@ -1374,7 +1257,7 @@ def make_current_exact_path_hderiv_velocity(path, P, sys):
 							J_exact_ortho += - 2*np.real( mel_ortho[i_k, i, j] * solution[i_k, j, i] )
 
 					if dm_dynamics_method == 'semiclassics':
-						J_exact_ortho += - E_field * bcurv[i_k, i].real * solution[i_k, i, i].real
+						J_exact_ortho += - E_field_in_path * bcurv[i_k, i].real * solution[i_k, i, i].real
 
 		return J_exact_E_dir, J_exact_ortho
 
@@ -1383,7 +1266,7 @@ def make_current_exact_path_hderiv_velocity(path, P, sys):
 
 def make_polarization_inter_path_velocity(path, P, sys):
 	"""
-	    Function that calculates the interband polarization from eq. (74)
+		Function that calculates the interband polarization from eq. (74)
 	"""
 	dipole_in_path = sys.dipole_in_path
 	dipole_ortho = sys.dipole_ortho
@@ -1402,10 +1285,10 @@ def make_polarization_inter_path_velocity(path, P, sys):
 	ky_before_shift = path[:, 1]
 	pathlen = kx_before_shift.size
 
-	def polarization_inter_path_velocity(solution, E_field, A_field):
+	def polarization_inter_path_velocity(solution, E_field_in_path, E_field_ortho, A_field_in_path, A_field_ortho):
 
-		kx_in_path = kx_before_shift + A_field*E_dir[0]
-		ky_in_path = ky_before_shift + A_field*E_dir[1]
+		kx_in_path = kx_before_shift + A_field_in_path*E_dir[0]
+		ky_in_path = ky_before_shift + A_field_in_path*E_dir[1]
 		pathlen = kx_before_shift.size
 
 		h_in_path = np.zeros((pathlen, n, n), dtype=type_complex_np)
@@ -1560,8 +1443,8 @@ def make_polarization_inter_path_velocity(path, P, sys):
 
 def make_intraband_current_path_velocity(path, P, sys):
 	"""
-	    Function that calculates the intraband current from eq. (76 and 77) with or without the
-	    anomalous contribution via the Berry curvature
+		Function that calculates the intraband current from eq. (76 and 77) with or without the
+		anomalous contribution via the Berry curvature
 	"""
 	E_dir = P.E_dir
 	E_ort = P.E_ort
@@ -1580,10 +1463,10 @@ def make_intraband_current_path_velocity(path, P, sys):
 	ky_before_shift = path[:, 1]
 	pathlen = kx_before_shift.size
 
-	def current_intra_path_velocity(solution, E_field, A_field):
+	def current_intra_path_velocity(solution, E_field_in_path, E_field_ortho, A_field_in_path, A_field_ortho):
 
-		kx_in_path = kx_before_shift + A_field*E_dir[0]
-		ky_in_path = ky_before_shift + A_field*E_dir[1]
+		kx_in_path = kx_before_shift + A_field_in_path*E_dir[0]
+		ky_in_path = ky_before_shift + A_field_in_path*E_dir[1]
 		path_after_shift = np.copy(path)
 		path_after_shift[:, 0] = kx_in_path
 		path_after_shift[:, 1] = ky_in_path  
@@ -1711,13 +1594,13 @@ def make_intraband_current_path_velocity(path, P, sys):
 		for k in range(Nk1):
 			for i in range(n):
 				if i < n/2: #A ROUTINE TO SUBSTRACT 1 FOR ALL OCCUPIED BANDS IS NEEDED (or just substract it from each band)
-					J_intra_E_dir -= ederiv_in_path[k, i] * (solution[k, i, i].real - 1)
-					J_intra_ortho -= ederiv_ortho[k, i] * (solution[k, i, i].real - 1)
+					J_intra_E_dir +=  - ederiv_in_path[k, i] * (solution[k, i, i].real - 1)
+					J_intra_ortho +=  - ederiv_ortho[k, i] * (solution[k, i, i].real - 1)
 				else:
-					J_intra_E_dir -= ederiv_in_path[k, i] * solution[k, i, i].real
-					J_intra_ortho -= ederiv_ortho[k, i] * solution[k, i, i].real 
+					J_intra_E_dir +=  - ederiv_in_path[k, i] * solution[k, i, i].real
+					J_intra_ortho +=  - ederiv_ortho[k, i] * solution[k, i, i].real 
 				if save_anom:
-					J_anom_ortho[i] -= E_field * Bcurv_path[k, i].real * solution[k, i, i].real
+					J_anom_ortho[i] += - E_field_in_path * Bcurv_path[k, i].real * solution[k, i, i].real
 
 		return J_intra_E_dir, J_intra_ortho, J_anom_ortho
 

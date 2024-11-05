@@ -200,11 +200,14 @@ Phys.~Rev.~B~\,\textbf{103}, 125419 (2021)}
 \section{Electric-field pulse}
 \begin{figure}[b!]
 \centering
-\setlength\figureheight{7.5cm} 
+\setlength\figureheight{5.5cm} 
 \setlength\figurewidth{7.5cm}
-\input{Efield.tikz}\hfill\input{Afield.tikz}
-\caption{Left: Electric driving field~$E(t)$, right: Gauge field~$A(t)$ from Eq.~\eqref{e2}.}
-    \label{fig:Efield}
+\input{Efield_in_path.tikz}\hfill\input{Afield_in_path.tikz}
+\caption{Parallel component of left: Electric driving field~$E(t)$, right: Gauge field~$A(t)$ from Eq.~\eqref{e2}.}
+    \label{fig:Efield_in_path}
+\input{Efield_ortho.tikz}\hfill\input{Afield_ortho.tikz}
+\caption{Perpendicular component of left: Electric driving field~$E(t)$, right: Gauge field~$A(t)$ from Eq.~\eqref{e2}.}
+    \label{fig:Efield_ortho}
 \end{figure}
 \iftrue
 The following electric driving field is employed in the simulation:
@@ -214,7 +217,7 @@ The following electric driving field is employed in the simulation:
     E(t) = E_0\,    \sin\Big(2\pi f_0\,(1+f_\text{chirp} t)\,t + \varphi\Big)\, e^{-t^2/\sigma^2}\;.
     \label{e1}
 \end{align}
-The pulse is sketched in Fig.~\ref{fig:Efield}. 
+The pulse is sketched in Fig.~\ref{fig:Efield_in_path} and Fig.~\ref{fig:Efield_ortho}. 
 %
 The following parameters are used in the simulation:
 \begin{itemize}
@@ -228,9 +231,9 @@ The following parameters are used in the simulation:
 \else 
 A user-defined pulse is used. 
 %
-It is sketched in Fig.~\ref{fig:Efield}. 
+It is sketched in Fig.~\ref{fig:Efield_in_path}. 
 \fi
-The gauge field~$\bA(t)\eqt A(t)\,\hat{e}_\phi$ follows from~$\dot\bA(t)\eqt -\bE(t)$. We compute $A(t)$ for the sketch in Fig.~\ref{fig:Efield} as
+The gauge field~$\bA(t)\eqt A(t)\,\hat{e}_\phi$ follows from~$\dot\bA(t)\eqt -\bE(t)$. We compute $A(t)$ for the sketch in Fig.~\ref{fig:Efield_in_path} as
 \begin{align}
     \dot A(t) = -E(t) \hspace{2em}\Rightarrow\hspace{2em}
     A(t) = -\int\limits_{-\infty}^t E(t')\,dt'\;. \label{e2}

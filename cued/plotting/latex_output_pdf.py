@@ -35,7 +35,7 @@ def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
 	t_fs = T.t*CoFa.au_to_fs
 	num_points_for_plotting = 960
 
-	t_idx = get_time_indices_for_plotting(T.E_field, t_fs, num_points_for_plotting)
+	t_idx = get_time_indices_for_plotting(T.E_field_in_path, t_fs, num_points_for_plotting)
 	f_idx = get_freq_indices_for_plotting(W.freq/P.f, num_points_for_plotting, freq_max=30)
 
 	t_idx_whole = get_indices_for_plotting_whole(t_fs, num_points_for_plotting, start=0)
@@ -53,10 +53,12 @@ def write_and_compile_latex_PDF(T, W, P, sys, Mpi):
 
 	write_parameters(P, Mpi)
 
-	tikz_time(T.E_field*CoFa.au_to_MVpcm, t_fs, t_idx, r'E-field ' + unit['E'], "Efield")
-	tikz_time(T.A_field*CoFa.au_to_MVpcm*CoFa.au_to_fs, t_fs, t_idx, r'A-field ' + unit['A'], "Afield")
+	tikz_time(T.E_field_in_path*CoFa.au_to_MVpcm, t_fs, t_idx, r'E-field ' + unit['E'], "Efield_in_path")
+	tikz_time(T.A_field_in_path*CoFa.au_to_MVpcm*CoFa.au_to_fs, t_fs, t_idx, r'A-field ' + unit['A'], "Afield_in_path")
+	tikz_time(T.E_field_ortho*CoFa.au_to_MVpcm, t_fs, t_idx, r'E-field ' + unit['E'], "Efield_ortho")
+	tikz_time(T.A_field_ortho*CoFa.au_to_MVpcm*CoFa.au_to_fs, t_fs, t_idx, r'A-field ' + unit['A'], "Afield_ortho")
 
-	K = BZ_plot(P, T.A_field)
+	K = BZ_plot(P, T.A_field_in_path)
 
 	bandstruc_and_dipole_plot_high_symm_line(high_symmetry_path_BZ, P, num_points_for_plotting, sys)
 
