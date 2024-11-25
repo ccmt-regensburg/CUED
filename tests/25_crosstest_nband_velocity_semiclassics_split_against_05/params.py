@@ -48,3 +48,7 @@ class params:
     parallelize_over_points = True
     parallelize_over_points = True
     parallelize_over_points = True
+    parallelize_over_points = True
+    parallelize_over_points = True
+    parallelize_over_points = True
+    parallelize_over_points = True

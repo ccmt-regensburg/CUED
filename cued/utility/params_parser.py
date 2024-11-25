@@ -128,13 +128,15 @@ class ParamsParser():
         '''Electrical Driving Field'''
         self.f = UP['f']*CoFa.THz_to_au                      # Driving pulse frequency
 
-        if 'electric_field_function' in UP:
-            self.electric_field_function = UP['electric_field_function']
+        if 'electric_field_function_in_path' in UP:
+            self.electric_field_function_in_path = UP['electric_field_function_in_path']
+            self.electric_field_function_ortho = UP['electric_field_function_ortho']
             # Make first private to set it after params check in derived params
             self.__user_defined_field = True              # Disables all CUED specific field printouts
 
         else:
-            self.electric_field_function = None           # Gets set in TimeContainers
+            self.electric_field_function_in_path = None           # Gets set in TimeContainers
+            self.electric_field_function_ortho = None
             self.E0 = UP['E0']*CoFa.MVpcm_to_au              # Driving pulse field amplitude
             self.chirp = UP['chirp']*CoFa.THz_to_au          # Pulse chirp frequency
             self.sigma = UP['sigma']*CoFa.fs_to_au           # Gaussian pulse width
@@ -167,6 +169,32 @@ class ParamsParser():
 
     def __optional(self, UP):
         '''Optional parameters or default values'''
+
+        ''' optional orthogonal electric field'''
+
+        if 'E0_ort' in UP:
+            self.E0_ort = UP['E0_ort']*CoFa.MVpcm_to_au              # Driving pulse field amplitude
+        else:
+            self.E0_ort = 0
+        if 'chirp_ort' in UP:
+            self.chirp_ort = UP['chirp_ort']*CoFa.THz_to_au          # Pulse chirp frequency
+        else: 
+            self.chirp_ort = 0
+        if 'sigma_ort' in UP:
+            self.sigma_ort = UP['sigma_ort']*CoFa.fs_to_au           # Gaussian pulse width
+        else: 
+            self.sigma_ort = 1
+        if 'phase_ort' in UP:                
+            self.phase_ort = UP['phase_ort']                         # Carrier-envelope phase
+        else:
+            self.phase_ort = 0
+        if 'f_ort' in UP:
+            self.f_ort     = UP['f_ort']*CoFa.THz_to_au
+        else:
+            self.f_ort = 1
+
+        ''' rest of optional variables'''
+
         self.user_out = True                              # Command line progress output
         if 'user_out' in UP:
             self.user_out = UP['user_out']
@@ -358,6 +386,11 @@ class ParamsParser():
         that the code would not work or would use features that are
         not implemented yet
         """
+
+        if self.E0_ort != 0:
+            if self.gauge != 'velocity':
+                if self.solver != '2band':
+                    sys.exit('Two dimensional fields are only implemented for the two-band solver in velocity gauge')
 
         if self.split_paths == True:
             if self.parallelize_over_points == True:

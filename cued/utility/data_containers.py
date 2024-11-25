@@ -1,5 +1,5 @@
 import numpy as np
-from cued.fields import make_electric_field
+from cued.fields import make_electric_field_in_path, make_electric_field_ortho
 
 import cued.dipole
 from cued.utility import MpiHelpers
@@ -9,7 +9,7 @@ class TimeContainers():
 	def __init__(self, P):
 		self.t = np.zeros(P.Nt, dtype=P.type_real_np)
 		self.solution = np.zeros((P.Nk1, P.n, P.n), dtype=P.type_complex_np)
-		self.solution_y_vec = np.zeros((((P.n)**2)*(P.Nk1)+1), dtype=P.type_complex_np)
+		self.solution_y_vec = np.zeros((((P.n)**2)*(P.Nk1)+2), dtype=P.type_complex_np)
 
 		if P.save_full:
 			# Container for the full k-grid densities
@@ -21,8 +21,10 @@ class TimeContainers():
 			self.j_k_E_dir_path = np.empty(P.Nk1, dtype=P.type_real_np)
 			self.j_k_ortho_path = np.empty(P.Nk1, dtype=P.type_real_np)
 
-		self.A_field = np.zeros(P.Nt, dtype=P.type_real_np)
-		self.E_field = np.zeros(P.Nt, dtype=P.type_real_np)
+		self.A_field_in_path = np.zeros(P.Nt, dtype=P.type_real_np)
+		self.E_field_in_path = np.zeros(P.Nt, dtype=P.type_real_np)
+		self.A_field_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
+		self.E_field_ortho = np.zeros(P.Nt, dtype=P.type_real_np)
 
 		if P.sheet_current:
 			self.j_E_dir = np.zeros([P.Nt, P.n_sheets, P.n_sheets], dtype=P.type_real_np)
@@ -48,9 +50,11 @@ class TimeContainers():
 
 		# Initialize electric_field, create rhs of ode and initialize solver
 		if P.user_defined_field:
-			self.electric_field = P.electric_field_function
+			self.electric_field_in_path = P.electric_field_function_in_path
+			self.electric_field_ortho = P.electric_field_function_ortho
 		else:
-			self.electric_field = make_electric_field(P)
+			self.electric_field_in_path = make_electric_field_in_path(P)
+			self.electric_field_ortho = make_electric_field_ortho(P)
 
 		if P.save_latex_pdf or P.save_dm_t:
 			self.pdf_densmat = np.zeros((P.Nk1, P.Nk2, P.Nt_pdf_densmat, P.n, P.n), dtype=P.type_complex_np)

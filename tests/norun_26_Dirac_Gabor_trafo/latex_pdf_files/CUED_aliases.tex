@@ -1,0 +1,67 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% The Aliases defined here are used in the LaTeX template files
+%% AND the python options, so that they can be used in python plot
+%% titles and descriptions. See ../latex_settings_units.py
+%% Lines starting with '%' are ignored by the parser.
+%% Note that the parser is very simple, inline comments are not allowed!
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% New Operators in math mode
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\DeclareMathOperator{\rRe}{Re}
+\DeclareMathOperator{\rIm}{Im}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Size
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\sss}{\scriptscriptstyle}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Roman, Bold etc.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\mc}[1]{\mathcal{#1}}
+\newcommand{\mf}[1]{\mathfrak{#1}}
+\newcommand{\mr}[1]{\mathrm{#1}}
+\newcommand{\mb}[1]{\mathbf{#1}}
+\newcommand{\mcs}[1]{{\sss \mc{#1}}}
+\newcommand{\mfs}[1]{{\sss \mf{#1}}}
+\newcommand{\mrs}[1]{{\sss \mr{#1}}}
+\newcommand{\mbs}[1]{{\sss \mb{#1}}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Math symbols
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Often Used Units
+\newcommand{\bE}{\mb{E}}      
+\newcommand{\bk}{\mb{k}}
+\newcommand{\bA}{\mb{A}}
+\newcommand{\bj}{\mb{j}}
+\newcommand{\bd}{\mb{d}}
+\newcommand{\rE}{\mr{E}}
+\newcommand{\rA}{\mr{A}}
+\newcommand{\eps}{\epsilon}
+\newcommand{\w}{\omega}
+\newcommand{\sd}{\hspace{0.05em}}
+\newcommand{\eqt}{\,{=}\,}
+\newcommand{\pt}{\,{+}\,}
+\newcommand{\coloneqqt}{\,{\coloneqq}\,}
+\newcommand{\intbzdkpi}{\int\limits_\text{BZ}\frac{d\bk}{(2\pi)^2}}
+\newcommand{\rhonnprime}{\rho_{nn'}(\bk,t)}
+\newcommand{\rhonprimen}{\rho_{n'n}(\bk,t)}
+\newcommand{\un}{\underline{n}}
+\newcommand{\braunk}{\langle u_{n\bk}|}
+\newcommand{\ketunk}{|u_{n\bk}\rangle}
+\newcommand{\ketunkprime}{|u_{n'\bk}\rangle}
+\newcommand{\timest}{\,{\times}\,}
+% Real and Imaginary Parts
+\newcommand{\pRe}[1]{\rRe{\left[ #1 \right]}}
+\newcommand{\pIm}[1]{\rIm{\left[ #1 \right]}}
+% Derivatives
+\newcommand{\ddt}{\frac{\partial}{\partial t}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Units (LaTeX - siunitx)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\DeclareSIUnit\MVpcm{\mega\volt\per\cm}
+\newcommand{\fs}{\femto\seconds}
+\newcommand{\As}{\angstrom}
+\newcommand{\eV}{\electronvolt}
+\newcommand{\e}{\elementarycharge}
+\newcommand{\THz}{\tera\hertz}
+\newcommand{\MV}{\mega\volt}
