@@ -43,4 +43,4 @@ class params:
     gabor_transformation    = True
     gabor_gaussian_center   = np.linspace(-100,100,num=4)
     gabor_window_width      = [10,35]
-    save_latex_pdf          = False
+    save_latex_pdf          = True

@@ -476,7 +476,7 @@ def make_current_exact_path_length(path, P, sys):
 
 		return I_E_dir, I_ortho
 
-	return emission_exact_path_length
+	return current_exact_path_length
 
 ##########################################################################################
 ### Observables from given bandstructures
@@ -703,6 +703,70 @@ def make_polarization_inter_bandstructure(P, sys):
 
 	@conditional_njit(type_complex_np)
 	def polarization_inter_path(solution, E_field_in_path, E_field_ortho, A_field_in_path, A_field_ortho):
+
+		P_inter_E_dir = 0
+		P_inter_ortho = 0
+
+		for k in range(Nk1):
+			for i in range(n):
+				for j in range(n):
+					if i > j:
+						P_inter_E_dir += 2*np.real(dipole_in_path[k, i, j]*solution[k, j, i])
+						P_inter_ortho += 2*np.real(dipole_ortho[k, i, j]*solution[k, j, i])
+		return P_inter_E_dir, P_inter_ortho
+	return polarization_inter_path
+
+def make_polarization_inter_bandstructure_velocity(path, P, sys):
+	"""
+	    Function that calculates the interband polarization from eq. (74)
+	"""
+	dipole_in_path = sys.dipole_in_path
+	dipole_ortho = sys.dipole_ortho
+
+	Nk1 = P.Nk1
+	n = P.n
+	save_anom = P.save_anom
+	E_dir = P.E_dir
+	E_ort = np.array([E_dir[1], -E_dir[0]])
+	#wire dipoles
+
+	dipole00x = sys.dipole_xfjit[0][0]
+	dipole01x = sys.dipole_xfjit[0][1]
+	dipole10x = sys.dipole_xfjit[1][0]
+	dipole11x = sys.dipole_xfjit[1][1]
+	dipole00y = sys.dipole_yfjit[0][0]
+	dipole01y = sys.dipole_yfjit[0][1]
+	dipole10y = sys.dipole_yfjit[1][0]
+	dipole11y = sys.dipole_yfjit[1][1]		
+
+	kx_in_path_before_shift = path[:, 0]
+	ky_in_path_before_shift = path[:, 1]
+	pathlen = kx_in_path_before_shift.size
+
+	type_complex_np = P.type_complex_np
+
+
+	@conditional_njit(type_complex_np)
+	def polarization_inter_path(solution, E_field_in_path, E_field_ortho, A_field_in_path, A_field_ortho):
+
+		kx_in_path = kx_in_path_before_shift + A_field_in_path*E_dir[0]
+		ky_in_path = ky_in_path_before_shift + A_field_in_path*E_dir[1]
+
+		dipole_x = np.empty((pathlen, 2, 2), dtype=type_complex_np)
+		dipole_y = np.empty((pathlen, 2, 2), dtype=type_complex_np)
+
+		dipole_x[:, 0, 0] = dipole00x(kx=kx_in_path, ky=ky_in_path)
+		dipole_x[:, 0, 1] = dipole01x(kx=kx_in_path, ky=ky_in_path)
+		dipole_x[:, 1, 0] = dipole10x(kx=kx_in_path, ky=ky_in_path)
+		dipole_x[:, 1, 1] = dipole11x(kx=kx_in_path, ky=ky_in_path)
+
+		dipole_y[:, 0, 0] = dipole00y(kx=kx_in_path, ky=ky_in_path)
+		dipole_y[:, 0, 1] = dipole01y(kx=kx_in_path, ky=ky_in_path)
+		dipole_y[:, 1, 0] = dipole10y(kx=kx_in_path, ky=ky_in_path)
+		dipole_y[:, 1, 1] = dipole11y(kx=kx_in_path, ky=ky_in_path)
+
+		dipole_in_path = E_dir[0]*dipole_x + E_dir[1]*dipole_y
+		dipole_ortho = E_ort[0]*dipole_x + E_ort[1]*dipole_y
 
 		P_inter_E_dir = 0
 		P_inter_ortho = 0

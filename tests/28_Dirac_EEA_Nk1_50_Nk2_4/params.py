@@ -43,3 +43,5 @@ class params:
     second_order            = True
     save_latex_pdf          = False
 
+    parallelize_over_points = True
+    parallelize_over_points = True

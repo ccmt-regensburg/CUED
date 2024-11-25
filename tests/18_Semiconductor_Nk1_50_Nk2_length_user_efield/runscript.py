@@ -41,7 +41,8 @@ def run(system):
 
 	E0 = 1e-1                        # MV/cm
 	sigma = 20                       # fs
-	params.electric_field_function = make_gaussian(E0, sigma)
+	params.electric_field_function_in_path = make_gaussian(E0, sigma)
+	params.electric_field_function_ortho = make_gaussian(0, sigma)
 	sbe_solver(system, params)
 
 

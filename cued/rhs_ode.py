@@ -401,13 +401,13 @@ def make_rhs_ode_n_band(sys, electric_field_in_path, electric_field_ortho, P):
     dm_dynamics_method = P.dm_dynamics_method
 
     @conditional_njit(type_complex_np)
-    def fvelocity_custom_bs(t, y, kpath, dipole_in_path, e_in_path, y0, dk, rho, Nk2_idx):
+    def fvelocity_custom_bs(t, y, kpath, dipole_in_path, dipole_ortho, e_in_path, y0, dk, rho, Nk2_idx):
         """
         Velocity gauge needs a recalculation of energies and dipoles as k
         is shifted according to the vector potential A
         """
 
-        ecv_in_path, dipole_in_path[:, 0, 1], A_in_path = pre_velocity_custom_bs(kpath, y[-1].real)
+        ecv_in_path, dipole_in_path[:, 0, 1], A_in_path = pre_velocity_custom_bs(kpath, y[-2].real)
 
         # x != y(t+dt)
         x = np.empty(np.shape(y), dtype=type_complex_np)
@@ -424,12 +424,12 @@ def make_rhs_ode_n_band(sys, electric_field_in_path, electric_field_ortho, P):
 
             # Rabi frequency: w_R = d_12(k).E(t)
             # Rabi frequency conjugate
-            wr = dipole_in_path[k, 0, 1]*electric_f
+            wr = dipole_in_path[k, 0, 1]*electric_f_in_path
             wr_c = wr.conjugate()
 
             # Rabi frequency: w_R = (d_11(k) - d_22(k))*E(t)
             # wr_d_diag   = A_in_path[k]*D
-            wr_d_diag = A_in_path[k]*electric_f
+            wr_d_diag = A_in_path[k]*electric_f_in_path
 
             # Update each component of the solution vector
             # i = f_v, i+1 = p_vc, i+2 = p_cv, i+3 = f_c
@@ -441,7 +441,8 @@ def make_rhs_ode_n_band(sys, electric_field_in_path, electric_field_ortho, P):
 
             x[i+3] = -2*(y[i+1]*wr_c).imag - gamma1*(y[i+3]-y0[i+3])
 
-        x[-1] = -electric_f_in_path
+        x[-2] = -electric_f_in_path
+        x[-1] = -electric_f_ortho
 
         return x
 
@@ -473,7 +474,7 @@ def make_rhs_ode_n_band(sys, electric_field_in_path, electric_field_ortho, P):
         return ecv_in_path, dipole_in_path, A_in_path
 
     @conditional_njit(type_complex_np)
-    def flength(t, y, kpath, dipole_in_path, e_in_path, y0, dk, rho, Nk2_idx):
+    def flength(t, y, kpath, dipole_in_path, dipole_ortho, e_in_path, y0, dk, rho, Nk2_idx):
         """
             function that multiplies the block-structure of the matrices of the RHS
             of the SBE with the solution vector
@@ -481,9 +482,10 @@ def make_rhs_ode_n_band(sys, electric_field_in_path, electric_field_ortho, P):
         # x != y(t+dt)
         x = np.zeros(np.shape(y), dtype=type_complex_np)
         # Gradient term coefficient
-        electric_f = electric_field_in_path(t)
+        electric_f_in_path = electric_field_in_path(t)
+        electric_f_ortho = 0
 
-        D = electric_f/dk
+        D = electric_f_in_path/dk
 
         Nk_path = kpath.shape[0]
         for k in range(Nk_path):
@@ -524,7 +526,7 @@ def make_rhs_ode_n_band(sys, electric_field_in_path, electric_field_ortho, P):
             elif k == Nk_path-4 and dk_order >= 8:
                 right4 = 0
 
-            wr = dipole_in_path[k, :, :]*electric_f
+            wr = dipole_in_path[k, :, :]*electric_f_in_path
 
             for i in range(n):
                 for j in range(n):
@@ -555,7 +557,8 @@ def make_rhs_ode_n_band(sys, electric_field_in_path, electric_field_ortho, P):
                         else:
                             x[k*(n**2) + i*n + j] += -1j * ( y[k*(n**2) + i*n + nbar] * wr[nbar, j] - wr[i, nbar] * y[k*(n**2) + nbar*n + j])
 
-        x[-1] = -electric_f
+        x[-2] = -electric_f_in_path
+        x[-1] = -electric_f_ortho
 
         return x
 
@@ -660,12 +663,13 @@ def make_rhs_ode_n_band(sys, electric_field_in_path, electric_field_ortho, P):
         # x != y(t+dt)
         x = np.zeros(np.shape(y), dtype=type_complex_np)
 
-        electric_f = electric_field_in_path(t)
+        electric_f_in_path = electric_field_in_path(t)
+        electric_f_ortho = 0
 
         Nk_path = kpath.shape[0]
         for k in range(Nk_path):
 
-            wr = dipole_in_path[k, :, :]*electric_f
+            wr = dipole_in_path[k, :, :]*electric_f_in_path
 
             for i in range(n):
                 for j in range(n):
@@ -682,12 +686,13 @@ def make_rhs_ode_n_band(sys, electric_field_in_path, electric_field_ortho, P):
                         else:
                             x[k*(n**2) + i*n + j] += -1j * ( y[k*(n**2) + i*n + nbar] * wr[nbar, j] - wr[i, nbar] * y[k*(n**2) + nbar*n + j])
 
-        x[-1] = -electric_f
+        x[-2] = -electric_f_in_path
+        x[-1] = -electric_f_ortho
 
         return x
 
     #@conditional_njit(type_complex_np)
-    def fvelocity(t, y, kpath, dipole_in_path, e_in_path, y0, dk, rho, Nk2_idx):
+    def fvelocity(t, y, kpath, dipole_in_path,  dipole_ortho, e_in_path, y0, dk, rho, Nk2_idx):
         """
             function that multiplies the block-structure of the matrices of the RHS
             of the SBE with the solution vector
@@ -695,8 +700,8 @@ def make_rhs_ode_n_band(sys, electric_field_in_path, electric_field_ortho, P):
         # evaluate hfjit before using numba
         path_after_shift = np.copy(kpath)
 
-        path_after_shift[:, 0] = kpath[:, 0] + E_dir[0]* y[-1].real
-        path_after_shift[:, 1] = kpath[:, 1] + E_dir[1]* y[-1].real
+        path_after_shift[:, 0] = kpath[:, 0] + E_dir[0]* y[-2].real
+        path_after_shift[:, 1] = kpath[:, 1] + E_dir[1]* y[-2].real
 
         pathlen = kpath[:, 0].size
         h_in_path = np.zeros((pathlen, n, n), dtype=type_complex_np)
@@ -758,7 +763,7 @@ def make_rhs_ode_n_band(sys, electric_field_in_path, electric_field_ortho, P):
     else:
         raise AttributeError("You have to either assign velocity or length gauge")
 
-    def f(t, y, kpath, dipole_in_path, e_in_path, y0, dk, rho, Nk2_idx):
-        return freturn(t, y, kpath, dipole_in_path, e_in_path, y0, dk, rho, Nk2_idx)
+    def f(t, y, kpath, dipole_in_path, dipole_ortho, e_in_path, y0, dk, rho, Nk2_idx):
+        return freturn(t, y, kpath, dipole_in_path, dipole_ortho, e_in_path, y0, dk, rho, Nk2_idx)
 
     return f

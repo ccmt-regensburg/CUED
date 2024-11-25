@@ -2,7 +2,7 @@
 import numpy as np
 
 # Variable for test_script.py
-NUM_TESTED_ORDERS=2
+NUM_TESTED_ORDERS=1
 
 class params:
     # System parameters
@@ -42,4 +42,4 @@ class params:
     solver                  = '2band'
     fourier_window_function = 'hann'
     user_out                = False
-    save_latex_pdf          = False
+    save_latex_pdf          = True

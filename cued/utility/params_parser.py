@@ -128,17 +128,15 @@ class ParamsParser():
         '''Electrical Driving Field'''
         self.f = UP['f']*CoFa.THz_to_au                      # Driving pulse frequency
 
-        if 'electric_field_function' in UP:
-            self.electric_field_function_in_path = UP['electric_field_function']
-            if 'electric_field_function_ortho' in UP:
-                self.electric_field_function_ortho = UP['electric_field_function_ortho']
-            else:
-                self.electric_field_function_ortho = 0
+        if 'electric_field_function_in_path' in UP:
+            self.electric_field_function_in_path = UP['electric_field_function_in_path']
+            self.electric_field_function_ortho = UP['electric_field_function_ortho']
             # Make first private to set it after params check in derived params
             self.__user_defined_field = True              # Disables all CUED specific field printouts
 
         else:
-            self.electric_field_function = None           # Gets set in TimeContainers
+            self.electric_field_function_in_path = None           # Gets set in TimeContainers
+            self.electric_field_function_ortho = None
             self.E0 = UP['E0']*CoFa.MVpcm_to_au              # Driving pulse field amplitude
             self.chirp = UP['chirp']*CoFa.THz_to_au          # Pulse chirp frequency
             self.sigma = UP['sigma']*CoFa.fs_to_au           # Gaussian pulse width
@@ -390,7 +388,7 @@ class ParamsParser():
         """
 
         if self.E0_ort != 0:
-            if self.gauge != 'velocity'
+            if self.gauge != 'velocity':
                 if self.solver != '2band':
                     sys.exit('Two dimensional fields are only implemented for the two-band solver in velocity gauge')
 

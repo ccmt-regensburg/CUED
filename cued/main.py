@@ -244,7 +244,7 @@ def run_sbe(sys, P, Mpi):
 					                                y0, P.dk, P.dt, rhs_ode, T.densmat_container_fock, Nk2_idx)
 
 			elif P.dm_dynamics_method in ('series_expansion', 'EEA'):
-				T.solution_y_vec[:-1], T.time_integral = von_neumann_series(T.t[ti], T.A_field_in_path[ti], T.E_field_in_path[ti], path, sys, y0[:-1], T.time_integral, P, ti)
+				T.solution_y_vec[:-2], T.time_integral = von_neumann_series(T.t[ti], T.A_field_in_path[ti], T.E_field_in_path[ti], path, sys, y0[:-2], T.time_integral, P, ti)
 
 			if P.do_fock:
 				mpi_sum_density_matrix(T, P, Mpi, Nk2_idx, ti)
@@ -353,10 +353,10 @@ def make_rhs_ode(P, T, sys):
 			if P.n != 2:
 				raise AttributeError('2-band solver works for 2-band systems only')
 			else:
-				rhs_ode = make_rhs_ode_2_band(sys, T.electric_field, P)
+				rhs_ode = make_rhs_ode_2_band(sys, T.electric_field_in_path, T.electric_field_ortho, P)
 
 		elif P.solver == 'nband':
-			rhs_ode = make_rhs_ode_n_band(sys, T.electric_field, P)
+			rhs_ode = make_rhs_ode_n_band(sys, T.electric_field_in_path, T.electric_field_ortho, P)
 		else:
 			rhs_ode = 0
 
@@ -416,7 +416,7 @@ def calculate_solution_at_timestep(solver, Nk2_idx, ti, T, P, Mpi):
 
 	if P.dm_dynamics_method in ('sbe', 'semiclassics'):
 		if P.solver_method in ('bdf', 'adams'):
-			# Do not append the last element (A_field)
+			# Do not append the last 2 elements (A_field_ortho and A_field_in_path)
 			T.solution = solver.y[:-2].reshape(P.Nk1, P.n, P.n)
 
 			# Construct time array only once
@@ -472,7 +472,7 @@ def store_density_matrix_for_pdf(T, P, Nk2_idx, ti):
 			T.t_pdf_densmat[count] = T.t[ti]
 
 
-def calculate_currents(ti, current_exact_path, polarization_inter_path, current_intra_path, T, P):
+def calculate_currents(Nk2_idx, ti, current_exact_path, polarization_inter_path, current_intra_path, T, P):
 
 	j_E_dir_buf, j_ortho_buf = current_exact_path(T.solution, T.E_field_in_path[ti], T.E_field_ortho[ti], T.A_field_in_path[ti], T.A_field_ortho[ti])
 
@@ -491,10 +491,10 @@ def calculate_currents(ti, current_exact_path, polarization_inter_path, current_
 
 def rk_integrate(t, y, kpath, sys, y0, dk, dt, rhs_ode, rho, Nk2_idx):
 
-	k1 = rhs_ode(t,          y,          kpath, sys.dipole_in_path, sys.e_in_path, y0, dk, rho, Nk2_idx)
-	k2 = rhs_ode(t + 0.5*dt, y + 0.5*k1, kpath, sys.dipole_in_path, sys.e_in_path, y0, dk, rho, Nk2_idx)
-	k3 = rhs_ode(t + 0.5*dt, y + 0.5*k2, kpath, sys.dipole_in_path, sys.e_in_path, y0, dk, rho, Nk2_idx)
-	k4 = rhs_ode(t +     dt, y +     k3, kpath, sys.dipole_in_path, sys.e_in_path, y0, dk, rho, Nk2_idx)
+	k1 = rhs_ode(t,          y,          kpath, sys.dipole_in_path, sys.dipole_ortho, sys.e_in_path, y0, dk, rho, Nk2_idx)
+	k2 = rhs_ode(t + 0.5*dt, y + 0.5*k1, kpath, sys.dipole_in_path, sys.dipole_ortho, sys.e_in_path, y0, dk, rho, Nk2_idx)
+	k3 = rhs_ode(t + 0.5*dt, y + 0.5*k2, kpath, sys.dipole_in_path, sys.dipole_ortho, sys.e_in_path, y0, dk, rho, Nk2_idx)
+	k4 = rhs_ode(t +     dt, y +     k3, kpath, sys.dipole_in_path, sys.dipole_ortho, sys.e_in_path, y0, dk, rho, Nk2_idx)
 
 	ynew = y + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
 
@@ -585,7 +585,7 @@ def von_neumann_series(t, A_field, E_field, path, sys, y0, time_integral, P, ti)
 
 			sys.eigensystem_dipole_path(path_after_shift, P)
 
-		if P.gauge == 'length' :
+		if P.gauge == 'length':
 			if ti == 0:
 				P.diffy0 = y0deriv(y0_mat, P.dk, P.Nk1, P.n, P.dk_order, P.type_complex_np)
 
