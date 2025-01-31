@@ -210,30 +210,7 @@ def import_params(filename_params):
     if hasattr(params, 'MPI_NUM_PROCS'):
         current_mpi_num_procs = params.MPI_NUM_PROCS
     else:
-        if params.params().gauge == "velocity":
-            if hasattr(params, 'split_paths'):
-                if params.params().split_paths != True:
-                    num_ranks = params.params().Nk1 * params.params().Nk2
-                    os.system("echo '    parallelize_over_points = True' >> "+filename_params)
-                else:
-                    num_ranks = params.params().Nk2
-            elif hasattr(params, 'do_fock'):
-                if params.params().do_fock != True:
-                    num_ranks = params.params().Nk1 * params.params().Nk2
-                    os.system("echo '    parallelize_over_points = True' >> "+filename_params)
-                else:
-                    num_ranks = params.params().Nk2
-            else:
-                num_ranks = params.params().Nk1 * params.params().Nk2
-                os.system("echo '    parallelize_over_points = True' >> "+filename_params)
-        else:
-            num_ranks = params.params().Nk2                
-
-        if num_ranks < default_mpi_jobs:
-            current_mpi_num_procs = num_ranks
-        else:
-            current_mpi_num_procs = default_mpi_jobs
-    print(f"MG - Debug: Used {current_mpi_num_procs} ranks for {filename_params}")
+        current_mpi_num_procs = default_mpi_jobs
     if hasattr(params, 'NUM_TESTED_ORDERS'):
         current_tested_orders = params.NUM_TESTED_ORDERS
     else:

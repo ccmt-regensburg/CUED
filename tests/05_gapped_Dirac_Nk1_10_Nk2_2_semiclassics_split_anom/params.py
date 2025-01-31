@@ -45,16 +45,3 @@ class params:
     save_anom               = True
     user_out                = False
     save_latex_pdf          = False
-    parallelize_over_points = True
-    parallelize_over_points = True
-    parallelize_over_points = True
-    parallelize_over_points = True
-    parallelize_over_points = True
-    parallelize_over_points = True
-    parallelize_over_points = True
-    parallelize_over_points = True
-    parallelize_over_points = True
-    parallelize_over_points = True
-    parallelize_over_points = True
-    parallelize_over_points = True
-    parallelize_over_points = True

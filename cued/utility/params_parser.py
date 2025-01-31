@@ -22,7 +22,7 @@ class ParamsParser():
 
         # build dictionary of all parameters, exclude t_pdf_densmat, points_to_path and parameters of Gabor transformation
         excl_set = {'__weakref__', '__doc__', '__dict__', '__module__',"t_pdf_densmat","parallelize_over_points",'gabor_gaussian_center','gabor_window_width'}
-        
+
         self.user_params = sorted(UP.__dict__.keys() - excl_set)
         self.t_pdf_densmat = np.array([-100, 0, 50, 100])*CoFa.fs_to_au   # Time points for printing density matrix
         if hasattr(UP, 'parallelize_over_points'):
@@ -35,8 +35,8 @@ class ParamsParser():
             self.gabor_gaussian_center = np.array(UP.gabor_gaussian_center)*CoFa.fs_to_au
         if hasattr(UP,'gabor_window_width'):
             self.gabor_window_width = np.array(UP.gabor_window_width)*CoFa.fs_to_au
-            
-            
+
+
         # build list of parameter lists
         self.number_of_combinations = 1
         self.params_lists = []
@@ -178,13 +178,13 @@ class ParamsParser():
             self.E0_ort = 0
         if 'chirp_ort' in UP:
             self.chirp_ort = UP['chirp_ort']*CoFa.THz_to_au          # Pulse chirp frequency
-        else: 
+        else:
             self.chirp_ort = 0
         if 'sigma_ort' in UP:
             self.sigma_ort = UP['sigma_ort']*CoFa.fs_to_au           # Gaussian pulse width
-        else: 
+        else:
             self.sigma_ort = 1
-        if 'phase_ort' in UP:                
+        if 'phase_ort' in UP:
             self.phase_ort = UP['phase_ort']                         # Carrier-envelope phase
         else:
             self.phase_ort = 0
@@ -277,7 +277,7 @@ class ParamsParser():
             if 'first_order' in UP:
                 self.first_order = UP['first_order']
 
-            self.second_order = False 
+            self.second_order = False
             if 'second_order' in UP:
                 self.second_order = UP['second_order']
 
@@ -354,7 +354,7 @@ class ParamsParser():
         self.do_fock = False
         if 'do_fock' in UP:
             self.do_fock = UP['do_fock']
-        
+
         if self.do_fock == True:  # split_paths = True and parallelize_over_points = False as default for Fock calculations
             if not 'split_paths' in UP:
                 self.split_paths = True
