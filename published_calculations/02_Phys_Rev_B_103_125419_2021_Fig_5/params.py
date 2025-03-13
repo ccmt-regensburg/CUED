@@ -1,7 +1,6 @@
 # Input parameters for SBE.py
 import numpy as np
 
-
 class params:
     # System parameters
     #########################################################################
