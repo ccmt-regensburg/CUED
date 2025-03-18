@@ -2,7 +2,7 @@
 import numpy as np
 
 #variable for test_script.py
-MPI_NUM_PROCS = 4
+MPI_NUM_PROCS = 2
 NUM_TESTED_ORDERS = 3
 
 class params:
