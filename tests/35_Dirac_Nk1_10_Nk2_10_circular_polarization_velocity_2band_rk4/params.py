@@ -48,5 +48,3 @@ class params:
     fourier_window_function = 'gaussian'
     split_current           = True
     user_out                = True          # True to get user plotting and progress output
-    save_latex_pdf          = False
-    save_latex_pdf = False
