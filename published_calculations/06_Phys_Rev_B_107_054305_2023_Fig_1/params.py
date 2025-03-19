@@ -43,4 +43,4 @@ class params:
     fourier_window_function = 'gaussian'
     user_out                = True
     plot_format             = 'png'
-    
+    save_latex_pdf          = False

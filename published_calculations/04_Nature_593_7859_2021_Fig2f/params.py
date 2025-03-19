@@ -40,3 +40,4 @@ class params:
     solver         = '2band'
     user_out       = False
     plot_format    = 'png'
+    save_latex_pdf = False

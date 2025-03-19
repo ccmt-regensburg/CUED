@@ -2,7 +2,7 @@
 import numpy as np
 
 class params:
-    # System parameters 
+    # System parameters
     #########################################################################
     a                   = 8.308       # Lattice spacing in atomic units (4.395 A)
     e_fermi             = 0.00        # Fermi energy in eV
@@ -40,3 +40,4 @@ class params:
     solver                  = '2band'
     fourier_window_function = 'gaussian'
     user_out                = False
+    save_latex_pdf          = False
