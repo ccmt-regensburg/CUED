@@ -32,6 +32,26 @@ class Haldane(TwoBandHamiltonianSystem):
 
         super().__init__(ho, hx, hy, hz)
 
+class TMD(TwoBandHamiltonianSystem):
+    """
+    Simple tight-binding next-neighbor hopping TMD, Eq. (5) from
+    https://journals.aps.org/prb/abstract/10.1103/PhysRevB.99.235433 
+    with g(k) = 0
+    """
+
+    def __init__(self, a=sp.Symbol('a'), gamma=sp.Symbol('gamma'), Delta=sp.Symbol('Delta')):
+
+        kx = self.kx
+        ky = self.ky
+
+
+        ho = 0
+        hx = -gamma *( sp.cos(kx*a/sp.sqrt(3)) + 2 * sp.cos(kx*a/(2*sp.sqrt(3))) * sp.cos(ky*a/2) )
+        hy = -gamma *( sp.sin(kx*a/sp.sqrt(3)) - 2 * sp.sin(kx*a/(2*sp.sqrt(3))) * sp.cos(ky*a/2) )
+        hz = Delta
+        
+        super().__init__(ho, hx, hy, hz) 
+
 class Graphene_twoband(TwoBandHamiltonianSystem):
     """
     Simple tight-binding next-neighbor hopping Hamiltonian of Graphene
